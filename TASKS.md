@@ -42,3 +42,17 @@
 - [x] Reuse patch-log framing with integration tests.
 - [x] Expose minimal compatibility API via FFI.
 - [x] Document temporary oracle-bridge dependency.
+
+## M6: Core-Complete Native Port (Runtime Core Only)
+
+- [x] Add `CORE_PARITY_MATRIX.md` with runtime-core family status and gate tracking.
+- [ ] Add native `PatchBuilder` + production patch encode path in `json-joy-core`.
+- [ ] Normalize runtime node graph semantics (reduce fallback-view shortcuts).
+- [ ] Replace oracle subprocess in `less_db_compat::apply_patch` with native runtime apply path.
+- [ ] Replace oracle subprocess in `diff_runtime` with native Rust diff dispatcher.
+- [ ] Expand structural model encoder to support model-state generation from runtime graph.
+- [ ] Add upstream-mapped runtime-core test-port suites (`tests/upstream_port/*`).
+- [ ] Add seeded differential parity suites for apply/diff/model roundtrip.
+- [ ] Add property/state-machine convergence tests (idempotence/order/tombstones/clocks).
+- [ ] Ensure oracle scripts are test tooling only (no production runtime dependency).
+- [ ] Update docs (`PORT_PLAN.md`, `AGENTS.md`, `ARCHITECTURE.md`) for bridge-retired runtime.
