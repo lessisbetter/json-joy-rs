@@ -28,12 +28,17 @@ pub enum PatchError {
 pub struct Patch {
     /// Original binary payload, preserved for exact wire round-trips.
     bytes: Vec<u8>,
+    op_count: u64,
+    span: u64,
+    sid: u64,
+    time: u64,
 }
 
 impl Patch {
     pub fn from_binary(data: &[u8]) -> Result<Self, PatchError> {
         let mut reader = Reader::new(data);
-        if let Err(err) = decode_patch(&mut reader) {
+        let decoded = decode_patch(&mut reader);
+        if let Err(err) = decoded {
             // json-joy's JS decoder is permissive for many malformed inputs.
             // This compatibility behavior is fixture-driven (see
             // tests/compat/fixtures/* and patch_codec_from_fixtures.rs).
@@ -50,20 +55,57 @@ impl Patch {
             }
             return Ok(Self {
                 bytes: data.to_vec(),
+                op_count: 0,
+                span: 0,
+                sid: 0,
+                time: 0,
             });
         }
         if !reader.is_eof() {
             return Ok(Self {
                 bytes: data.to_vec(),
+                op_count: 0,
+                span: 0,
+                sid: 0,
+                time: 0,
             });
         }
+        let (sid, time, op_count, span) = decoded.expect("checked above");
         Ok(Self {
             bytes: data.to_vec(),
+            op_count,
+            span,
+            sid,
+            time,
         })
     }
 
     pub fn to_binary(&self) -> Vec<u8> {
         self.bytes.clone()
+    }
+
+    pub fn op_count(&self) -> u64 {
+        self.op_count
+    }
+
+    pub fn span(&self) -> u64 {
+        self.span
+    }
+
+    pub fn id(&self) -> Option<(u64, u64)> {
+        if self.op_count == 0 {
+            None
+        } else {
+            Some((self.sid, self.time))
+        }
+    }
+
+    pub fn next_time(&self) -> u64 {
+        if self.op_count == 0 {
+            0
+        } else {
+            self.time.saturating_add(self.span)
+        }
     }
 }
 
@@ -168,18 +210,21 @@ impl<'a> Reader<'a> {
     }
 }
 
-fn decode_patch(reader: &mut Reader<'_>) -> Result<(), PatchError> {
-    let _sid = reader.vu57()?;
-    let _time = reader.vu57()?;
+fn decode_patch(reader: &mut Reader<'_>) -> Result<(u64, u64, u64, u64), PatchError> {
+    let sid = reader.vu57()?;
+    let time = reader.vu57()?;
 
     // meta is a CBOR value (typically undefined or [meta])
     let _meta = reader.read_one_cbor()?;
 
     let ops_len = reader.vu57()?;
+    let mut span: u64 = 0;
     for _ in 0..ops_len {
-        decode_op(reader)?;
+        span = span
+            .checked_add(decode_op(reader)?)
+            .ok_or(PatchError::Overflow)?;
     }
-    Ok(())
+    Ok((sid, time, ops_len, span))
 }
 
 fn read_len_from_low3_or_var(reader: &mut Reader<'_>, octet: u8) -> Result<u64, PatchError> {
@@ -191,7 +236,7 @@ fn read_len_from_low3_or_var(reader: &mut Reader<'_>, octet: u8) -> Result<u64, 
     }
 }
 
-fn decode_op(reader: &mut Reader<'_>) -> Result<(), PatchError> {
+fn decode_op(reader: &mut Reader<'_>) -> Result<u64, PatchError> {
     let octet = reader.u8()?;
     let opcode = octet >> 3;
 
@@ -204,13 +249,15 @@ fn decode_op(reader: &mut Reader<'_>) -> Result<(), PatchError> {
             } else {
                 reader.decode_id()?;
             }
+            Ok(1)
         }
         // new_val/new_obj/new_vec/new_str/new_bin/new_arr
-        1..=6 => {}
+        1..=6 => Ok(1),
         // ins_val
         9 => {
             reader.decode_id()?;
             reader.decode_id()?;
+            Ok(1)
         }
         // ins_obj
         10 => {
@@ -220,6 +267,7 @@ fn decode_op(reader: &mut Reader<'_>) -> Result<(), PatchError> {
                 let _ = reader.read_one_cbor()?;
                 reader.decode_id()?;
             }
+            Ok(1)
         }
         // ins_vec
         11 => {
@@ -229,6 +277,7 @@ fn decode_op(reader: &mut Reader<'_>) -> Result<(), PatchError> {
                 let _ = reader.read_one_cbor()?;
                 reader.decode_id()?;
             }
+            Ok(1)
         }
         // ins_str
         12 => {
@@ -236,6 +285,7 @@ fn decode_op(reader: &mut Reader<'_>) -> Result<(), PatchError> {
             reader.decode_id()?;
             reader.decode_id()?;
             reader.skip(len)?;
+            Ok(len as u64)
         }
         // ins_bin
         13 => {
@@ -243,6 +293,7 @@ fn decode_op(reader: &mut Reader<'_>) -> Result<(), PatchError> {
             reader.decode_id()?;
             reader.decode_id()?;
             reader.skip(len)?;
+            Ok(len as u64)
         }
         // ins_arr
         14 => {
@@ -252,12 +303,14 @@ fn decode_op(reader: &mut Reader<'_>) -> Result<(), PatchError> {
             for _ in 0..len {
                 reader.decode_id()?;
             }
+            Ok(len)
         }
         // upd_arr
         15 => {
             reader.decode_id()?;
             reader.decode_id()?;
             reader.decode_id()?;
+            Ok(1)
         }
         // del
         16 => {
@@ -267,13 +320,13 @@ fn decode_op(reader: &mut Reader<'_>) -> Result<(), PatchError> {
                 reader.decode_id()?;
                 let _span = reader.vu57()?;
             }
+            Ok(1)
         }
         // nop
         17 => {
-            let _len = read_len_from_low3_or_var(reader, octet)?;
+            let len = read_len_from_low3_or_var(reader, octet)?;
+            Ok(len)
         }
-        _ => return Err(PatchError::UnknownOpcode(opcode)),
+        _ => Err(PatchError::UnknownOpcode(opcode)),
     }
-
-    Ok(())
 }

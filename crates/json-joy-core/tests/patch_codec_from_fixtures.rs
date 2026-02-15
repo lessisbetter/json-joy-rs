@@ -67,9 +67,49 @@ fn patch_diff_apply_fixtures_decode_and_roundtrip() {
             .unwrap_or_else(|e| panic!("Patch decode failed for {}: {e}", entry["name"]));
         let roundtrip = patch.to_binary();
 
+        let expected_op_count = fixture["expected"]["patch_op_count"]
+            .as_u64()
+            .unwrap_or_else(|| panic!("expected.patch_op_count must be u64 for {}", entry["name"]));
+        let expected_span = fixture["expected"]["patch_span"]
+            .as_u64()
+            .unwrap_or_else(|| panic!("expected.patch_span must be u64 for {}", entry["name"]));
+        let expected_sid = fixture["expected"]["patch_id_sid"]
+            .as_u64()
+            .unwrap_or_else(|| panic!("expected.patch_id_sid must be u64 for {}", entry["name"]));
+        let expected_time = fixture["expected"]["patch_id_time"]
+            .as_u64()
+            .unwrap_or_else(|| panic!("expected.patch_id_time must be u64 for {}", entry["name"]));
+        let expected_next_time = fixture["expected"]["patch_next_time"]
+            .as_u64()
+            .unwrap_or_else(|| panic!("expected.patch_next_time must be u64 for {}", entry["name"]));
+
         assert_eq!(
             roundtrip, patch_bytes,
             "Patch roundtrip mismatch for fixture {}",
+            entry["name"]
+        );
+        assert_eq!(
+            patch.op_count(),
+            expected_op_count,
+            "Patch op_count mismatch for fixture {}",
+            entry["name"]
+        );
+        assert_eq!(
+            patch.span(),
+            expected_span,
+            "Patch span mismatch for fixture {}",
+            entry["name"]
+        );
+        assert_eq!(
+            patch.id(),
+            Some((expected_sid, expected_time)),
+            "Patch id mismatch for fixture {}",
+            entry["name"]
+        );
+        assert_eq!(
+            patch.next_time(),
+            expected_next_time,
+            "Patch next_time mismatch for fixture {}",
             entry["name"]
         );
     }

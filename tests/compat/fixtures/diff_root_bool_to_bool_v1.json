@@ -12,6 +12,9 @@
     "patch_binary_hex": "c3b20403f70200f448800003",
     "patch_op_count": 2,
     "patch_span": 2,
+    "patch_id_sid": 72003,
+    "patch_id_time": 3,
+    "patch_next_time": 5,
     "view_after_apply_json": false,
     "model_binary_after_apply_hex": "000000031100f401c3b20404"
   },

@@ -33,6 +33,9 @@
     "patch_binary_hex": "deb2040df704100002510d6269640e7102090d",
     "patch_op_count": 4,
     "patch_span": 4,
+    "patch_id_sid": 72030,
+    "patch_id_time": 13,
+    "patch_next_time": 17,
     "view_after_apply_json": {
       "items": [
         {

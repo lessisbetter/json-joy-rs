@@ -18,6 +18,9 @@
     "patch_binary_hex": "ceb20406f70200095101616106",
     "patch_op_count": 2,
     "patch_span": 2,
+    "patch_id_sid": 72014,
+    "patch_id_time": 6,
+    "patch_next_time": 8,
     "view_after_apply_json": {
       "a": 9,
       "b": 2

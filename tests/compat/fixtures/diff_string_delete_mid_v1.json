@@ -16,6 +16,9 @@
     "patch_binary_hex": "cab2040af70181020501",
     "patch_op_count": 1,
     "patch_span": 1,
+    "patch_id_sid": 72010,
+    "patch_id_time": 10,
+    "patch_next_time": 11,
     "view_after_apply_json": {
       "txt": "abde"
     },

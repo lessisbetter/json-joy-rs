@@ -16,6 +16,9 @@
     "patch_binary_hex": "dcb20430f70166020c6167696c6520",
     "patch_op_count": 1,
     "patch_span": 6,
+    "patch_id_sid": 72028,
+    "patch_id_time": 48,
+    "patch_next_time": 54,
     "view_after_apply_json": {
       "txt": "The quick agile brown fox jumps over the lazy dog"
     },

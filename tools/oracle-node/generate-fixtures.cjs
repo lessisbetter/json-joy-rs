@@ -66,6 +66,7 @@ function buildDiffFixture(name, sid, base, next) {
 
   const patchBinary = patch.toBinary();
   const decoded = Patch.fromBinary(patchBinary);
+  const patchId = decoded.getId();
 
   model.applyPatch(patch);
 
@@ -74,6 +75,9 @@ function buildDiffFixture(name, sid, base, next) {
     patch_binary_hex: hex(patchBinary),
     patch_op_count: decoded.ops.length,
     patch_span: decoded.span(),
+    patch_id_sid: patchId ? patchId.sid : null,
+    patch_id_time: patchId ? patchId.time : null,
+    patch_next_time: decoded.nextTime(),
     view_after_apply_json: model.view(),
     model_binary_after_apply_hex: hex(model.toBinary())
   });

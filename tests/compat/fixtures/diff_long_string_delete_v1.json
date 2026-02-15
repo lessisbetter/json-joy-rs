@@ -16,6 +16,9 @@
     "patch_binary_hex": "ddb20430f70181020d06",
     "patch_op_count": 1,
     "patch_span": 1,
+    "patch_id_sid": 72029,
+    "patch_id_time": 48,
+    "patch_next_time": 49,
     "view_after_apply_json": {
       "txt": "The quick fox jumps over the lazy dog"
     },
