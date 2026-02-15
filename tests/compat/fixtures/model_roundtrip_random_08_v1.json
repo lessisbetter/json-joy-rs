@@ -4,17 +4,27 @@
   "scenario": "model_roundtrip",
   "input": {
     "sid": 73107,
-    "data": {
-      "i93i": null,
-      "w3w8lzybr": []
-    }
+    "data": [
+      "shtw",
+      {
+        "fos": {},
+        "uqo": [],
+        "y5oj": {},
+        "ijb66wz4j": -93.7
+      }
+    ]
   },
   "expected": {
-    "model_binary_hex": "00000017144264693933691300f67809773377386c7a79627212c00193bb0405",
-    "view_json": {
-      "i93i": null,
-      "w3w8lzybr": []
-    }
+    "model_binary_hex": "000000371ec112021d811c6473687477184463666f7317406375716f16c06479356f6a15407809696a623636777a346a1400fbc0576ccccccccccd0193bb040f",
+    "view_json": [
+      "shtw",
+      {
+        "fos": {},
+        "uqo": [],
+        "y5oj": {},
+        "ijb66wz4j": -93.7
+      }
+    ]
   },
   "meta": {
     "upstream_package": "json-joy",

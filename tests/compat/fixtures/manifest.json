@@ -2,7 +2,7 @@
   "fixture_version": 1,
   "upstream_package": "json-joy",
   "upstream_version": "17.67.0",
-  "fixture_count": 106,
+  "fixture_count": 150,
   "fixtures": [
     {
       "name": "diff_root_number_to_number_v1",
@@ -495,6 +495,126 @@
       "file": "model_roundtrip_random_20_v1.json"
     },
     {
+      "name": "model_roundtrip_random_21_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_21_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_22_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_22_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_23_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_23_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_24_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_24_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_25_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_25_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_26_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_26_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_27_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_27_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_28_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_28_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_29_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_29_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_30_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_30_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_31_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_31_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_32_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_32_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_33_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_33_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_34_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_34_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_35_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_35_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_36_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_36_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_37_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_37_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_38_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_38_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_39_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_39_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_40_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_40_v1.json"
+    },
+    {
+      "name": "model_roundtrip_vec_sparse_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_vec_sparse_v1.json"
+    },
+    {
+      "name": "model_roundtrip_bin_tombstone_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_bin_tombstone_v1.json"
+    },
+    {
+      "name": "model_roundtrip_str_tombstone_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_str_tombstone_v1.json"
+    },
+    {
+      "name": "model_roundtrip_arr_tombstone_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_arr_tombstone_v1.json"
+    },
+    {
       "name": "model_decode_error_empty_v1",
       "scenario": "model_decode_error",
       "file": "model_decode_error_empty_v1.json"
@@ -533,6 +653,106 @@
       "name": "model_decode_error_long_random_v1",
       "scenario": "model_decode_error",
       "file": "model_decode_error_long_random_v1.json"
+    },
+    {
+      "name": "model_decode_error_clock_offset_overflow_v1",
+      "scenario": "model_decode_error",
+      "file": "model_decode_error_clock_offset_overflow_v1.json"
+    },
+    {
+      "name": "model_decode_error_clock_offset_truncated_v1",
+      "scenario": "model_decode_error",
+      "file": "model_decode_error_clock_offset_truncated_v1.json"
+    },
+    {
+      "name": "model_decode_error_clock_table_len_zero_v1",
+      "scenario": "model_decode_error",
+      "file": "model_decode_error_clock_table_len_zero_v1.json"
+    },
+    {
+      "name": "model_decode_error_clock_table_short_tuple_v1",
+      "scenario": "model_decode_error",
+      "file": "model_decode_error_clock_table_short_tuple_v1.json"
+    },
+    {
+      "name": "model_decode_error_clock_table_bad_varint_v1",
+      "scenario": "model_decode_error",
+      "file": "model_decode_error_clock_table_bad_varint_v1.json"
+    },
+    {
+      "name": "model_decode_error_trunc_con_v1",
+      "scenario": "model_decode_error",
+      "file": "model_decode_error_trunc_con_v1.json"
+    },
+    {
+      "name": "model_decode_error_trunc_obj_v1",
+      "scenario": "model_decode_error",
+      "file": "model_decode_error_trunc_obj_v1.json"
+    },
+    {
+      "name": "model_decode_error_trunc_vec_v1",
+      "scenario": "model_decode_error",
+      "file": "model_decode_error_trunc_vec_v1.json"
+    },
+    {
+      "name": "model_decode_error_trunc_str_v1",
+      "scenario": "model_decode_error",
+      "file": "model_decode_error_trunc_str_v1.json"
+    },
+    {
+      "name": "model_decode_error_trunc_bin_v1",
+      "scenario": "model_decode_error",
+      "file": "model_decode_error_trunc_bin_v1.json"
+    },
+    {
+      "name": "model_decode_error_trunc_arr_v1",
+      "scenario": "model_decode_error",
+      "file": "model_decode_error_trunc_arr_v1.json"
+    },
+    {
+      "name": "model_decode_error_server_bad_preamble_v1",
+      "scenario": "model_decode_error",
+      "file": "model_decode_error_server_bad_preamble_v1.json"
+    },
+    {
+      "name": "model_decode_error_server_trunc_time_v1",
+      "scenario": "model_decode_error",
+      "file": "model_decode_error_server_trunc_time_v1.json"
+    },
+    {
+      "name": "model_decode_error_mixed_server_logical_v1",
+      "scenario": "model_decode_error",
+      "file": "model_decode_error_mixed_server_logical_v1.json"
+    },
+    {
+      "name": "model_canonical_encode_logical_scalar_v1",
+      "scenario": "model_canonical_encode",
+      "file": "model_canonical_encode_logical_scalar_v1.json"
+    },
+    {
+      "name": "model_canonical_encode_logical_object_v1",
+      "scenario": "model_canonical_encode",
+      "file": "model_canonical_encode_logical_object_v1.json"
+    },
+    {
+      "name": "model_canonical_encode_logical_vec_v1",
+      "scenario": "model_canonical_encode",
+      "file": "model_canonical_encode_logical_vec_v1.json"
+    },
+    {
+      "name": "model_canonical_encode_logical_bin_v1",
+      "scenario": "model_canonical_encode",
+      "file": "model_canonical_encode_logical_bin_v1.json"
+    },
+    {
+      "name": "model_canonical_encode_server_scalar_v1",
+      "scenario": "model_canonical_encode",
+      "file": "model_canonical_encode_server_scalar_v1.json"
+    },
+    {
+      "name": "model_canonical_encode_server_arr_v1",
+      "scenario": "model_canonical_encode",
+      "file": "model_canonical_encode_server_arr_v1.json"
     }
   ]
 }

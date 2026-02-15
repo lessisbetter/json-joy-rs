@@ -1,0 +1,66 @@
+{
+  "fixture_version": 1,
+  "name": "model_roundtrip_random_39_v1",
+  "scenario": "model_roundtrip",
+  "input": {
+    "sid": 73138,
+    "data": {
+      "7unv": {
+        "fivrqfcw": null,
+        "wgnml8qz0": {},
+        "iesglimehz": {
+          "4emmzzcv": [
+            "ymeetz4o",
+            null
+          ],
+          "f4cow4e": {
+            "0pr4l2u": "q",
+            "7sfocx": -77.7,
+            "fxrft0sxe": true,
+            "4apo6j": "4hm"
+          }
+        },
+        "l0yda0sa0": [
+          [],
+          {
+            "l": false
+          },
+          "htvhqsg40eej4r9"
+        ]
+      }
+    }
+  },
+  "expected": {
+    "model_binary_hex": "000000de8139416437756e7681384478086669767271666377813700f6780977676e6d6c38717a30813640780a696573676c696d65687a813542780834656d6d7a7a63768134c181270281338181327808796d6565747a346f812a20812900f678076634636f7734658125447807307072346c32758124818123617178063773666f6378812200fbc0536ccccccccccd7809667872667430737865812100f578063461706f366a812081811f6334686d78096c3079646130736130811ac115038119c0811841616c811700f48115818114780f68747668717367343065656a34723901b2bb043a",
+    "view_json": {
+      "7unv": {
+        "fivrqfcw": null,
+        "wgnml8qz0": {},
+        "iesglimehz": {
+          "4emmzzcv": [
+            "ymeetz4o",
+            null
+          ],
+          "f4cow4e": {
+            "0pr4l2u": "q",
+            "7sfocx": -77.7,
+            "fxrft0sxe": true,
+            "4apo6j": "4hm"
+          }
+        },
+        "l0yda0sa0": [
+          [],
+          {
+            "l": false
+          },
+          "htvhqsg40eej4r9"
+        ]
+      }
+    }
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

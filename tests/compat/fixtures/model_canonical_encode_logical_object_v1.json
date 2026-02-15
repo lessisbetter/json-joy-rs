@@ -1,0 +1,55 @@
+{
+  "fixture_version": 1,
+  "name": "model_canonical_encode_logical_object_v1",
+  "scenario": "model_canonical_encode",
+  "input": {
+    "mode": "logical",
+    "clock_table": [
+      [
+        74111,
+        1
+      ]
+    ],
+    "root": {
+      "id": [
+        74111,
+        1
+      ],
+      "kind": "obj",
+      "entries": [
+        {
+          "key": "a",
+          "value": {
+            "id": [
+              74111,
+              2
+            ],
+            "kind": "con",
+            "value": 1
+          }
+        },
+        {
+          "key": "b",
+          "value": {
+            "id": [
+              74111,
+              3
+            ],
+            "kind": "con",
+            "value": "x"
+          }
+        }
+      ]
+    }
+  },
+  "expected": {
+    "model_binary_hex": "0000000d0042616101000161620200617801ffc20401",
+    "view_json": null,
+    "decode_error_message": "NO_ERROR"
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

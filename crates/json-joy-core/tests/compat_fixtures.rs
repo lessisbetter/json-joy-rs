@@ -104,6 +104,20 @@ fn every_manifest_fixture_file_exists_and_has_required_keys() {
                     "model_decode_error fixtures must define expected.error_message"
                 );
             }
+            "model_canonical_encode" => {
+                assert!(
+                    fixture["input"].is_object(),
+                    "model_canonical_encode fixtures must define input object"
+                );
+                assert!(
+                    fixture["expected"]["model_binary_hex"].is_string(),
+                    "model_canonical_encode fixtures must define expected.model_binary_hex"
+                );
+                assert!(
+                    fixture["expected"].get("view_json").is_some(),
+                    "model_canonical_encode fixtures must define expected.view_json"
+                );
+            }
             other => panic!("unexpected fixture scenario: {other}"),
         }
     }
@@ -127,6 +141,21 @@ fn manifest_contains_required_scenarios() {
     let has_model_decode_error = fixtures
         .iter()
         .any(|f| f["scenario"].as_str() == Some("model_decode_error"));
+    let has_model_canonical_encode = fixtures
+        .iter()
+        .any(|f| f["scenario"].as_str() == Some("model_canonical_encode"));
+    let model_roundtrip_count = fixtures
+        .iter()
+        .filter(|f| f["scenario"].as_str() == Some("model_roundtrip"))
+        .count();
+    let model_decode_error_count = fixtures
+        .iter()
+        .filter(|f| f["scenario"].as_str() == Some("model_decode_error"))
+        .count();
+    let model_canonical_encode_count = fixtures
+        .iter()
+        .filter(|f| f["scenario"].as_str() == Some("model_canonical_encode"))
+        .count();
     let has_patch_canonical_encode = fixtures
         .iter()
         .any(|f| f["scenario"].as_str() == Some("patch_canonical_encode"));
@@ -141,5 +170,21 @@ fn manifest_contains_required_scenarios() {
     assert!(
         has_model_decode_error,
         "fixtures must include model_decode_error scenarios"
+    );
+    assert!(
+        has_model_canonical_encode,
+        "fixtures must include model_canonical_encode scenarios"
+    );
+    assert!(
+        model_roundtrip_count >= 60,
+        "fixtures must include at least 60 model_roundtrip scenarios"
+    );
+    assert!(
+        model_decode_error_count >= 20,
+        "fixtures must include at least 20 model_decode_error scenarios"
+    );
+    assert!(
+        model_canonical_encode_count >= 6,
+        "fixtures must include at least 6 model_canonical_encode scenarios"
     );
 }

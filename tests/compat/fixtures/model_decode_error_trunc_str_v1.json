@@ -1,0 +1,16 @@
+{
+  "fixture_version": 1,
+  "name": "model_decode_error_trunc_str_v1",
+  "scenario": "model_decode_error",
+  "input": {
+    "model_binary_hex": "000000000000400110"
+  },
+  "expected": {
+    "error_message": "NO_ERROR"
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

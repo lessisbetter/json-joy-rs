@@ -4,45 +4,11 @@
   "scenario": "model_roundtrip",
   "input": {
     "sid": 73114,
-    "data": [
-      {
-        "rwike82ntc": [],
-        "c6buyf6n": {
-          "91n": 18.1,
-          "a99": "p2fluwtvtxi",
-          "c6ikiowj1e": -64.2
-        }
-      },
-      {
-        "eqsls72oi": [
-          20,
-          "1g7i",
-          "c7cipjgdt6pxc",
-          true
-        ]
-      }
-    ]
+    "data": false
   },
   "expected": {
-    "model_binary_hex": "0000009f8136c11202813542780a7277696b6538326e74638134c07808633662757966366e8133436339316e813200fb403219999999999a636139398131818130780b7032666c75777476747869780a6336696b696f776a3165812500fbc0500ccccccccccd81224178096571736c7337326f698121c11704812020811f0014811d81811c64316737698118818117780d63376369706a676474367078631a201900f5019abb0437",
-    "view_json": [
-      {
-        "rwike82ntc": [],
-        "c6buyf6n": {
-          "91n": 18.1,
-          "a99": "p2fluwtvtxi",
-          "c6ikiowj1e": -64.2
-        }
-      },
-      {
-        "eqsls72oi": [
-          20,
-          "1g7i",
-          "c7cipjgdt6pxc",
-          true
-        ]
-      }
-    ]
+    "model_binary_hex": "000000031100f4019abb0402",
+    "view_json": false
   },
   "meta": {
     "upstream_package": "json-joy",

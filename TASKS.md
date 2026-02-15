@@ -17,6 +17,10 @@
 - [x] Add failing model compatibility tests.
 - [x] Implement model binary decode parity baseline (accept/reject + roundtrip).
 - [x] Implement model `view()` materialization parity from binary.
+- [x] Expand model roundtrip corpus to >= 60 (including vec/bin and tombstones).
+- [x] Expand model decode-error corpus to >= 20 malformed classes.
+- [x] Add `model_canonical_encode` fixture scenario and parity tests.
+- [x] Refactor decoder phases and centralize malformed compatibility classes.
 
 ## M3: Patch Application + Clock Semantics
 

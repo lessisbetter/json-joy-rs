@@ -1,0 +1,60 @@
+{
+  "fixture_version": 1,
+  "name": "model_roundtrip_random_23_v1",
+  "scenario": "model_roundtrip",
+  "input": {
+    "sid": 73122,
+    "data": [
+      null,
+      false,
+      63.6,
+      {
+        "e8t0c": [
+          -75.2,
+          true,
+          {
+            "n": 66.4,
+            "iy4jhmeljt": 89.6,
+            "klo": true,
+            "bxry": -13.7
+          }
+        ],
+        "f7": null,
+        "c": [
+          false,
+          "crxayk6"
+        ]
+      }
+    ]
+  },
+  "expected": {
+    "model_binary_hex": "000000aa812fc11404812e20812d00f6812b20812a00f4812820812700fb404fcccccccccccd8125436565387430638124c1811703812320812200fbc052cccccccccccd812020811f00f5811d44616e811c00fb405099999999999a780a6979346a686d656c6a74811b00fb4056666666666666636b6c6f811a00f56462787279811900fbc02b666666666666626637811400f661638113c11702811220811100f41f811e780763727861796b3601a2bb0430",
+    "view_json": [
+      null,
+      false,
+      63.6,
+      {
+        "e8t0c": [
+          -75.2,
+          true,
+          {
+            "n": 66.4,
+            "iy4jhmeljt": 89.6,
+            "klo": true,
+            "bxry": -13.7
+          }
+        ],
+        "f7": null,
+        "c": [
+          false,
+          "crxayk6"
+        ]
+      }
+    ]
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

@@ -4,11 +4,61 @@
   "scenario": "model_roundtrip",
   "input": {
     "sid": 73105,
-    "data": ""
+    "data": {
+      "aspt79lm6g": "xwy6pv",
+      "ybf6": [
+        {
+          "6": -19.2,
+          "jkosh3wz": {
+            "9": "u31i",
+            "o01fhjd": "1kml1yscnm",
+            "47satr": 97.2
+          },
+          "lionw": {}
+        },
+        {},
+        {
+          "n14g": [
+            null,
+            -8.4,
+            "wsy1wvcg"
+          ],
+          "a0952cnh5t": true,
+          "irffupmg": "li93idd4",
+          "3w8lzyb": "f"
+        },
+        "71arrehcse25mua"
+      ]
+    }
   },
   "expected": {
-    "model_binary_hex": "0000000211800191bb0402",
-    "view_json": ""
+    "model_binary_hex": "0000010c815742780a6173707437396c6d3667815681815578067877793670766479626636814fc11504814e436136814d00fbc03333333333333378086a6b6f736833777a814c436139814b81814a647533316978076f303166686a648146818145780a316b6d6c317973636e6d7806343773617472813b00fb40584ccccccccccd656c696f6e77813940813740813644646e3134678135c1812503813420813300f6813120813000fbc020cccccccccccd812e81812d78087773793177766367780a6130393532636e683574812200f578086972666675706d67812181812078086c6939336964643478073377386c7a7962811881811761668115818114780f3731617272656863736532356d75610191bb0458",
+    "view_json": {
+      "aspt79lm6g": "xwy6pv",
+      "ybf6": [
+        {
+          "6": -19.2,
+          "jkosh3wz": {
+            "9": "u31i",
+            "o01fhjd": "1kml1yscnm",
+            "47satr": 97.2
+          },
+          "lionw": {}
+        },
+        {},
+        {
+          "n14g": [
+            null,
+            -8.4,
+            "wsy1wvcg"
+          ],
+          "a0952cnh5t": true,
+          "irffupmg": "li93idd4",
+          "3w8lzyb": "f"
+        },
+        "71arrehcse25mua"
+      ]
+    }
   },
   "meta": {
     "upstream_package": "json-joy",

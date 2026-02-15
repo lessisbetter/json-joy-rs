@@ -69,7 +69,7 @@ fn model_roundtrip_fixtures_decode_view_and_roundtrip_binary() {
         );
     }
 
-    assert!(seen >= 40, "expected at least 40 model_roundtrip fixtures");
+    assert!(seen >= 60, "expected at least 60 model_roundtrip fixtures");
 }
 
 #[test]
@@ -113,5 +113,5 @@ fn model_decode_error_fixtures_reject_binary_when_oracle_rejects() {
         }
     }
 
-    assert!(seen >= 8, "expected at least 8 model_decode_error fixtures");
+    assert!(seen >= 20, "expected at least 20 model_decode_error fixtures");
 }

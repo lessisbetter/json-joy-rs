@@ -4,61 +4,23 @@
   "scenario": "model_roundtrip",
   "input": {
     "sid": 73106,
-    "data": {
-      "aspt79lm6g": "xwy6pv",
-      "ybf6": [
-        {
-          "jkosh3wz": "xo01fhjd9w1k",
-          "l1ys": null,
-          "mt47": -96.8
-        },
-        [
-          97.2,
-          null
-        ],
-        {
-          "6": null,
-          "u31": true,
-          "ionw": "",
-          "o2e84": true
-        },
-        {
-          "tz": null,
-          "q8rwsy": "vcg8a0952c",
-          "h5tj": true,
-          "irffupmg": null
-        }
-      ]
-    }
+    "data": [
+      [],
+      {
+        "7n2wlqsa": 81.7,
+        "o": "qlgzy4hf"
+      }
+    ]
   },
   "expected": {
-    "model_binary_hex": "000000d7813e42780a6173707437396c6d3667813d81813c780678777936707664796266368136c1150481354378086a6b6f736833777a8134818133780c786f303166686a643977316b646c317973812700f6646d743437812600fbc0583333333333338124c1811d02812320812200fb40584ccccccccccd812020811f00f6811b446136811a00f663753331811900f564696f6e77811880656f32653834811700f581154462747a811400f678067138727773798113818112780a76636738613039353263646835746a1800f578086972666675706d671700f60192bb043f",
-    "view_json": {
-      "aspt79lm6g": "xwy6pv",
-      "ybf6": [
-        {
-          "jkosh3wz": "xo01fhjd9w1k",
-          "l1ys": null,
-          "mt47": -96.8
-        },
-        [
-          97.2,
-          null
-        ],
-        {
-          "6": null,
-          "u31": true,
-          "ionw": "",
-          "o2e84": true
-        },
-        {
-          "tz": null,
-          "q8rwsy": "vcg8a0952c",
-          "h5tj": true,
-          "irffupmg": null
-        }
-      ]
-    }
+    "model_binary_hex": "0000002d8110c112021fc01e427808376e32776c7173611d00fb40546ccccccccccd616f1c811b7808716c677a793468660192bb0411",
+    "view_json": [
+      [],
+      {
+        "7n2wlqsa": 81.7,
+        "o": "qlgzy4hf"
+      }
+    ]
   },
   "meta": {
     "upstream_package": "json-joy",

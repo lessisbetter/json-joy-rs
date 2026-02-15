@@ -1,0 +1,29 @@
+{
+  "fixture_version": 1,
+  "name": "model_roundtrip_vec_sparse_v1",
+  "scenario": "model_roundtrip",
+  "input": {
+    "sid": 73201,
+    "recipe": "patch_apply",
+    "ops": [
+      "new_vec",
+      "ins_val",
+      "new_con",
+      "new_con",
+      "ins_vec"
+    ]
+  },
+  "expected": {
+    "model_binary_hex": "0000000a1463120007001100617801f1bb0405",
+    "view_json": [
+      7,
+      null,
+      "x"
+    ]
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

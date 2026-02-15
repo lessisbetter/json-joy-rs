@@ -4,11 +4,39 @@
   "scenario": "model_roundtrip",
   "input": {
     "sid": 73111,
-    "data": {}
+    "data": {
+      "mbbgcmccga": null,
+      "a9bxp": [
+        null,
+        {
+          "3yi001akp3": {
+            "jp9z29u": "beiwv446re9d",
+            "sct0": false
+          }
+        },
+        {}
+      ],
+      "7j05wbqxor": 80,
+      "x": {}
+    }
   },
   "expected": {
-    "model_binary_hex": "0000000211400197bb0402",
-    "view_json": {}
+    "model_binary_hex": "00000071811f44780a6d626267636d63636761811e00f6656139627870811dc11603811c20811b00f6811941780a337969303031616b703381184278076a70397a3239758117818116780c62656977763434367265396464736374301a00f41740780a376a3035776271786f7213001850617812400197bb0420",
+    "view_json": {
+      "mbbgcmccga": null,
+      "a9bxp": [
+        null,
+        {
+          "3yi001akp3": {
+            "jp9z29u": "beiwv446re9d",
+            "sct0": false
+          }
+        },
+        {}
+      ],
+      "7j05wbqxor": 80,
+      "x": {}
+    }
   },
   "meta": {
     "upstream_package": "json-joy",

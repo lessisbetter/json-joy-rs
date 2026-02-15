@@ -186,6 +186,10 @@ Deliverables:
 
 Exit criteria:
 - Model binary fixtures pass.
+- `model_roundtrip` fixture count >= 60.
+- `model_decode_error` fixture count >= 20.
+- `model_canonical_encode` fixture count >= 6 with exact byte parity tests.
+- Decoder malformed-input compatibility is fixture-backed and documented.
 
 ## M3: Apply Patch + Clock Semantics
 
@@ -254,4 +258,3 @@ Until compatibility baseline is complete, defer:
 2. Add `tools/oracle-node` fixture generator pinned to `json-joy@17.67.0`.
 3. Commit first fixture set (model/patch roundtrip + merge/idempotence basics).
 4. Implement M1 patch codec against golden fixtures.
-

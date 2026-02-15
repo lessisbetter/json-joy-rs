@@ -5,15 +5,21 @@ const patchLib = require('json-joy/lib/json-crdt-patch/index.js');
 const {
   Patch,
   ts,
+  tss,
   NewConOp,
   NewValOp,
   NewObjOp,
+  NewVecOp,
   NewStrOp,
+  NewBinOp,
   NewArrOp,
   InsValOp,
   InsObjOp,
+  InsVecOp,
   InsStrOp,
+  InsBinOp,
   InsArrOp,
+  DelOp,
   NopOp,
 } = patchLib;
 
@@ -441,10 +447,14 @@ function buildModelFixture(name, sid, data) {
   const model = sid === 1 ? Model.withServerClock(undefined, 1) : Model.create(undefined, sid);
   model.api.set(cloneJson(data));
   model.api.flush();
+  return buildModelFixtureFromModel(name, model, {sid, data});
+}
+
+function buildModelFixtureFromModel(name, model, input) {
   const binary = model.toBinary();
   const restored = Model.fromBinary(binary);
 
-  return baseFixture(name, 'model_roundtrip', {sid, data}, {
+  return baseFixture(name, 'model_roundtrip', input, {
     model_binary_hex: hex(binary),
     view_json: restored.view()
   });
@@ -479,15 +489,93 @@ function allModelFixtures() {
   ];
 
   const rng = mulberry32(0x5eedC0de);
-  for (let i = 0; i < 20; i++) {
+  for (let i = 0; i < 40; i++) {
     cases.push({
       name: `model_roundtrip_random_${String(i + 1).padStart(2, '0')}_v1`,
       sid: 73100 + i,
-      data: randJson(rng, 3),
+      data: randJson(rng, 4),
     });
   }
 
-  return cases.map((c) => buildModelFixture(c.name, c.sid, c.data));
+  const fixtures = cases.map((c) => buildModelFixture(c.name, c.sid, c.data));
+
+  {
+    const sid = 73201;
+    const model = Model.create(undefined, sid);
+    const patch = new Patch();
+    patch.ops.push(new NewVecOp(ts(sid, 1)));
+    patch.ops.push(new InsValOp(ts(sid, 2), ts(0, 0), ts(sid, 1)));
+    patch.ops.push(new NewConOp(ts(sid, 3), 7));
+    patch.ops.push(new NewConOp(ts(sid, 4), 'x'));
+    patch.ops.push(new InsVecOp(ts(sid, 5), ts(sid, 1), [[0, ts(sid, 3)], [2, ts(sid, 4)]]));
+    model.applyPatch(patch);
+    fixtures.push(
+      buildModelFixtureFromModel('model_roundtrip_vec_sparse_v1', model, {
+        sid,
+        recipe: 'patch_apply',
+        ops: ['new_vec', 'ins_val', 'new_con', 'new_con', 'ins_vec'],
+      }),
+    );
+  }
+
+  {
+    const sid = 73202;
+    const model = Model.create(undefined, sid);
+    const patch = new Patch();
+    patch.ops.push(new NewBinOp(ts(sid, 1)));
+    patch.ops.push(new InsValOp(ts(sid, 2), ts(0, 0), ts(sid, 1)));
+    patch.ops.push(new InsBinOp(ts(sid, 3), ts(sid, 1), ts(sid, 1), new Uint8Array([1, 2, 3, 4])));
+    patch.ops.push(new DelOp(ts(sid, 7), ts(sid, 1), [tss(sid, 4, 1)]));
+    model.applyPatch(patch);
+    fixtures.push(
+      buildModelFixtureFromModel('model_roundtrip_bin_tombstone_v1', model, {
+        sid,
+        recipe: 'patch_apply',
+        ops: ['new_bin', 'ins_val', 'ins_bin', 'del'],
+      }),
+    );
+  }
+
+  {
+    const sid = 73203;
+    const model = Model.create(undefined, sid);
+    const patch = new Patch();
+    patch.ops.push(new NewStrOp(ts(sid, 1)));
+    patch.ops.push(new InsValOp(ts(sid, 2), ts(0, 0), ts(sid, 1)));
+    patch.ops.push(new InsStrOp(ts(sid, 3), ts(sid, 1), ts(sid, 1), 'abcd'));
+    patch.ops.push(new DelOp(ts(sid, 7), ts(sid, 1), [tss(sid, 4, 1)]));
+    model.applyPatch(patch);
+    fixtures.push(
+      buildModelFixtureFromModel('model_roundtrip_str_tombstone_v1', model, {
+        sid,
+        recipe: 'patch_apply',
+        ops: ['new_str', 'ins_val', 'ins_str', 'del'],
+      }),
+    );
+  }
+
+  {
+    const sid = 73204;
+    const model = Model.create(undefined, sid);
+    const patch = new Patch();
+    patch.ops.push(new NewArrOp(ts(sid, 1)));
+    patch.ops.push(new InsValOp(ts(sid, 2), ts(0, 0), ts(sid, 1)));
+    patch.ops.push(new NewConOp(ts(sid, 3), 1));
+    patch.ops.push(new NewConOp(ts(sid, 4), 2));
+    patch.ops.push(new NewConOp(ts(sid, 5), 3));
+    patch.ops.push(new InsArrOp(ts(sid, 6), ts(sid, 1), ts(sid, 1), [ts(sid, 3), ts(sid, 4), ts(sid, 5)]));
+    patch.ops.push(new DelOp(ts(sid, 9), ts(sid, 1), [tss(sid, 7, 1)]));
+    model.applyPatch(patch);
+    fixtures.push(
+      buildModelFixtureFromModel('model_roundtrip_arr_tombstone_v1', model, {
+        sid,
+        recipe: 'patch_apply',
+        ops: ['new_arr', 'ins_val', 'new_con', 'new_con', 'new_con', 'ins_arr', 'del'],
+      }),
+    );
+  }
+
+  return fixtures;
 }
 
 function buildModelDecodeErrorFixture(name, modelBinaryHex) {
@@ -513,10 +601,331 @@ function allModelDecodeErrorFixtures() {
     {name: 'model_decode_error_random_8_v1', hex: '0123456789abcdef'},
     {name: 'model_decode_error_ff_16_v1', hex: 'ffffffffffffffffffffffffffffffff'},
     {name: 'model_decode_error_ascii_json_v1', hex: Buffer.from('{\"x\":1}', 'utf8').toString('hex')},
-    {name: 'model_decode_error_long_random_v1', hex: 'abcd'.repeat(32)}
+    {name: 'model_decode_error_long_random_v1', hex: 'abcd'.repeat(32)},
+    {name: 'model_decode_error_clock_offset_overflow_v1', hex: 'ffffffff000000'},
+    {name: 'model_decode_error_clock_offset_truncated_v1', hex: '00000010ffff'},
+    {name: 'model_decode_error_clock_table_len_zero_v1', hex: '000000008000'},
+    {name: 'model_decode_error_clock_table_short_tuple_v1', hex: '000000000181'},
+    {name: 'model_decode_error_clock_table_bad_varint_v1', hex: '0000000001808080808080808080'},
+    {name: 'model_decode_error_trunc_con_v1', hex: '0000000000001000'},
+    {name: 'model_decode_error_trunc_obj_v1', hex: '000000000000204100'},
+    {name: 'model_decode_error_trunc_vec_v1', hex: '0000000000003001'},
+    {name: 'model_decode_error_trunc_str_v1', hex: '000000000000400110'},
+    {name: 'model_decode_error_trunc_bin_v1', hex: '000000000000500110'},
+    {name: 'model_decode_error_trunc_arr_v1', hex: '000000000000600110'},
+    {name: 'model_decode_error_server_bad_preamble_v1', hex: '80'},
+    {name: 'model_decode_error_server_trunc_time_v1', hex: '8080'},
+    {name: 'model_decode_error_mixed_server_logical_v1', hex: '800100000000'},
   ];
 
   return invalid.map((v) => buildModelDecodeErrorFixture(v.name, v.hex));
+}
+
+function utf8Bytes(s) {
+  return Buffer.from(s, 'utf8');
+}
+
+function writeU32be(out, n) {
+  out.push((n >>> 24) & 0xff, (n >>> 16) & 0xff, (n >>> 8) & 0xff, n & 0xff);
+}
+
+function writeVu57(out, n) {
+  let value = n >>> 0;
+  let hi = Math.floor(n / 0x100000000);
+  for (let i = 0; i < 7; i++) {
+    const b = value & 0x7f;
+    value = (value >>> 7) | ((hi & 0x7f) << 25);
+    hi = hi >>> 7;
+    if (value === 0 && hi === 0) {
+      out.push(b);
+      return;
+    }
+    out.push(b | 0x80);
+  }
+  out.push(value & 0xff);
+}
+
+function writeB1vu56(out, flag, n) {
+  let value = n;
+  const low6 = value & 0x3f;
+  value = Math.floor(value / 64);
+  let first = ((flag & 1) << 7) | low6;
+  if (value === 0) {
+    out.push(first);
+    return;
+  }
+  first |= 0x40;
+  out.push(first);
+  for (let i = 0; i < 6; i++) {
+    const b = value & 0x7f;
+    value = Math.floor(value / 128);
+    if (value === 0) {
+      out.push(b);
+      return;
+    }
+    out.push(b | 0x80);
+  }
+  out.push(value & 0xff);
+}
+
+function writeCbor(out, v) {
+  if (v === null) {
+    out.push(0xf6);
+    return;
+  }
+  if (v === undefined) {
+    out.push(0xf7);
+    return;
+  }
+  if (typeof v === 'boolean') {
+    out.push(v ? 0xf5 : 0xf4);
+    return;
+  }
+  if (typeof v === 'number') {
+    if (!Number.isInteger(v)) throw new Error('canonical encoder supports integer numbers only');
+    if (v >= 0) writeCborMajor(out, 0, v);
+    else writeCborMajor(out, 1, -1 - v);
+    return;
+  }
+  if (typeof v === 'string') {
+    const b = utf8Bytes(v);
+    writeCborMajor(out, 3, b.length);
+    for (const x of b) out.push(x);
+    return;
+  }
+  throw new Error(`unsupported cbor value: ${v}`);
+}
+
+function writeCborMajor(out, major, n) {
+  if (n < 24) {
+    out.push((major << 5) | n);
+  } else if (n < 256) {
+    out.push((major << 5) | 24, n);
+  } else if (n < 65536) {
+    out.push((major << 5) | 25, (n >> 8) & 0xff, n & 0xff);
+  } else {
+    out.push((major << 5) | 26, (n >> 24) & 0xff, (n >> 16) & 0xff, (n >> 8) & 0xff, n & 0xff);
+  }
+}
+
+function makeLogicalIdWriter(clockTable) {
+  const indexBySid = new Map();
+  const baseBySid = new Map();
+  for (let i = 0; i < clockTable.length; i++) {
+    indexBySid.set(clockTable[i][0], i);
+    baseBySid.set(clockTable[i][0], clockTable[i][1]);
+  }
+  return (out, id) => {
+    const sid = id[0];
+    const time = id[1];
+    const idx = indexBySid.get(sid);
+    if (idx === undefined) throw new Error(`sid ${sid} missing from clock_table`);
+    const base = baseBySid.get(sid);
+    const diff = time - base;
+    if (idx <= 7 && diff >= 0 && diff <= 15) out.push((idx << 4) | diff);
+    else {
+      writeB1vu56(out, 0, idx);
+      writeVu57(out, diff);
+    }
+  };
+}
+
+function encodeModelCanonical(input) {
+  const mode = input.mode;
+  const root = input.root;
+  const rootBytes = [];
+  const encodeId =
+    mode === 'server'
+      ? (out, id) => writeVu57(out, id[1])
+      : makeLogicalIdWriter(input.clock_table);
+
+  const writeNode = (out, node) => {
+    encodeId(out, node.id);
+    const kind = node.kind;
+    switch (kind) {
+      case 'con': {
+        out.push(0b00000000);
+        writeCbor(out, node.value);
+        break;
+      }
+      case 'val': {
+        out.push(0b00100000);
+        writeNode(out, node.child);
+        break;
+      }
+      case 'obj': {
+        const entries = node.entries || [];
+        writeTypeLen(out, 2, entries.length);
+        for (const e of entries) {
+          writeCbor(out, e.key);
+          writeNode(out, e.value);
+        }
+        break;
+      }
+      case 'vec': {
+        const values = node.values || [];
+        writeTypeLen(out, 3, values.length);
+        for (const v of values) {
+          if (v === null) out.push(0);
+          else writeNode(out, v);
+        }
+        break;
+      }
+      case 'str': {
+        const chunks = node.chunks || [];
+        writeTypeLen(out, 4, chunks.length);
+        for (const ch of chunks) {
+          encodeId(out, ch.id);
+          if (Object.prototype.hasOwnProperty.call(ch, 'text')) writeCbor(out, ch.text);
+          else writeCbor(out, ch.deleted);
+        }
+        break;
+      }
+      case 'bin': {
+        const chunks = node.chunks || [];
+        writeTypeLen(out, 5, chunks.length);
+        for (const ch of chunks) {
+          encodeId(out, ch.id);
+          if (Object.prototype.hasOwnProperty.call(ch, 'deleted')) {
+            writeB1vu56(out, 1, ch.deleted);
+          } else {
+            const b = fromHex(ch.bytes_hex);
+            writeB1vu56(out, 0, b.length);
+            for (const x of b) out.push(x);
+          }
+        }
+        break;
+      }
+      case 'arr': {
+        const chunks = node.chunks || [];
+        writeTypeLen(out, 6, chunks.length);
+        for (const ch of chunks) {
+          encodeId(out, ch.id);
+          if (Object.prototype.hasOwnProperty.call(ch, 'deleted')) {
+            writeB1vu56(out, 1, ch.deleted);
+          } else {
+            const vals = ch.values || [];
+            writeB1vu56(out, 0, vals.length);
+            for (const v of vals) writeNode(out, v);
+          }
+        }
+        break;
+      }
+      default:
+        throw new Error(`unsupported canonical model kind: ${kind}`);
+    }
+  };
+
+  const writeTypeLen = (out, major, len) => {
+    if (len < 31) out.push((major << 5) | len);
+    else {
+      out.push((major << 5) | 31);
+      writeVu57(out, len);
+    }
+  };
+
+  writeNode(rootBytes, root);
+
+  if (mode === 'server') {
+    const out = [];
+    out.push(0x80);
+    writeVu57(out, input.server_time);
+    out.push(...rootBytes);
+    return new Uint8Array(out);
+  }
+
+  const out = [];
+  writeU32be(out, rootBytes.length);
+  out.push(...rootBytes);
+  const clockTable = input.clock_table;
+  writeVu57(out, clockTable.length);
+  for (const t of clockTable) {
+    writeVu57(out, t[0]);
+    writeVu57(out, t[1]);
+  }
+  return new Uint8Array(out);
+}
+
+function buildModelCanonicalEncodeFixture(name, input) {
+  const binary = encodeModelCanonical(input);
+  const restored = Model.fromBinary(binary);
+  const view = restored.view();
+  return baseFixture(name, 'model_canonical_encode', input, {
+    model_binary_hex: hex(binary),
+    view_json: view === undefined ? null : view,
+    decode_error_message: 'NO_ERROR',
+  });
+}
+
+function allModelCanonicalEncodeFixtures() {
+  const sid = 74111;
+  const clockTable = [[sid, 1]];
+  return [
+    buildModelCanonicalEncodeFixture('model_canonical_encode_logical_scalar_v1', {
+      mode: 'logical',
+      clock_table: clockTable,
+      root: {id: [sid, 1], kind: 'con', value: 7},
+    }),
+    buildModelCanonicalEncodeFixture('model_canonical_encode_logical_object_v1', {
+      mode: 'logical',
+      clock_table: clockTable,
+      root: {
+        id: [sid, 1],
+        kind: 'obj',
+        entries: [
+          {key: 'a', value: {id: [sid, 2], kind: 'con', value: 1}},
+          {key: 'b', value: {id: [sid, 3], kind: 'con', value: 'x'}},
+        ],
+      },
+    }),
+    buildModelCanonicalEncodeFixture('model_canonical_encode_logical_vec_v1', {
+      mode: 'logical',
+      clock_table: clockTable,
+      root: {
+        id: [sid, 1],
+        kind: 'vec',
+        values: [
+          {id: [sid, 2], kind: 'con', value: 7},
+          null,
+          {id: [sid, 3], kind: 'con', value: 'x'},
+        ],
+      },
+    }),
+    buildModelCanonicalEncodeFixture('model_canonical_encode_logical_bin_v1', {
+      mode: 'logical',
+      clock_table: clockTable,
+      root: {
+        id: [sid, 1],
+        kind: 'bin',
+        chunks: [
+          {id: [sid, 2], bytes_hex: '01020304'},
+          {id: [sid, 6], deleted: 1},
+        ],
+      },
+    }),
+    buildModelCanonicalEncodeFixture('model_canonical_encode_server_scalar_v1', {
+      mode: 'server',
+      server_time: 5,
+      root: {id: [1, 5], kind: 'con', value: 'srv'},
+    }),
+    buildModelCanonicalEncodeFixture('model_canonical_encode_server_arr_v1', {
+      mode: 'server',
+      server_time: 9,
+      root: {
+        id: [1, 6],
+        kind: 'arr',
+        chunks: [
+          {
+            id: [1, 7],
+            values: [
+              {id: [1, 8], kind: 'con', value: 1},
+              {id: [1, 9], kind: 'con', value: 2},
+            ],
+          },
+        ],
+      },
+    }),
+  ];
 }
 
 function main() {
@@ -530,7 +939,8 @@ function main() {
     ...allDecodeErrorFixtures(),
     ...allCanonicalEncodeFixtures(),
     ...allModelFixtures(),
-    ...allModelDecodeErrorFixtures()
+    ...allModelDecodeErrorFixtures(),
+    ...allModelCanonicalEncodeFixtures(),
   ];
 
   for (const fixture of fixtures) {

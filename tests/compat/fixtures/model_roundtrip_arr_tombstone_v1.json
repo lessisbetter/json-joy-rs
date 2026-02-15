@@ -1,0 +1,30 @@
+{
+  "fixture_version": 1,
+  "name": "model_roundtrip_arr_tombstone_v1",
+  "scenario": "model_roundtrip",
+  "input": {
+    "sid": 73204,
+    "recipe": "patch_apply",
+    "ops": [
+      "new_arr",
+      "ins_val",
+      "new_con",
+      "new_con",
+      "new_con",
+      "ins_arr",
+      "del"
+    ]
+  },
+  "expected": {
+    "model_binary_hex": "0000000e18c313011600011281110114000301f4bb0409",
+    "view_json": [
+      1,
+      3
+    ]
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

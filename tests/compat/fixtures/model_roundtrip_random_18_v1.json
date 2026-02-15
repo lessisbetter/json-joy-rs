@@ -4,11 +4,11 @@
   "scenario": "model_roundtrip",
   "input": {
     "sid": 73117,
-    "data": false
+    "data": []
   },
   "expected": {
-    "model_binary_hex": "000000031100f4019dbb0402",
-    "view_json": false
+    "model_binary_hex": "0000000211c0019dbb0402",
+    "view_json": []
   },
   "meta": {
     "upstream_package": "json-joy",

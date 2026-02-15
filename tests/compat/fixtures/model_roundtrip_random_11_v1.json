@@ -4,21 +4,11 @@
   "scenario": "model_roundtrip",
   "input": {
     "sid": 73110,
-    "data": {
-      "z4jqrbo": "6x7q",
-      "rhinbv7d": null,
-      "88mbbgcmc": null,
-      "k": -95.4
-    }
+    "data": null
   },
   "expected": {
-    "model_binary_hex": "0000003b1a4478077a346a7172626f198118643678377178087268696e627637641400f6780938386d626267636d631300f6616b1200fbc057d9999999999a0196bb040b",
-    "view_json": {
-      "z4jqrbo": "6x7q",
-      "rhinbv7d": null,
-      "88mbbgcmc": null,
-      "k": -95.4
-    }
+    "model_binary_hex": "000000031100f60196bb0402",
+    "view_json": null
   },
   "meta": {
     "upstream_package": "json-joy",
