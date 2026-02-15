@@ -1,6 +1,7 @@
 //! Core primitives for json-joy-rs.
 
 pub mod patch;
+pub mod patch_log;
 
 use rand::Rng;
 
