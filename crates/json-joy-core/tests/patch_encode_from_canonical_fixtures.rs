@@ -1,8 +1,8 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use ciborium::value::{Integer, Value as CborValue};
-use json_joy_core::patch::Patch;
+use json_joy_core::patch::{ConValue, DecodedOp, Patch, Timespan, Timestamp};
+use json_joy_core::patch_builder::encode_patch_from_ops;
 use serde_json::Value;
 
 fn fixtures_dir() -> PathBuf {
@@ -39,208 +39,140 @@ fn as_str<'a>(v: &'a Value, label: &str) -> &'a str {
     v.as_str().unwrap_or_else(|| panic!("{label} must be string"))
 }
 
-fn as_ts(v: &Value, label: &str) -> (u64, u64) {
+fn as_ts(v: &Value, label: &str) -> Timestamp {
     let arr = v
         .as_array()
         .unwrap_or_else(|| panic!("{label} must be [sid,time]"));
     assert_eq!(arr.len(), 2, "{label} must have two elements");
-    (as_u64(&arr[0], "sid"), as_u64(&arr[1], "time"))
-}
-
-fn json_to_cbor(v: &Value) -> CborValue {
-    match v {
-        Value::Null => CborValue::Null,
-        Value::Bool(b) => CborValue::Bool(*b),
-        Value::Number(n) => {
-            if let Some(i) = n.as_i64() {
-                CborValue::Integer(Integer::from(i))
-            } else if let Some(u) = n.as_u64() {
-                CborValue::Integer(Integer::from(u))
-            } else {
-                CborValue::Float(n.as_f64().expect("finite f64") as f64)
-            }
-        }
-        Value::String(s) => CborValue::Text(s.clone()),
-        Value::Array(items) => CborValue::Array(items.iter().map(json_to_cbor).collect()),
-        Value::Object(map) => {
-            let mut out = Vec::with_capacity(map.len());
-            for (k, v) in map {
-                out.push((CborValue::Text(k.clone()), json_to_cbor(v)));
-            }
-            CborValue::Map(out)
-        }
+    Timestamp {
+        sid: as_u64(&arr[0], "sid"),
+        time: as_u64(&arr[1], "time"),
     }
 }
 
-#[derive(Default)]
-struct PatchWriter {
-    bytes: Vec<u8>,
-    patch_sid: u64,
-}
-
-impl PatchWriter {
-    fn new(patch_sid: u64) -> Self {
-        Self {
-            bytes: Vec::new(),
-            patch_sid,
-        }
-    }
-
-    fn vu57(&mut self, mut value: u64) {
-        for _ in 0..7 {
-            let mut b = (value & 0x7f) as u8;
-            value >>= 7;
-            if value == 0 {
-                self.bytes.push(b);
-                return;
-            }
-            b |= 0x80;
-            self.bytes.push(b);
-        }
-        self.bytes.push((value & 0xff) as u8);
-    }
-
-    fn b1vu56(&mut self, flag: u8, mut value: u64) {
-        let low6 = (value & 0x3f) as u8;
-        value >>= 6;
-        let mut first = (flag << 7) | low6;
-        if value == 0 {
-            self.bytes.push(first);
-            return;
-        }
-        first |= 0x40;
-        self.bytes.push(first);
-
-        for _ in 0..6 {
-            let mut b = (value & 0x7f) as u8;
-            value >>= 7;
-            if value == 0 {
-                self.bytes.push(b);
-                return;
-            }
-            b |= 0x80;
-            self.bytes.push(b);
-        }
-
-        self.bytes.push((value & 0xff) as u8);
-    }
-
-    fn encode_id(&mut self, sid: u64, time: u64) {
-        if sid == self.patch_sid {
-            self.b1vu56(0, time);
-        } else {
-            self.b1vu56(1, time);
-            self.vu57(sid);
-        }
-    }
-
-    fn push_cbor(&mut self, value: &CborValue) {
-        ciborium::ser::into_writer(value, &mut self.bytes).expect("CBOR encode must succeed");
-    }
-
-    fn write_op_len(&mut self, opcode: u8, len: u64) {
-        if len <= 0b111 {
-            self.bytes.push((opcode << 3) | (len as u8));
-        } else {
-            self.bytes.push(opcode << 3);
-            self.vu57(len);
-        }
-    }
-}
-
-fn encode_canonical_patch(input: &Value) -> Vec<u8> {
+fn canonical_ops(input: &Value) -> Vec<DecodedOp> {
     let sid = input["sid"].as_u64().expect("input.sid must be u64");
-    let time = input["time"].as_u64().expect("input.time must be u64");
-    let meta_kind = input["meta_kind"]
-        .as_str()
-        .unwrap_or("undefined");
+    let mut op_time = input["time"].as_u64().expect("input.time must be u64");
     let ops = input["ops"].as_array().expect("input.ops must be array");
 
-    let mut w = PatchWriter::new(sid);
-    w.vu57(sid);
-    w.vu57(time);
-
-    if meta_kind == "undefined" {
-        // CBOR undefined
-        w.bytes.push(0xf7);
-    } else {
-        panic!("unsupported meta_kind: {meta_kind}");
-    }
-
-    w.vu57(ops.len() as u64);
-
+    let mut out = Vec::with_capacity(ops.len());
     for op in ops {
-        let op_name = as_str(&op["op"], "op.op");
-        match op_name {
-            "new_con" => {
-                w.bytes.push(0 << 3);
-                let cbor = json_to_cbor(&op["value"]);
-                w.push_cbor(&cbor);
-            }
-            "new_val" => {
-                w.bytes.push(1 << 3);
-            }
-            "new_obj" => {
-                w.bytes.push(2 << 3);
-            }
-            "new_str" => {
-                w.bytes.push(4 << 3);
-            }
-            "new_arr" => {
-                w.bytes.push(6 << 3);
-            }
-            "ins_val" => {
-                w.bytes.push(9 << 3);
-                let (obj_sid, obj_time) = as_ts(&op["obj"], "op.obj");
-                let (val_sid, val_time) = as_ts(&op["val"], "op.val");
-                w.encode_id(obj_sid, obj_time);
-                w.encode_id(val_sid, val_time);
-            }
+        let id = Timestamp {
+            sid,
+            time: op_time,
+        };
+        let parsed = match as_str(&op["op"], "op.op") {
+            "new_con" => DecodedOp::NewCon {
+                id,
+                value: ConValue::Json(op["value"].clone()),
+            },
+            "new_val" => DecodedOp::NewVal { id },
+            "new_obj" => DecodedOp::NewObj { id },
+            "new_vec" => DecodedOp::NewVec { id },
+            "new_str" => DecodedOp::NewStr { id },
+            "new_bin" => DecodedOp::NewBin { id },
+            "new_arr" => DecodedOp::NewArr { id },
+            "ins_val" => DecodedOp::InsVal {
+                id,
+                obj: as_ts(&op["obj"], "op.obj"),
+                val: as_ts(&op["val"], "op.val"),
+            },
             "ins_obj" => {
                 let tuples = op["data"].as_array().expect("op.data must be array");
-                w.write_op_len(10, tuples.len() as u64);
-                let (obj_sid, obj_time) = as_ts(&op["obj"], "op.obj");
-                w.encode_id(obj_sid, obj_time);
-                for tup in tuples {
-                    let t = tup.as_array().expect("tuple must be [key,id]");
+                let mut data = Vec::with_capacity(tuples.len());
+                for tuple in tuples {
+                    let t = tuple.as_array().expect("tuple must be [key,id]");
                     assert_eq!(t.len(), 2, "tuple must have 2 elements");
-                    let key = as_str(&t[0], "tuple key");
-                    w.push_cbor(&CborValue::Text(key.to_string()));
-                    let (sid, time) = as_ts(&t[1], "tuple id");
-                    w.encode_id(sid, time);
+                    data.push((
+                        as_str(&t[0], "tuple key").to_string(),
+                        as_ts(&t[1], "tuple id"),
+                    ));
+                }
+                DecodedOp::InsObj {
+                    id,
+                    obj: as_ts(&op["obj"], "op.obj"),
+                    data,
                 }
             }
-            "ins_str" => {
-                let (obj_sid, obj_time) = as_ts(&op["obj"], "op.obj");
-                let (ref_sid, ref_time) = as_ts(&op["ref"], "op.ref");
-                let data = as_str(&op["data"], "op.data");
-                let data_bytes = data.as_bytes();
-                w.write_op_len(12, data_bytes.len() as u64);
-                w.encode_id(obj_sid, obj_time);
-                w.encode_id(ref_sid, ref_time);
-                w.bytes.extend_from_slice(data_bytes);
+            "ins_vec" => {
+                let tuples = op["data"].as_array().expect("op.data must be array");
+                let mut data = Vec::with_capacity(tuples.len());
+                for tuple in tuples {
+                    let t = tuple.as_array().expect("tuple must be [idx,id]");
+                    assert_eq!(t.len(), 2, "tuple must have 2 elements");
+                    data.push((as_u64(&t[0], "tuple idx"), as_ts(&t[1], "tuple id")));
+                }
+                DecodedOp::InsVec {
+                    id,
+                    obj: as_ts(&op["obj"], "op.obj"),
+                    data,
+                }
+            }
+            "ins_str" => DecodedOp::InsStr {
+                id,
+                obj: as_ts(&op["obj"], "op.obj"),
+                reference: as_ts(&op["ref"], "op.ref"),
+                data: as_str(&op["data"], "op.data").to_string(),
+            },
+            "ins_bin" => {
+                let bytes = op["data"]
+                    .as_array()
+                    .expect("op.data must be byte array")
+                    .iter()
+                    .map(|v| u8::try_from(v.as_u64().expect("byte must be u64")).expect("byte out of range"))
+                    .collect();
+                DecodedOp::InsBin {
+                    id,
+                    obj: as_ts(&op["obj"], "op.obj"),
+                    reference: as_ts(&op["ref"], "op.ref"),
+                    data: bytes,
+                }
             }
             "ins_arr" => {
-                let vals = op["data"].as_array().expect("op.data must be array");
-                w.write_op_len(14, vals.len() as u64);
-                let (obj_sid, obj_time) = as_ts(&op["obj"], "op.obj");
-                let (ref_sid, ref_time) = as_ts(&op["ref"], "op.ref");
-                w.encode_id(obj_sid, obj_time);
-                w.encode_id(ref_sid, ref_time);
-                for id in vals {
-                    let (sid, time) = as_ts(id, "ins_arr id");
-                    w.encode_id(sid, time);
+                let ids = op["data"].as_array().expect("op.data must be id array");
+                DecodedOp::InsArr {
+                    id,
+                    obj: as_ts(&op["obj"], "op.obj"),
+                    reference: as_ts(&op["ref"], "op.ref"),
+                    data: ids.iter().map(|v| as_ts(v, "ins_arr id")).collect(),
                 }
             }
-            "nop" => {
-                let len = as_u64(&op["len"], "op.len");
-                w.write_op_len(17, len);
+            "upd_arr" => DecodedOp::UpdArr {
+                id,
+                obj: as_ts(&op["obj"], "op.obj"),
+                reference: as_ts(&op["ref"], "op.ref"),
+                val: as_ts(&op["val"], "op.val"),
+            },
+            "del" => {
+                let spans = op["what"].as_array().expect("op.what must be array");
+                let mut what = Vec::with_capacity(spans.len());
+                for span in spans {
+                    let t = span.as_array().expect("timespan must be [sid,time,span]");
+                    assert_eq!(t.len(), 3, "timespan must have 3 elements");
+                    what.push(Timespan {
+                        sid: as_u64(&t[0], "timespan sid"),
+                        time: as_u64(&t[1], "timespan time"),
+                        span: as_u64(&t[2], "timespan span"),
+                    });
+                }
+                DecodedOp::Del {
+                    id,
+                    obj: as_ts(&op["obj"], "op.obj"),
+                    what,
+                }
             }
+            "nop" => DecodedOp::Nop {
+                id,
+                len: as_u64(&op["len"], "op.len"),
+            },
             other => panic!("unsupported canonical op: {other}"),
-        }
+        };
+
+        op_time += parsed.span();
+        out.push(parsed);
     }
 
-    w.bytes
+    out
 }
 
 #[test]
@@ -259,7 +191,13 @@ fn patch_canonical_encode_fixtures_match_oracle_binary() {
         let file = entry["file"].as_str().expect("fixture entry file must be string");
         let fixture = read_json(&dir.join(file));
 
-        let encoded = encode_canonical_patch(&fixture["input"]);
+        let input = &fixture["input"];
+        let sid = input["sid"].as_u64().expect("input.sid must be u64");
+        let time = input["time"].as_u64().expect("input.time must be u64");
+        let ops = canonical_ops(input);
+
+        let encoded = encode_patch_from_ops(sid, time, &ops)
+            .unwrap_or_else(|e| panic!("canonical encode failed for {}: {e}", entry["name"]));
         let expected = decode_hex(
             fixture["expected"]["patch_binary_hex"]
                 .as_str()
