@@ -231,7 +231,9 @@ function allDecodeErrorFixtures() {
 }
 
 function buildModelFixture(name, sid, data) {
-  const model = mkModel(cloneJson(data), sid);
+  const model = sid === 1 ? Model.withServerClock(undefined, 1) : Model.create(undefined, sid);
+  model.api.set(cloneJson(data));
+  model.api.flush();
   const binary = model.toBinary();
   const restored = Model.fromBinary(binary);
 
@@ -262,7 +264,11 @@ function allModelFixtures() {
     {name: 'model_roundtrip_numbers_v1', sid: 73017, data: {n1: 0, n2: -1, n3: 123.456}},
     {name: 'model_roundtrip_boolean_map_v1', sid: 73018, data: {a: true, b: false}},
     {name: 'model_roundtrip_nullable_fields_v1', sid: 73019, data: {a: null, b: 1, c: null}},
-    {name: 'model_roundtrip_complex_v1', sid: 73020, data: {meta: {v: 1}, items: [{k: 'a'}, {k: 'b'}], active: true}}
+    {name: 'model_roundtrip_complex_v1', sid: 73020, data: {meta: {v: 1}, items: [{k: 'a'}, {k: 'b'}], active: true}},
+    {name: 'model_roundtrip_server_scalar_number_v1', sid: 1, data: 7},
+    {name: 'model_roundtrip_server_object_v1', sid: 1, data: {a: 1, b: 'srv'}},
+    {name: 'model_roundtrip_server_array_v1', sid: 1, data: [1, 2, 3]},
+    {name: 'model_roundtrip_server_nested_v1', sid: 1, data: {doc: {title: 'server', flags: [true, false]}}},
   ];
 
   return cases.map((c) => buildModelFixture(c.name, c.sid, c.data));

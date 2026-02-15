@@ -2,7 +2,7 @@
   "fixture_version": 1,
   "upstream_package": "json-joy",
   "upstream_version": "17.67.0",
-  "fixture_count": 78,
+  "fixture_count": 82,
   "fixtures": [
     {
       "name": "diff_root_number_to_number_v1",
@@ -353,6 +353,26 @@
       "name": "model_roundtrip_complex_v1",
       "scenario": "model_roundtrip",
       "file": "model_roundtrip_complex_v1.json"
+    },
+    {
+      "name": "model_roundtrip_server_scalar_number_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_server_scalar_number_v1.json"
+    },
+    {
+      "name": "model_roundtrip_server_object_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_server_object_v1.json"
+    },
+    {
+      "name": "model_roundtrip_server_array_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_server_array_v1.json"
+    },
+    {
+      "name": "model_roundtrip_server_nested_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_server_nested_v1.json"
     },
     {
       "name": "model_decode_error_empty_v1",

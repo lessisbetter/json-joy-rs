@@ -29,8 +29,14 @@ pub struct Model {
 
 impl Model {
     pub fn from_binary(data: &[u8]) -> Result<Self, ModelError> {
-        if data.len() < 4 {
+        if data.is_empty() {
             return Err(ModelError::InvalidClockTable);
+        }
+        if data.len() < 4 {
+            let maybe_server = (data[0] & 0b1000_0000) != 0 && data.len() >= 3;
+            if !maybe_server {
+                return Err(ModelError::InvalidClockTable);
+            }
         }
 
         let decoded = decode_model_view(data);
@@ -65,6 +71,14 @@ impl Model {
 fn decode_model_view(data: &[u8]) -> Result<Value, ModelError> {
     let mut reader = Reader::new(data);
 
+    // Server-clock encoding starts with a marker byte whose highest bit is set
+    // and does not contain a clock table section.
+    if reader.peak()? & 0b1000_0000 != 0 {
+        let _marker = reader.u8()?;
+        let _time = reader.vu57()?;
+        return decode_root_to_end(&mut reader);
+    }
+
     let clock_table_offset = reader.u32_be()? as usize;
     let root_start = reader.pos;
     let clock_start = root_start
@@ -90,25 +104,29 @@ fn decode_model_view(data: &[u8]) -> Result<Value, ModelError> {
     }
 
     let root_slice = &data[root_start..clock_start];
-    if root_slice.is_empty() {
-        return Err(ModelError::InvalidModelBinary);
-    }
-
     let mut root_reader = Reader::new(root_slice);
-    let first = root_reader.peak()?;
-    if first == 0 {
-        root_reader.u8()?;
-        if !root_reader.is_eof() {
-            return Err(ModelError::InvalidModelBinary);
-        }
-        return Ok(Value::Null);
-    }
-
-    let value = decode_node(&mut root_reader)?;
+    let value = decode_root(&mut root_reader)?;
     if !root_reader.is_eof() {
         return Err(ModelError::InvalidModelBinary);
     }
     Ok(value)
+}
+
+fn decode_root_to_end(reader: &mut Reader<'_>) -> Result<Value, ModelError> {
+    let value = decode_root(reader)?;
+    if !reader.is_eof() {
+        return Err(ModelError::InvalidModelBinary);
+    }
+    Ok(value)
+}
+
+fn decode_root(reader: &mut Reader<'_>) -> Result<Value, ModelError> {
+    let first = reader.peak()?;
+    if first == 0 {
+        reader.u8()?;
+        return Ok(Value::Null);
+    }
+    decode_node(reader)
 }
 
 fn decode_node(reader: &mut Reader<'_>) -> Result<Value, ModelError> {

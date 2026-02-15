@@ -1,0 +1,34 @@
+{
+  "fixture_version": 1,
+  "name": "model_roundtrip_server_nested_v1",
+  "scenario": "model_roundtrip",
+  "input": {
+    "sid": 1,
+    "data": {
+      "doc": {
+        "title": "server",
+        "flags": [
+          true,
+          false
+        ]
+      }
+    }
+  },
+  "expected": {
+    "model_binary_hex": "8016014163646f630242657469746c65038104780673657276657265666c6167730ac111020b200c00f50e200f00f4",
+    "view_json": {
+      "doc": {
+        "title": "server",
+        "flags": [
+          true,
+          false
+        ]
+      }
+    }
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}
