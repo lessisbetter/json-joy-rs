@@ -1,0 +1,100 @@
+{
+  "fixture_version": 1,
+  "name": "lessdb_model_manager_15_create_diff_apply_v1",
+  "scenario": "lessdb_model_manager",
+  "input": {
+    "workflow": "create_diff_apply",
+    "sid": 78015,
+    "initial_json": {
+      "items": [
+        {
+          "id": 1
+        },
+        {
+          "id": 2
+        }
+      ]
+    },
+    "ops": [
+      {
+        "kind": "diff",
+        "next_view_json": {
+          "items": [
+            {
+              "id": 1
+            },
+            {
+              "id": 3
+            }
+          ]
+        }
+      },
+      {
+        "kind": "apply_last_diff"
+      },
+      {
+        "kind": "patch_log_append_last_diff"
+      },
+      {
+        "kind": "patch_log_deserialize"
+      }
+    ]
+  },
+  "expected": {
+    "steps": [
+      {
+        "kind": "diff",
+        "patch_present": true,
+        "patch_binary_hex": "bfe1040df702000351066269640d",
+        "patch_op_count": 2,
+        "patch_opcodes": [
+          0,
+          10
+        ],
+        "patch_span": 2,
+        "patch_id_sid": 78015,
+        "patch_id_time": 13,
+        "patch_next_time": 15
+      },
+      {
+        "kind": "apply_last_diff",
+        "view_json": {
+          "items": [
+            {
+              "id": 1
+            },
+            {
+              "id": 3
+            }
+          ]
+        },
+        "model_binary_hex": "0000001c1d41656974656d731cc115021b416269641a0001184162696411000301bfe1040e"
+      },
+      {
+        "kind": "patch_log_append_last_diff",
+        "pending_patch_log_hex": "010000000ebfe1040df702000351066269640d"
+      },
+      {
+        "kind": "patch_log_deserialize",
+        "patch_count": 1
+      }
+    ],
+    "final_view_json": {
+      "items": [
+        {
+          "id": 1
+        },
+        {
+          "id": 3
+        }
+      ]
+    },
+    "final_model_binary_hex": "0000001c1d41656974656d731cc115021b416269641a0001184162696411000301bfe1040e",
+    "final_pending_patch_log_hex": "010000000ebfe1040df702000351066269640d"
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

@@ -24,12 +24,21 @@
 
 ## M3: Patch Application + Clock Semantics
 
-- [ ] Generate fork/replay/idempotence fixtures.
-- [ ] Add failing merge/idempotence tests.
-- [ ] Implement patch application + clock/vector semantics.
+- [x] Generate fork/replay/idempotence fixtures.
+- [x] Add failing merge/idempotence tests.
+- [x] Implement patch application + clock/vector semantics.
 
 ## M4: Diff Parity
 
-- [ ] Expand differential diff fixtures/traces.
-- [ ] Add failing diff parity tests.
-- [ ] Implement diff behavior to parity.
+- [x] Expand differential diff fixtures/traces.
+- [x] Add failing diff parity tests.
+- [x] Implement diff behavior to parity.
+
+## M5: less-db-js Compatibility Layer
+
+- [x] Add `lessdb_model_manager` fixtures (>= 30).
+- [x] Add fixture-driven less-db compatibility tests.
+- [x] Implement core compatibility module mirroring `model-manager` behavior.
+- [x] Reuse patch-log framing with integration tests.
+- [x] Expose minimal compatibility API via FFI.
+- [x] Document temporary oracle-bridge dependency.

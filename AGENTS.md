@@ -20,6 +20,22 @@ Do not start implementation for a section until its fixture/test surface is in p
 - Upstream compatibility target is pinned to `json-joy@17.67.0` unless explicitly changed.
 - Node oracle lives in `tools/oracle-node`.
 - Fixtures live in `tests/compat/fixtures`.
+- Local upstream source for direct behavior cross-checks:
+  - `/Users/nchapman/Code/json-joy`
+  - Replay/clock semantics reference:
+    - `/Users/nchapman/Code/json-joy/packages/json-joy/src/json-crdt/model/Model.ts`
+  - Diff semantics reference:
+    - `/Users/nchapman/Code/json-joy/packages/json-joy/src/json-crdt-diff/JsonCrdtDiff.ts`
+  - less-db manager semantics references:
+    - `/Users/nchapman/Code/lessisbetter/less-platform/less-db-js/src/crdt/model-manager.ts`
+    - `/Users/nchapman/Code/lessisbetter/less-platform/less-db-js/src/crdt/patch-log.ts`
+
+## Temporary bridge policy (M5)
+
+- M5 allows oracle-backed behavior for compatibility-layer lifecycle operations.
+- Keep this dependency explicit in code comments and milestone docs.
+- Do not treat oracle-backed behavior as long-term final architecture; replace
+  incrementally with native Rust implementations in hardening milestones.
 
 ## Required execution flow per section
 

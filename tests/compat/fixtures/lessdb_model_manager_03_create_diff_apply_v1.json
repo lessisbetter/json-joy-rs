@@ -1,0 +1,63 @@
+{
+  "fixture_version": 1,
+  "name": "lessdb_model_manager_03_create_diff_apply_v1",
+  "scenario": "lessdb_model_manager",
+  "input": {
+    "workflow": "create_diff_apply",
+    "sid": 78003,
+    "initial_json": {
+      "a": 1
+    },
+    "ops": [
+      {
+        "kind": "diff",
+        "next_view_json": {
+          "a": 1
+        }
+      },
+      {
+        "kind": "apply_last_diff"
+      },
+      {
+        "kind": "patch_log_append_last_diff"
+      },
+      {
+        "kind": "patch_log_deserialize"
+      }
+    ]
+  },
+  "expected": {
+    "steps": [
+      {
+        "kind": "diff",
+        "patch_present": false,
+        "patch_binary_hex": null
+      },
+      {
+        "kind": "apply_last_diff",
+        "view_json": {
+          "a": 1
+        },
+        "model_binary_hex": "000000071341616112000101b3e10404"
+      },
+      {
+        "kind": "patch_log_append_last_diff",
+        "pending_patch_log_hex": ""
+      },
+      {
+        "kind": "patch_log_deserialize",
+        "patch_count": 0
+      }
+    ],
+    "final_view_json": {
+      "a": 1
+    },
+    "final_model_binary_hex": "000000071341616112000101b3e10404",
+    "final_pending_patch_log_hex": ""
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

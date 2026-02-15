@@ -1,0 +1,91 @@
+{
+  "fixture_version": 1,
+  "name": "model_diff_parity_36_rnd_v1",
+  "scenario": "model_diff_parity",
+  "input": {
+    "base_model_binary_hex": "00000002114001ecd90402",
+    "next_view_json": {
+      "doc": [
+        {
+          "jpo2qlcmfr": {},
+          "maj15k4m7": true,
+          "wy3fon15b0": false,
+          "ofk1tvyt": null
+        },
+        {
+          "oeoq5": -83.7,
+          "pbvwu8nf": {
+            "mwncfe": {
+              "hnwloc": null,
+              "81b15": "ykcwom8ejjf",
+              "rpcucj3i8": "9",
+              "r7q9z": "1xskg"
+            }
+          }
+        }
+      ]
+    },
+    "sid": 77036
+  },
+  "expected": {
+    "patch_present": true,
+    "patch_binary_hex": "ecd90403f71730101000f500f400f65404780a6a706f32716c636d66720578096d616a31356b346d3706780a777933666f6e313562300778086f666b3174767974081000fbc054eccccccccccd101000f620600b0f0f796b63776f6d38656a6a6620611b1b3920651d1d3178736b67540d7806686e776c6f630e6538316231350f780972706375636a3369381b65723771397a1d510c78066d776e6366650d520a656f656f71350b78087062767775386e660c720303040a510163646f6303",
+    "patch_op_count": 23,
+    "patch_opcodes": [
+      6,
+      2,
+      2,
+      0,
+      0,
+      0,
+      10,
+      2,
+      0,
+      2,
+      2,
+      0,
+      4,
+      12,
+      4,
+      12,
+      4,
+      12,
+      10,
+      10,
+      10,
+      14,
+      10
+    ],
+    "patch_span": 38,
+    "patch_id_sid": 77036,
+    "patch_id_time": 3,
+    "patch_next_time": 41,
+    "view_after_apply_json": {
+      "doc": [
+        {
+          "jpo2qlcmfr": {},
+          "maj15k4m7": true,
+          "wy3fon15b0": false,
+          "ofk1tvyt": null
+        },
+        {
+          "oeoq5": -83.7,
+          "pbvwu8nf": {
+            "mwncfe": {
+              "hnwloc": null,
+              "81b15": "ykcwom8ejjf",
+              "rpcucj3i8": "9",
+              "r7q9z": "1xskg"
+            }
+          }
+        }
+      ]
+    },
+    "model_binary_after_apply_hex": "000000bb81274163646f638125c11202812444780a6a706f32716c636d667281234078096d616a31356b346d37812200f5780a777933666f6e31356230812100f478086f666b3174767974812000f6811e42656f656f7135811d00fbc054eccccccccccd78087062767775386e66811c4178066d776e636665811b447806686e776c6f63811a00f66538316231358119818118780b796b63776f6d38656a6a66780972706375636a3369381d811c613965723771397a1b811a653178736b6701ecd90428"
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

@@ -19,6 +19,7 @@ const {
   InsStrOp,
   InsBinOp,
   InsArrOp,
+  UpdArrOp,
   DelOp,
   NopOp,
 } = patchLib;
@@ -928,6 +929,518 @@ function allModelCanonicalEncodeFixtures() {
   ];
 }
 
+function buildModelDiffParityFixture(name, sid, baseView, nextView) {
+  const base = mkModel(baseView, sid);
+  const baseBinary = base.toBinary();
+  const model = Model.load(baseBinary, sid);
+  const patch = model.api.diff(nextView);
+
+  if (!patch) {
+    return baseFixture(name, 'model_diff_parity', {
+      base_model_binary_hex: hex(baseBinary),
+      next_view_json: nextView,
+      sid,
+    }, {
+      patch_present: false,
+      view_after_apply_json: normalizeView(model.view()),
+      model_binary_after_apply_hex: hex(model.toBinary()),
+    });
+  }
+
+  const patchBinary = patch.toBinary();
+  const decoded = Patch.fromBinary(patchBinary);
+  const patchId = decoded.getId();
+  model.applyPatch(patch);
+
+  return baseFixture(name, 'model_diff_parity', {
+    base_model_binary_hex: hex(baseBinary),
+    next_view_json: nextView,
+    sid,
+  }, {
+    patch_present: true,
+    patch_binary_hex: hex(patchBinary),
+    patch_op_count: decoded.ops.length,
+    patch_opcodes: decoded.ops.map((op) => OPCODE_BY_NAME[op.name()]),
+    patch_span: decoded.span(),
+    patch_id_sid: patchId ? patchId.sid : null,
+    patch_id_time: patchId ? patchId.time : null,
+    patch_next_time: decoded.nextTime(),
+    view_after_apply_json: normalizeView(model.view()),
+    model_binary_after_apply_hex: hex(model.toBinary()),
+  });
+}
+
+function allModelDiffParityFixtures() {
+  const fixtures = [];
+  const sidBase = 77000;
+  const base = {};
+  const deterministicCases = [
+    {},
+    {},
+    {},
+    {},
+    {},
+    {a: 1},
+    {a: 1, b: 2},
+    {b: 2, a: 1},
+    {title: 'hello'},
+    {title: 'hello world'},
+    {txt: ''},
+    {txt: 'abc'},
+    {txt: 'The quick brown fox'},
+    {arr: []},
+    {arr: [1]},
+    {arr: [1, 2, 3]},
+    {arr: ['a', 'b', 'c']},
+    {arr: [{id: 1}, {id: 2}]},
+    {obj: {nested: true}},
+    {obj: {nested: {level: 2}}},
+    {obj: {nested: {level: 2, tags: ['x', 'y']}}},
+    {n: null},
+    {n: false},
+    {n: 0},
+    {n: -1},
+    {n: 123.5},
+    {user: {id: 'u1', name: 'Ada', active: true}},
+    {doc: {id: 'd1', title: 'T', body: 'B', tags: ['x']}},
+    {doc: {id: 'd2', title: 'T2', body: 'B2', tags: ['x', 'y']}},
+    {meta: {k1: 1, k2: 2, k3: 3}},
+    {meta: {k3: 3, k2: 2, k1: 1}},
+    {root: [1, {a: 1}, ['x', 'y']]},
+    {root: {deep: {a: {b: {c: 1}}}}},
+    {root: {deep: {a: {b: {c: 2}}}}},
+  ];
+
+  for (let i = 0; i < deterministicCases.length; i++) {
+    const sid = sidBase + i + 1;
+    fixtures.push(
+      buildModelDiffParityFixture(
+        `model_diff_parity_${String(i + 1).padStart(2, '0')}_det_v1`,
+        sid,
+        base,
+        deterministicCases[i],
+      ),
+    );
+  }
+
+  // Deterministic randomized corpus, still rooted from empty object for
+  // stable runtime apply behavior.
+  const rng = mulberry32(0x4d34f000);
+  for (let i = 0; i < 30; i++) {
+    const sid = sidBase + deterministicCases.length + i + 1;
+    const value = randJson(rng, 4);
+    const nextView = {doc: value};
+    fixtures.push(
+      buildModelDiffParityFixture(
+        `model_diff_parity_${String(deterministicCases.length + i + 1).padStart(2, '0')}_rnd_v1`,
+        sid,
+        base,
+        nextView,
+      ),
+    );
+  }
+
+  return fixtures;
+}
+
+function normalizeView(view) {
+  return view === undefined ? null : view;
+}
+
+function mustPatch(model, next) {
+  const patch = model.api.diff(next);
+  if (!patch) throw new Error('expected non-empty patch');
+  model.applyPatch(patch);
+  return patch;
+}
+
+function buildApplyReplayFixture(name, baseModelBinary, patches, replayPattern, label) {
+  const model = Model.fromBinary(baseModelBinary);
+  let effective = 0;
+  for (const idx of replayPattern) {
+    const before = hex(model.toBinary());
+    model.applyPatch(patches[idx]);
+    const after = hex(model.toBinary());
+    if (after !== before) effective++;
+  }
+  const patchIds = patches.map((p) => {
+    const id = p.getId();
+    return id ? [id.sid, id.time] : null;
+  });
+  return baseFixture(name, 'model_apply_replay', {
+    base_model_binary_hex: hex(baseModelBinary),
+    patches_binary_hex: patches.map((p) => hex(p.toBinary())),
+    replay_pattern: replayPattern,
+    label,
+  }, {
+    view_json: normalizeView(model.view()),
+    model_binary_hex: hex(model.toBinary()),
+    applied_patch_count_effective: effective,
+    clock_observed: {
+      patch_ids: patchIds,
+    },
+  });
+}
+
+function allModelApplyReplayFixtures() {
+  const fixtures = [];
+
+  // Minimal base model for deterministic replay semantics.
+  const base = Model.create(undefined, 75001);
+  base.api.set({});
+  base.api.flush();
+  const baseBin = base.toBinary();
+
+  const mkPatch = (ops) => {
+    const p = new Patch();
+    p.ops.push(...ops);
+    return p;
+  };
+
+  // Object stream
+  const obj1 = mkPatch([
+    new NewObjOp(ts(76100, 1)),
+    new InsValOp(ts(76100, 2), ts(0, 0), ts(76100, 1)),
+    new NewConOp(ts(76100, 3), 'A'),
+    new InsObjOp(ts(76100, 4), ts(76100, 1), [['title', ts(76100, 3)]]),
+  ]);
+  const obj2 = mkPatch([
+    new NewConOp(ts(76100, 5), 'AA'),
+    new InsObjOp(ts(76100, 6), ts(76100, 1), [['title', ts(76100, 5)]]),
+  ]);
+  const objPeer = mkPatch([
+    new NewConOp(ts(76110, 1), 'B'),
+    new InsObjOp(ts(76110, 2), ts(76100, 1), [['body', ts(76110, 1)]]),
+  ]);
+
+  // Array stream
+  const arr1 = mkPatch([
+    new NewArrOp(ts(76200, 1)),
+    new InsValOp(ts(76200, 2), ts(0, 0), ts(76200, 1)),
+    new NewConOp(ts(76200, 3), 1),
+    new NewConOp(ts(76200, 4), 2),
+    new InsArrOp(ts(76200, 5), ts(76200, 1), ts(76200, 1), [ts(76200, 3), ts(76200, 4)]),
+  ]);
+  const arr2 = mkPatch([
+    new NewConOp(ts(76200, 6), 9),
+    new UpdArrOp(ts(76200, 7), ts(76200, 1), ts(76200, 5), ts(76200, 6)),
+  ]);
+  const arr3 = mkPatch([new DelOp(ts(76200, 8), ts(76200, 1), [tss(76200, 6, 1)])]);
+
+  // String stream
+  const str1 = mkPatch([
+    new NewStrOp(ts(76300, 1)),
+    new InsValOp(ts(76300, 2), ts(0, 0), ts(76300, 1)),
+    new InsStrOp(ts(76300, 3), ts(76300, 1), ts(76300, 1), 'abc'),
+  ]);
+  const str2 = mkPatch([new DelOp(ts(76300, 6), ts(76300, 1), [tss(76300, 4, 1)])]);
+  const str3 = mkPatch([new InsStrOp(ts(76300, 7), ts(76300, 1), ts(76300, 5), 'Z')]);
+
+  // Binary stream
+  const bin1 = mkPatch([
+    new NewBinOp(ts(76400, 1)),
+    new InsValOp(ts(76400, 2), ts(0, 0), ts(76400, 1)),
+    new InsBinOp(ts(76400, 3), ts(76400, 1), ts(76400, 1), new Uint8Array([1, 2, 3])),
+  ]);
+  const bin2 = mkPatch([new DelOp(ts(76400, 6), ts(76400, 1), [tss(76400, 4, 1)])]);
+  const bin3 = mkPatch([
+    new InsBinOp(ts(76400, 7), ts(76400, 1), ts(76400, 5), new Uint8Array([9])),
+  ]);
+
+  // Vec stream
+  const vec1 = mkPatch([
+    new NewVecOp(ts(76500, 1)),
+    new InsValOp(ts(76500, 2), ts(0, 0), ts(76500, 1)),
+    new NewConOp(ts(76500, 3), 7),
+    new NewConOp(ts(76500, 4), 'x'),
+    new InsVecOp(ts(76500, 5), ts(76500, 1), [[0, ts(76500, 3)], [2, ts(76500, 4)]]),
+  ]);
+  const vec2 = mkPatch([
+    new NewConOp(ts(76500, 6), 8),
+    new InsVecOp(ts(76500, 7), ts(76500, 1), [[1, ts(76500, 6)]]),
+  ]);
+  const vecPeer = mkPatch([
+    new NewConOp(ts(76510, 1), false),
+    new InsVecOp(ts(76510, 2), ts(76500, 1), [[2, ts(76510, 1)]]),
+  ]);
+
+  const groups = [
+    {name: 'obj', patches: [obj1, obj2, objPeer]},
+    {name: 'arr', patches: [arr1, arr2, arr3]},
+    {name: 'str', patches: [str1, str2, str3]},
+    {name: 'bin', patches: [bin1, bin2, bin3]},
+    {name: 'vec', patches: [vec1, vec2, vecPeer]},
+  ];
+
+  const patterns = [
+    {name: 'dup_single', replay: [0, 0]},
+    {name: 'dup_batch', replay: [0, 1, 0, 1]},
+    {name: 'stale_order', replay: [1, 0]},
+    {name: 'in_order', replay: [0, 1, 2]},
+    {name: 'out_of_order', replay: [2, 0, 1]},
+    {name: 'interleaved_dup', replay: [0, 2, 0, 1, 2]},
+  ];
+
+  let idx = 1;
+  for (const g of groups) {
+    for (const p of patterns) {
+      fixtures.push(
+        buildApplyReplayFixture(
+          `model_apply_replay_${String(idx).padStart(2, '0')}_${g.name}_${p.name}_v1`,
+          baseBin,
+          g.patches,
+          p.replay,
+          `${g.name}_${p.name}`,
+        ),
+      );
+      idx++;
+    }
+  }
+
+  return fixtures;
+}
+
+function appendPatchLog(existing, patchBinary) {
+  if (!existing || existing.length === 0) {
+    const out = new Uint8Array(1 + 4 + patchBinary.length);
+    out[0] = 1;
+    const view = new DataView(out.buffer, out.byteOffset, out.byteLength);
+    view.setUint32(1, patchBinary.length);
+    out.set(patchBinary, 5);
+    return out;
+  }
+  const out = new Uint8Array(existing.length + 4 + patchBinary.length);
+  out.set(existing, 0);
+  const view = new DataView(out.buffer, out.byteOffset, out.byteLength);
+  view.setUint32(existing.length, patchBinary.length);
+  out.set(patchBinary, existing.length + 4);
+  return out;
+}
+
+function decodePatchLogCount(data) {
+  if (!data || data.length === 0) return 0;
+  if (data[0] !== 1) throw new Error('Unsupported patch log version');
+  let offset = 1;
+  let count = 0;
+  const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
+  while (offset < data.length) {
+    if (offset + 4 > data.length) throw new Error('Corrupt pending patches: truncated length header');
+    const len = view.getUint32(offset);
+    offset += 4;
+    if (offset + len > data.length) throw new Error('Corrupt pending patches: truncated patch data');
+    offset += len;
+    count++;
+  }
+  return count;
+}
+
+function buildLessdbCreateDiffApplyFixture(name, sid, initial, next) {
+  const model = mkModel(initial, sid);
+  const baseModelBinary = model.toBinary();
+  const loaded = Model.load(baseModelBinary, sid);
+  const patch = loaded.api.diff(next);
+
+  let pending = new Uint8Array(0);
+  const steps = [];
+  steps.push({
+    kind: 'diff',
+    patch_present: !!patch,
+    patch_binary_hex: patch ? hex(patch.toBinary()) : null,
+  });
+
+  if (patch) {
+    const patchBinary = patch.toBinary();
+    const decoded = Patch.fromBinary(patchBinary);
+    const patchId = decoded.getId();
+    loaded.applyPatch(patch);
+    pending = appendPatchLog(pending, patchBinary);
+
+    steps[0].patch_op_count = decoded.ops.length;
+    steps[0].patch_opcodes = decoded.ops.map((op) => OPCODE_BY_NAME[op.name()]);
+    steps[0].patch_span = decoded.span();
+    steps[0].patch_id_sid = patchId ? patchId.sid : null;
+    steps[0].patch_id_time = patchId ? patchId.time : null;
+    steps[0].patch_next_time = decoded.nextTime();
+  }
+
+  steps.push({
+    kind: 'apply_last_diff',
+    view_json: normalizeView(loaded.view()),
+    model_binary_hex: hex(loaded.toBinary()),
+  });
+  steps.push({
+    kind: 'patch_log_append_last_diff',
+    pending_patch_log_hex: hex(pending),
+  });
+  steps.push({
+    kind: 'patch_log_deserialize',
+    patch_count: decodePatchLogCount(pending),
+  });
+
+  return baseFixture(name, 'lessdb_model_manager', {
+    workflow: 'create_diff_apply',
+    sid,
+    initial_json: initial,
+    ops: [
+      {kind: 'diff', next_view_json: next},
+      {kind: 'apply_last_diff'},
+      {kind: 'patch_log_append_last_diff'},
+      {kind: 'patch_log_deserialize'},
+    ],
+  }, {
+    steps,
+    final_view_json: normalizeView(loaded.view()),
+    final_model_binary_hex: hex(loaded.toBinary()),
+    final_pending_patch_log_hex: hex(pending),
+  });
+}
+
+function buildLessdbForkMergeFixture(name, sid, initial, forkSid, nextFork) {
+  const base = mkModel(initial, sid);
+  const baseBinary = base.toBinary();
+  const fork = Model.fromBinary(baseBinary).fork(forkSid);
+  const patch = fork.api.diff(nextFork);
+  if (!patch) throw new Error('expected non-empty patch for fork fixture');
+  const patchBinary = patch.toBinary();
+  fork.applyPatch(patch);
+
+  const merged = Model.fromBinary(baseBinary);
+  merged.applyPatch(Patch.fromBinary(patchBinary));
+
+  return baseFixture(name, 'lessdb_model_manager', {
+    workflow: 'fork_merge',
+    sid,
+    initial_json: initial,
+    ops: [
+      {kind: 'fork', sid: forkSid},
+      {kind: 'diff_on_fork', next_view_json: nextFork},
+      {kind: 'apply_last_diff_on_fork'},
+      {kind: 'merge_into_base'},
+    ],
+  }, {
+    steps: [
+      {kind: 'fork', view_json: normalizeView(Model.fromBinary(baseBinary).fork(forkSid).view())},
+      {kind: 'diff_on_fork', patch_present: true, patch_binary_hex: hex(patchBinary)},
+      {kind: 'apply_last_diff_on_fork', view_json: normalizeView(fork.view()), model_binary_hex: hex(fork.toBinary())},
+      {kind: 'merge_into_base', view_json: normalizeView(merged.view()), model_binary_hex: hex(merged.toBinary())},
+    ],
+    final_view_json: normalizeView(merged.view()),
+    final_model_binary_hex: hex(merged.toBinary()),
+  });
+}
+
+function buildLessdbMergeIdempotentFixture(name, sid, initial, next) {
+  const base = mkModel(initial, sid);
+  const baseBinary = base.toBinary();
+  const local = Model.load(baseBinary, sid);
+  const patch = local.api.diff(next);
+  if (!patch) throw new Error('expected non-empty patch for merge fixture');
+  const patchBinary = patch.toBinary();
+  local.applyPatch(patch);
+
+  const remote = Model.fromBinary(baseBinary);
+  const parsed = Patch.fromBinary(patchBinary);
+  remote.applyPatch(parsed);
+  remote.applyPatch(parsed);
+
+  return baseFixture(name, 'lessdb_model_manager', {
+    workflow: 'merge_idempotent',
+    sid,
+    base_model_binary_hex: hex(baseBinary),
+    ops: [
+      {kind: 'merge', patches_binary_hex: [hex(patchBinary), hex(patchBinary)]},
+    ],
+  }, {
+    steps: [
+      {kind: 'merge', view_json: normalizeView(remote.view()), model_binary_hex: hex(remote.toBinary())},
+    ],
+    patch_binary_hex: hex(patchBinary),
+    final_view_json: normalizeView(remote.view()),
+    final_model_binary_hex: hex(remote.toBinary()),
+  });
+}
+
+function allLessdbModelManagerFixtures() {
+  const fixtures = [];
+  let idx = 1;
+
+  const createCases = [
+    [{}, {a: 1}],
+    [{a: 1}, {a: 2}],
+    [{a: 1}, {a: 1}],
+    [{txt: 'a'}, {txt: 'ab'}],
+    [{txt: 'abc'}, {txt: 'ac'}],
+    [{arr: [1, 2]}, {arr: [1, 2, 3]}],
+    [{arr: [1, 2, 3]}, {arr: [1, 3]}],
+    [{obj: {x: 1}}, {obj: {x: 1, y: 2}}],
+    [{obj: {x: 1, y: 2}}, {obj: {x: 1}}],
+    [{doc: {title: 'a', body: 'b'}}, {doc: {title: 'A', body: 'b'}}],
+    [{doc: {title: 'a', body: 'b'}}, {doc: {title: 'a', body: 'B'}}],
+    [{n: null}, {n: 1}],
+    [{n: 1}, {n: null}],
+    [{meta: {a: 1, b: 2}}, {meta: {b: 2, a: 1}}],
+    [{items: [{id: 1}, {id: 2}]}, {items: [{id: 1}, {id: 3}]}],
+    [{root: {deep: {v: 'x'}}}, {root: {deep: {v: 'y'}}}],
+    [{score: 1}, {score: 1}],
+    [{tags: ['a']}, {tags: ['a', 'b']}],
+    [{tags: ['a', 'b']}, {tags: ['b']}],
+    [{flag: true}, {flag: false}],
+  ];
+
+  for (const [initial, next] of createCases) {
+    fixtures.push(
+      buildLessdbCreateDiffApplyFixture(
+        `lessdb_model_manager_${String(idx).padStart(2, '0')}_create_diff_apply_v1`,
+        78000 + idx,
+        initial,
+        next,
+      ),
+    );
+    idx++;
+  }
+
+  const forkCases = [
+    [{title: 'a'}, {title: 'A'}],
+    [{body: 'x'}, {body: 'xy'}],
+    [{arr: [1]}, {arr: [1, 2]}],
+    [{obj: {k: 1}}, {obj: {k: 2}}],
+    [{txt: 'abc'}, {txt: 'abZc'}],
+  ];
+  for (const [initial, nextFork] of forkCases) {
+    fixtures.push(
+      buildLessdbForkMergeFixture(
+        `lessdb_model_manager_${String(idx).padStart(2, '0')}_fork_merge_v1`,
+        78000 + idx,
+        initial,
+        88000 + idx,
+        nextFork,
+      ),
+    );
+    idx++;
+  }
+
+  const mergeCases = [
+    [{title: 'a'}, {title: 'A'}],
+    [{score: 1}, {score: 2}],
+    [{arr: [1, 2]}, {arr: [2, 1]}],
+    [{txt: 'abc'}, {txt: 'axbc'}],
+    [{obj: {a: 1}}, {obj: {a: 1, b: 2}}],
+  ];
+  for (const [initial, next] of mergeCases) {
+    fixtures.push(
+      buildLessdbMergeIdempotentFixture(
+        `lessdb_model_manager_${String(idx).padStart(2, '0')}_merge_idempotent_v1`,
+        78000 + idx,
+        initial,
+        next,
+      ),
+    );
+    idx++;
+  }
+
+  return fixtures;
+}
+
 function main() {
   ensureDir(OUT_DIR);
   for (const file of fs.readdirSync(OUT_DIR)) {
@@ -941,6 +1454,9 @@ function main() {
     ...allModelFixtures(),
     ...allModelDecodeErrorFixtures(),
     ...allModelCanonicalEncodeFixtures(),
+    ...allModelApplyReplayFixtures(),
+    ...allModelDiffParityFixtures(),
+    ...allLessdbModelManagerFixtures(),
   ];
 
   for (const fixture of fixtures) {

@@ -1,0 +1,20 @@
+{
+  "fixture_version": 1,
+  "name": "model_diff_parity_01_det_v1",
+  "scenario": "model_diff_parity",
+  "input": {
+    "base_model_binary_hex": "00000002114001c9d90402",
+    "next_view_json": {},
+    "sid": 77001
+  },
+  "expected": {
+    "patch_present": false,
+    "view_after_apply_json": {},
+    "model_binary_after_apply_hex": "00000002114001c9d90402"
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

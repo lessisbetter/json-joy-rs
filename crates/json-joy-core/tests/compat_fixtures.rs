@@ -118,6 +118,103 @@ fn every_manifest_fixture_file_exists_and_has_required_keys() {
                     "model_canonical_encode fixtures must define expected.view_json"
                 );
             }
+            "model_apply_replay" => {
+                assert!(
+                    fixture["input"]["base_model_binary_hex"].is_string(),
+                    "model_apply_replay fixtures must define input.base_model_binary_hex"
+                );
+                assert!(
+                    fixture["input"]["patches_binary_hex"].is_array(),
+                    "model_apply_replay fixtures must define input.patches_binary_hex"
+                );
+                assert!(
+                    fixture["input"]["replay_pattern"].is_array(),
+                    "model_apply_replay fixtures must define input.replay_pattern"
+                );
+                assert!(
+                    fixture["expected"].get("view_json").is_some(),
+                    "model_apply_replay fixtures must define expected.view_json"
+                );
+            }
+            "model_diff_parity" => {
+                assert!(
+                    fixture["input"]["base_model_binary_hex"].is_string(),
+                    "model_diff_parity fixtures must define input.base_model_binary_hex"
+                );
+                assert!(
+                    fixture["input"]["next_view_json"].is_object()
+                        || fixture["input"]["next_view_json"].is_array()
+                        || fixture["input"]["next_view_json"].is_string()
+                        || fixture["input"]["next_view_json"].is_number()
+                        || fixture["input"]["next_view_json"].is_boolean()
+                        || fixture["input"]["next_view_json"].is_null(),
+                    "model_diff_parity fixtures must define input.next_view_json"
+                );
+                assert!(
+                    fixture["input"]["sid"].is_u64(),
+                    "model_diff_parity fixtures must define input.sid"
+                );
+                assert!(
+                    fixture["expected"]["patch_present"].is_boolean(),
+                    "model_diff_parity fixtures must define expected.patch_present"
+                );
+                if fixture["expected"]["patch_present"].as_bool() == Some(true) {
+                    assert!(
+                        fixture["expected"]["patch_binary_hex"].is_string(),
+                        "model_diff_parity patch fixtures must define expected.patch_binary_hex"
+                    );
+                    assert!(
+                        fixture["expected"]["patch_opcodes"].is_array(),
+                        "model_diff_parity patch fixtures must define expected.patch_opcodes"
+                    );
+                    assert!(
+                        fixture["expected"]["patch_op_count"].is_u64(),
+                        "model_diff_parity patch fixtures must define expected.patch_op_count"
+                    );
+                    assert!(
+                        fixture["expected"]["patch_span"].is_u64(),
+                        "model_diff_parity patch fixtures must define expected.patch_span"
+                    );
+                    assert!(
+                        fixture["expected"]["patch_id_sid"].is_u64(),
+                        "model_diff_parity patch fixtures must define expected.patch_id_sid"
+                    );
+                    assert!(
+                        fixture["expected"]["patch_id_time"].is_u64(),
+                        "model_diff_parity patch fixtures must define expected.patch_id_time"
+                    );
+                    assert!(
+                        fixture["expected"]["patch_next_time"].is_u64(),
+                        "model_diff_parity patch fixtures must define expected.patch_next_time"
+                    );
+                }
+                assert!(
+                    fixture["expected"].get("view_after_apply_json").is_some(),
+                    "model_diff_parity fixtures must define expected.view_after_apply_json"
+                );
+            }
+            "lessdb_model_manager" => {
+                assert!(
+                    fixture["input"]["sid"].is_u64(),
+                    "lessdb_model_manager fixtures must define input.sid"
+                );
+                assert!(
+                    fixture["input"]["ops"].is_array(),
+                    "lessdb_model_manager fixtures must define input.ops"
+                );
+                assert!(
+                    fixture["expected"]["steps"].is_array(),
+                    "lessdb_model_manager fixtures must define expected.steps"
+                );
+                assert!(
+                    fixture["expected"].get("final_view_json").is_some(),
+                    "lessdb_model_manager fixtures must define expected.final_view_json"
+                );
+                assert!(
+                    fixture["expected"]["final_model_binary_hex"].is_string(),
+                    "lessdb_model_manager fixtures must define expected.final_model_binary_hex"
+                );
+            }
             other => panic!("unexpected fixture scenario: {other}"),
         }
     }
@@ -144,6 +241,15 @@ fn manifest_contains_required_scenarios() {
     let has_model_canonical_encode = fixtures
         .iter()
         .any(|f| f["scenario"].as_str() == Some("model_canonical_encode"));
+    let has_model_apply_replay = fixtures
+        .iter()
+        .any(|f| f["scenario"].as_str() == Some("model_apply_replay"));
+    let has_model_diff_parity = fixtures
+        .iter()
+        .any(|f| f["scenario"].as_str() == Some("model_diff_parity"));
+    let has_lessdb_model_manager = fixtures
+        .iter()
+        .any(|f| f["scenario"].as_str() == Some("lessdb_model_manager"));
     let model_roundtrip_count = fixtures
         .iter()
         .filter(|f| f["scenario"].as_str() == Some("model_roundtrip"))
@@ -155,6 +261,18 @@ fn manifest_contains_required_scenarios() {
     let model_canonical_encode_count = fixtures
         .iter()
         .filter(|f| f["scenario"].as_str() == Some("model_canonical_encode"))
+        .count();
+    let model_apply_replay_count = fixtures
+        .iter()
+        .filter(|f| f["scenario"].as_str() == Some("model_apply_replay"))
+        .count();
+    let model_diff_parity_count = fixtures
+        .iter()
+        .filter(|f| f["scenario"].as_str() == Some("model_diff_parity"))
+        .count();
+    let lessdb_model_manager_count = fixtures
+        .iter()
+        .filter(|f| f["scenario"].as_str() == Some("lessdb_model_manager"))
         .count();
     let has_patch_canonical_encode = fixtures
         .iter()
@@ -176,6 +294,18 @@ fn manifest_contains_required_scenarios() {
         "fixtures must include model_canonical_encode scenarios"
     );
     assert!(
+        has_model_apply_replay,
+        "fixtures must include model_apply_replay scenarios"
+    );
+    assert!(
+        has_model_diff_parity,
+        "fixtures must include model_diff_parity scenarios"
+    );
+    assert!(
+        has_lessdb_model_manager,
+        "fixtures must include lessdb_model_manager scenarios"
+    );
+    assert!(
         model_roundtrip_count >= 60,
         "fixtures must include at least 60 model_roundtrip scenarios"
     );
@@ -186,5 +316,17 @@ fn manifest_contains_required_scenarios() {
     assert!(
         model_canonical_encode_count >= 6,
         "fixtures must include at least 6 model_canonical_encode scenarios"
+    );
+    assert!(
+        model_apply_replay_count >= 30,
+        "fixtures must include at least 30 model_apply_replay scenarios"
+    );
+    assert!(
+        model_diff_parity_count >= 50,
+        "fixtures must include at least 50 model_diff_parity scenarios"
+    );
+    assert!(
+        lessdb_model_manager_count >= 30,
+        "fixtures must include at least 30 lessdb_model_manager scenarios"
     );
 }

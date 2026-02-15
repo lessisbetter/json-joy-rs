@@ -1,0 +1,35 @@
+{
+  "fixture_version": 1,
+  "name": "model_diff_parity_13_det_v1",
+  "scenario": "model_diff_parity",
+  "input": {
+    "base_model_binary_hex": "00000002114001d5d90402",
+    "next_view_json": {
+      "txt": "The quick brown fox"
+    },
+    "sid": 77013
+  },
+  "expected": {
+    "patch_present": true,
+    "patch_binary_hex": "d5d90403f703206013030354686520717569636b2062726f776e20666f7851016374787403",
+    "patch_op_count": 3,
+    "patch_opcodes": [
+      4,
+      12,
+      10
+    ],
+    "patch_span": 21,
+    "patch_id_sid": 77013,
+    "patch_id_time": 3,
+    "patch_next_time": 24,
+    "view_after_apply_json": {
+      "txt": "The quick brown fox"
+    },
+    "model_binary_after_apply_hex": "00000021811641637478748114818113781354686520717569636b2062726f776e20666f7801d5d90417"
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

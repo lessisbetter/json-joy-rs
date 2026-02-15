@@ -1,0 +1,88 @@
+{
+  "fixture_version": 1,
+  "name": "lessdb_model_manager_16_create_diff_apply_v1",
+  "scenario": "lessdb_model_manager",
+  "input": {
+    "workflow": "create_diff_apply",
+    "sid": 78016,
+    "initial_json": {
+      "root": {
+        "deep": {
+          "v": "x"
+        }
+      }
+    },
+    "ops": [
+      {
+        "kind": "diff",
+        "next_view_json": {
+          "root": {
+            "deep": {
+              "v": "y"
+            }
+          }
+        }
+      },
+      {
+        "kind": "apply_last_diff"
+      },
+      {
+        "kind": "patch_log_append_last_diff"
+      },
+      {
+        "kind": "patch_log_deserialize"
+      }
+    ]
+  },
+  "expected": {
+    "steps": [
+      {
+        "kind": "diff",
+        "patch_present": true,
+        "patch_binary_hex": "c0e1040af7026104057981040501",
+        "patch_op_count": 2,
+        "patch_opcodes": [
+          12,
+          16
+        ],
+        "patch_span": 2,
+        "patch_id_sid": 78016,
+        "patch_id_time": 10,
+        "patch_next_time": 12
+      },
+      {
+        "kind": "apply_last_diff",
+        "view_json": {
+          "root": {
+            "deep": {
+              "v": "y"
+            }
+          }
+        },
+        "model_binary_hex": "000000191a4164726f6f7419416464656570184161761782160111617901c0e1040b"
+      },
+      {
+        "kind": "patch_log_append_last_diff",
+        "pending_patch_log_hex": "010000000ec0e1040af7026104057981040501"
+      },
+      {
+        "kind": "patch_log_deserialize",
+        "patch_count": 1
+      }
+    ],
+    "final_view_json": {
+      "root": {
+        "deep": {
+          "v": "y"
+        }
+      }
+    },
+    "final_model_binary_hex": "000000191a4164726f6f7419416464656570184161761782160111617901c0e1040b",
+    "final_pending_patch_log_hex": "010000000ec0e1040af7026104057981040501"
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

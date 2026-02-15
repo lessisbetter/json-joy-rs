@@ -202,7 +202,12 @@ Deliverables:
 - Session/vector behavior required for replay idempotence.
 
 Exit criteria:
-- Merge/idempotence scenario fixtures pass.
+- `model_apply_replay` fixture count >= 30.
+- `model_apply_replay_from_fixtures` tests pass:
+  - `apply_replay_fixtures_match_oracle_view`
+  - `duplicate_patch_replay_is_idempotent`
+  - `out_of_order_replay_matches_oracle`
+- Replay/idempotence behavior is fixture-backed and documented in runtime apply code.
 
 ## M4: Diff Parity
 
@@ -215,16 +220,37 @@ Deliverables:
 - `None`/patch behavior parity.
 
 Exit criteria:
-- Differential diff suite passes for target corpus and randomized traces.
+- `model_diff_parity` fixture count >= 50.
+- Exact patch binary parity for patch-present fixtures (`patch_binary_hex` match).
+- No-op parity: Rust returns `None` exactly where oracle returns no patch.
+- `model_diff_parity_from_fixtures` tests pass:
+  - `model_diff_parity_fixtures_match_oracle_patch_binary`
+  - `model_diff_parity_apply_matches_oracle_view`
+  - `model_diff_noop_fixtures_return_none`
 
 ## M5: less-db-js Compatibility Layer
 
 Deliverables:
 - Rust API mirroring current `model-manager` + `patch-log` behavior.
 - Patch-log format parity with less-db-js v1 framing.
+- Minimal FFI exposure for model lifecycle + patch-log helpers.
 
 Exit criteria:
-- Downstream scenario replay tests pass.
+- `lessdb_model_manager` fixture count >= 30.
+- `lessdb_model_manager_from_fixtures` tests pass:
+  - `lessdb_create_diff_apply_matches_oracle`
+  - `lessdb_noop_diff_returns_none`
+  - `lessdb_merge_with_pending_patches_is_idempotent`
+  - `lessdb_fork_and_merge_scenarios_match_oracle`
+  - `lessdb_load_size_limit_is_enforced`
+- `lessdb_patch_log_integration` tests pass.
+- Full workspace test suite remains green.
+
+Implementation note:
+- M5 compatibility layer is temporarily oracle-backed for model lifecycle
+  operations (`create/load/from_binary/diff/apply/fork/merge`) to guarantee
+  behavior parity with `json-joy@17.67.0`. Native replacement is a follow-up
+  hardening task.
 
 ## M6: Python Package Hardening
 

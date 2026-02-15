@@ -1,0 +1,35 @@
+{
+  "fixture_version": 1,
+  "name": "model_diff_parity_09_det_v1",
+  "scenario": "model_diff_parity",
+  "input": {
+    "base_model_binary_hex": "00000002114001d1d90402",
+    "next_view_json": {
+      "title": "hello"
+    },
+    "sid": 77009
+  },
+  "expected": {
+    "patch_present": true,
+    "patch_binary_hex": "d1d90403f7032065030368656c6c6f5101657469746c6503",
+    "patch_op_count": 3,
+    "patch_opcodes": [
+      4,
+      12,
+      10
+    ],
+    "patch_span": 7,
+    "patch_id_sid": 77009,
+    "patch_id_time": 3,
+    "patch_next_time": 10,
+    "view_after_apply_json": {
+      "title": "hello"
+    },
+    "model_binary_after_apply_hex": "000000111841657469746c651681156568656c6c6f01d1d90409"
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

@@ -2,4 +2,14 @@ namespace json_joy {
     string version();
     u64 generate_session_id();
     boolean is_valid_session_id(u64 sid);
+    bytes compat_model_create(string data_json, u64 sid);
+    bytes compat_model_from_binary(bytes model_binary);
+    bytes compat_model_load(bytes model_binary, u64 sid);
+    string compat_model_view(bytes model_binary);
+    bytes compat_model_diff(bytes model_binary, u64 sid, string next_json);
+    bytes compat_model_apply(bytes model_binary, bytes patch_binary);
+    bytes compat_model_fork(bytes model_binary, i64 sid);
+    bytes compat_patch_log_serialize(sequence<bytes> patch_binaries);
+    sequence<bytes> compat_patch_log_deserialize(bytes log_binary);
+    bytes compat_patch_log_append(bytes existing, bytes patch_binary);
 };

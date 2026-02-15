@@ -1,0 +1,40 @@
+{
+  "fixture_version": 1,
+  "name": "lessdb_model_manager_29_merge_idempotent_v1",
+  "scenario": "lessdb_model_manager",
+  "input": {
+    "workflow": "merge_idempotent",
+    "sid": 78029,
+    "base_model_binary_hex": "0000000d1641637478741581146361626301cde10407",
+    "ops": [
+      {
+        "kind": "merge",
+        "patches_binary_hex": [
+          "cde10408f70161020378",
+          "cde10408f70161020378"
+        ]
+      }
+    ]
+  },
+  "expected": {
+    "steps": [
+      {
+        "kind": "merge",
+        "view_json": {
+          "txt": "axbc"
+        },
+        "model_binary_hex": "0000001217416374787416831561611061781462626301cde10408"
+      }
+    ],
+    "patch_binary_hex": "cde10408f70161020378",
+    "final_view_json": {
+      "txt": "axbc"
+    },
+    "final_model_binary_hex": "0000001217416374787416831561611061781462626301cde10408"
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "fixture_version": 1,
+  "name": "lessdb_model_manager_21_fork_merge_v1",
+  "scenario": "lessdb_model_manager",
+  "input": {
+    "workflow": "fork_merge",
+    "sid": 78021,
+    "initial_json": {
+      "title": "a"
+    },
+    "ops": [
+      {
+        "kind": "fork",
+        "sid": 88021
+      },
+      {
+        "kind": "diff_on_fork",
+        "next_view_json": {
+          "title": "A"
+        }
+      },
+      {
+        "kind": "apply_last_diff_on_fork"
+      },
+      {
+        "kind": "merge_into_base"
+      }
+    ]
+  },
+  "expected": {
+    "steps": [
+      {
+        "kind": "fork",
+        "view_json": {
+          "title": "a"
+        }
+      },
+      {
+        "kind": "diff_on_fork",
+        "patch_present": true,
+        "patch_binary_hex": "d5af0506f7026182c5e10483c5e104418182c5e10483c5e10401"
+      },
+      {
+        "kind": "apply_last_diff_on_fork",
+        "view_json": {
+          "title": "A"
+        },
+        "model_binary_hex": "0000000f2441657469746c652382220111614102d5af0507c5e10405"
+      },
+      {
+        "kind": "merge_into_base",
+        "view_json": {
+          "title": "A"
+        },
+        "model_binary_hex": "0000000f1641657469746c651582140121614102c5e10407d5af0507"
+      }
+    ],
+    "final_view_json": {
+      "title": "A"
+    },
+    "final_model_binary_hex": "0000000f1641657469746c651582140121614102c5e10407d5af0507"
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

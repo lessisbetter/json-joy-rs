@@ -1,0 +1,93 @@
+{
+  "fixture_version": 1,
+  "name": "model_diff_parity_43_rnd_v1",
+  "scenario": "model_diff_parity",
+  "input": {
+    "base_model_binary_hex": "00000002114001f3d90402",
+    "next_view_json": {
+      "doc": [
+        {
+          "s0v3dbm": -8.5,
+          "s": true
+        },
+        [
+          {
+            "a2": {},
+            "f2qd1xa6m4": null,
+            "8gju": [
+              null,
+              "26n1"
+            ]
+          },
+          "0ce"
+        ],
+        "zdxes9r3ky9d",
+        {}
+      ]
+    },
+    "sid": 77043
+  },
+  "expected": {
+    "patch_present": true,
+    "patch_binary_hex": "f3d90403f719301000fac108000000f5520478077330763364626d0561730630101000f6300800f6480d0e2064101032366e31720c0c0d1053096261320a780a66327164317861366d340b6438676a750c20631818306365720808091820600c1e1e7a647865733972336b7939641074030304081e2b510163646f6303",
+    "patch_op_count": 25,
+    "patch_opcodes": [
+      6,
+      2,
+      0,
+      0,
+      10,
+      6,
+      2,
+      2,
+      0,
+      6,
+      1,
+      0,
+      9,
+      4,
+      12,
+      14,
+      10,
+      4,
+      12,
+      14,
+      4,
+      12,
+      2,
+      14,
+      10
+    ],
+    "patch_span": 46,
+    "patch_id_sid": 77043,
+    "patch_id_time": 3,
+    "patch_next_time": 49,
+    "view_after_apply_json": {
+      "doc": [
+        {
+          "s0v3dbm": -8.5,
+          "s": true
+        },
+        [
+          {
+            "a2": {},
+            "f2qd1xa6m4": null,
+            "8gju": [
+              null,
+              "26n1"
+            ]
+          },
+          "0ce"
+        ],
+        "zdxes9r3ky9d",
+        {}
+      ]
+    },
+    "model_binary_after_apply_hex": "0000007f812f4163646f63812dc11404812c4278077330763364626d812b00fac10800006173812a00f58128c1811402812743626132812640780a66327164317861366d34812500f66438676a758124c1811b02812320812200f6812081811f6432366e318118818117633063658112818111780c7a647865733972336b793964154001f3d90430"
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

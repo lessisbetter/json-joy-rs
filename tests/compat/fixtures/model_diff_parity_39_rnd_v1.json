@@ -1,0 +1,99 @@
+{
+  "fixture_version": 1,
+  "name": "model_diff_parity_39_rnd_v1",
+  "scenario": "model_diff_parity",
+  "input": {
+    "base_model_binary_hex": "00000002114001efd90402",
+    "next_view_json": {
+      "doc": {
+        "ysyi7fvfsm": {
+          "pbsx1b": null,
+          "47clk8dyvh": "uz6yps29",
+          "spvggw": [
+            {
+              "biz": 68.9,
+              "ep1o": -28.7
+            },
+            null,
+            "9w11d"
+          ],
+          "bh3": {
+            "osnlc2mj4": 10.2,
+            "fqu6": {
+              "bu": null
+            },
+            "ar12a": "httmgv"
+          }
+        }
+      }
+    },
+    "sid": 77039
+  },
+  "expected": {
+    "patch_present": true,
+    "patch_binary_hex": "efd90403f71b101000f62060080606757a367970733239301000fb405139999999999a00fbc03cb3333333333352106362697a11646570316f120800f6481415206517173977313164730f0f1014171000fb40246666666666661000f6512262627523206625256874746d6776532078096f736e6c63326d6a3421646671753622656172313261255404780670627378316205780a3437636c6b38647976680678067370766767770f63626833205103780a7973796937667666736d04510163646f6303",
+    "patch_op_count": 27,
+    "patch_opcodes": [
+      2,
+      2,
+      0,
+      4,
+      12,
+      6,
+      2,
+      0,
+      0,
+      10,
+      1,
+      0,
+      9,
+      4,
+      12,
+      14,
+      2,
+      0,
+      2,
+      0,
+      10,
+      4,
+      12,
+      10,
+      10,
+      10,
+      10
+    ],
+    "patch_span": 45,
+    "patch_id_sid": 77039,
+    "patch_id_time": 3,
+    "patch_next_time": 48,
+    "view_after_apply_json": {
+      "doc": {
+        "ysyi7fvfsm": {
+          "pbsx1b": null,
+          "47clk8dyvh": "uz6yps29",
+          "spvggw": [
+            {
+              "biz": 68.9,
+              "ep1o": -28.7
+            },
+            null,
+            "9w11d"
+          ],
+          "bh3": {
+            "osnlc2mj4": 10.2,
+            "fqu6": {
+              "bu": null
+            },
+            "ar12a": "httmgv"
+          }
+        }
+      }
+    },
+    "model_binary_after_apply_hex": "000000be812e4163646f63812c41780a7973796937667666736d812b447806706273783162812a00f6780a3437636c6b386479766881298181287808757a36797073323978067370766767778120c1811203811f426362697a811e00fb405139999999999a646570316f811d00fbc03cb33333333333811b20811a00f68118818117653977313164636268331f4378096f736e6c63326d6a341e00fb402466666666666664667175361d416262751c00f66561723132611a811978066874746d677601efd9042f"
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

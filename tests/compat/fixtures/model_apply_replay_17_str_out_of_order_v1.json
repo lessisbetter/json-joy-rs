@@ -1,0 +1,45 @@
+{
+  "fixture_version": 1,
+  "name": "model_apply_replay_17_str_out_of_order_v1",
+  "scenario": "model_apply_replay",
+  "input": {
+    "base_model_binary_hex": "00000002114001f9c90402",
+    "patches_binary_hex": [
+      "8cd40401f7032048800001630101616263",
+      "8cd40406f70181010401",
+      "8cd40407f7016101055a"
+    ],
+    "replay_pattern": [
+      2,
+      0,
+      1
+    ],
+    "label": "str_out_of_order"
+  },
+  "expected": {
+    "view_json": "ac",
+    "model_binary_hex": "0000000a2683246161230122616302f9c904078cd40407",
+    "applied_patch_count_effective": 3,
+    "clock_observed": {
+      "patch_ids": [
+        [
+          76300,
+          1
+        ],
+        [
+          76300,
+          6
+        ],
+        [
+          76300,
+          7
+        ]
+      ]
+    }
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

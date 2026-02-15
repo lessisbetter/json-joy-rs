@@ -1,6 +1,9 @@
 //! Core primitives for json-joy-rs.
 
 pub mod model;
+pub mod model_runtime;
+pub mod diff_runtime;
+pub mod less_db_compat;
 pub mod patch;
 pub mod patch_log;
 
