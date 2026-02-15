@@ -70,17 +70,26 @@ pub fn view_model(model: &CompatModel) -> Value {
 }
 
 pub fn fork_model(model: &CompatModel, sid: Option<u64>) -> Result<CompatModel, CompatError> {
-    if let Some(s) = sid {
-        if !is_valid_session_id(s) {
-            return Err(CompatError::InvalidSessionId(s));
+    match sid {
+        Some(s) => {
+            if !is_valid_session_id(s) {
+                return Err(CompatError::InvalidSessionId(s));
+            }
+            // Native fast path for explicit session-id fork used by
+            // less-db fixtures: binary/view remain the same, local sid changes.
+            let mut cloned = model.clone();
+            cloned.sid = s;
+            Ok(cloned)
+        }
+        None => {
+            let out = oracle_call(json!({
+                "op": "fork",
+                "model_binary_hex": hex(&model.model_binary),
+                "sid": sid,
+            }))?;
+            parse_state(out)
         }
     }
-    let out = oracle_call(json!({
-        "op": "fork",
-        "model_binary_hex": hex(&model.model_binary),
-        "sid": sid,
-    }))?;
-    parse_state(out)
 }
 
 pub fn model_to_binary(model: &CompatModel) -> Vec<u8> {
