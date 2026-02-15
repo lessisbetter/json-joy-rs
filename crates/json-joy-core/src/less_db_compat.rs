@@ -3,6 +3,7 @@
 use crate::diff_runtime;
 use crate::{generate_session_id, is_valid_session_id};
 use crate::model::Model;
+use crate::patch::Patch;
 use serde_json::{json, Value};
 use std::path::PathBuf;
 use std::process::Command;
@@ -53,6 +54,14 @@ pub fn diff_model(model: &CompatModel, next: &Value) -> Result<Option<PatchBytes
 }
 
 pub fn apply_patch(model: &mut CompatModel, patch_bytes: &[u8]) -> Result<(), CompatError> {
+    if patch_bytes.is_empty() {
+        return Ok(());
+    }
+    if let Ok(decoded) = Patch::from_binary(patch_bytes) {
+        if decoded.op_count() == 0 {
+            return Ok(());
+        }
+    }
     let out = oracle_call(json!({
         "op": "apply_patch",
         "model_binary_hex": hex(&model.model_binary),
