@@ -39,12 +39,12 @@ pub fn create_model(data: &Value, sid: u64) -> Result<CompatModel, CompatError> 
     if !is_valid_session_id(sid) {
         return Err(CompatError::InvalidSessionId(sid));
     }
-    let out = oracle_call(json!({
-        "op": "create",
-        "sid": sid,
-        "data_json": data,
-    }))?;
-    parse_state(out)
+    let base = empty_logical_model_binary(sid);
+    let mut model = model_load(&base, sid)?;
+    if let Some(patch) = diff_model(&model, data)? {
+        apply_patch(&mut model, &patch)?;
+    }
+    Ok(model)
 }
 
 pub fn diff_model(model: &CompatModel, next: &Value) -> Result<Option<PatchBytes>, CompatError> {
@@ -203,6 +203,34 @@ fn oracle_model_runtime_path() -> PathBuf {
         .join("tools")
         .join("oracle-node")
         .join("model-runtime.cjs")
+}
+
+fn empty_logical_model_binary(sid: u64) -> Vec<u8> {
+    // Structural binary for logical-clock model with undefined root and a
+    // single clock-table tuple [sid, 0].
+    let mut out = Vec::with_capacity(16);
+    // Root section length: 1 byte (undefined root marker 0x00).
+    out.extend_from_slice(&1u32.to_be_bytes());
+    out.push(0x00);
+    // Clock table: length=1, sid, time=0
+    write_vu57(&mut out, 1);
+    write_vu57(&mut out, sid);
+    write_vu57(&mut out, 0);
+    out
+}
+
+fn write_vu57(out: &mut Vec<u8>, mut value: u64) {
+    for _ in 0..7 {
+        let mut b = (value & 0x7f) as u8;
+        value >>= 7;
+        if value == 0 {
+            out.push(b);
+            return;
+        }
+        b |= 0x80;
+        out.push(b);
+    }
+    out.push((value & 0xff) as u8);
 }
 
 fn primary_sid_from_model_binary(data: &[u8]) -> Option<u64> {
