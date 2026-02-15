@@ -1,6 +1,8 @@
 //! less-db-js compatibility layer (M5, oracle-backed bridge).
 
+use crate::diff_runtime;
 use crate::is_valid_session_id;
+use crate::model::Model;
 use serde_json::{json, Value};
 use std::path::PathBuf;
 use std::process::Command;
@@ -46,25 +48,8 @@ pub fn create_model(data: &Value, sid: u64) -> Result<CompatModel, CompatError> 
 }
 
 pub fn diff_model(model: &CompatModel, next: &Value) -> Result<Option<PatchBytes>, CompatError> {
-    let out = oracle_call(json!({
-        "op": "diff",
-        "model_binary_hex": hex(&model.model_binary),
-        "sid": model.sid,
-        "next_view_json": next,
-    }))?;
-
-    let patch_present = out
-        .get("patch_present")
-        .and_then(Value::as_bool)
-        .ok_or(CompatError::InvalidOutput)?;
-    if !patch_present {
-        return Ok(None);
-    }
-    let patch_hex = out
-        .get("patch_binary_hex")
-        .and_then(Value::as_str)
-        .ok_or(CompatError::InvalidOutput)?;
-    Ok(Some(decode_hex(patch_hex)?))
+    diff_runtime::diff_model_to_patch_bytes(&model.model_binary, next, model.sid)
+        .map_err(|e| CompatError::ProcessFailure(e.to_string()))
 }
 
 pub fn apply_patch(model: &mut CompatModel, patch_bytes: &[u8]) -> Result<(), CompatError> {
@@ -109,11 +94,12 @@ pub fn model_from_binary(data: &[u8]) -> Result<CompatModel, CompatError> {
             max: MAX_CRDT_BINARY_SIZE,
         });
     }
-    let out = oracle_call(json!({
-        "op": "from_binary",
-        "model_binary_hex": hex(data),
-    }))?;
-    parse_state(out)
+    let parsed = Model::from_binary(data).map_err(|e| CompatError::ProcessFailure(e.to_string()))?;
+    Ok(CompatModel {
+        model_binary: data.to_vec(),
+        view: parsed.view().clone(),
+        sid: primary_sid_from_model_binary(data).unwrap_or(1),
+    })
 }
 
 pub fn model_load(data: &[u8], sid: u64) -> Result<CompatModel, CompatError> {
@@ -126,12 +112,12 @@ pub fn model_load(data: &[u8], sid: u64) -> Result<CompatModel, CompatError> {
             max: MAX_CRDT_BINARY_SIZE,
         });
     }
-    let out = oracle_call(json!({
-        "op": "load",
-        "model_binary_hex": hex(data),
-        "sid": sid,
-    }))?;
-    parse_state(out)
+    let parsed = Model::from_binary(data).map_err(|e| CompatError::ProcessFailure(e.to_string()))?;
+    Ok(CompatModel {
+        model_binary: data.to_vec(),
+        view: parsed.view().clone(),
+        sid,
+    })
 }
 
 pub fn merge_with_pending_patches(
@@ -214,6 +200,43 @@ fn oracle_model_runtime_path() -> PathBuf {
         .join("tools")
         .join("oracle-node")
         .join("model-runtime.cjs")
+}
+
+fn primary_sid_from_model_binary(data: &[u8]) -> Option<u64> {
+    if data.is_empty() {
+        return None;
+    }
+    if (data[0] & 0x80) != 0 {
+        return Some(1);
+    }
+    if data.len() < 4 {
+        return None;
+    }
+    let offset = u32::from_be_bytes([data[0], data[1], data[2], data[3]]) as usize;
+    let mut pos = 4usize.checked_add(offset)?;
+    let _table_len = read_vu57(data, &mut pos)?;
+    read_vu57(data, &mut pos)
+}
+
+fn read_vu57(data: &[u8], pos: &mut usize) -> Option<u64> {
+    let mut result: u64 = 0;
+    let mut shift: u32 = 0;
+    for i in 0..8 {
+        let b = *data.get(*pos)?;
+        *pos += 1;
+        if i < 7 {
+            let part = (b & 0x7f) as u64;
+            result |= part.checked_shl(shift)?;
+            if (b & 0x80) == 0 {
+                return Some(result);
+            }
+            shift += 7;
+        } else {
+            result |= (b as u64).checked_shl(49)?;
+            return Some(result);
+        }
+    }
+    None
 }
 
 fn hex(bytes: &[u8]) -> String {
