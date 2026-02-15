@@ -1,0 +1,12 @@
+{
+  "name": "json-joy-rs-oracle-node",
+  "private": true,
+  "version": "0.1.0",
+  "type": "commonjs",
+  "scripts": {
+    "generate": "node ./generate-fixtures.cjs"
+  },
+  "dependencies": {
+    "json-joy": "17.67.0"
+  }
+}

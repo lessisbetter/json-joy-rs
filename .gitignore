@@ -4,3 +4,4 @@
 /bindings/python/src/json_joy_rs/generated
 /bindings/python/dist
 /bindings/python/*.egg-info
+/tools/oracle-node/node_modules

@@ -22,6 +22,12 @@ Generate bindings:
 make bindings-python
 ```
 
+Generate compatibility fixtures from upstream `json-joy@17.67.0`:
+
+```bash
+make compat-fixtures
+```
+
 If you call Rust tooling directly, prefer `mise` to ensure the pinned toolchain:
 
 ```bash

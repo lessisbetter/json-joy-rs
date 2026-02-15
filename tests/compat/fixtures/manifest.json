@@ -1,0 +1,23 @@
+{
+  "fixture_version": 1,
+  "upstream_package": "json-joy",
+  "upstream_version": "17.67.0",
+  "fixtures": [
+    {
+      "name": "model_roundtrip_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_v1.json"
+    },
+    {
+      "name": "patch_roundtrip_v1",
+      "scenario": "patch_roundtrip",
+      "file": "patch_roundtrip_v1.json"
+    },
+    {
+      "name": "fork_merge_replay_v1",
+      "scenario": "fork_merge_replay",
+      "file": "fork_merge_replay_v1.json"
+    }
+  ],
+  "generated_at": "2026-02-15T21:34:03.059Z"
+}

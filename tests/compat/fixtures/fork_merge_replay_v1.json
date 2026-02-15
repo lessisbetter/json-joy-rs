@@ -1,0 +1,40 @@
+{
+  "fixture_version": 1,
+  "name": "fork_merge_replay_v1",
+  "scenario": "fork_merge_replay",
+  "input": {
+    "sid_a": 71001,
+    "sid_b": 71002,
+    "base": {
+      "title": "Original",
+      "body": "Original body",
+      "score": 5
+    },
+    "local_next": {
+      "title": "Local Title",
+      "body": "Original body",
+      "score": 5
+    },
+    "remote_next": {
+      "title": "Original",
+      "body": "Remote body",
+      "score": 7
+    }
+  },
+  "expected": {
+    "local_patch_hex": "d9aa041cf70561020a6561020974810206046702044c6f63616c205481020302",
+    "remote_patch_hex": "daaa041cf704668bd9aa0493d9aa0452656d6f7465818bd9aa048cd9aa040800075181d9aa046573636f726523",
+    "merged_view_json": {
+      "title": "Local Title",
+      "body": "Remote body",
+      "score": 7
+    },
+    "merged_model_binary_hex": "0000004f812543657469746c658124878123021778074c6f63616c205481216169812004196174811c616c1a616564626f6479811b83811a0828780652656d6f746581126520626f64796573636f726521000702d9aa0426daaa0424"
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs",
+    "generated_at": "2026-02-15T21:34:03.058Z"
+  }
+}
