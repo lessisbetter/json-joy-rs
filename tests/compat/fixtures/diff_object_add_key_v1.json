@@ -16,6 +16,10 @@
     "patch_present": true,
     "patch_binary_hex": "ccb20405f70200025101616205",
     "patch_op_count": 2,
+    "patch_opcodes": [
+      0,
+      10
+    ],
     "patch_span": 2,
     "patch_id_sid": 72012,
     "patch_id_time": 5,

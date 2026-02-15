@@ -73,6 +73,18 @@ fn patch_diff_apply_fixtures_decode_and_roundtrip() {
         let expected_span = fixture["expected"]["patch_span"]
             .as_u64()
             .unwrap_or_else(|| panic!("expected.patch_span must be u64 for {}", entry["name"]));
+        let expected_opcodes: Vec<u8> = fixture["expected"]["patch_opcodes"]
+            .as_array()
+            .unwrap_or_else(|| panic!("expected.patch_opcodes must be array for {}", entry["name"]))
+            .iter()
+            .map(|v| {
+                let n = v
+                    .as_u64()
+                    .unwrap_or_else(|| panic!("expected.patch_opcodes values must be u64 for {}", entry["name"]));
+                u8::try_from(n)
+                    .unwrap_or_else(|_| panic!("expected.patch_opcodes value out of range for {}", entry["name"]))
+            })
+            .collect();
         let expected_sid = fixture["expected"]["patch_id_sid"]
             .as_u64()
             .unwrap_or_else(|| panic!("expected.patch_id_sid must be u64 for {}", entry["name"]));
@@ -98,6 +110,12 @@ fn patch_diff_apply_fixtures_decode_and_roundtrip() {
             patch.span(),
             expected_span,
             "Patch span mismatch for fixture {}",
+            entry["name"]
+        );
+        assert_eq!(
+            patch.opcodes(),
+            expected_opcodes.as_slice(),
+            "Patch opcode sequence mismatch for fixture {}",
             entry["name"]
         );
         assert_eq!(

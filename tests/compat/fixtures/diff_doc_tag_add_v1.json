@@ -22,6 +22,11 @@
     "patch_present": true,
     "patch_binary_hex": "dab2040bf70320610b0b627105080b",
     "patch_op_count": 3,
+    "patch_opcodes": [
+      4,
+      12,
+      14
+    ],
     "patch_span": 3,
     "patch_id_sid": 72026,
     "patch_id_time": 11,

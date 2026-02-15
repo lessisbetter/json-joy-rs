@@ -2,7 +2,7 @@
   "fixture_version": 1,
   "upstream_package": "json-joy",
   "upstream_version": "17.67.0",
-  "fixture_count": 102,
+  "fixture_count": 106,
   "fixtures": [
     {
       "name": "diff_root_number_to_number_v1",
@@ -253,6 +253,26 @@
       "name": "decode_error_long_random_v1",
       "scenario": "patch_decode_error",
       "file": "decode_error_long_random_v1.json"
+    },
+    {
+      "name": "patch_canonical_root_scalar_v1",
+      "scenario": "patch_canonical_encode",
+      "file": "patch_canonical_root_scalar_v1.json"
+    },
+    {
+      "name": "patch_canonical_object_map_v1",
+      "scenario": "patch_canonical_encode",
+      "file": "patch_canonical_object_map_v1.json"
+    },
+    {
+      "name": "patch_canonical_array_insert_v1",
+      "scenario": "patch_canonical_encode",
+      "file": "patch_canonical_array_insert_v1.json"
+    },
+    {
+      "name": "patch_canonical_string_with_nop_v1",
+      "scenario": "patch_canonical_encode",
+      "file": "patch_canonical_string_with_nop_v1.json"
     },
     {
       "name": "model_roundtrip_scalar_number_v1",

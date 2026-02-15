@@ -1,12 +1,44 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const {Model} = require('json-joy/lib/json-crdt/index.js');
-const {Patch} = require('json-joy/lib/json-crdt-patch/index.js');
+const patchLib = require('json-joy/lib/json-crdt-patch/index.js');
+const {
+  Patch,
+  ts,
+  NewConOp,
+  NewValOp,
+  NewObjOp,
+  NewStrOp,
+  NewArrOp,
+  InsValOp,
+  InsObjOp,
+  InsStrOp,
+  InsArrOp,
+  NopOp,
+} = patchLib;
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const OUT_DIR = path.join(ROOT, 'tests', 'compat', 'fixtures');
 const UPSTREAM_VERSION = '17.67.0';
 const FIXTURE_VERSION = 1;
+const OPCODE_BY_NAME = {
+  new_con: 0,
+  new_val: 1,
+  new_obj: 2,
+  new_vec: 3,
+  new_str: 4,
+  new_bin: 5,
+  new_arr: 6,
+  ins_val: 9,
+  ins_obj: 10,
+  ins_vec: 11,
+  ins_str: 12,
+  ins_bin: 13,
+  ins_arr: 14,
+  upd_arr: 15,
+  del: 16,
+  nop: 17,
+};
 
 function hex(bytes) {
   return Buffer.from(bytes).toString('hex');
@@ -120,6 +152,7 @@ function buildDiffFixture(name, sid, base, next) {
     patch_present: true,
     patch_binary_hex: hex(patchBinary),
     patch_op_count: decoded.ops.length,
+    patch_opcodes: decoded.ops.map((op) => OPCODE_BY_NAME[op.name()]),
     patch_span: decoded.span(),
     patch_id_sid: patchId ? patchId.sid : null,
     patch_id_time: patchId ? patchId.time : null,
@@ -127,6 +160,134 @@ function buildDiffFixture(name, sid, base, next) {
     view_after_apply_json: model.view(),
     model_binary_after_apply_hex: hex(model.toBinary())
   });
+}
+
+function tsFromTuple(t) {
+  return ts(t[0], t[1]);
+}
+
+function canonicalPatchFromModel(input) {
+  const patch = new Patch();
+  patch.meta = undefined;
+  for (const op of input.ops) {
+    switch (op.op) {
+      case 'new_con':
+        patch.ops.push(new NewConOp(tsFromTuple(op.id), op.value));
+        break;
+      case 'new_val':
+        patch.ops.push(new NewValOp(tsFromTuple(op.id)));
+        break;
+      case 'new_obj':
+        patch.ops.push(new NewObjOp(tsFromTuple(op.id)));
+        break;
+      case 'new_str':
+        patch.ops.push(new NewStrOp(tsFromTuple(op.id)));
+        break;
+      case 'new_arr':
+        patch.ops.push(new NewArrOp(tsFromTuple(op.id)));
+        break;
+      case 'ins_val':
+        patch.ops.push(new InsValOp(tsFromTuple(op.id), tsFromTuple(op.obj), tsFromTuple(op.val)));
+        break;
+      case 'ins_obj':
+        patch.ops.push(
+          new InsObjOp(
+            tsFromTuple(op.id),
+            tsFromTuple(op.obj),
+            op.data.map(([k, v]) => [k, tsFromTuple(v)])
+          )
+        );
+        break;
+      case 'ins_str':
+        patch.ops.push(new InsStrOp(tsFromTuple(op.id), tsFromTuple(op.obj), tsFromTuple(op.ref), op.data));
+        break;
+      case 'ins_arr':
+        patch.ops.push(
+          new InsArrOp(
+            tsFromTuple(op.id),
+            tsFromTuple(op.obj),
+            tsFromTuple(op.ref),
+            op.data.map((v) => tsFromTuple(v))
+          )
+        );
+        break;
+      case 'nop':
+        patch.ops.push(new NopOp(tsFromTuple(op.id), op.len));
+        break;
+      default:
+        throw new Error(`unsupported canonical op: ${op.op}`);
+    }
+  }
+  return patch;
+}
+
+function buildCanonicalEncodeFixture(name, input) {
+  const patch = canonicalPatchFromModel(input);
+  const binary = patch.toBinary();
+  return baseFixture(name, 'patch_canonical_encode', input, {
+    patch_binary_hex: hex(binary),
+    patch_op_count: patch.ops.length,
+    patch_span: patch.span(),
+    patch_opcodes: input.ops.map((op) => OPCODE_BY_NAME[op.op]),
+  });
+}
+
+function allCanonicalEncodeFixtures() {
+  const sid = 74001;
+  return [
+    buildCanonicalEncodeFixture('patch_canonical_root_scalar_v1', {
+      sid,
+      time: 1,
+      meta_kind: 'undefined',
+      ops: [
+        {op: 'new_con', id: [sid, 1], value: 7},
+        {op: 'ins_val', id: [sid, 2], obj: [0, 0], val: [sid, 1]},
+      ],
+    }),
+    buildCanonicalEncodeFixture('patch_canonical_object_map_v1', {
+      sid,
+      time: 1,
+      meta_kind: 'undefined',
+      ops: [
+        {op: 'new_obj', id: [sid, 1]},
+        {op: 'ins_val', id: [sid, 2], obj: [0, 0], val: [sid, 1]},
+        {op: 'new_con', id: [sid, 3], value: 1},
+        {op: 'new_con', id: [sid, 4], value: 'x'},
+        {
+          op: 'ins_obj',
+          id: [sid, 5],
+          obj: [sid, 1],
+          data: [
+            ['a', [sid, 3]],
+            ['b', [sid, 4]],
+          ],
+        },
+      ],
+    }),
+    buildCanonicalEncodeFixture('patch_canonical_array_insert_v1', {
+      sid,
+      time: 1,
+      meta_kind: 'undefined',
+      ops: [
+        {op: 'new_arr', id: [sid, 1]},
+        {op: 'ins_val', id: [sid, 2], obj: [0, 0], val: [sid, 1]},
+        {op: 'new_con', id: [sid, 3], value: 10},
+        {op: 'new_con', id: [sid, 4], value: 20},
+        {op: 'ins_arr', id: [sid, 5], obj: [sid, 1], ref: [sid, 1], data: [[sid, 3], [sid, 4]]},
+      ],
+    }),
+    buildCanonicalEncodeFixture('patch_canonical_string_with_nop_v1', {
+      sid,
+      time: 1,
+      meta_kind: 'undefined',
+      ops: [
+        {op: 'new_str', id: [sid, 1]},
+        {op: 'ins_val', id: [sid, 2], obj: [0, 0], val: [sid, 1]},
+        {op: 'ins_str', id: [sid, 3], obj: [sid, 1], ref: [sid, 1], data: 'hello'},
+        {op: 'nop', id: [sid, 8], len: 2},
+      ],
+    }),
+  ];
 }
 
 function buildDecodeErrorFixture(name, binaryHex) {
@@ -367,6 +528,7 @@ function main() {
   const fixtures = [
     ...allDiffFixtures(),
     ...allDecodeErrorFixtures(),
+    ...allCanonicalEncodeFixtures(),
     ...allModelFixtures(),
     ...allModelDecodeErrorFixtures()
   ];

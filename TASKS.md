@@ -8,8 +8,8 @@
 - [x] Add fixture-driven malformed input acceptance/rejection tests (`patch_decode_error`).
 - [x] Implement initial Rust `Patch` binary decoder/validator and `to_binary` roundtrip.
 - [x] Add explicit code comments documenting fixture-driven compatibility choices.
-- [ ] Deepen opcode-level semantic assertions (op count/span parity from fixtures).
-- [ ] Add encode tests from canonical operation models (not only roundtrip opaque bytes).
+- [x] Deepen opcode-level semantic assertions (opcodes/op count/span parity from fixtures).
+- [x] Add encode tests from canonical operation models (not only roundtrip opaque bytes).
 
 ## M2: Model Binary + View
 

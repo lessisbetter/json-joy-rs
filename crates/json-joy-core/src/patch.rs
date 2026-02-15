@@ -32,6 +32,7 @@ pub struct Patch {
     span: u64,
     sid: u64,
     time: u64,
+    opcodes: Vec<u8>,
 }
 
 impl Patch {
@@ -59,6 +60,7 @@ impl Patch {
                 span: 0,
                 sid: 0,
                 time: 0,
+                opcodes: Vec::new(),
             });
         }
         if !reader.is_eof() {
@@ -68,15 +70,17 @@ impl Patch {
                 span: 0,
                 sid: 0,
                 time: 0,
+                opcodes: Vec::new(),
             });
         }
-        let (sid, time, op_count, span) = decoded.expect("checked above");
+        let (sid, time, op_count, span, opcodes) = decoded.expect("checked above");
         Ok(Self {
             bytes: data.to_vec(),
             op_count,
             span,
             sid,
             time,
+            opcodes,
         })
     }
 
@@ -106,6 +110,10 @@ impl Patch {
         } else {
             self.time.saturating_add(self.span)
         }
+    }
+
+    pub fn opcodes(&self) -> &[u8] {
+        &self.opcodes
     }
 }
 
@@ -210,7 +218,7 @@ impl<'a> Reader<'a> {
     }
 }
 
-fn decode_patch(reader: &mut Reader<'_>) -> Result<(u64, u64, u64, u64), PatchError> {
+fn decode_patch(reader: &mut Reader<'_>) -> Result<(u64, u64, u64, u64, Vec<u8>), PatchError> {
     let sid = reader.vu57()?;
     let time = reader.vu57()?;
 
@@ -219,12 +227,15 @@ fn decode_patch(reader: &mut Reader<'_>) -> Result<(u64, u64, u64, u64), PatchEr
 
     let ops_len = reader.vu57()?;
     let mut span: u64 = 0;
+    let mut opcodes = Vec::with_capacity(ops_len as usize);
     for _ in 0..ops_len {
+        let (opcode, op_span) = decode_op(reader)?;
+        opcodes.push(opcode);
         span = span
-            .checked_add(decode_op(reader)?)
+            .checked_add(op_span)
             .ok_or(PatchError::Overflow)?;
     }
-    Ok((sid, time, ops_len, span))
+    Ok((sid, time, ops_len, span, opcodes))
 }
 
 fn read_len_from_low3_or_var(reader: &mut Reader<'_>, octet: u8) -> Result<u64, PatchError> {
@@ -236,7 +247,7 @@ fn read_len_from_low3_or_var(reader: &mut Reader<'_>, octet: u8) -> Result<u64, 
     }
 }
 
-fn decode_op(reader: &mut Reader<'_>) -> Result<u64, PatchError> {
+fn decode_op(reader: &mut Reader<'_>) -> Result<(u8, u64), PatchError> {
     let octet = reader.u8()?;
     let opcode = octet >> 3;
 
@@ -249,15 +260,15 @@ fn decode_op(reader: &mut Reader<'_>) -> Result<u64, PatchError> {
             } else {
                 reader.decode_id()?;
             }
-            Ok(1)
+            Ok((opcode, 1))
         }
         // new_val/new_obj/new_vec/new_str/new_bin/new_arr
-        1..=6 => Ok(1),
+        1..=6 => Ok((opcode, 1)),
         // ins_val
         9 => {
             reader.decode_id()?;
             reader.decode_id()?;
-            Ok(1)
+            Ok((opcode, 1))
         }
         // ins_obj
         10 => {
@@ -267,7 +278,7 @@ fn decode_op(reader: &mut Reader<'_>) -> Result<u64, PatchError> {
                 let _ = reader.read_one_cbor()?;
                 reader.decode_id()?;
             }
-            Ok(1)
+            Ok((opcode, 1))
         }
         // ins_vec
         11 => {
@@ -277,7 +288,7 @@ fn decode_op(reader: &mut Reader<'_>) -> Result<u64, PatchError> {
                 let _ = reader.read_one_cbor()?;
                 reader.decode_id()?;
             }
-            Ok(1)
+            Ok((opcode, 1))
         }
         // ins_str
         12 => {
@@ -285,7 +296,7 @@ fn decode_op(reader: &mut Reader<'_>) -> Result<u64, PatchError> {
             reader.decode_id()?;
             reader.decode_id()?;
             reader.skip(len)?;
-            Ok(len as u64)
+            Ok((opcode, len as u64))
         }
         // ins_bin
         13 => {
@@ -293,7 +304,7 @@ fn decode_op(reader: &mut Reader<'_>) -> Result<u64, PatchError> {
             reader.decode_id()?;
             reader.decode_id()?;
             reader.skip(len)?;
-            Ok(len as u64)
+            Ok((opcode, len as u64))
         }
         // ins_arr
         14 => {
@@ -303,14 +314,14 @@ fn decode_op(reader: &mut Reader<'_>) -> Result<u64, PatchError> {
             for _ in 0..len {
                 reader.decode_id()?;
             }
-            Ok(len)
+            Ok((opcode, len))
         }
         // upd_arr
         15 => {
             reader.decode_id()?;
             reader.decode_id()?;
             reader.decode_id()?;
-            Ok(1)
+            Ok((opcode, 1))
         }
         // del
         16 => {
@@ -320,12 +331,12 @@ fn decode_op(reader: &mut Reader<'_>) -> Result<u64, PatchError> {
                 reader.decode_id()?;
                 let _span = reader.vu57()?;
             }
-            Ok(1)
+            Ok((opcode, 1))
         }
         // nop
         17 => {
             let len = read_len_from_low3_or_var(reader, octet)?;
-            Ok(len)
+            Ok((opcode, len))
         }
         _ => Err(PatchError::UnknownOpcode(opcode)),
     }

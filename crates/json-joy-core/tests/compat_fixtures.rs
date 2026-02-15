@@ -73,6 +73,20 @@ fn every_manifest_fixture_file_exists_and_has_required_keys() {
                     "patch_decode_error fixtures must define expected.error_message"
                 );
             }
+            "patch_canonical_encode" => {
+                assert!(
+                    fixture["input"]["ops"].is_array(),
+                    "patch_canonical_encode fixtures must define input.ops"
+                );
+                assert!(
+                    fixture["expected"]["patch_binary_hex"].is_string(),
+                    "patch_canonical_encode fixtures must define expected.patch_binary_hex"
+                );
+                assert!(
+                    fixture["expected"]["patch_opcodes"].is_array(),
+                    "patch_canonical_encode fixtures must define expected.patch_opcodes"
+                );
+            }
             "model_roundtrip" => {
                 assert!(
                     fixture["expected"]["model_binary_hex"].is_string(),
@@ -113,9 +127,16 @@ fn manifest_contains_required_scenarios() {
     let has_model_decode_error = fixtures
         .iter()
         .any(|f| f["scenario"].as_str() == Some("model_decode_error"));
+    let has_patch_canonical_encode = fixtures
+        .iter()
+        .any(|f| f["scenario"].as_str() == Some("patch_canonical_encode"));
 
     assert!(has_diff_apply, "fixtures must include patch_diff_apply scenarios");
     assert!(has_decode_error, "fixtures must include patch_decode_error scenarios");
+    assert!(
+        has_patch_canonical_encode,
+        "fixtures must include patch_canonical_encode scenarios"
+    );
     assert!(has_model_roundtrip, "fixtures must include model_roundtrip scenarios");
     assert!(
         has_model_decode_error,
