@@ -357,6 +357,14 @@ impl NativeModelApi {
     }
 
     pub fn remove(&mut self, path: &[PathStep]) -> Result<(), ModelApiError> {
+        self.remove_with_length(path, 1)
+    }
+
+    pub fn remove_with_length(
+        &mut self,
+        path: &[PathStep],
+        length: usize,
+    ) -> Result<(), ModelApiError> {
         if path.is_empty() {
             return Err(ModelApiError::InvalidPathOp);
         }
@@ -373,11 +381,20 @@ impl NativeModelApi {
             }
             (Value::Array(arr), PathStep::Index(idx)) => {
                 if *idx < arr.len() {
-                    arr.remove(*idx);
+                    let end = (*idx + length.max(1)).min(arr.len());
+                    arr.drain(*idx..end);
                 }
             }
             (Value::Array(arr), PathStep::Append) => {
                 let _ = arr.pop();
+            }
+            (Value::String(s), PathStep::Index(idx)) => {
+                let mut chars: Vec<char> = s.chars().collect();
+                if *idx < chars.len() {
+                    let end = (*idx + length.max(1)).min(chars.len());
+                    chars.drain(*idx..end);
+                    *s = chars.into_iter().collect();
+                }
             }
             _ => return Err(ModelApiError::InvalidPathOp),
         }
@@ -411,6 +428,10 @@ impl NativeModelApi {
         self.remove(path).is_ok()
     }
 
+    pub fn try_remove_with_length(&mut self, path: &[PathStep], length: usize) -> bool {
+        self.remove_with_length(path, length).is_ok()
+    }
+
     pub fn try_remove_ptr(&mut self, ptr: &str) -> bool {
         let Ok(steps) = parse_json_pointer(ptr) else {
             return false;
@@ -422,7 +443,7 @@ impl NativeModelApi {
         match operation {
             ApiOperation::Add { path, value } => self.try_add(&path, value),
             ApiOperation::Replace { path, value } => self.try_replace(&path, value),
-            ApiOperation::Remove { path, .. } => self.try_remove(&path),
+            ApiOperation::Remove { path, length } => self.try_remove_with_length(&path, length),
             ApiOperation::Merge { path, value } => self.merge(Some(&path), value),
         }
     }

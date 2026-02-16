@@ -487,3 +487,46 @@ fn upstream_port_model_api_json_pointer_matrix() {
     assert_eq!(api.read_ptr(Some("/doc/a~1b/~0k")), Some(json!([7])));
     assert!(!api.try_add_ptr("/missing/-", json!(1)));
 }
+
+#[test]
+fn upstream_port_model_api_remove_length_matrix() {
+    // Upstream mapping:
+    // - json-crdt/model/api/nodes.ts remove(path, length) semantics across families.
+    let sid = 97010;
+    let mut api = NativeModelApi::from_patches(&[patch_from_ops(
+        sid,
+        1,
+        &[
+            DecodedOp::NewObj {
+                id: Timestamp { sid, time: 1 },
+            },
+            DecodedOp::InsVal {
+                id: Timestamp { sid, time: 2 },
+                obj: Timestamp { sid: 0, time: 0 },
+                val: Timestamp { sid, time: 1 },
+            },
+        ],
+    )])
+    .expect("from_patches must succeed");
+
+    api.obj_put(&[], "arr", json!([1, 2, 3, 4]))
+        .expect("seed arr");
+    api.obj_put(&[], "str", json!("abcdef")).expect("seed str");
+    api.obj_put(&[], "bin", json!([1, 2, 3, 4, 5]))
+        .expect("seed bin");
+
+    assert!(api.try_remove_with_length(
+        &[PathStep::Key("arr".into()), PathStep::Index(1)],
+        2
+    ));
+    assert!(api.try_remove_with_length(
+        &[PathStep::Key("str".into()), PathStep::Index(2)],
+        3
+    ));
+    assert!(api.op(ApiOperation::Remove {
+        path: vec![PathStep::Key("bin".into()), PathStep::Index(1)],
+        length: 3,
+    }));
+
+    assert_eq!(api.view(), json!({"arr":[1,4],"str":"abf","bin":[1,5]}));
+}
