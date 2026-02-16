@@ -280,3 +280,62 @@ fn upstream_port_model_api_node_handle_proxy_matrix() {
     let doc = api.node().at_key("doc").read();
     assert_eq!(doc, Some(json!({"title":"aZb","list":[7,2,3]})));
 }
+
+#[test]
+fn upstream_port_model_api_typed_node_wrappers_matrix() {
+    // Upstream mapping:
+    // - json-crdt/model/api/nodes.ts NodeApi.{asObj,asArr,asStr} behavior slice.
+    let sid = 97006;
+    let mut api = NativeModelApi::from_patches(&[patch_from_ops(
+        sid,
+        1,
+        &[
+            DecodedOp::NewObj {
+                id: Timestamp { sid, time: 1 },
+            },
+            DecodedOp::InsVal {
+                id: Timestamp { sid, time: 2 },
+                obj: Timestamp { sid: 0, time: 0 },
+                val: Timestamp { sid, time: 1 },
+            },
+        ],
+    )])
+    .expect("from_patches must succeed");
+
+    api.node()
+        .as_obj()
+        .expect("root object wrapper must resolve")
+        .set("doc", json!({"title":"ab","list":[1,2]}))
+        .expect("set via object wrapper must succeed");
+
+    let mut list = api
+        .node()
+        .at_key("doc")
+        .at_key("list")
+        .as_arr()
+        .expect("array wrapper must resolve");
+    assert_eq!(list.length(), 2);
+    list.ins(1, json!(9)).expect("ins must succeed");
+    list.upd(0, json!(7)).expect("upd must succeed");
+    list.del(2).expect("del must succeed");
+
+    let mut title = api
+        .node()
+        .at_key("doc")
+        .at_key("title")
+        .as_str()
+        .expect("string wrapper must resolve");
+    assert_eq!(title.length(), 2);
+    title.ins(1, "Z").expect("str ins must succeed");
+    title.del(2, 1).expect("str del must succeed");
+
+    let mut doc = api
+        .node()
+        .at_key("doc")
+        .as_obj()
+        .expect("object wrapper must resolve");
+    assert!(doc.has("title"));
+    doc.del("title").expect("object del must succeed");
+
+    assert_eq!(api.view(), json!({"doc":{"list":[7,9]}}));
+}
