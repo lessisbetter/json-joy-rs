@@ -117,7 +117,7 @@ fn upstream_port_model_encode_inventory_from_apply_replay() {
 
     assert!(seen >= 30, "expected at least 30 model_apply_replay fixtures");
     assert!(
-        match_count >= 20,
-        "expected at least 20 binary-parity matches in apply_replay inventory; got {match_count}"
+        match_count >= 24,
+        "expected at least 24 binary-parity matches in apply_replay inventory; got {match_count}"
     );
 }
