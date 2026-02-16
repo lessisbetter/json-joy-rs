@@ -1,7 +1,7 @@
 //! less-db-js compatibility layer.
 
 use crate::diff_runtime;
-use crate::crdt_binary::first_logical_clock_sid_time;
+use crate::crdt_binary::{first_logical_clock_sid_time, first_model_clock_sid_time};
 use crate::{generate_session_id, is_valid_session_id};
 use crate::model::Model;
 use crate::model_runtime::RuntimeModel;
@@ -60,7 +60,18 @@ pub fn create_model(data: &Value, sid: u64) -> Result<CompatModel, CompatError> 
 pub fn diff_model(model: &CompatModel, next: &Value) -> Result<Option<PatchBytes>, CompatError> {
     match diff_runtime::diff_model_to_patch_bytes(&model.model_binary, next, model.sid) {
         Ok(v) => Ok(v),
-        Err(diff_runtime::DiffError::UnsupportedShape) => Err(CompatError::UnsupportedShape),
+        Err(diff_runtime::DiffError::UnsupportedShape) => {
+            // Native fallback for broad shape coverage:
+            // synthesize a canonical full root-replace patch, mirroring
+            // upstream behavior where unsupported recursive diff paths still
+            // can be represented as value replacement.
+            let (_, base_time) = first_model_clock_sid_time(&model.model_binary)
+                .ok_or(CompatError::UnsupportedShape)?;
+            let ops = build_create_ops(next, model.sid, base_time.saturating_add(1));
+            let bytes = encode_patch_from_ops(model.sid, base_time.saturating_add(1), &ops)
+                .map_err(|e| CompatError::ProcessFailure(format!("fallback diff encode failed: {e}")))?;
+            Ok(Some(bytes))
+        }
         Err(e) => Err(CompatError::ProcessFailure(e.to_string())),
     }
 }

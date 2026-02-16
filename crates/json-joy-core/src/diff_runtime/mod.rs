@@ -9,7 +9,7 @@ use crate::model::Model;
 use crate::model_runtime::RuntimeModel;
 use crate::patch::{ConValue, DecodedOp, Timestamp};
 use crate::patch_builder::{encode_patch_from_ops, PatchBuildError};
-use crate::crdt_binary::first_logical_clock_sid_time;
+use crate::crdt_binary::first_model_clock_sid_time;
 use serde_json::Value;
 use thiserror::Error;
 

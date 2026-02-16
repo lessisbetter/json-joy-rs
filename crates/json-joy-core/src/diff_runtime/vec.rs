@@ -34,7 +34,7 @@ fn try_native_root_obj_vec_delta_diff(
         Ok(v) => v,
         Err(_) => return Ok(None),
     };
-    let (_, base_time) = match first_logical_clock_sid_time(base_model_binary) {
+    let (_, base_time) = match first_model_clock_sid_time(base_model_binary) {
         Some(v) => v,
         None => return Ok(None),
     };
@@ -99,7 +99,7 @@ fn try_native_root_obj_multi_vec_delta_diff(
         Ok(v) => v,
         Err(_) => return Ok(None),
     };
-    let (_, base_time) = match first_logical_clock_sid_time(base_model_binary) {
+    let (_, base_time) = match first_model_clock_sid_time(base_model_binary) {
         Some(v) => v,
         None => return Ok(None),
     };
@@ -175,7 +175,7 @@ fn try_native_nested_obj_vec_delta_diff(
         None => return Ok(None),
     };
 
-    let (_, base_time) = match first_logical_clock_sid_time(base_model_binary) {
+    let (_, base_time) = match first_model_clock_sid_time(base_model_binary) {
         Some(v) => v,
         None => return Ok(None),
     };
@@ -224,7 +224,7 @@ fn try_native_multi_root_nested_vec_delta_diff(
         Ok(v) => v,
         Err(_) => return Ok(None),
     };
-    let (_, base_time) = match first_logical_clock_sid_time(base_model_binary) {
+    let (_, base_time) = match first_model_clock_sid_time(base_model_binary) {
         Some(v) => v,
         None => return Ok(None),
     };

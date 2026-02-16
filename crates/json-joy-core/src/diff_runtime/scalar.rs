@@ -20,7 +20,7 @@ fn try_native_non_object_root_diff(
         Some(v) => v,
         None => return Ok(None),
     };
-    let (_, base_time) = match first_logical_clock_sid_time(base_model_binary) {
+    let (_, base_time) = match first_model_clock_sid_time(base_model_binary) {
         Some(v) => v,
         None => return Ok(None),
     };
@@ -222,7 +222,7 @@ fn try_native_empty_obj_diff(
         Value::Object(map) => map,
         _ => return Ok(None),
     };
-    let (root_sid, base_time) = match first_logical_clock_sid_time(base_model_binary) {
+    let (root_sid, base_time) = match first_model_clock_sid_time(base_model_binary) {
         Some(v) => v,
         None => return Ok(None),
     };
@@ -286,7 +286,7 @@ fn try_native_root_obj_scalar_delta_diff(
         _ => return Ok(None),
     };
 
-    let (root_sid, base_time) = match first_logical_clock_sid_time(base_model_binary) {
+    let (root_sid, base_time) = match first_model_clock_sid_time(base_model_binary) {
         Some(v) => v,
         None => return Ok(None),
     };
@@ -350,7 +350,7 @@ fn try_native_root_replace_diff(
     next_view: &Value,
     patch_sid: u64,
 ) -> Result<Option<Option<Vec<u8>>>, DiffError> {
-    let (_, base_time) = match first_logical_clock_sid_time(base_model_binary) {
+    let (_, base_time) = match first_model_clock_sid_time(base_model_binary) {
         Some(v) => v,
         None => return Ok(None),
     };
@@ -498,7 +498,7 @@ fn try_native_nested_obj_scalar_key_delta_diff(
         _ => return Ok(None),
     };
 
-    let (_, base_time) = match first_logical_clock_sid_time(base_model_binary) {
+    let (_, base_time) = match first_model_clock_sid_time(base_model_binary) {
         Some(v) => v,
         None => return Ok(None),
     };

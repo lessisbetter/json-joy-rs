@@ -121,3 +121,19 @@ pub fn first_logical_clock_sid_time(data: &[u8]) -> Option<(u64, u64)> {
     let first = table.first()?;
     Some((first.sid, first.time))
 }
+
+/// Returns the first model clock `(sid, time)` for both logical and server
+/// structural model encodings.
+///
+/// - Logical model preamble: 4-byte clock-table offset followed by table.
+/// - Server model preamble: marker byte with MSB set, then `vu57(time)`.
+pub fn first_model_clock_sid_time(data: &[u8]) -> Option<(u64, u64)> {
+    let first = *data.first()?;
+    if (first & 0x80) != 0 {
+        let mut pos = 1usize;
+        let time = read_vu57(data, &mut pos)?;
+        // Upstream server-clock session id is fixed to 1.
+        return Some((1, time));
+    }
+    first_logical_clock_sid_time(data)
+}
