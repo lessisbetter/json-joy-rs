@@ -546,6 +546,9 @@ fn upstream_port_model_api_json_pointer_matrix() {
     assert!(api.try_remove_ptr("/doc/a~1b/~0k/1"));
 
     assert_eq!(api.read_ptr(Some("/doc/a~1b/~0k")), Some(json!([7])));
+    api.obj_put(&[], "", json!({"z": 1}))
+        .expect("empty key put must succeed");
+    assert_eq!(api.read_ptr(Some("/")), Some(json!({"z": 1})));
     assert!(!api.try_add_ptr("/missing/-", json!(1)));
 }
 

@@ -158,6 +158,10 @@
   Added seeded Node differential parity checks in
   `crates/json-joy-core/tests/differential_patch_schema_seeded.rs` for
   `s.json(...).build(...) + setVal(origin, root)` patch bytes.
+- [x] Complete internal `json-pointer` utility coverage for model API paths.
+  Added shared module `crates/json-joy-core/src/json_pointer.rs` and upstream-shaped
+  test matrix `crates/json-joy-core/tests/upstream_port_json_pointer_matrix.rs`;
+  `model_api/path.rs` pointer parsing now delegates to this shared implementation.
 - [x] Add upstream-mapped `Patch.ts` timeline transform baseline (`rewrite_time`/`rebase`) in
   `crates/json-joy-core/src/patch/mod.rs` with matrix tests in
   `crates/json-joy-core/tests/upstream_port_patch_rebase_matrix.rs`.

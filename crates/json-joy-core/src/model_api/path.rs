@@ -1,6 +1,7 @@
 use serde_json::Value;
 
 use super::ModelApiError;
+use crate::json_pointer::parse_json_pointer_relaxed;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PathStep {
@@ -47,20 +48,9 @@ pub fn split_parent(path: &[PathStep]) -> Result<(&[PathStep], &PathStep), Model
 }
 
 pub fn parse_json_pointer(path: &str) -> Result<Vec<PathStep>, ModelApiError> {
-    if path.is_empty() || path == "/" {
-        return Ok(Vec::new());
-    }
-    let normalized = if path.starts_with('/') {
-        path
-    } else {
-        // Match upstream convenience behavior: allow relative pointer strings.
-        // Example: "doc/items/0" => "/doc/items/0".
-        return parse_json_pointer(&format!("/{path}"));
-    };
-
     let mut out = Vec::new();
-    for raw in normalized.split('/').skip(1) {
-        let token = raw.replace("~1", "/").replace("~0", "~");
+    let components = parse_json_pointer_relaxed(path).map_err(|_| ModelApiError::InvalidPathOp)?;
+    for token in components {
         if token == "-" {
             out.push(PathStep::Append);
             continue;

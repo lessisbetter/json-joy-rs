@@ -46,6 +46,7 @@ fn must_have_test_modules_exist_for_each_layer() {
         "upstream_port_model_api_matrix.rs",
         "upstream_port_model_apply_matrix.rs",
         "upstream_port_nodes_family_matrix.rs",
+        "upstream_port_json_pointer_matrix.rs",
         "upstream_port_patch_builder_matrix.rs",
         "upstream_port_patch_schema_matrix.rs",
         "upstream_port_util_diff_str_bin_matrix.rs",

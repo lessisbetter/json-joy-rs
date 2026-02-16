@@ -37,6 +37,12 @@ Gate legend:
 | `json-crdt-patch/schema.ts` | `crates/json-joy-core/src/schema.rs` | native | yes | yes | yes | yes | Native schema patch builder parity is fixture-backed (`patch_schema_parity >= 45`) and differential/upstream matrix tested. |
 | less-db compatibility lifecycle apply | `crates/json-joy-core/src/less_db_compat.rs` | native | yes | yes | yes | yes | `create_model`, `diff_model`, and `apply_patch` are native in production; compatibility flows stay parity-clean across expanded fixtures (`lessdb_model_manager >= 90`). |
 
+## Adjacent Utility Coverage
+
+| Upstream family | Rust target | Status | test-port mapped | fixture coverage | differential parity | no bridge | Notes |
+|---|---|---|---|---|---|---|---|
+| `json-pointer` (`util.ts` parse/format/escape/unescape) | `crates/json-joy-core/src/json_pointer.rs` | native | yes | no | no | yes | Shared pointer utility used by `model_api/path.rs`; covered by upstream-shaped matrix tests in `tests/upstream_port_json_pointer_matrix.rs` and model API pointer workflow matrices. |
+
 ## M6 exit targets
 
 1. Every in-scope runtime-core row above is `native` with no runtime bridge usage.
