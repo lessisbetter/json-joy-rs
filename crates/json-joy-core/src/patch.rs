@@ -24,6 +24,14 @@ pub enum PatchError {
     TrailingBytes,
 }
 
+#[derive(Debug, Error)]
+pub enum PatchTransformError {
+    #[error("empty patch")]
+    EmptyPatch,
+    #[error("patch timeline rewrite failed: {0}")]
+    Build(#[from] crate::patch_builder::PatchBuildError),
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Timestamp {
     pub sid: u64,
@@ -223,6 +231,153 @@ impl Patch {
 
     pub fn decoded_ops(&self) -> &[DecodedOp] {
         &self.decoded_ops
+    }
+
+    pub fn rewrite_time<F>(&self, mut map: F) -> Result<Self, PatchTransformError>
+    where
+        F: FnMut(Timestamp) -> Timestamp,
+    {
+        if self.op_count == 0 {
+            return Err(PatchTransformError::EmptyPatch);
+        }
+        let mut ops = Vec::with_capacity(self.decoded_ops.len());
+        for op in &self.decoded_ops {
+            ops.push(rewrite_op(op, &mut map));
+        }
+        let first = ops.first().expect("checked non-empty patch");
+        let first_id = first.id();
+        let bytes = crate::patch_builder::encode_patch_from_ops(first_id.sid, first_id.time, &ops)?;
+        Ok(Patch::from_binary(&bytes).expect("encoded patch must decode"))
+    }
+
+    pub fn rebase(
+        &self,
+        new_time: u64,
+        transform_after: Option<u64>,
+    ) -> Result<Self, PatchTransformError> {
+        if self.op_count == 0 {
+            return Err(PatchTransformError::EmptyPatch);
+        }
+        let patch_sid = self.sid;
+        let patch_start = self.time;
+        let horizon = transform_after.unwrap_or(patch_start);
+        if patch_start == new_time {
+            return Ok(self.clone());
+        }
+        let delta = new_time as i128 - patch_start as i128;
+        self.rewrite_time(|id| {
+            if id.sid != patch_sid || id.time < horizon {
+                return id;
+            }
+            let next = (id.time as i128 + delta).max(0) as u64;
+            Timestamp {
+                sid: id.sid,
+                time: next,
+            }
+        })
+    }
+}
+
+fn rewrite_op<F>(op: &DecodedOp, map: &mut F) -> DecodedOp
+where
+    F: FnMut(Timestamp) -> Timestamp,
+{
+    match op {
+        DecodedOp::NewCon { id, value } => DecodedOp::NewCon {
+            id: map(*id),
+            value: match value {
+                ConValue::Json(v) => ConValue::Json(v.clone()),
+                ConValue::Ref(ts) => ConValue::Ref(map(*ts)),
+                ConValue::Undef => ConValue::Undef,
+            },
+        },
+        DecodedOp::NewVal { id } => DecodedOp::NewVal { id: map(*id) },
+        DecodedOp::NewObj { id } => DecodedOp::NewObj { id: map(*id) },
+        DecodedOp::NewVec { id } => DecodedOp::NewVec { id: map(*id) },
+        DecodedOp::NewStr { id } => DecodedOp::NewStr { id: map(*id) },
+        DecodedOp::NewBin { id } => DecodedOp::NewBin { id: map(*id) },
+        DecodedOp::NewArr { id } => DecodedOp::NewArr { id: map(*id) },
+        DecodedOp::InsVal { id, obj, val } => DecodedOp::InsVal {
+            id: map(*id),
+            obj: map(*obj),
+            val: map(*val),
+        },
+        DecodedOp::InsObj { id, obj, data } => DecodedOp::InsObj {
+            id: map(*id),
+            obj: map(*obj),
+            data: data.iter().map(|(k, v)| (k.clone(), map(*v))).collect(),
+        },
+        DecodedOp::InsVec { id, obj, data } => DecodedOp::InsVec {
+            id: map(*id),
+            obj: map(*obj),
+            data: data.iter().map(|(k, v)| (*k, map(*v))).collect(),
+        },
+        DecodedOp::InsStr {
+            id,
+            obj,
+            reference,
+            data,
+        } => DecodedOp::InsStr {
+            id: map(*id),
+            obj: map(*obj),
+            reference: map(*reference),
+            data: data.clone(),
+        },
+        DecodedOp::InsBin {
+            id,
+            obj,
+            reference,
+            data,
+        } => DecodedOp::InsBin {
+            id: map(*id),
+            obj: map(*obj),
+            reference: map(*reference),
+            data: data.clone(),
+        },
+        DecodedOp::InsArr {
+            id,
+            obj,
+            reference,
+            data,
+        } => DecodedOp::InsArr {
+            id: map(*id),
+            obj: map(*obj),
+            reference: map(*reference),
+            data: data.iter().map(|t| map(*t)).collect(),
+        },
+        DecodedOp::UpdArr {
+            id,
+            obj,
+            reference,
+            val,
+        } => DecodedOp::UpdArr {
+            id: map(*id),
+            obj: map(*obj),
+            reference: map(*reference),
+            val: map(*val),
+        },
+        DecodedOp::Del { id, obj, what } => DecodedOp::Del {
+            id: map(*id),
+            obj: map(*obj),
+            what: what
+                .iter()
+                .map(|span| {
+                    let ts = map(Timestamp {
+                        sid: span.sid,
+                        time: span.time,
+                    });
+                    Timespan {
+                        sid: ts.sid,
+                        time: ts.time,
+                        span: span.span,
+                    }
+                })
+                .collect(),
+        },
+        DecodedOp::Nop { id, len } => DecodedOp::Nop {
+            id: map(*id),
+            len: *len,
+        },
     }
 }
 

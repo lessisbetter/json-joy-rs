@@ -19,7 +19,7 @@ Gate legend:
 
 | Upstream family | Rust target | Status | test-port mapped | fixture coverage | differential parity | no bridge | Notes |
 |---|---|---|---|---|---|---|---|
-| `json-crdt-patch/Patch.ts` + binary codec | `crates/json-joy-core/src/patch.rs` | partial | yes | yes | partial | yes | Decode parity is broad; encode and richer clock/operation parity still expanding. |
+| `json-crdt-patch/Patch.ts` + binary codec | `crates/json-joy-core/src/patch.rs` | partial | yes | yes | partial | yes | Decode parity is broad; native `rewrite_time`/`rebase` baseline added with upstream-mapped matrix tests, while broader operation parity still expanding. |
 | `json-crdt-patch/PatchBuilder.ts` + operations/clock | `crates/json-joy-core/src/patch_builder.rs` | partial | yes | yes | partial | yes | Native canonical builder added for runtime op families in current fixture corpus. |
 | `json-crdt/model/Model.ts` decode/view | `crates/json-joy-core/src/model.rs` | partial | yes | yes | partial | yes | Decode/view parity achieved for fixture corpus; broader model semantics pending. |
 | `json-crdt/model` apply semantics + node graph | `crates/json-joy-core/src/model_runtime.rs` | partial | yes | yes | partial | yes | Runtime graph now has replay-matrix invariant validation and debug-build invariant enforcement during apply; further normalization work remains. |

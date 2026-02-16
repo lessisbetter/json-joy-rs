@@ -102,3 +102,6 @@
 - [~] Port and track `json-crdt-patch/schema.ts`.
   Native baseline added in `crates/json-joy-core/src/schema.rs` with upstream-mapped tests in
   `crates/json-joy-core/tests/upstream_port_patch_schema_matrix.rs`.
+- [x] Add upstream-mapped `Patch.ts` timeline transform baseline (`rewrite_time`/`rebase`) in
+  `crates/json-joy-core/src/patch.rs` with matrix tests in
+  `crates/json-joy-core/tests/upstream_port_patch_rebase_matrix.rs`.
