@@ -24,5 +24,6 @@ pub use path::PathStep;
 use path::{get_path_mut, parse_json_pointer, split_parent, value_at_path};
 
 include!("types.rs");
+include!("lifecycle.rs");
 include!("ops.rs");
 include!("handles.rs");

@@ -93,7 +93,7 @@
   - Diff runtime is split by family in:
     - `crates/json-joy-core/src/diff_runtime/{common,scalar,object,string,array,bin,vec,dst_keys}.rs`
   - Model API internals are split in:
-    - `crates/json-joy-core/src/model_api/{types,ops,handles}.rs`
+    - `crates/json-joy-core/src/model_api/{types,lifecycle,ops,handles}.rs`
   - Patch and model codec families are split in:
     - `crates/json-joy-core/src/patch/{types,rewrite,decode,encode}.rs`
     - `crates/json-joy-core/src/model/{error,view,decode,encode}.rs`
