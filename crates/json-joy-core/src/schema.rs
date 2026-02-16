@@ -74,7 +74,9 @@ impl SchemaPatchBuilder {
                 let str_id = self.alloc_op_id(1);
                 self.push(DecodedOp::NewStr { id: str_id });
                 if !raw.is_empty() {
-                    let ins_id = self.alloc_op_id(raw.chars().count() as u64);
+                    // json-joy string op spans advance by JS string length
+                    // (UTF-16 code units), not Unicode scalar count.
+                    let ins_id = self.alloc_op_id(raw.encode_utf16().count() as u64);
                     self.push(DecodedOp::InsStr {
                         id: ins_id,
                         obj: str_id,

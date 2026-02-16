@@ -114,7 +114,8 @@ impl DecodedOp {
 
     pub fn span(&self) -> u64 {
         match self {
-            DecodedOp::InsStr { data, .. } => data.chars().count() as u64,
+            // Upstream JS patch op span for strings is UTF-16 code unit length.
+            DecodedOp::InsStr { data, .. } => data.encode_utf16().count() as u64,
             DecodedOp::InsBin { data, .. } => data.len() as u64,
             DecodedOp::InsArr { data, .. } => data.len() as u64,
             DecodedOp::Nop { len, .. } => *len,

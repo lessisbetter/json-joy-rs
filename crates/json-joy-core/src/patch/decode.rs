@@ -295,7 +295,8 @@ fn decode_op(
             let reference = reader.decode_id(patch_sid)?;
             let bytes = reader.read_bytes(len)?;
             let data = String::from_utf8(bytes).map_err(|_| PatchError::InvalidCbor)?;
-            let span = data.chars().count() as u64;
+            // Upstream JS patch op span for strings is UTF-16 code unit length.
+            let span = data.encode_utf16().count() as u64;
             Ok((
                 opcode,
                 DecodedOp::InsStr {

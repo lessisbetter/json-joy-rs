@@ -135,6 +135,9 @@
 - [~] Port and track `json-crdt-patch/schema.ts`.
   Native baseline added in `crates/json-joy-core/src/schema.rs` with upstream-mapped tests in
   `crates/json-joy-core/tests/upstream_port_patch_schema_matrix.rs`.
+  Added seeded Node differential parity checks in
+  `crates/json-joy-core/tests/differential_patch_schema_seeded.rs` for
+  `s.json(...).build(...) + setVal(origin, root)` patch bytes.
 - [x] Add upstream-mapped `Patch.ts` timeline transform baseline (`rewrite_time`/`rebase`) in
   `crates/json-joy-core/src/patch/mod.rs` with matrix tests in
   `crates/json-joy-core/tests/upstream_port_patch_rebase_matrix.rs`.
