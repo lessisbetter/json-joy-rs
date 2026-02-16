@@ -73,7 +73,7 @@ When workflow changes, update this file and relevant plan docs (`PORT_PLAN.md`) 
 ## Runtime bridge boundaries
 
 - Production runtime bridge boundaries are now empty:
-  - `crates/json-joy-core/src/diff_runtime.rs` is native-only.
+  - `crates/json-joy-core/src/diff_runtime/mod.rs` is native-only.
   - `crates/json-joy-core/src/less_db_compat.rs` lifecycle paths are native-only.
 - Node oracle usage is restricted to:
   - fixture generation under `tools/oracle-node`

@@ -27,6 +27,8 @@ pub enum CompatError {
     InvalidSessionId(u64),
     #[error("CRDT binary too large: {actual} bytes (max {max})")]
     ModelBinaryTooLarge { actual: usize, max: usize },
+    // Reserved for compatibility accounting. Runtime-core JSON flows are
+    // expected to avoid this via native diff/apply fallback behavior.
     #[error("unsupported shape for native compatibility path")]
     UnsupportedShape,
     #[error("compat runtime failure: {0}")]
@@ -84,6 +86,8 @@ pub fn apply_patch(model: &mut CompatModel, patch_bytes: &[u8]) -> Result<(), Co
             // Runtime apply coverage is currently strongest for empty-object
             // logical base models. Restrict no-op fast path to that envelope
             // to avoid false no-op decisions for richer model states.
+            // This is a deliberate safety bound, not a semantic requirement of
+            // upstream `Model.applyPatch`.
             let base_empty_object = Model::from_binary(&model.model_binary)
                 .ok()
                 .is_some_and(|m| matches!(m.view(), Value::Object(map) if map.is_empty()));

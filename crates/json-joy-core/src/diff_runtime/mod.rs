@@ -149,6 +149,8 @@ pub fn diff_model_to_patch_bytes(
     //
     // Compatibility policy:
     // runtime-core JSON shape paths should never surface UnsupportedShape.
+    // This mirrors upstream `diffAny` fallback semantics where type mismatch
+    // yields replacement behavior rather than terminating the diff pipeline.
     if let Some(native) = try_native_root_replace_diff(base_model_binary, next_view, sid)? {
         return Ok(native);
     }
