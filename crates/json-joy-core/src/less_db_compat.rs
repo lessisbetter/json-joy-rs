@@ -1,4 +1,4 @@
-//! less-db-js compatibility layer (M5, oracle-backed bridge).
+//! less-db-js compatibility layer.
 
 use crate::diff_runtime;
 use crate::crdt_binary::{first_logical_clock_sid_time, write_vu57};
