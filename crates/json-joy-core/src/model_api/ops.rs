@@ -190,6 +190,21 @@ impl NativeModelApi {
         key: impl Into<String>,
         value: Value,
     ) -> Result<(), ModelApiError> {
+        let key = key.into();
+        if let Ok(target) = self.resolve_path_node_id(path) {
+            if let Some(obj_id) = self.runtime.resolve_object_node(target) {
+                let start = self.next_local_time();
+                let mut emitter = LocalEmitter::new(self.sid, start);
+                let child = emitter.emit_value(&value);
+                let ins_id = emitter.next_id();
+                emitter.push(DecodedOp::InsObj {
+                    id: ins_id,
+                    obj: obj_id,
+                    data: vec![(key.clone(), child)],
+                });
+                return self.apply_local_ops(emitter.into_ops());
+            }
+        }
         let mut next = self.runtime.view_json();
         let target = if path.is_empty() {
             &mut next
@@ -197,11 +212,31 @@ impl NativeModelApi {
             get_path_mut(&mut next, path).ok_or(ModelApiError::PathNotFound)?
         };
         let map = target.as_object_mut().ok_or(ModelApiError::NotObject)?;
-        map.insert(key.into(), value);
+        map.insert(key, value);
         self.apply_target_view(next)
     }
 
     pub fn arr_push(&mut self, path: &[PathStep], value: Value) -> Result<(), ModelApiError> {
+        if let Ok(target) = self.resolve_path_node_id(path) {
+            if let Some(arr_id) = self.runtime.resolve_array_node(target) {
+                let reference = self
+                    .runtime
+                    .array_visible_slots(arr_id)
+                    .and_then(|slots| slots.last().copied())
+                    .unwrap_or(arr_id);
+                let start = self.next_local_time();
+                let mut emitter = LocalEmitter::new(self.sid, start);
+                let child = emitter.emit_value(&value);
+                let ins_id = emitter.next_id();
+                emitter.push(DecodedOp::InsArr {
+                    id: ins_id,
+                    obj: arr_id,
+                    reference,
+                    data: vec![child],
+                });
+                return self.apply_local_ops(emitter.into_ops());
+            }
+        }
         let mut next = self.runtime.view_json();
         let target = get_path_mut(&mut next, path).ok_or(ModelApiError::PathNotFound)?;
         let arr = target.as_array_mut().ok_or(ModelApiError::NotArray)?;
@@ -210,6 +245,31 @@ impl NativeModelApi {
     }
 
     pub fn str_ins(&mut self, path: &[PathStep], pos: usize, text: &str) -> Result<(), ModelApiError> {
+        if text.is_empty() {
+            return Ok(());
+        }
+        if let Ok(target) = self.resolve_path_node_id(path) {
+            if let Some(str_id) = self.runtime.resolve_string_node(target) {
+                let slots = self.runtime.string_visible_slots(str_id).unwrap_or_default();
+                let clamped = pos.min(slots.len());
+                let reference = if clamped == 0 {
+                    str_id
+                } else {
+                    slots[clamped - 1]
+                };
+                let start = self.next_local_time();
+                let op = DecodedOp::InsStr {
+                    id: Timestamp {
+                        sid: self.sid,
+                        time: start,
+                    },
+                    obj: str_id,
+                    reference,
+                    data: text.to_owned(),
+                };
+                return self.apply_local_ops(vec![op]);
+            }
+        }
         let mut next = self.runtime.view_json();
         let target = get_path_mut(&mut next, path).ok_or(ModelApiError::PathNotFound)?;
         let s = target.as_str().ok_or(ModelApiError::NotString)?;
@@ -219,6 +279,85 @@ impl NativeModelApi {
             chars.insert(p + offset, ch);
         }
         *target = Value::String(chars.into_iter().collect());
+        self.apply_target_view(next)
+    }
+
+    pub fn bin_ins(
+        &mut self,
+        path: &[PathStep],
+        pos: usize,
+        bytes: &[u8],
+    ) -> Result<(), ModelApiError> {
+        if bytes.is_empty() {
+            return Ok(());
+        }
+        if let Ok(target) = self.resolve_path_node_id(path) {
+            if let Some(bin_id) = self.runtime.resolve_bin_node(target) {
+                let slots = self.runtime.bin_visible_slots(bin_id).unwrap_or_default();
+                let clamped = pos.min(slots.len());
+                let reference = if clamped == 0 {
+                    bin_id
+                } else {
+                    slots[clamped - 1]
+                };
+                let start = self.next_local_time();
+                let op = DecodedOp::InsBin {
+                    id: Timestamp {
+                        sid: self.sid,
+                        time: start,
+                    },
+                    obj: bin_id,
+                    reference,
+                    data: bytes.to_vec(),
+                };
+                return self.apply_local_ops(vec![op]);
+            }
+        }
+        let mut next = self.runtime.view_json();
+        let target = get_path_mut(&mut next, path).ok_or(ModelApiError::PathNotFound)?;
+        let arr = target.as_array_mut().ok_or(ModelApiError::NotArray)?;
+        let mut i = pos.min(arr.len());
+        for b in bytes {
+            arr.insert(i, Value::from(*b));
+            i += 1;
+        }
+        self.apply_target_view(next)
+    }
+
+    pub fn bin_del(
+        &mut self,
+        path: &[PathStep],
+        pos: usize,
+        length: usize,
+    ) -> Result<(), ModelApiError> {
+        if length == 0 {
+            return Ok(());
+        }
+        if let Ok(target) = self.resolve_path_node_id(path) {
+            if let Some(bin_id) = self.runtime.resolve_bin_node(target) {
+                let spans = self.runtime.bin_find_interval(bin_id, pos, length);
+                if spans.is_empty() {
+                    return Ok(());
+                }
+                let start = self.next_local_time();
+                let op = DecodedOp::Del {
+                    id: Timestamp {
+                        sid: self.sid,
+                        time: start,
+                    },
+                    obj: bin_id,
+                    what: spans,
+                };
+                return self.apply_local_ops(vec![op]);
+            }
+        }
+        let mut next = self.runtime.view_json();
+        let target = get_path_mut(&mut next, path).ok_or(ModelApiError::PathNotFound)?;
+        let arr = target.as_array_mut().ok_or(ModelApiError::NotArray)?;
+        if pos < arr.len() {
+            let end = (pos + length).min(arr.len());
+            arr.drain(pos..end);
+        }
         self.apply_target_view(next)
     }
 
@@ -278,6 +417,50 @@ impl NativeModelApi {
         } else {
             get_path_mut(&mut next, parent).ok_or(ModelApiError::PathNotFound)?
         };
+        if let PathStep::Index(idx) = leaf {
+            if let Ok(parent_id) = self.resolve_path_node_id(parent) {
+                if let Some(arr_id) = self.runtime.resolve_array_node(parent_id) {
+                    let spans = self.runtime.array_find_interval(arr_id, *idx, length.max(1));
+                    if !spans.is_empty() {
+                        let start = self.next_local_time();
+                        return self.apply_local_ops(vec![DecodedOp::Del {
+                            id: Timestamp {
+                                sid: self.sid,
+                                time: start,
+                            },
+                            obj: arr_id,
+                            what: spans,
+                        }]);
+                    }
+                } else if let Some(str_id) = self.runtime.resolve_string_node(parent_id) {
+                    let spans = self.runtime.string_find_interval(str_id, *idx, length.max(1));
+                    if !spans.is_empty() {
+                        let start = self.next_local_time();
+                        return self.apply_local_ops(vec![DecodedOp::Del {
+                            id: Timestamp {
+                                sid: self.sid,
+                                time: start,
+                            },
+                            obj: str_id,
+                            what: spans,
+                        }]);
+                    }
+                } else if let Some(bin_id) = self.runtime.resolve_bin_node(parent_id) {
+                    let spans = self.runtime.bin_find_interval(bin_id, *idx, length.max(1));
+                    if !spans.is_empty() {
+                        let start = self.next_local_time();
+                        return self.apply_local_ops(vec![DecodedOp::Del {
+                            id: Timestamp {
+                                sid: self.sid,
+                                time: start,
+                            },
+                            obj: bin_id,
+                            what: spans,
+                        }]);
+                    }
+                }
+            }
+        }
         match (target, leaf) {
             (Value::Object(map), PathStep::Key(key)) => {
                 map.remove(key);
@@ -451,6 +634,64 @@ impl NativeModelApi {
         Ok(())
     }
 
+    fn apply_local_ops(&mut self, ops: Vec<DecodedOp>) -> Result<(), ModelApiError> {
+        if ops.is_empty() {
+            return Ok(());
+        }
+        let first = ops[0].id();
+        let bytes = encode_patch_from_ops(first.sid, first.time, &ops)
+            .map_err(|e| ModelApiError::PatchDecode(format!("patch encode failed: {e}")))?;
+        let patch = Patch::from_binary(&bytes)
+            .map_err(|e| ModelApiError::PatchDecode(format!("patch decode failed: {e}")))?;
+        self.apply_patch(&patch)
+    }
+
+    fn next_local_time(&self) -> u64 {
+        let observed_next = self
+            .runtime
+            .clock
+            .observed
+            .get(&self.sid)
+            .and_then(|ranges| ranges.last().map(|(_, end)| end.saturating_add(1)))
+            .unwrap_or(1);
+        let table_next = self
+            .runtime
+            .clock_table
+            .iter()
+            .find(|c| c.sid == self.sid)
+            .map(|c| c.time.saturating_add(1))
+            .unwrap_or(1);
+        observed_next.max(table_next)
+    }
+
+    fn resolve_path_node_id(&self, path: &[PathStep]) -> Result<Timestamp, ModelApiError> {
+        let mut current = self.runtime.root_id().ok_or(ModelApiError::PathNotFound)?;
+        for step in path {
+            current = match step {
+                PathStep::Key(key) => self
+                    .runtime
+                    .object_field(current, key)
+                    .ok_or(ModelApiError::PathNotFound)?,
+                PathStep::Index(idx) => {
+                    if let Some(arr_id) = self.runtime.resolve_array_node(current) {
+                        self.runtime
+                            .array_visible_values(arr_id)
+                            .and_then(|v| v.get(*idx).copied())
+                            .ok_or(ModelApiError::PathNotFound)?
+                    } else if let Some(vec_id) = self.runtime.resolve_vec_node(current) {
+                        self.runtime
+                            .vec_index_value(vec_id, *idx as u64)
+                            .ok_or(ModelApiError::PathNotFound)?
+                    } else {
+                        return Err(ModelApiError::InvalidPathOp);
+                    }
+                }
+                PathStep::Append => return Err(ModelApiError::InvalidPathOp),
+            };
+        }
+        Ok(current)
+    }
+
     fn emit_change(&mut self, event: ChangeEvent) {
         for listener in self.listeners.values_mut() {
             listener(event.clone());
@@ -461,5 +702,113 @@ impl NativeModelApi {
         for listener in self.batch_listeners.values_mut() {
             listener(event.clone());
         }
+    }
+}
+
+struct LocalEmitter {
+    sid: u64,
+    cursor: u64,
+    ops: Vec<DecodedOp>,
+}
+
+impl LocalEmitter {
+    fn new(sid: u64, start_time: u64) -> Self {
+        Self {
+            sid,
+            cursor: start_time,
+            ops: Vec::new(),
+        }
+    }
+
+    fn next_id(&self) -> Timestamp {
+        Timestamp {
+            sid: self.sid,
+            time: self.cursor,
+        }
+    }
+
+    fn push(&mut self, op: DecodedOp) {
+        self.cursor = self.cursor.saturating_add(op.span());
+        self.ops.push(op);
+    }
+
+    fn emit_value(&mut self, value: &Value) -> Timestamp {
+        match value {
+            Value::Null | Value::Bool(_) | Value::Number(_) => {
+                let id = self.next_id();
+                self.push(DecodedOp::NewCon {
+                    id,
+                    value: ConValue::Json(value.clone()),
+                });
+                id
+            }
+            Value::String(s) => {
+                let str_id = self.next_id();
+                self.push(DecodedOp::NewStr { id: str_id });
+                if !s.is_empty() {
+                    let ins_id = self.next_id();
+                    self.push(DecodedOp::InsStr {
+                        id: ins_id,
+                        obj: str_id,
+                        reference: str_id,
+                        data: s.clone(),
+                    });
+                }
+                str_id
+            }
+            Value::Array(items) => {
+                let arr_id = self.next_id();
+                self.push(DecodedOp::NewArr { id: arr_id });
+                if !items.is_empty() {
+                    let mut children = Vec::with_capacity(items.len());
+                    for item in items {
+                        if matches!(item, Value::Null | Value::Bool(_) | Value::Number(_)) {
+                            let val_id = self.next_id();
+                            self.push(DecodedOp::NewVal { id: val_id });
+                            let con_id = self.emit_value(item);
+                            let ins_id = self.next_id();
+                            self.push(DecodedOp::InsVal {
+                                id: ins_id,
+                                obj: val_id,
+                                val: con_id,
+                            });
+                            children.push(val_id);
+                        } else {
+                            children.push(self.emit_value(item));
+                        }
+                    }
+                    let ins_id = self.next_id();
+                    self.push(DecodedOp::InsArr {
+                        id: ins_id,
+                        obj: arr_id,
+                        reference: arr_id,
+                        data: children,
+                    });
+                }
+                arr_id
+            }
+            Value::Object(map) => {
+                let obj_id = self.next_id();
+                self.push(DecodedOp::NewObj { id: obj_id });
+                if !map.is_empty() {
+                    let mut pairs = Vec::with_capacity(map.len());
+                    for (k, v) in map {
+                        let child = self.emit_value(v);
+                        pairs.push((k.clone(), child));
+                    }
+                    let ins_id = self.next_id();
+                    self.push(DecodedOp::InsObj {
+                        id: ins_id,
+                        obj: obj_id,
+                        data: pairs,
+                    });
+                }
+                obj_id
+            }
+        }
+    }
+
+    fn into_ops(self) -> Vec<DecodedOp> {
+        self.ops
     }
 }

@@ -95,6 +95,13 @@ impl<'a> NodeHandle<'a> {
             {
                 Ok(BinHandle { inner: self })
             }
+            Some(Value::Object(map))
+                if map
+                    .iter()
+                    .all(|(k, v)| k.parse::<usize>().is_ok() && v.as_u64().is_some_and(|n| n <= 255)) =>
+            {
+                Ok(BinHandle { inner: self })
+            }
             _ => Err(ModelApiError::NotArray),
         }
     }
@@ -170,17 +177,9 @@ impl<'a> StrHandle<'a> {
     }
 
     pub fn del(&mut self, index: usize, length: usize) -> Result<(), ModelApiError> {
-        let current = self.inner.read().ok_or(ModelApiError::PathNotFound)?;
-        let s = current.as_str().ok_or(ModelApiError::NotString)?;
-        let mut chars: Vec<char> = s.chars().collect();
-        if index < chars.len() {
-            let end = (index + length).min(chars.len());
-            chars.drain(index..end);
-            self.inner
-                .api
-                .replace(&self.inner.path, Value::String(chars.into_iter().collect()))?;
-        }
-        Ok(())
+        let mut path = self.inner.path.clone();
+        path.push(PathStep::Index(index));
+        self.inner.api.remove_with_length(&path, length)
     }
 }
 
@@ -203,24 +202,11 @@ impl<'a> BinHandle<'a> {
     }
 
     pub fn ins(&mut self, index: usize, bytes: &[u8]) -> Result<(), ModelApiError> {
-        let mut current = self.inner.read().ok_or(ModelApiError::PathNotFound)?;
-        let arr = current.as_array_mut().ok_or(ModelApiError::NotArray)?;
-        let mut i = index.min(arr.len());
-        for b in bytes {
-            arr.insert(i, Value::from(*b));
-            i += 1;
-        }
-        self.inner.api.replace(&self.inner.path, current)
+        self.inner.api.bin_ins(&self.inner.path, index, bytes)
     }
 
     pub fn del(&mut self, index: usize, length: usize) -> Result<(), ModelApiError> {
-        let mut current = self.inner.read().ok_or(ModelApiError::PathNotFound)?;
-        let arr = current.as_array_mut().ok_or(ModelApiError::NotArray)?;
-        if index < arr.len() {
-            let end = (index + length).min(arr.len());
-            arr.drain(index..end);
-        }
-        self.inner.api.replace(&self.inner.path, current)
+        self.inner.api.bin_del(&self.inner.path, index, length)
     }
 }
 

@@ -282,6 +282,57 @@ fn upstream_port_model_api_node_handle_proxy_matrix() {
 }
 
 #[test]
+fn upstream_port_model_api_bin_handle_native_mutation_matrix() {
+    // Upstream mapping:
+    // - json-crdt/model/api/nodes.ts BinApi.ins / BinApi.del behavior surface.
+    let sid = 97055;
+    let mut api = NativeModelApi::from_patches(&[patch_from_ops(
+        sid,
+        1,
+        &[
+            DecodedOp::NewObj {
+                id: Timestamp { sid, time: 1 },
+            },
+            DecodedOp::InsVal {
+                id: Timestamp { sid, time: 2 },
+                obj: Timestamp { sid: 0, time: 0 },
+                val: Timestamp { sid, time: 1 },
+            },
+            DecodedOp::NewBin {
+                id: Timestamp { sid, time: 3 },
+            },
+            DecodedOp::InsBin {
+                id: Timestamp { sid, time: 4 },
+                obj: Timestamp { sid, time: 3 },
+                reference: Timestamp { sid, time: 3 },
+                data: vec![1, 2, 3],
+            },
+            DecodedOp::InsObj {
+                id: Timestamp { sid, time: 7 },
+                obj: Timestamp { sid, time: 1 },
+                data: vec![("bin".into(), Timestamp { sid, time: 3 })],
+            },
+        ],
+    )])
+    .expect("from_patches must succeed");
+
+    api.node()
+        .at_key("bin")
+        .as_bin()
+        .expect("bin handle")
+        .ins(1, &[9, 8])
+        .expect("bin ins must succeed");
+    api.node()
+        .at_key("bin")
+        .as_bin()
+        .expect("bin handle")
+        .del(0, 2)
+        .expect("bin del must succeed");
+
+    assert_eq!(api.view(), json!({"bin":{"0":8,"1":2,"2":3}}));
+}
+
+#[test]
 fn upstream_port_model_api_typed_node_wrappers_matrix() {
     // Upstream mapping:
     // - json-crdt/model/api/nodes.ts NodeApi.{asObj,asArr,asStr} behavior slice.
