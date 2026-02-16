@@ -136,6 +136,11 @@ pub fn diff_model_to_patch_bytes(
     if let Some(native) = try_native_root_obj_generic_delta_diff(base_model_binary, next_view, sid)? {
         return Ok(native);
     }
+
+    // Native catch-all: replace root value when no specialized shape matched.
+    if let Some(native) = try_native_root_replace_diff(base_model_binary, next_view, sid)? {
+        return Ok(native);
+    }
     Err(DiffError::UnsupportedShape)
 }
 
@@ -549,6 +554,27 @@ fn try_native_root_obj_scalar_delta_diff(
         data: pairs,
     });
 
+    let encoded = encode_patch_from_ops(patch_sid, base_time.saturating_add(1), &emitter.ops)?;
+    Ok(Some(Some(encoded)))
+}
+
+fn try_native_root_replace_diff(
+    base_model_binary: &[u8],
+    next_view: &Value,
+    patch_sid: u64,
+) -> Result<Option<Option<Vec<u8>>>, DiffError> {
+    let (_, base_time) = match first_logical_clock_sid_time(base_model_binary) {
+        Some(v) => v,
+        None => return Ok(None),
+    };
+
+    let mut emitter = NativeEmitter::new(patch_sid, base_time.saturating_add(1));
+    let next_root = emitter.emit_value(next_view);
+    emitter.push(DecodedOp::InsVal {
+        id: emitter.next_id(),
+        obj: Timestamp { sid: 0, time: 0 },
+        val: next_root,
+    });
     let encoded = encode_patch_from_ops(patch_sid, base_time.saturating_add(1), &emitter.ops)?;
     Ok(Some(Some(encoded)))
 }
