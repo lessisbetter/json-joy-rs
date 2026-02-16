@@ -3,8 +3,9 @@ use json_joy_core::util_diff::{bin, str};
 #[test]
 fn upstream_port_util_diff_str_prefix_suffix_overlap_matrix() {
     assert_eq!(str::pfx("abc", "ab"), 2);
-    assert_eq!(str::pfx("👨‍🍳chef", "👨‍🍳"), "👨‍🍳".len());
-    assert_eq!(str::sfx("chef👨‍🍳", "👨‍🍳"), "👨‍🍳".len());
+    let chef_utf16 = "👨‍🍳".encode_utf16().count();
+    assert_eq!(str::pfx("👨‍🍳chef", "👨‍🍳"), chef_utf16);
+    assert_eq!(str::sfx("chef👨‍🍳", "👨‍🍳"), chef_utf16);
     assert_eq!(str::overlap("abcXXX", "XXXdef"), 3);
 }
 

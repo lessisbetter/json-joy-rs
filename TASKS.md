@@ -114,6 +114,9 @@
   with upstream-mapped tests in
   `crates/json-joy-core/tests/upstream_port_util_diff_str_bin_matrix.rs` and
   `crates/json-joy-core/tests/upstream_port_util_diff_line_matrix.rs`.
+  Added seeded Node differential parity checks in
+  `crates/json-joy-core/tests/differential_util_diff_seeded.rs` covering
+  `str.diff`, `str.diffEdit`, and `line.diff` against local upstream.
 - [x] Port and track `json-crdt-patch/compaction.ts` baseline (`combine` + `compact`) with upstream-mapped tests.
 - [~] Port/track patch alternate codecs (`compact`, `compact-binary`, `verbose`).
   Native baseline now includes `codec/compact` encode/decode in
