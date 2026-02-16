@@ -8,6 +8,7 @@ pub mod diff_runtime;
 pub mod less_db_compat;
 pub mod patch;
 pub mod patch_builder;
+pub mod patch_compact_binary_codec;
 pub mod patch_compact_codec;
 pub mod patch_compaction;
 pub mod patch_verbose_codec;
