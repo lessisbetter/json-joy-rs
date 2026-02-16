@@ -41,4 +41,3 @@ fn upstream_port_patch_compact_binary_codec_rejects_invalid_cbor() {
     let err = decode_patch_compact_binary(&[0xff, 0xff]).expect_err("must reject invalid cbor");
     assert_eq!(err.to_string(), "invalid compact-binary cbor payload");
 }
-

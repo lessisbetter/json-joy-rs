@@ -15,12 +15,16 @@ fn fixtures_dir() -> PathBuf {
 }
 
 fn read_json(path: &Path) -> Value {
-    let data = fs::read_to_string(path).unwrap_or_else(|e| panic!("failed to read {:?}: {e}", path));
+    let data =
+        fs::read_to_string(path).unwrap_or_else(|e| panic!("failed to read {:?}: {e}", path));
     serde_json::from_str(&data).unwrap_or_else(|e| panic!("failed to parse {:?}: {e}", path))
 }
 
 fn decode_hex(s: &str) -> Vec<u8> {
-    assert!(s.len() % 2 == 0, "hex string must have even length");
+    assert!(
+        s.len().is_multiple_of(2),
+        "hex string must have even length"
+    );
     let mut out = Vec::with_capacity(s.len() / 2);
     let bytes = s.as_bytes();
     for i in (0..bytes.len()).step_by(2) {
@@ -36,7 +40,8 @@ fn as_u64(v: &Value, label: &str) -> u64 {
 }
 
 fn as_str<'a>(v: &'a Value, label: &str) -> &'a str {
-    v.as_str().unwrap_or_else(|| panic!("{label} must be string"))
+    v.as_str()
+        .unwrap_or_else(|| panic!("{label} must be string"))
 }
 
 fn as_ts(v: &Value, label: &str) -> Timestamp {
@@ -57,10 +62,7 @@ fn canonical_ops(input: &Value) -> Vec<DecodedOp> {
 
     let mut out = Vec::with_capacity(ops.len());
     for op in ops {
-        let id = Timestamp {
-            sid,
-            time: op_time,
-        };
+        let id = Timestamp { sid, time: op_time };
         let parsed = match as_str(&op["op"], "op.op") {
             "new_con" => DecodedOp::NewCon {
                 id,
@@ -123,7 +125,10 @@ fn canonical_ops(input: &Value) -> Vec<DecodedOp> {
                     .as_array()
                     .expect("op.data must be byte array")
                     .iter()
-                    .map(|v| u8::try_from(v.as_u64().expect("byte must be u64")).expect("byte out of range"))
+                    .map(|v| {
+                        u8::try_from(v.as_u64().expect("byte must be u64"))
+                            .expect("byte out of range")
+                    })
                     .collect();
                 DecodedOp::InsBin {
                     id,
@@ -183,7 +188,9 @@ fn canonical_ops(input: &Value) -> Vec<DecodedOp> {
 fn upstream_port_patch_builder_matrix_matches_canonical_fixtures() {
     let dir = fixtures_dir();
     let manifest = read_json(&dir.join("manifest.json"));
-    let fixtures = manifest["fixtures"].as_array().expect("manifest.fixtures must be array");
+    let fixtures = manifest["fixtures"]
+        .as_array()
+        .expect("manifest.fixtures must be array");
 
     let mut seen = 0u32;
     for entry in fixtures {
@@ -192,7 +199,9 @@ fn upstream_port_patch_builder_matrix_matches_canonical_fixtures() {
         }
         seen += 1;
 
-        let file = entry["file"].as_str().expect("fixture entry file must be string");
+        let file = entry["file"]
+            .as_str()
+            .expect("fixture entry file must be string");
         let fixture = read_json(&dir.join(file));
         let input = &fixture["input"];
 
@@ -207,7 +216,11 @@ fn upstream_port_patch_builder_matrix_matches_canonical_fixtures() {
                 .as_str()
                 .expect("expected.patch_binary_hex must be string"),
         );
-        assert_eq!(encoded, expected, "binary mismatch for fixture {}", entry["name"]);
+        assert_eq!(
+            encoded, expected,
+            "binary mismatch for fixture {}",
+            entry["name"]
+        );
 
         let patch = Patch::from_binary(&encoded)
             .unwrap_or_else(|e| panic!("patch decode failed for {}: {e}", entry["name"]));
@@ -229,5 +242,8 @@ fn upstream_port_patch_builder_matrix_matches_canonical_fixtures() {
         );
     }
 
-    assert!(seen >= 4, "expected at least 4 patch_canonical_encode fixtures");
+    assert!(
+        seen >= 4,
+        "expected at least 4 patch_canonical_encode fixtures"
+    );
 }

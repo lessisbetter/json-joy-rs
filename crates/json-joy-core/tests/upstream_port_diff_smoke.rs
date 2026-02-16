@@ -28,9 +28,12 @@ fn upstream_port_diff_apply_reaches_target_view() {
         .expect("diff should succeed")
         .expect("non-noop diff expected");
 
-    let mut runtime = RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
+    let mut runtime =
+        RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
     let decoded = Patch::from_binary(&patch).expect("generated patch must decode");
-    runtime.apply_patch(&decoded).expect("runtime apply must succeed");
+    runtime
+        .apply_patch(&decoded)
+        .expect("runtime apply must succeed");
 
     assert_eq!(runtime.view_json(), next);
 }
@@ -49,9 +52,12 @@ fn upstream_port_diff_nested_object_delta_reaches_target_view() {
         .expect("diff should succeed")
         .expect("non-noop diff expected");
 
-    let mut runtime = RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
+    let mut runtime =
+        RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
     let decoded = Patch::from_binary(&patch).expect("generated patch must decode");
-    runtime.apply_patch(&decoded).expect("runtime apply must succeed");
+    runtime
+        .apply_patch(&decoded)
+        .expect("runtime apply must succeed");
     assert_eq!(runtime.view_json(), next);
 }
 
@@ -74,9 +80,12 @@ fn upstream_port_diff_multi_array_key_delta_reaches_target_view() {
         .expect("diff should succeed")
         .expect("non-noop diff expected");
 
-    let mut runtime = RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
+    let mut runtime =
+        RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
     let decoded = Patch::from_binary(&patch).expect("generated patch must decode");
-    runtime.apply_patch(&decoded).expect("runtime apply must succeed");
+    runtime
+        .apply_patch(&decoded)
+        .expect("runtime apply must succeed");
     assert_eq!(runtime.view_json(), next);
 }
 
@@ -118,7 +127,9 @@ fn upstream_port_diff_vec_index_updates_use_ins_vec() {
     ];
     let seed = encode_patch_from_ops(sid, 1, &ops).expect("seed patch encode must succeed");
     let seed_patch = Patch::from_binary(&seed).expect("seed patch decode must succeed");
-    runtime.apply_patch(&seed_patch).expect("seed apply must succeed");
+    runtime
+        .apply_patch(&seed_patch)
+        .expect("seed apply must succeed");
     let base_model = runtime
         .to_model_binary_like()
         .expect("runtime model encode must succeed");
@@ -136,7 +147,8 @@ fn upstream_port_diff_vec_index_updates_use_ins_vec() {
         "diff patch must contain ins_vec"
     );
 
-    let mut applied = RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
+    let mut applied =
+        RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
     applied
         .apply_patch(&decoded)
         .expect("runtime apply must succeed");
@@ -172,7 +184,9 @@ fn upstream_port_diff_bin_delta_uses_ins_bin_and_del() {
     ];
     let seed = encode_patch_from_ops(sid, 1, &ops).expect("seed patch encode must succeed");
     let seed_patch = Patch::from_binary(&seed).expect("seed patch decode must succeed");
-    runtime.apply_patch(&seed_patch).expect("seed apply must succeed");
+    runtime
+        .apply_patch(&seed_patch)
+        .expect("seed apply must succeed");
     let base_model = runtime
         .to_model_binary_like()
         .expect("runtime model encode must succeed");
@@ -197,7 +211,8 @@ fn upstream_port_diff_bin_delta_uses_ins_bin_and_del() {
         "diff patch must contain del"
     );
 
-    let mut applied = RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
+    let mut applied =
+        RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
     applied
         .apply_patch(&decoded)
         .expect("runtime apply must succeed");
@@ -248,7 +263,9 @@ fn upstream_port_diff_nested_vec_delta_uses_ins_vec() {
     ];
     let seed = encode_patch_from_ops(sid, 1, &ops).expect("seed patch encode must succeed");
     let seed_patch = Patch::from_binary(&seed).expect("seed patch decode must succeed");
-    runtime.apply_patch(&seed_patch).expect("seed apply must succeed");
+    runtime
+        .apply_patch(&seed_patch)
+        .expect("seed apply must succeed");
     let base_model = runtime
         .to_model_binary_like()
         .expect("runtime model encode must succeed");
@@ -266,7 +283,8 @@ fn upstream_port_diff_nested_vec_delta_uses_ins_vec() {
         "nested diff patch must contain ins_vec"
     );
 
-    let mut applied = RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
+    let mut applied =
+        RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
     applied
         .apply_patch(&decoded)
         .expect("runtime apply must succeed");
@@ -308,7 +326,9 @@ fn upstream_port_diff_nested_bin_delta_uses_ins_bin() {
     ];
     let seed = encode_patch_from_ops(sid, 1, &ops).expect("seed patch encode must succeed");
     let seed_patch = Patch::from_binary(&seed).expect("seed patch decode must succeed");
-    runtime.apply_patch(&seed_patch).expect("seed apply must succeed");
+    runtime
+        .apply_patch(&seed_patch)
+        .expect("seed apply must succeed");
     let base_model = runtime
         .to_model_binary_like()
         .expect("runtime model encode must succeed");
@@ -326,7 +346,8 @@ fn upstream_port_diff_nested_bin_delta_uses_ins_bin() {
         "nested diff patch must contain ins_bin"
     );
 
-    let mut applied = RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
+    let mut applied =
+        RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
     applied
         .apply_patch(&decoded)
         .expect("runtime apply must succeed");
@@ -378,7 +399,9 @@ fn upstream_port_diff_nested_arr_delta_uses_ins_arr_and_del() {
     ];
     let seed = encode_patch_from_ops(sid, 1, &ops).expect("seed patch encode must succeed");
     let seed_patch = Patch::from_binary(&seed).expect("seed patch decode must succeed");
-    runtime.apply_patch(&seed_patch).expect("seed apply must succeed");
+    runtime
+        .apply_patch(&seed_patch)
+        .expect("seed apply must succeed");
     let base_model = runtime
         .to_model_binary_like()
         .expect("runtime model encode must succeed");
@@ -403,7 +426,8 @@ fn upstream_port_diff_nested_arr_delta_uses_ins_arr_and_del() {
         "nested diff patch must contain del"
     );
 
-    let mut applied = RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
+    let mut applied =
+        RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
     applied
         .apply_patch(&decoded)
         .expect("runtime apply must succeed");
@@ -433,9 +457,13 @@ fn upstream_port_diff_multi_root_string_deltas_use_ins_str() {
         .filter(|op| matches!(op, DecodedOp::InsStr { .. } | DecodedOp::Del { .. }))
         .count();
     assert!(str_insert_ops >= 1, "expected at least one ins_str op");
-    assert!(str_mut_ops >= 2, "expected >=2 string mutation ops across keys");
+    assert!(
+        str_mut_ops >= 2,
+        "expected >=2 string mutation ops across keys"
+    );
 
-    let mut applied = RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
+    let mut applied =
+        RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
     applied
         .apply_patch(&decoded)
         .expect("runtime apply must succeed");
@@ -480,7 +508,9 @@ fn upstream_port_diff_multi_root_bin_deltas_use_ins_bin() {
     ];
     let seed = encode_patch_from_ops(sid, 1, &ops).expect("seed patch encode must succeed");
     let seed_patch = Patch::from_binary(&seed).expect("seed patch decode must succeed");
-    runtime.apply_patch(&seed_patch).expect("seed apply must succeed");
+    runtime
+        .apply_patch(&seed_patch)
+        .expect("seed apply must succeed");
     let base_model = runtime
         .to_model_binary_like()
         .expect("runtime model encode must succeed");
@@ -498,9 +528,13 @@ fn upstream_port_diff_multi_root_bin_deltas_use_ins_bin() {
         .iter()
         .filter(|op| matches!(op, DecodedOp::InsBin { .. }))
         .count();
-    assert!(bin_ops >= 2, "expected >=2 ins_bin ops for multi-key bin delta");
+    assert!(
+        bin_ops >= 2,
+        "expected >=2 ins_bin ops for multi-key bin delta"
+    );
 
-    let mut applied = RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
+    let mut applied =
+        RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
     applied
         .apply_patch(&decoded)
         .expect("runtime apply must succeed");
@@ -561,7 +595,9 @@ fn upstream_port_diff_multi_root_vec_deltas_use_ins_vec() {
     ];
     let seed = encode_patch_from_ops(sid, 1, &ops).expect("seed patch encode must succeed");
     let seed_patch = Patch::from_binary(&seed).expect("seed patch decode must succeed");
-    runtime.apply_patch(&seed_patch).expect("seed apply must succeed");
+    runtime
+        .apply_patch(&seed_patch)
+        .expect("seed apply must succeed");
     let base_model = runtime
         .to_model_binary_like()
         .expect("runtime model encode must succeed");
@@ -576,9 +612,13 @@ fn upstream_port_diff_multi_root_vec_deltas_use_ins_vec() {
         .iter()
         .filter(|op| matches!(op, DecodedOp::InsVec { .. }))
         .count();
-    assert!(vec_ops >= 2, "expected >=2 ins_vec ops for multi-key vec delta");
+    assert!(
+        vec_ops >= 2,
+        "expected >=2 ins_vec ops for multi-key vec delta"
+    );
 
-    let mut applied = RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
+    let mut applied =
+        RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
     applied
         .apply_patch(&decoded)
         .expect("runtime apply must succeed");
@@ -608,9 +648,13 @@ fn upstream_port_diff_multi_root_nested_obj_deltas_use_ins_obj() {
         .iter()
         .filter(|op| matches!(op, DecodedOp::InsObj { .. }))
         .count();
-    assert!(obj_ops >= 2, "expected >=2 ins_obj ops for multi-root nested object delta");
+    assert!(
+        obj_ops >= 2,
+        "expected >=2 ins_obj ops for multi-root nested object delta"
+    );
 
-    let mut applied = RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
+    let mut applied =
+        RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
     applied
         .apply_patch(&decoded)
         .expect("runtime apply must succeed");
@@ -646,9 +690,13 @@ fn upstream_port_diff_multi_root_nested_string_deltas_use_ins_str() {
         .filter(|op| matches!(op, DecodedOp::InsStr { .. } | DecodedOp::Del { .. }))
         .count();
     assert!(str_insert_ops >= 1, "expected at least one ins_str op");
-    assert!(str_mut_ops >= 2, "expected >=2 string mutation ops across nested roots");
+    assert!(
+        str_mut_ops >= 2,
+        "expected >=2 string mutation ops across nested roots"
+    );
 
-    let mut applied = RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
+    let mut applied =
+        RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
     applied
         .apply_patch(&decoded)
         .expect("runtime apply must succeed");
@@ -707,7 +755,9 @@ fn upstream_port_diff_multi_root_nested_bin_deltas_use_ins_bin() {
     ];
     let seed = encode_patch_from_ops(sid, 1, &ops).expect("seed patch encode must succeed");
     let seed_patch = Patch::from_binary(&seed).expect("seed patch decode must succeed");
-    runtime.apply_patch(&seed_patch).expect("seed apply must succeed");
+    runtime
+        .apply_patch(&seed_patch)
+        .expect("seed apply must succeed");
     let base_model = runtime
         .to_model_binary_like()
         .expect("runtime model encode must succeed");
@@ -725,9 +775,13 @@ fn upstream_port_diff_multi_root_nested_bin_deltas_use_ins_bin() {
         .iter()
         .filter(|op| matches!(op, DecodedOp::InsBin { .. }))
         .count();
-    assert!(bin_ops >= 2, "expected >=2 ins_bin ops for multi-root nested bin deltas");
+    assert!(
+        bin_ops >= 2,
+        "expected >=2 ins_bin ops for multi-root nested bin deltas"
+    );
 
-    let mut applied = RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
+    let mut applied =
+        RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
     applied
         .apply_patch(&decoded)
         .expect("runtime apply must succeed");
@@ -762,7 +816,8 @@ fn upstream_port_diff_multi_root_nested_arr_deltas_use_ins_arr() {
         "expected >=2 ins_val ops for multi-root nested array scalar updates"
     );
 
-    let mut applied = RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
+    let mut applied =
+        RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
     applied
         .apply_patch(&decoded)
         .expect("runtime apply must succeed");
@@ -837,7 +892,9 @@ fn upstream_port_diff_multi_root_nested_vec_deltas_use_ins_vec() {
     ];
     let seed = encode_patch_from_ops(sid, 1, &ops).expect("seed patch encode must succeed");
     let seed_patch = Patch::from_binary(&seed).expect("seed patch decode must succeed");
-    runtime.apply_patch(&seed_patch).expect("seed apply must succeed");
+    runtime
+        .apply_patch(&seed_patch)
+        .expect("seed apply must succeed");
     let base_model = runtime
         .to_model_binary_like()
         .expect("runtime model encode must succeed");
@@ -855,9 +912,13 @@ fn upstream_port_diff_multi_root_nested_vec_deltas_use_ins_vec() {
         .iter()
         .filter(|op| matches!(op, DecodedOp::InsVec { .. }))
         .count();
-    assert!(vec_ops >= 2, "expected >=2 ins_vec ops for multi-root nested vec deltas");
+    assert!(
+        vec_ops >= 2,
+        "expected >=2 ins_vec ops for multi-root nested vec deltas"
+    );
 
-    let mut applied = RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
+    let mut applied =
+        RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
     applied
         .apply_patch(&decoded)
         .expect("runtime apply must succeed");
@@ -908,7 +969,8 @@ fn upstream_port_diff_mixed_root_recursive_emits_child_and_root_ops() {
         "expected ins_obj op"
     );
 
-    let mut applied = RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
+    let mut applied =
+        RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
     applied
         .apply_patch(&decoded)
         .expect("runtime apply must succeed");
@@ -960,7 +1022,8 @@ fn upstream_port_diff_inside_out_recursive_object_mutation() {
         "expected deep array mutation op (ins_arr or ins_val)"
     );
 
-    let mut applied = RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
+    let mut applied =
+        RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
     applied
         .apply_patch(&decoded)
         .expect("runtime apply must succeed");
@@ -986,7 +1049,8 @@ fn upstream_port_diff_root_string_delta_mutates_in_place() {
         "expected root ins_str"
     );
 
-    let mut applied = RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
+    let mut applied =
+        RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
     applied
         .apply_patch(&decoded)
         .expect("runtime apply must succeed");
@@ -1012,7 +1076,8 @@ fn upstream_port_diff_root_array_delta_mutates_in_place() {
         "expected root ins_arr"
     );
 
-    let mut applied = RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
+    let mut applied =
+        RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
     applied
         .apply_patch(&decoded)
         .expect("runtime apply must succeed");
@@ -1041,7 +1106,8 @@ fn upstream_port_diff_root_type_replace_uses_origin_ins_val() {
         "expected origin ins_val root replacement"
     );
 
-    let mut applied = RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
+    let mut applied =
+        RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
     applied
         .apply_patch(&decoded)
         .expect("runtime apply must succeed");
@@ -1082,7 +1148,8 @@ fn upstream_port_diff_inside_out_array_object_mutation() {
         "expected nested ins_str mutation for array element object string field"
     );
 
-    let mut applied = RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
+    let mut applied =
+        RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
     applied
         .apply_patch(&decoded)
         .expect("runtime apply must succeed");
@@ -1122,7 +1189,8 @@ fn upstream_port_diff_inside_out_array_multi_object_mutation() {
         .count();
     assert!(str_ops >= 2, "expected multiple nested ins_str mutations");
 
-    let mut applied = RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
+    let mut applied =
+        RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
     applied
         .apply_patch(&decoded)
         .expect("runtime apply must succeed");
@@ -1180,7 +1248,9 @@ fn upstream_port_diff_inside_out_vec_object_mutation() {
     ];
     let seed = encode_patch_from_ops(sid, 1, &ops).expect("seed patch encode must succeed");
     let seed_patch = Patch::from_binary(&seed).expect("seed patch decode must succeed");
-    runtime.apply_patch(&seed_patch).expect("seed apply must succeed");
+    runtime
+        .apply_patch(&seed_patch)
+        .expect("seed apply must succeed");
     let base_model = runtime
         .to_model_binary_like()
         .expect("runtime model encode must succeed");
@@ -1198,7 +1268,8 @@ fn upstream_port_diff_inside_out_vec_object_mutation() {
         "expected inside-out object mutation under vec"
     );
 
-    let mut applied = RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
+    let mut applied =
+        RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
     applied
         .apply_patch(&decoded)
         .expect("runtime apply must succeed");
@@ -1227,10 +1298,16 @@ fn upstream_port_diff_multi_root_nested_string_multi_leaf_deltas() {
         .iter()
         .filter(|op| matches!(op, DecodedOp::InsStr { .. }))
         .count();
-    assert!(str_ops >= 2, "expected multiple ins_str ops for multi-leaf nested deltas");
+    assert!(
+        str_ops >= 2,
+        "expected multiple ins_str ops for multi-leaf nested deltas"
+    );
 
-    let mut applied = RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
-    applied.apply_patch(&decoded).expect("runtime apply must succeed");
+    let mut applied =
+        RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
+    applied
+        .apply_patch(&decoded)
+        .expect("runtime apply must succeed");
     assert_eq!(applied.view_json(), next);
 }
 
@@ -1314,7 +1391,9 @@ fn upstream_port_diff_multi_root_nested_bin_multi_leaf_deltas() {
     ];
     let seed = encode_patch_from_ops(sid, 1, &ops).expect("seed patch encode must succeed");
     let seed_patch = Patch::from_binary(&seed).expect("seed patch decode must succeed");
-    runtime.apply_patch(&seed_patch).expect("seed apply must succeed");
+    runtime
+        .apply_patch(&seed_patch)
+        .expect("seed apply must succeed");
     let base_model = runtime
         .to_model_binary_like()
         .expect("runtime model encode must succeed");
@@ -1331,15 +1410,24 @@ fn upstream_port_diff_multi_root_nested_bin_multi_leaf_deltas() {
         .iter()
         .filter(|op| matches!(op, DecodedOp::InsBin { .. }))
         .count();
-    assert!(bin_ops >= 2, "expected multiple ins_bin ops for multi-leaf nested deltas");
+    assert!(
+        bin_ops >= 2,
+        "expected multiple ins_bin ops for multi-leaf nested deltas"
+    );
 
-    let mut applied = RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
-    applied.apply_patch(&decoded).expect("runtime apply must succeed");
+    let mut applied =
+        RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
+    applied
+        .apply_patch(&decoded)
+        .expect("runtime apply must succeed");
     assert_eq!(applied.view_json(), next);
 }
 
 fn decode_hex(s: &str) -> Vec<u8> {
-    assert!(s.len() % 2 == 0, "hex string must have even length");
+    assert!(
+        s.len().is_multiple_of(2),
+        "hex string must have even length"
+    );
     let mut out = Vec::with_capacity(s.len() / 2);
     let bytes = s.as_bytes();
     for i in (0..bytes.len()).step_by(2) {

@@ -48,7 +48,8 @@ fn upstream_port_model_api_from_patches_and_apply_batch() {
     let p1 = patch_from_ops(sid, 1, &p1_ops);
     let p2 = patch_from_ops(sid, 5, &p2_ops);
 
-    let mut api = NativeModelApi::from_patches(std::slice::from_ref(&p1)).expect("from_patches must succeed");
+    let mut api =
+        NativeModelApi::from_patches(std::slice::from_ref(&p1)).expect("from_patches must succeed");
     api.apply_batch(std::slice::from_ref(&p2))
         .expect("apply_batch must succeed");
 
@@ -150,10 +151,16 @@ fn upstream_port_model_api_mutator_matrix() {
         .expect("obj_put must succeed");
     api.obj_put(&[], "list", json!([1]))
         .expect("obj_put must succeed");
-    api.add(&[PathStep::Key("list".into()), PathStep::Index(1)], json!(9))
-        .expect("add must succeed");
-    api.replace(&[PathStep::Key("list".into()), PathStep::Index(0)], json!(7))
-        .expect("replace must succeed");
+    api.add(
+        &[PathStep::Key("list".into()), PathStep::Index(1)],
+        json!(9),
+    )
+    .expect("add must succeed");
+    api.replace(
+        &[PathStep::Key("list".into()), PathStep::Index(0)],
+        json!(7),
+    )
+    .expect("replace must succeed");
     api.remove(&[PathStep::Key("list".into()), PathStep::Index(2)])
         .expect("remove must succeed");
     api.arr_push(&[PathStep::Key("list".into())], json!(2))
@@ -171,7 +178,10 @@ fn upstream_port_model_api_mutator_matrix() {
     api.set(&[PathStep::Key("title".into())], json!("world"))
         .expect("set must succeed");
 
-    assert_eq!(api.view(), json!({"title":"world","list":[7,9,2],"name":"aZb"}));
+    assert_eq!(
+        api.view(),
+        json!({"title":"world","list":[7,9,2],"name":"aZb"})
+    );
 }
 
 #[test]
@@ -199,18 +209,12 @@ fn upstream_port_model_api_tolerant_ops_matrix() {
     assert_eq!(api.select(Some(&[PathStep::Key("missing".into())])), None);
 
     assert!(api.try_add(&[PathStep::Key("items".into())], json!([1, 2])));
-    assert!(api.try_add(
-        &[PathStep::Key("items".into()), PathStep::Append],
-        json!(3)
-    ));
+    assert!(api.try_add(&[PathStep::Key("items".into()), PathStep::Append], json!(3)));
     assert!(api.try_replace(
         &[PathStep::Key("items".into()), PathStep::Index(0)],
         json!(7)
     ));
-    assert!(api.try_remove(&[
-        PathStep::Key("items".into()),
-        PathStep::Index(1)
-    ]));
+    assert!(api.try_remove(&[PathStep::Key("items".into()), PathStep::Index(1)]));
     assert!(api.op(ApiOperation::Add {
         path: vec![PathStep::Key("title".into())],
         value: json!("ok"),
@@ -224,7 +228,10 @@ fn upstream_port_model_api_tolerant_ops_matrix() {
         length: 1,
     }));
 
-    assert_eq!(api.read(Some(&[PathStep::Key("items".into())])), Some(json!([7, 3])));
+    assert_eq!(
+        api.read(Some(&[PathStep::Key("items".into())])),
+        Some(json!([7, 3]))
+    );
     assert!(!api.try_add(&[], json!(1)));
     assert!(!api.try_replace(&[PathStep::Key("missing".into())], json!(1)));
     assert!(!api.try_remove(&[]));
@@ -461,7 +468,10 @@ fn upstream_port_model_api_extended_typed_wrappers_matrix() {
     assert_eq!(val.view(), Some(json!("y")));
     val.set(json!("z")).expect("val set must succeed");
 
-    assert_eq!(api.view(), json!({"bin":[9,8,2,3],"vec":[1,null,null,7],"con":"z"}));
+    assert_eq!(
+        api.view(),
+        json!({"bin":[9,8,2,3],"vec":[1,null,null,7],"con":"z"})
+    );
 }
 
 #[test]
@@ -566,14 +576,8 @@ fn upstream_port_model_api_remove_length_matrix() {
     api.obj_put(&[], "bin", json!([1, 2, 3, 4, 5]))
         .expect("seed bin");
 
-    assert!(api.try_remove_with_length(
-        &[PathStep::Key("arr".into()), PathStep::Index(1)],
-        2
-    ));
-    assert!(api.try_remove_with_length(
-        &[PathStep::Key("str".into()), PathStep::Index(2)],
-        3
-    ));
+    assert!(api.try_remove_with_length(&[PathStep::Key("arr".into()), PathStep::Index(1)], 2));
+    assert!(api.try_remove_with_length(&[PathStep::Key("str".into()), PathStep::Index(2)], 3));
     assert!(api.op(ApiOperation::Remove {
         path: vec![PathStep::Key("bin".into()), PathStep::Index(1)],
         length: 3,
@@ -609,18 +613,8 @@ fn upstream_port_model_api_operation_tuple_dispatch_matrix() {
         Some(json!({"x":[1,2,3]})),
         None
     ));
-    assert!(api.op_ptr_tuple(
-        ApiOperationKind::Replace,
-        "/doc/x/0",
-        Some(json!(7)),
-        None
-    ));
-    assert!(api.op_ptr_tuple(
-        ApiOperationKind::Remove,
-        "/doc/x/1",
-        None,
-        Some(2)
-    ));
+    assert!(api.op_ptr_tuple(ApiOperationKind::Replace, "/doc/x/0", Some(json!(7)), None));
+    assert!(api.op_ptr_tuple(ApiOperationKind::Remove, "/doc/x/1", None, Some(2)));
     assert!(api.op_ptr_tuple(
         ApiOperationKind::Merge,
         "/doc",
@@ -666,7 +660,10 @@ fn upstream_port_model_api_add_replace_remove_vec_and_array_semantics_matrix() {
             DecodedOp::InsVec {
                 id: Timestamp { sid, time: 6 },
                 obj: Timestamp { sid, time: 3 },
-                data: vec![(0, Timestamp { sid, time: 4 }), (1, Timestamp { sid, time: 5 })],
+                data: vec![
+                    (0, Timestamp { sid, time: 4 }),
+                    (1, Timestamp { sid, time: 5 }),
+                ],
             },
             DecodedOp::InsObj {
                 id: Timestamp { sid, time: 7 },
@@ -683,15 +680,15 @@ fn upstream_port_model_api_add_replace_remove_vec_and_array_semantics_matrix() {
         &[PathStep::Key("arr".into()), PathStep::Index(1)],
         json!([7, 8])
     ));
-    assert!(api.try_replace(
-        &[PathStep::Key("arr".into()), PathStep::Index(4)],
-        json!(9)
-    ));
+    assert!(api.try_replace(&[PathStep::Key("arr".into()), PathStep::Index(4)], json!(9)));
     assert!(api.try_replace(
         &[PathStep::Key("vec".into()), PathStep::Index(3)],
         json!(30)
     ));
     assert!(api.try_remove(&[PathStep::Key("vec".into()), PathStep::Index(1)]));
 
-    assert_eq!(api.view(), json!({"arr":[1,7,8,2,9],"vec":[10,null,null,30]}));
+    assert_eq!(
+        api.view(),
+        json!({"arr":[1,7,8,2,9],"vec":[10,null,null,30]})
+    );
 }

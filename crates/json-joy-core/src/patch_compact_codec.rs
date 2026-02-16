@@ -86,7 +86,10 @@ pub fn encode_patch_compact(patch: &Patch) -> Result<Value, CompactCodecError> {
     let header = if sid == SESSION_SERVER {
         Value::Array(vec![Value::from(time)])
     } else {
-        Value::Array(vec![Value::Array(vec![Value::from(sid), Value::from(time)])])
+        Value::Array(vec![Value::Array(vec![
+            Value::from(sid),
+            Value::from(time),
+        ])])
     };
     out.push(header);
 
@@ -115,7 +118,9 @@ pub fn encode_patch_compact(patch: &Patch) -> Result<Value, CompactCodecError> {
             DecodedOp::InsObj { obj, data, .. } => {
                 let tuples = data
                     .iter()
-                    .map(|(k, v)| Value::Array(vec![Value::String(k.clone()), ts_to_compact(sid, *v)]))
+                    .map(|(k, v)| {
+                        Value::Array(vec![Value::String(k.clone()), ts_to_compact(sid, *v)])
+                    })
                     .collect::<Vec<_>>();
                 Value::Array(vec![
                     Value::from(10u64),
@@ -272,7 +277,9 @@ pub fn decode_patch_compact(compact: &Value) -> Result<Patch, CompactCodecError>
                             return Err(CompactCodecError::InvalidOperation);
                         }
                         Ok((
-                            a[0].as_str().ok_or(CompactCodecError::InvalidOperation)?.to_string(),
+                            a[0].as_str()
+                                .ok_or(CompactCodecError::InvalidOperation)?
+                                .to_string(),
                             compact_to_ts(sid, &a[1])?,
                         ))
                     })
@@ -309,7 +316,10 @@ pub fn decode_patch_compact(compact: &Value) -> Result<Patch, CompactCodecError>
             12 => DecodedOp::InsStr {
                 id,
                 obj: compact_to_ts(sid, op.get(1).ok_or(CompactCodecError::InvalidOperation)?)?,
-                reference: compact_to_ts(sid, op.get(2).ok_or(CompactCodecError::InvalidOperation)?)?,
+                reference: compact_to_ts(
+                    sid,
+                    op.get(2).ok_or(CompactCodecError::InvalidOperation)?,
+                )?,
                 data: op
                     .get(3)
                     .and_then(Value::as_str)
@@ -319,7 +329,10 @@ pub fn decode_patch_compact(compact: &Value) -> Result<Patch, CompactCodecError>
             13 => DecodedOp::InsBin {
                 id,
                 obj: compact_to_ts(sid, op.get(1).ok_or(CompactCodecError::InvalidOperation)?)?,
-                reference: compact_to_ts(sid, op.get(2).ok_or(CompactCodecError::InvalidOperation)?)?,
+                reference: compact_to_ts(
+                    sid,
+                    op.get(2).ok_or(CompactCodecError::InvalidOperation)?,
+                )?,
                 data: base64::engine::general_purpose::STANDARD
                     .decode(
                         op.get(3)
@@ -339,14 +352,20 @@ pub fn decode_patch_compact(compact: &Value) -> Result<Patch, CompactCodecError>
                 DecodedOp::InsArr {
                     id,
                     obj: compact_to_ts(sid, op.get(1).ok_or(CompactCodecError::InvalidOperation)?)?,
-                    reference: compact_to_ts(sid, op.get(2).ok_or(CompactCodecError::InvalidOperation)?)?,
+                    reference: compact_to_ts(
+                        sid,
+                        op.get(2).ok_or(CompactCodecError::InvalidOperation)?,
+                    )?,
                     data,
                 }
             }
             15 => DecodedOp::UpdArr {
                 id,
                 obj: compact_to_ts(sid, op.get(1).ok_or(CompactCodecError::InvalidOperation)?)?,
-                reference: compact_to_ts(sid, op.get(2).ok_or(CompactCodecError::InvalidOperation)?)?,
+                reference: compact_to_ts(
+                    sid,
+                    op.get(2).ok_or(CompactCodecError::InvalidOperation)?,
+                )?,
                 val: compact_to_ts(sid, op.get(3).ok_or(CompactCodecError::InvalidOperation)?)?,
             },
             16 => {
@@ -376,4 +395,3 @@ pub fn decode_patch_compact(compact: &Value) -> Result<Patch, CompactCodecError>
     let bytes = encode_patch_from_ops(sid, time, &ops)?;
     Ok(Patch::from_binary(&bytes)?)
 }
-

@@ -36,7 +36,10 @@ fn upstream_port_patch_combine_adjacent_and_gapped() {
 
     let combined_adj = combine_patches(&[p1.clone(), p2_adj]).expect("combine adjacent");
     assert_eq!(combined_adj.decoded_ops().len(), 3);
-    assert!(matches!(combined_adj.decoded_ops()[2], DecodedOp::NewCon { .. }));
+    assert!(matches!(
+        combined_adj.decoded_ops()[2],
+        DecodedOp::NewCon { .. }
+    ));
 
     let combined_gap = combine_patches(&[p1, p2_gap]).expect("combine gap");
     assert_eq!(combined_gap.decoded_ops().len(), 4);
@@ -130,4 +133,3 @@ fn upstream_port_patch_compact_does_not_merge_non_append() {
     let compacted = compact_patch(&patch).expect("compact");
     assert_eq!(compacted.decoded_ops().len(), 3);
 }
-

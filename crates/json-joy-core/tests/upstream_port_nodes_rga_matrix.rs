@@ -104,7 +104,13 @@ fn upstream_port_arr_rga_matrix_core_behaviors() {
     }
     assert_eq!(
         runtime.view_json(),
-        json!([true, true, serde_json::Value::Null, false, serde_json::Value::Null])
+        json!([
+            true,
+            true,
+            serde_json::Value::Null,
+            false,
+            serde_json::Value::Null
+        ])
     );
 
     // Same patch replayed multiple times should be idempotent.
@@ -116,7 +122,13 @@ fn upstream_port_arr_rga_matrix_core_behaviors() {
     }
     assert_eq!(
         runtime.view_json(),
-        json!([true, true, serde_json::Value::Null, false, serde_json::Value::Null])
+        json!([
+            true,
+            true,
+            serde_json::Value::Null,
+            false,
+            serde_json::Value::Null
+        ])
     );
 }
 
@@ -206,10 +218,7 @@ fn upstream_port_bin_rga_matrix_core_behaviors() {
     for op in ops.clone() {
         apply_one(&mut runtime, op);
     }
-    assert_eq!(
-        runtime.view_json(),
-        json!({"0":1,"1":2,"2":5,"3":3,"4":4})
-    );
+    assert_eq!(runtime.view_json(), json!({"0":1,"1":2,"2":5,"3":3,"4":4}));
 
     // Apply same patch repeatedly: idempotent.
     for op in ops.clone() {
@@ -218,10 +227,7 @@ fn upstream_port_bin_rga_matrix_core_behaviors() {
     for op in ops {
         apply_one(&mut runtime, op);
     }
-    assert_eq!(
-        runtime.view_json(),
-        json!({"0":1,"1":2,"2":5,"3":3,"4":4})
-    );
+    assert_eq!(runtime.view_json(), json!({"0":1,"1":2,"2":5,"3":3,"4":4}));
 }
 
 #[test]

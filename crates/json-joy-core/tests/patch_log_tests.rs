@@ -4,7 +4,10 @@ use json_joy_core::patch_log::{
 };
 
 fn decode_hex(s: &str) -> Vec<u8> {
-    assert!(s.len() % 2 == 0, "hex string must have even length");
+    assert!(
+        s.len().is_multiple_of(2),
+        "hex string must have even length"
+    );
     let mut out = Vec::with_capacity(s.len() / 2);
     let bytes = s.as_bytes();
     for i in (0..bytes.len()).step_by(2) {

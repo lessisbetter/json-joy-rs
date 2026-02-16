@@ -105,8 +105,9 @@ pub fn compact_patch(patch: &Patch) -> Result<Patch, CompactionError> {
             {
                 // Upstream JS uses string `.length` (UTF-16 code units) for op
                 // span progression, not Unicode scalar count.
-                let last_next_tick =
-                    last_id.time.saturating_add(last_data.encode_utf16().count() as u64);
+                let last_next_tick = last_id
+                    .time
+                    .saturating_add(last_data.encode_utf16().count() as u64);
                 let is_time_consecutive = last_next_tick == id.time;
                 let same_obj = *last_obj == *obj;
                 let is_append = last_next_tick == reference.time.saturating_add(1)

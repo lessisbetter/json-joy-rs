@@ -1,6 +1,8 @@
 use json_joy_core::less_db_compat::{create_model, diff_model};
 use json_joy_core::patch::Patch;
-use json_joy_core::patch_log::{append_patch, deserialize_patches, serialize_patches, PATCH_LOG_VERSION};
+use json_joy_core::patch_log::{
+    append_patch, deserialize_patches, serialize_patches, PATCH_LOG_VERSION,
+};
 use serde_json::json;
 
 #[test]

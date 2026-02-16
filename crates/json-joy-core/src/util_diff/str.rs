@@ -330,12 +330,13 @@ fn bisect(text1: &str, text2: &str) -> Patch {
             let k1_offset = v_offset + k1;
             let v10 = v1[(k1_offset - 1) as usize];
             let v11 = v1[(k1_offset + 1) as usize];
-            let mut x1 = if k1 == -d || (k1 != d && v10 < v11) { v11 } else { v10 + 1 };
+            let mut x1 = if k1 == -d || (k1 != d && v10 < v11) {
+                v11
+            } else {
+                v10 + 1
+            };
             let mut y1 = x1 - k1;
-            while x1 < n as isize
-                && y1 < m as isize
-                && a[x1 as usize] == b[y1 as usize]
-            {
+            while x1 < n as isize && y1 < m as isize && a[x1 as usize] == b[y1 as usize] {
                 x1 += 1;
                 y1 += 1;
             }
@@ -359,7 +360,9 @@ fn bisect(text1: &str, text2: &str) -> Patch {
         let mut k2 = -d + k2start;
         while k2 <= d - k2end {
             let k2_offset = v_offset + k2;
-            let mut x2 = if k2 == -d || (k2 != d && v2[(k2_offset - 1) as usize] < v2[(k2_offset + 1) as usize]) {
+            let mut x2 = if k2 == -d
+                || (k2 != d && v2[(k2_offset - 1) as usize] < v2[(k2_offset + 1) as usize])
+            {
                 v2[(k2_offset + 1) as usize]
             } else {
                 v2[(k2_offset - 1) as usize] + 1
@@ -592,8 +595,12 @@ fn diff_(mut src: &str, mut dst: &str, fix_unicode: bool) -> Patch {
 
     let suffix_len = sfx(&src_mid, &dst_mid);
     let suffix = from_utf16(&src_mid_u[src_mid_u.len().saturating_sub(suffix_len)..]);
-    src = Box::leak(from_utf16(&src_mid_u[..src_mid_u.len().saturating_sub(suffix_len)]).into_boxed_str());
-    dst = Box::leak(from_utf16(&dst_mid_u[..dst_mid_u.len().saturating_sub(suffix_len)]).into_boxed_str());
+    src = Box::leak(
+        from_utf16(&src_mid_u[..src_mid_u.len().saturating_sub(suffix_len)]).into_boxed_str(),
+    );
+    dst = Box::leak(
+        from_utf16(&dst_mid_u[..dst_mid_u.len().saturating_sub(suffix_len)]).into_boxed_str(),
+    );
 
     let mut d = diff_no_common_affix(src, dst);
     if !prefix.is_empty() {

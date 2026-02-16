@@ -22,7 +22,9 @@ fn str_patch_to_json(patch: &str_diff::Patch) -> Value {
     Value::Array(
         patch
             .iter()
-            .map(|(ty, txt)| Value::Array(vec![Value::from(*ty as i64), Value::String(txt.clone())]))
+            .map(|(ty, txt)| {
+                Value::Array(vec![Value::from(*ty as i64), Value::String(txt.clone())])
+            })
             .collect(),
     )
 }
@@ -31,7 +33,13 @@ fn line_patch_to_json(patch: &line::LinePatch) -> Value {
     Value::Array(
         patch
             .iter()
-            .map(|(ty, src, dst)| Value::Array(vec![Value::from(*ty as i64), Value::from(*src as i64), Value::from(*dst as i64)]))
+            .map(|(ty, src, dst)| {
+                Value::Array(vec![
+                    Value::from(*ty as i64),
+                    Value::from(*src as i64),
+                    Value::from(*dst as i64),
+                ])
+            })
             .collect(),
     )
 }
@@ -39,8 +47,9 @@ fn line_patch_to_json(patch: &line::LinePatch) -> Value {
 #[test]
 fn util_diff_fixtures_match_oracle_outputs() {
     let dir = fixtures_dir();
-    let manifest: Value = serde_json::from_str(&fs::read_to_string(dir.join("manifest.json")).expect("manifest"))
-        .expect("manifest json");
+    let manifest: Value =
+        serde_json::from_str(&fs::read_to_string(dir.join("manifest.json")).expect("manifest"))
+            .expect("manifest json");
 
     let mut seen = 0u32;
     for entry in manifest["fixtures"].as_array().expect("fixtures array") {
@@ -64,13 +73,17 @@ fn util_diff_fixtures_match_oracle_outputs() {
                 );
                 assert_eq!(
                     str_diff::src(&patch),
-                    fx["expected"]["src_from_patch"].as_str().expect("expected.src_from_patch str"),
+                    fx["expected"]["src_from_patch"]
+                        .as_str()
+                        .expect("expected.src_from_patch str"),
                     "str diff src reconstruction mismatch for {}",
                     fx["name"]
                 );
                 assert_eq!(
                     str_diff::dst(&patch),
-                    fx["expected"]["dst_from_patch"].as_str().expect("expected.dst_from_patch str"),
+                    fx["expected"]["dst_from_patch"]
+                        .as_str()
+                        .expect("expected.dst_from_patch str"),
                     "str diff dst reconstruction mismatch for {}",
                     fx["name"]
                 );
@@ -107,8 +120,18 @@ fn util_diff_fixtures_match_oracle_outputs() {
                     .iter()
                     .map(|v| u8::try_from(v.as_u64().expect("bin u64")).expect("bin u8"))
                     .collect();
-                assert_eq!(bin::src(&patch), expected_src, "bin src reconstruction mismatch for {}", fx["name"]);
-                assert_eq!(bin::dst(&patch), expected_dst, "bin dst reconstruction mismatch for {}", fx["name"]);
+                assert_eq!(
+                    bin::src(&patch),
+                    expected_src,
+                    "bin src reconstruction mismatch for {}",
+                    fx["name"]
+                );
+                assert_eq!(
+                    bin::dst(&patch),
+                    expected_dst,
+                    "bin dst reconstruction mismatch for {}",
+                    fx["name"]
+                );
             }
             "line" => {
                 let src: Vec<String> = fx["input"]["src"]

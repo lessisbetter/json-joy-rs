@@ -14,7 +14,7 @@ fn fixtures_dir() -> std::path::PathBuf {
 }
 
 fn from_hex(s: &str) -> Vec<u8> {
-    assert!(s.len() % 2 == 0, "hex length must be even");
+    assert!(s.len().is_multiple_of(2), "hex length must be even");
     (0..s.len())
         .step_by(2)
         .map(|i| u8::from_str_radix(&s[i..i + 2], 16).expect("valid hex"))
@@ -29,8 +29,9 @@ fn read_fixture(path: &Path) -> Value {
 #[test]
 fn patch_schema_fixtures_match_oracle_binary_and_metadata() {
     let dir = fixtures_dir();
-    let manifest: Value = serde_json::from_str(&fs::read_to_string(dir.join("manifest.json")).expect("manifest"))
-        .expect("manifest json");
+    let manifest: Value =
+        serde_json::from_str(&fs::read_to_string(dir.join("manifest.json")).expect("manifest"))
+            .expect("manifest json");
 
     let mut seen = 0u32;
     for entry in manifest["fixtures"].as_array().expect("fixtures array") {
@@ -71,8 +72,18 @@ fn patch_schema_fixtures_match_oracle_binary_and_metadata() {
             .map(|v| u8::try_from(v.as_u64().expect("opcode u64")).expect("opcode in range"))
             .collect();
 
-        assert_eq!(patch.op_count(), expected_op_count, "op count mismatch for {}", fx["name"]);
-        assert_eq!(patch.span(), expected_span, "span mismatch for {}", fx["name"]);
+        assert_eq!(
+            patch.op_count(),
+            expected_op_count,
+            "op count mismatch for {}",
+            fx["name"]
+        );
+        assert_eq!(
+            patch.span(),
+            expected_span,
+            "span mismatch for {}",
+            fx["name"]
+        );
         assert_eq!(
             patch.opcodes(),
             expected_opcodes.as_slice(),
@@ -81,5 +92,8 @@ fn patch_schema_fixtures_match_oracle_binary_and_metadata() {
         );
     }
 
-    assert!(seen >= 25, "expected at least 25 patch_schema_parity fixtures");
+    assert!(
+        seen >= 25,
+        "expected at least 25 patch_schema_parity fixtures"
+    );
 }

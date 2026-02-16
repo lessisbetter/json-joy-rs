@@ -207,8 +207,7 @@ pub fn diff(src: &[String], dst: &[String]) -> LinePatch {
     let dst_len = dst.len() as isize;
 
     let lines_total = lines.len();
-    for i in 0..lines_total {
-        let line = &mut lines[i];
+    for (i, line) in lines.iter_mut().enumerate().take(lines_total) {
         if line.is_empty() {
             continue;
         }

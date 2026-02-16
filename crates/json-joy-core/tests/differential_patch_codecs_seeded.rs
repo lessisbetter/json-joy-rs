@@ -2,7 +2,9 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use json_joy_core::patch::Patch;
-use json_joy_core::patch_compact_binary_codec::{decode_patch_compact_binary, encode_patch_compact_binary};
+use json_joy_core::patch_compact_binary_codec::{
+    decode_patch_compact_binary, encode_patch_compact_binary,
+};
 use json_joy_core::patch_compact_codec::{decode_patch_compact, encode_patch_compact};
 use json_joy_core::patch_verbose_codec::{decode_patch_verbose, encode_patch_verbose};
 use serde_json::Value;
@@ -17,7 +19,8 @@ fn fixtures_dir() -> PathBuf {
 }
 
 fn read_json(path: &Path) -> Value {
-    let data = std::fs::read_to_string(path).unwrap_or_else(|e| panic!("failed to read {:?}: {e}", path));
+    let data =
+        std::fs::read_to_string(path).unwrap_or_else(|e| panic!("failed to read {:?}: {e}", path));
     serde_json::from_str(&data).unwrap_or_else(|e| panic!("failed to parse {:?}: {e}", path))
 }
 
@@ -32,7 +35,10 @@ fn oracle_cwd() -> PathBuf {
 #[test]
 fn differential_patch_codecs_seeded_match_oracle() {
     let patch_hexes = collect_patch_samples(40);
-    assert!(!patch_hexes.is_empty(), "expected at least one patch sample");
+    assert!(
+        !patch_hexes.is_empty(),
+        "expected at least one patch sample"
+    );
 
     for (idx, patch_hex) in patch_hexes.iter().enumerate() {
         let patch_bytes = decode_hex(patch_hex);
@@ -48,13 +54,11 @@ fn differential_patch_codecs_seeded_match_oracle() {
         let oracle = oracle_patch_codecs(patch_hex);
 
         assert_eq!(
-            rust_compact,
-            oracle["compact"],
+            rust_compact, oracle["compact"],
             "compact payload mismatch at sample {idx}"
         );
         assert_eq!(
-            rust_verbose,
-            oracle["verbose"],
+            rust_verbose, oracle["verbose"],
             "verbose payload mismatch at sample {idx}"
         );
         assert_eq!(
@@ -82,13 +86,11 @@ fn differential_patch_codecs_seeded_match_oracle() {
         let roundtrip_from_rust_compact_bin = decode_patch_compact_binary(&rust_compact_binary)
             .expect("decode rust compact-binary must succeed")
             .to_binary();
-        let roundtrip_from_oracle_compact_bin = decode_patch_compact_binary(
-            &decode_hex(
-                oracle["compact_binary_hex"]
-                    .as_str()
-                    .expect("oracle compact_binary_hex must be string"),
-            ),
-        )
+        let roundtrip_from_oracle_compact_bin = decode_patch_compact_binary(&decode_hex(
+            oracle["compact_binary_hex"]
+                .as_str()
+                .expect("oracle compact_binary_hex must be string"),
+        ))
         .expect("decode oracle compact-binary must succeed")
         .to_binary();
 
@@ -123,7 +125,9 @@ fn differential_patch_codecs_seeded_match_oracle() {
 fn collect_patch_samples(limit: usize) -> Vec<String> {
     let dir = fixtures_dir();
     let manifest = read_json(&dir.join("manifest.json"));
-    let fixtures = manifest["fixtures"].as_array().expect("manifest.fixtures must be array");
+    let fixtures = manifest["fixtures"]
+        .as_array()
+        .expect("manifest.fixtures must be array");
     let mut out = Vec::new();
 
     for entry in fixtures {
@@ -211,7 +215,10 @@ fn hex(bytes: &[u8]) -> String {
 }
 
 fn decode_hex(s: &str) -> Vec<u8> {
-    assert!(s.len() % 2 == 0, "hex string must have even length");
+    assert!(
+        s.len().is_multiple_of(2),
+        "hex string must have even length"
+    );
     let mut out = Vec::with_capacity(s.len() / 2);
     let bytes = s.as_bytes();
     for i in (0..bytes.len()).step_by(2) {

@@ -126,7 +126,7 @@ fn cbor_to_json(v: Value) -> Result<serde_json::Value, PatchError> {
                 serde_json::Value::Number(Number::from(s))
             }
         }
-        Value::Float(f) => Number::from_f64(f as f64)
+        Value::Float(f) => Number::from_f64(f)
             .map(serde_json::Value::Number)
             .ok_or(PatchError::InvalidCbor)?,
         Value::Text(s) => serde_json::Value::String(s),
@@ -158,9 +158,9 @@ fn cbor_to_json(v: Value) -> Result<serde_json::Value, PatchError> {
     })
 }
 
-fn decode_patch(
-    reader: &mut Reader<'_>,
-) -> Result<(u64, u64, u64, u64, Vec<u8>, Vec<DecodedOp>), PatchError> {
+type DecodedPatchPayload = (u64, u64, u64, u64, Vec<u8>, Vec<DecodedOp>);
+
+fn decode_patch(reader: &mut Reader<'_>) -> Result<DecodedPatchPayload, PatchError> {
     let sid = reader.vu57()?;
     let time = reader.vu57()?;
 

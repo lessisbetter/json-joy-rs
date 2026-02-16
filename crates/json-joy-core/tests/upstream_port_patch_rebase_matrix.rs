@@ -83,4 +83,3 @@ fn upstream_port_patch_rebase_transforms_timestamp_con_values_on_same_sid() {
         other => panic!("expected new_con timestamp ref, got {other:?}"),
     }
 }
-

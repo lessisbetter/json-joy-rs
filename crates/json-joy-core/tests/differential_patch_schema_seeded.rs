@@ -79,7 +79,8 @@ process.stdout.write(JSON.stringify({ patch_hex: Buffer.from(patch.toBinary()).t
         String::from_utf8_lossy(&output.stderr)
     );
 
-    let parsed: Value = serde_json::from_slice(&output.stdout).expect("schema oracle output must be json");
+    let parsed: Value =
+        serde_json::from_slice(&output.stdout).expect("schema oracle output must be json");
     parsed["patch_hex"]
         .as_str()
         .expect("schema oracle patch_hex must be string")

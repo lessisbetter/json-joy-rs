@@ -165,11 +165,10 @@ impl RuntimeModel {
 
     pub(crate) fn node_is_deleted_or_missing(&self, id: Timestamp) -> bool {
         let key = Id::from(id);
-        match self.nodes.get(&key) {
-            None => true,
-            Some(RuntimeNode::Con(ConCell::Undef)) => true,
-            _ => false,
-        }
+        matches!(
+            self.nodes.get(&key),
+            None | Some(RuntimeNode::Con(ConCell::Undef))
+        )
     }
 
     pub(crate) fn string_visible_slots(&self, id: Timestamp) -> Option<Vec<Timestamp>> {

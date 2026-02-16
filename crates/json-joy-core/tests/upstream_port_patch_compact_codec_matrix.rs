@@ -1,4 +1,4 @@
-use json_joy_core::patch::{ConValue, DecodedOp, Patch, Timestamp, Timespan};
+use json_joy_core::patch::{ConValue, DecodedOp, Patch, Timespan, Timestamp};
 use json_joy_core::patch_builder::encode_patch_from_ops;
 use json_joy_core::patch_compact_codec::{decode_patch_compact, encode_patch_compact};
 use serde_json::json;
@@ -87,14 +87,9 @@ fn upstream_port_patch_compact_codec_roundtrip_to_binary_matrix() {
 
 #[test]
 fn upstream_port_patch_compact_codec_decodes_server_header() {
-    let compact = json!([
-      [42],
-      [0, 1],
-      [17, 2]
-    ]);
+    let compact = json!([[42], [0, 1], [17, 2]]);
     let patch = decode_patch_compact(&compact).expect("decode");
     assert_eq!(patch.id(), Some((1, 42)));
     assert_eq!(patch.op_count(), 2);
     assert_eq!(patch.span(), 3);
 }
-

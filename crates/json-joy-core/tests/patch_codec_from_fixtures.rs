@@ -14,12 +14,16 @@ fn fixtures_dir() -> PathBuf {
 }
 
 fn read_json(path: &Path) -> Value {
-    let data = fs::read_to_string(path).unwrap_or_else(|e| panic!("failed to read {:?}: {e}", path));
+    let data =
+        fs::read_to_string(path).unwrap_or_else(|e| panic!("failed to read {:?}: {e}", path));
     serde_json::from_str(&data).unwrap_or_else(|e| panic!("failed to parse {:?}: {e}", path))
 }
 
 fn decode_hex(s: &str) -> Vec<u8> {
-    assert!(s.len() % 2 == 0, "hex string must have even length");
+    assert!(
+        s.len().is_multiple_of(2),
+        "hex string must have even length"
+    );
     let mut out = Vec::with_capacity(s.len() / 2);
     let bytes = s.as_bytes();
     for i in (0..bytes.len()).step_by(2) {
@@ -39,7 +43,9 @@ fn patch_diff_apply_fixtures_decode_and_roundtrip() {
     //   still being expanded.
     let dir = fixtures_dir();
     let manifest = read_json(&dir.join("manifest.json"));
-    let fixtures = manifest["fixtures"].as_array().expect("manifest.fixtures must be array");
+    let fixtures = manifest["fixtures"]
+        .as_array()
+        .expect("manifest.fixtures must be array");
 
     let mut seen = 0u32;
     for entry in fixtures {
@@ -47,7 +53,9 @@ fn patch_diff_apply_fixtures_decode_and_roundtrip() {
             continue;
         }
         seen += 1;
-        let file = entry["file"].as_str().expect("fixture entry file must be string");
+        let file = entry["file"]
+            .as_str()
+            .expect("fixture entry file must be string");
         let fixture = read_json(&dir.join(file));
 
         let patch_present = fixture["expected"]["patch_present"]
@@ -78,11 +86,18 @@ fn patch_diff_apply_fixtures_decode_and_roundtrip() {
             .unwrap_or_else(|| panic!("expected.patch_opcodes must be array for {}", entry["name"]))
             .iter()
             .map(|v| {
-                let n = v
-                    .as_u64()
-                    .unwrap_or_else(|| panic!("expected.patch_opcodes values must be u64 for {}", entry["name"]));
-                u8::try_from(n)
-                    .unwrap_or_else(|_| panic!("expected.patch_opcodes value out of range for {}", entry["name"]))
+                let n = v.as_u64().unwrap_or_else(|| {
+                    panic!(
+                        "expected.patch_opcodes values must be u64 for {}",
+                        entry["name"]
+                    )
+                });
+                u8::try_from(n).unwrap_or_else(|_| {
+                    panic!(
+                        "expected.patch_opcodes value out of range for {}",
+                        entry["name"]
+                    )
+                })
             })
             .collect();
         let expected_sid = fixture["expected"]["patch_id_sid"]
@@ -93,7 +108,9 @@ fn patch_diff_apply_fixtures_decode_and_roundtrip() {
             .unwrap_or_else(|| panic!("expected.patch_id_time must be u64 for {}", entry["name"]));
         let expected_next_time = fixture["expected"]["patch_next_time"]
             .as_u64()
-            .unwrap_or_else(|| panic!("expected.patch_next_time must be u64 for {}", entry["name"]));
+            .unwrap_or_else(|| {
+                panic!("expected.patch_next_time must be u64 for {}", entry["name"])
+            });
 
         assert_eq!(
             roundtrip, patch_bytes,
@@ -142,7 +159,9 @@ fn patch_decode_error_fixtures_reject_binary_when_oracle_rejects() {
     // oracle expectations per fixture instead of applying stricter local rules.
     let dir = fixtures_dir();
     let manifest = read_json(&dir.join("manifest.json"));
-    let fixtures = manifest["fixtures"].as_array().expect("manifest.fixtures must be array");
+    let fixtures = manifest["fixtures"]
+        .as_array()
+        .expect("manifest.fixtures must be array");
 
     let mut seen = 0u32;
     for entry in fixtures {
@@ -151,7 +170,9 @@ fn patch_decode_error_fixtures_reject_binary_when_oracle_rejects() {
         }
         seen += 1;
 
-        let file = entry["file"].as_str().expect("fixture entry file must be string");
+        let file = entry["file"]
+            .as_str()
+            .expect("fixture entry file must be string");
         let fixture = read_json(&dir.join(file));
 
         let patch_hex = fixture["input"]["patch_binary_hex"]
@@ -179,5 +200,8 @@ fn patch_decode_error_fixtures_reject_binary_when_oracle_rejects() {
         }
     }
 
-    assert!(seen >= 10, "expected at least 10 patch_decode_error fixtures");
+    assert!(
+        seen >= 10,
+        "expected at least 10 patch_decode_error fixtures"
+    );
 }

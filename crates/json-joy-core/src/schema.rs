@@ -230,10 +230,7 @@ pub fn vec_node(values: Vec<Option<SchemaNode>>) -> SchemaNode {
 }
 
 pub fn obj_node(req: Vec<(String, SchemaNode)>, opt: Vec<(String, SchemaNode)>) -> SchemaNode {
-    SchemaNode::Obj {
-        req,
-        opt,
-    }
+    SchemaNode::Obj { req, opt }
 }
 
 pub fn arr_node(values: Vec<SchemaNode>) -> SchemaNode {
@@ -255,7 +252,9 @@ pub fn json(value: &Value) -> SchemaNode {
         Value::String(s) => str_node(s.clone()),
         Value::Array(arr) => arr_node(arr.iter().map(json).collect()),
         Value::Object(map) => obj_node(
-            map.iter().map(|(k, v)| (k.clone(), json_con(v))).collect::<Vec<_>>(),
+            map.iter()
+                .map(|(k, v)| (k.clone(), json_con(v)))
+                .collect::<Vec<_>>(),
             Vec::<(String, SchemaNode)>::new(),
         ),
     }

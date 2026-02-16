@@ -90,7 +90,11 @@ fn mutate_object(rng: &mut Lcg, map: &Map<String, Value>, depth: u32) -> Value {
         out.insert(format!("k{}", rng.range(8)), random_leaf(rng));
     }
     if !out.is_empty() && rng.range(8) == 0 {
-        let key = out.keys().next().cloned().expect("non-empty map must have key");
+        let key = out
+            .keys()
+            .next()
+            .cloned()
+            .expect("non-empty map must have key");
         out.remove(&key);
     }
     Value::Object(out)
@@ -225,7 +229,10 @@ fn hex(bytes: &[u8]) -> String {
 }
 
 fn decode_hex(s: &str) -> Vec<u8> {
-    assert!(s.len() % 2 == 0, "hex string must have even length");
+    assert!(
+        s.len().is_multiple_of(2),
+        "hex string must have even length"
+    );
     let mut out = Vec::with_capacity(s.len() / 2);
     let bytes = s.as_bytes();
     for i in (0..bytes.len()).step_by(2) {

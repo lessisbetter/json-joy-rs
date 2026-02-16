@@ -62,32 +62,43 @@ pub fn decode_sidecar_to_model_binary(
     if meta_binary.len() < 4 {
         return Err(SidecarBinaryCodecError::InvalidPayload);
     }
-    let offset = u32::from_be_bytes([meta_binary[0], meta_binary[1], meta_binary[2], meta_binary[3]]) as usize;
+    let offset = u32::from_be_bytes([
+        meta_binary[0],
+        meta_binary[1],
+        meta_binary[2],
+        meta_binary[3],
+    ]) as usize;
     if 4 + offset > meta_binary.len() {
         return Err(SidecarBinaryCodecError::InvalidPayload);
     }
 
     let mut table_pos = 4 + offset;
-    let len = read_vu57(meta_binary, &mut table_pos).ok_or(SidecarBinaryCodecError::InvalidPayload)? as usize;
+    let len = read_vu57(meta_binary, &mut table_pos)
+        .ok_or(SidecarBinaryCodecError::InvalidPayload)? as usize;
     if len == 0 {
         return Err(SidecarBinaryCodecError::InvalidPayload);
     }
     let mut table = Vec::with_capacity(len);
     for _ in 0..len {
-        let sid = read_vu57(meta_binary, &mut table_pos).ok_or(SidecarBinaryCodecError::InvalidPayload)?;
-        let time = read_vu57(meta_binary, &mut table_pos).ok_or(SidecarBinaryCodecError::InvalidPayload)?;
+        let sid = read_vu57(meta_binary, &mut table_pos)
+            .ok_or(SidecarBinaryCodecError::InvalidPayload)?;
+        let time = read_vu57(meta_binary, &mut table_pos)
+            .ok_or(SidecarBinaryCodecError::InvalidPayload)?;
         table.push(LogicalClockBase { sid, time });
     }
 
     let mut dec = MetaCursor::new(&meta_binary[4..4 + offset]);
     let mut nodes = HashMap::new();
     let root = if dec.peek().ok_or(SidecarBinaryCodecError::InvalidPayload)? == 0 {
-        dec.u8().map_err(|_| SidecarBinaryCodecError::InvalidPayload)?;
+        dec.u8()
+            .map_err(|_| SidecarBinaryCodecError::InvalidPayload)?;
         None
     } else {
-        let view: CborValue =
-            ciborium::de::from_reader(view_binary).map_err(|_| SidecarBinaryCodecError::InvalidPayload)?;
-        Some(decode_node_from_sidecar(&view, &mut dec, &table, &mut nodes)?)
+        let view: CborValue = ciborium::de::from_reader(view_binary)
+            .map_err(|_| SidecarBinaryCodecError::InvalidPayload)?;
+        Some(decode_node_from_sidecar(
+            &view, &mut dec, &table, &mut nodes,
+        )?)
     };
     if !dec.is_eof() {
         return Err(SidecarBinaryCodecError::InvalidPayload);
@@ -115,7 +126,9 @@ struct ClockEncCtx {
 
 impl ClockEncCtx {
     fn new(clock_table: &[LogicalClockBase]) -> Result<Self, SidecarBinaryCodecError> {
-        let local = clock_table.first().ok_or(SidecarBinaryCodecError::InvalidPayload)?;
+        let local = clock_table
+            .first()
+            .ok_or(SidecarBinaryCodecError::InvalidPayload)?;
         let mut table = Vec::with_capacity(clock_table.len());
         let mut by_sid = HashMap::new();
         for (idx, c) in clock_table.iter().enumerate() {
@@ -147,7 +160,9 @@ impl ClockEncCtx {
             }
         };
         let base = self.table[idx - 1].time;
-        let diff = base.checked_sub(id.time).ok_or(SidecarBinaryCodecError::InvalidPayload)?;
+        let diff = base
+            .checked_sub(id.time)
+            .ok_or(SidecarBinaryCodecError::InvalidPayload)?;
         write_sidecar_id(out, idx as u64, diff);
         Ok(())
     }
@@ -166,12 +181,15 @@ fn decode_sidecar_id(
     cur: &mut MetaCursor<'_>,
     table: &[LogicalClockBase],
 ) -> Result<Id, SidecarBinaryCodecError> {
-    let first = cur.u8().map_err(|_| SidecarBinaryCodecError::InvalidPayload)?;
+    let first = cur
+        .u8()
+        .map_err(|_| SidecarBinaryCodecError::InvalidPayload)?;
     let (session_index, time_diff) = if first <= 0x7f {
         ((first >> 4) as u64, (first & 0x0f) as u64)
     } else {
         cur.pos -= 1;
-        let (flag, x) = read_b1vu56(cur.data, &mut cur.pos).ok_or(SidecarBinaryCodecError::InvalidPayload)?;
+        let (flag, x) =
+            read_b1vu56(cur.data, &mut cur.pos).ok_or(SidecarBinaryCodecError::InvalidPayload)?;
         if flag != 1 {
             return Err(SidecarBinaryCodecError::InvalidPayload);
         }
@@ -192,7 +210,10 @@ fn decode_sidecar_id(
         .time
         .checked_sub(time_diff)
         .ok_or(SidecarBinaryCodecError::InvalidPayload)?;
-    Ok(Id { sid: base.sid, time })
+    Ok(Id {
+        sid: base.sid,
+        time,
+    })
 }
 
 fn write_type_len(out: &mut Vec<u8>, major: u8, len: u64) {
@@ -332,15 +353,11 @@ fn json_from_cbor(v: &CborValue) -> Result<Value, SidecarBinaryCodecError> {
     Ok(match v {
         CborValue::Null => Value::Null,
         CborValue::Bool(b) => Value::Bool(*b),
-        CborValue::Integer(i) => {
-            if let Some(ii) = i64::try_from(*i).ok() {
-                Value::Number(ii.into())
-            } else if let Some(uu) = u64::try_from(*i).ok() {
-                Value::Number(uu.into())
-            } else {
-                return Err(SidecarBinaryCodecError::InvalidPayload);
-            }
-        }
+        CborValue::Integer(i) => match (i64::try_from(*i), u64::try_from(*i)) {
+            (Ok(ii), _) => Value::Number(ii.into()),
+            (_, Ok(uu)) => Value::Number(uu.into()),
+            _ => return Err(SidecarBinaryCodecError::InvalidPayload),
+        },
         CborValue::Float(f) => serde_json::Number::from_f64(*f)
             .map(Value::Number)
             .ok_or(SidecarBinaryCodecError::InvalidPayload)?,
@@ -398,7 +415,8 @@ fn encode_node_view(
             encode_node_view(*child, runtime, clock, meta)?
         }
         RuntimeNode::Obj(entries) => {
-            let mut sorted: Vec<(&str, Id)> = entries.iter().map(|(k, v)| (k.as_str(), *v)).collect();
+            let mut sorted: Vec<(&str, Id)> =
+                entries.iter().map(|(k, v)| (k.as_str(), *v)).collect();
             sorted.sort_by(|a, b| a.0.cmp(b.0));
             write_type_len(meta, 2, sorted.len() as u64);
             let mut map = Vec::with_capacity(sorted.len());
@@ -483,7 +501,9 @@ fn decode_node_from_sidecar(
     nodes: &mut HashMap<Id, RuntimeNode>,
 ) -> Result<Id, SidecarBinaryCodecError> {
     let id = decode_sidecar_id(meta, table)?;
-    let octet = meta.u8().map_err(|_| SidecarBinaryCodecError::InvalidPayload)?;
+    let octet = meta
+        .u8()
+        .map_err(|_| SidecarBinaryCodecError::InvalidPayload)?;
     let major = octet >> 5;
     let len = meta.read_len(octet & 0x1f)?;
     let node = match major {
@@ -555,7 +575,8 @@ fn decode_node_from_sidecar(
             let mut atoms = Vec::new();
             for _ in 0..len {
                 let chunk_id = decode_sidecar_id(meta, table)?;
-                let (deleted, span) = read_b1vu56(meta.data, &mut meta.pos).ok_or(SidecarBinaryCodecError::InvalidPayload)?;
+                let (deleted, span) = read_b1vu56(meta.data, &mut meta.pos)
+                    .ok_or(SidecarBinaryCodecError::InvalidPayload)?;
                 if deleted == 1 {
                     for i in 0..span {
                         atoms.push(StrAtom {
@@ -568,7 +589,9 @@ fn decode_node_from_sidecar(
                     }
                 } else {
                     for i in 0..span {
-                        let ch = chars.next().ok_or(SidecarBinaryCodecError::InvalidPayload)?;
+                        let ch = chars
+                            .next()
+                            .ok_or(SidecarBinaryCodecError::InvalidPayload)?;
                         atoms.push(StrAtom {
                             slot: Id {
                                 sid: chunk_id.sid,
@@ -590,7 +613,8 @@ fn decode_node_from_sidecar(
             let mut atoms = Vec::new();
             for _ in 0..len {
                 let chunk_id = decode_sidecar_id(meta, table)?;
-                let (deleted, span) = read_b1vu56(meta.data, &mut meta.pos).ok_or(SidecarBinaryCodecError::InvalidPayload)?;
+                let (deleted, span) = read_b1vu56(meta.data, &mut meta.pos)
+                    .ok_or(SidecarBinaryCodecError::InvalidPayload)?;
                 if deleted == 1 {
                     for i in 0..span {
                         atoms.push(BinAtom {
@@ -603,7 +627,9 @@ fn decode_node_from_sidecar(
                     }
                 } else {
                     for i in 0..span {
-                        let b = *bytes.get(byte_pos).ok_or(SidecarBinaryCodecError::InvalidPayload)?;
+                        let b = *bytes
+                            .get(byte_pos)
+                            .ok_or(SidecarBinaryCodecError::InvalidPayload)?;
                         byte_pos += 1;
                         atoms.push(BinAtom {
                             slot: Id {
@@ -626,7 +652,8 @@ fn decode_node_from_sidecar(
             let mut atoms = Vec::new();
             for _ in 0..len {
                 let chunk_id = decode_sidecar_id(meta, table)?;
-                let (deleted, span) = read_b1vu56(meta.data, &mut meta.pos).ok_or(SidecarBinaryCodecError::InvalidPayload)?;
+                let (deleted, span) = read_b1vu56(meta.data, &mut meta.pos)
+                    .ok_or(SidecarBinaryCodecError::InvalidPayload)?;
                 if deleted == 1 {
                     for i in 0..span {
                         atoms.push(ArrAtom {
@@ -639,7 +666,9 @@ fn decode_node_from_sidecar(
                     }
                 } else {
                     for i in 0..span {
-                        let child_view = arr.get(view_idx).ok_or(SidecarBinaryCodecError::InvalidPayload)?;
+                        let child_view = arr
+                            .get(view_idx)
+                            .ok_or(SidecarBinaryCodecError::InvalidPayload)?;
                         view_idx += 1;
                         let child = decode_node_from_sidecar(child_view, meta, table, nodes)?;
                         atoms.push(ArrAtom {
@@ -684,17 +713,37 @@ impl<'a> MetaCursor<'a> {
     fn read_len(&mut self, minor: u8) -> Result<u64, SidecarBinaryCodecError> {
         Ok(match minor {
             0..=23 => minor as u64,
-            24 => self.u8().map_err(|_| SidecarBinaryCodecError::InvalidPayload)? as u64,
+            24 => self
+                .u8()
+                .map_err(|_| SidecarBinaryCodecError::InvalidPayload)? as u64,
             25 => {
-                let a = self.u8().map_err(|_| SidecarBinaryCodecError::InvalidPayload)? as u64;
-                let b = self.u8().map_err(|_| SidecarBinaryCodecError::InvalidPayload)? as u64;
+                let a = self
+                    .u8()
+                    .map_err(|_| SidecarBinaryCodecError::InvalidPayload)?
+                    as u64;
+                let b = self
+                    .u8()
+                    .map_err(|_| SidecarBinaryCodecError::InvalidPayload)?
+                    as u64;
                 (a << 8) | b
             }
             26 => {
-                let a = self.u8().map_err(|_| SidecarBinaryCodecError::InvalidPayload)? as u64;
-                let b = self.u8().map_err(|_| SidecarBinaryCodecError::InvalidPayload)? as u64;
-                let c = self.u8().map_err(|_| SidecarBinaryCodecError::InvalidPayload)? as u64;
-                let d = self.u8().map_err(|_| SidecarBinaryCodecError::InvalidPayload)? as u64;
+                let a = self
+                    .u8()
+                    .map_err(|_| SidecarBinaryCodecError::InvalidPayload)?
+                    as u64;
+                let b = self
+                    .u8()
+                    .map_err(|_| SidecarBinaryCodecError::InvalidPayload)?
+                    as u64;
+                let c = self
+                    .u8()
+                    .map_err(|_| SidecarBinaryCodecError::InvalidPayload)?
+                    as u64;
+                let d = self
+                    .u8()
+                    .map_err(|_| SidecarBinaryCodecError::InvalidPayload)?
+                    as u64;
                 (a << 24) | (b << 16) | (c << 8) | d
             }
             _ => return Err(SidecarBinaryCodecError::InvalidPayload),

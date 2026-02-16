@@ -1,4 +1,4 @@
-use json_joy_core::patch::{ConValue, DecodedOp, Patch, Timestamp, Timespan};
+use json_joy_core::patch::{ConValue, DecodedOp, Patch, Timespan, Timestamp};
 use json_joy_core::patch_builder::encode_patch_from_ops;
 use json_joy_core::patch_verbose_codec::{decode_patch_verbose, encode_patch_verbose};
 use serde_json::json;
@@ -96,4 +96,3 @@ fn upstream_port_patch_verbose_codec_decode_accepts_number_timestamps() {
     assert_eq!(decoded.id(), Some((1, 42)));
     assert_eq!(decoded.span(), 3);
 }
-

@@ -16,8 +16,12 @@ pub fn diff(src: &[u8], dst: &[u8]) -> str::Patch {
     str::diff(&to_str(src), &to_str(dst))
 }
 
-pub fn apply<FIns, FDel>(patch: &str::Patch, src_len: usize, mut on_insert: FIns, mut on_delete: FDel)
-where
+pub fn apply<FIns, FDel>(
+    patch: &str::Patch,
+    src_len: usize,
+    mut on_insert: FIns,
+    mut on_delete: FDel,
+) where
     FIns: FnMut(usize, Vec<u8>),
     FDel: FnMut(usize, usize),
 {
@@ -36,4 +40,3 @@ pub fn src(patch: &str::Patch) -> Vec<u8> {
 pub fn dst(patch: &str::Patch) -> Vec<u8> {
     to_bin(&str::dst(patch))
 }
-

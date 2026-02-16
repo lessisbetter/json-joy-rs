@@ -15,12 +15,16 @@ fn fixtures_dir() -> PathBuf {
 }
 
 fn read_json(path: &Path) -> Value {
-    let data = fs::read_to_string(path).unwrap_or_else(|e| panic!("failed to read {:?}: {e}", path));
+    let data =
+        fs::read_to_string(path).unwrap_or_else(|e| panic!("failed to read {:?}: {e}", path));
     serde_json::from_str(&data).unwrap_or_else(|e| panic!("failed to parse {:?}: {e}", path))
 }
 
 fn decode_hex(s: &str) -> Vec<u8> {
-    assert!(s.len() % 2 == 0, "hex string must have even length");
+    assert!(
+        s.len().is_multiple_of(2),
+        "hex string must have even length"
+    );
     let mut out = Vec::with_capacity(s.len() / 2);
     let bytes = s.as_bytes();
     for i in (0..bytes.len()).step_by(2) {
@@ -63,7 +67,9 @@ fn as_path(path: &Value) -> Vec<PathStep> {
 fn model_api_workflow_fixtures_match_expected_steps() {
     let dir = fixtures_dir();
     let manifest = read_json(&dir.join("manifest.json"));
-    let fixtures = manifest["fixtures"].as_array().expect("manifest.fixtures must be array");
+    let fixtures = manifest["fixtures"]
+        .as_array()
+        .expect("manifest.fixtures must be array");
     let mut seen = 0u32;
 
     for entry in fixtures {
@@ -75,7 +81,9 @@ fn model_api_workflow_fixtures_match_expected_steps() {
         let file = entry["file"].as_str().expect("fixture file must be string");
         let fixture = read_json(&dir.join(file));
 
-        let sid = fixture["input"]["sid"].as_u64().expect("input.sid must be u64");
+        let sid = fixture["input"]["sid"]
+            .as_u64()
+            .expect("input.sid must be u64");
         let base = decode_hex(
             fixture["input"]["base_model_binary_hex"]
                 .as_str()
@@ -84,7 +92,9 @@ fn model_api_workflow_fixtures_match_expected_steps() {
         let mut api = NativeModelApi::from_model_binary(&base, Some(sid))
             .unwrap_or_else(|e| panic!("from_model_binary failed for {name}: {e}"));
 
-        let ops = fixture["input"]["ops"].as_array().expect("input.ops must be array");
+        let ops = fixture["input"]["ops"]
+            .as_array()
+            .expect("input.ops must be array");
         let expected_steps = fixture["expected"]["steps"]
             .as_array()
             .expect("expected.steps must be array");
@@ -99,10 +109,7 @@ fn model_api_workflow_fixtures_match_expected_steps() {
                 "find" => {
                     let path = as_path(&op["path"]);
                     let found = api.find(&path).unwrap_or(Value::Null);
-                    assert_eq!(
-                        found, step["value_json"],
-                        "find result mismatch for {name}"
-                    );
+                    assert_eq!(found, step["value_json"], "find result mismatch for {name}");
                 }
                 "set" => {
                     let path = as_path(&op["path"]);
@@ -118,7 +125,11 @@ fn model_api_workflow_fixtures_match_expected_steps() {
                     let path = as_path(&op["path"]);
                     api.add(&path, op["value_json"].clone())
                         .unwrap_or_else(|e| panic!("add failed for {name}: {e}"));
-                    assert_eq!(api.view(), step["view_json"], "add step view mismatch for {name}");
+                    assert_eq!(
+                        api.view(),
+                        step["view_json"],
+                        "add step view mismatch for {name}"
+                    );
                 }
                 "replace" => {
                     let path = as_path(&op["path"]);
@@ -185,11 +196,9 @@ fn model_api_workflow_fixtures_match_expected_steps() {
                     let mut patches = Vec::with_capacity(patch_hexes.len());
                     for p in patch_hexes {
                         let bytes = decode_hex(p.as_str().expect("patch hex must be string"));
-                        patches.push(
-                            Patch::from_binary(&bytes).unwrap_or_else(|e| {
-                                panic!("apply_batch patch decode failed for {name}: {e}")
-                            }),
-                        );
+                        patches.push(Patch::from_binary(&bytes).unwrap_or_else(|e| {
+                            panic!("apply_batch patch decode failed for {name}: {e}")
+                        }));
                     }
                     api.apply_batch(&patches)
                         .unwrap_or_else(|e| panic!("apply_batch failed for {name}: {e}"));
@@ -228,5 +237,8 @@ fn model_api_workflow_fixtures_match_expected_steps() {
         }
     }
 
-    assert!(seen >= 20, "expected at least 20 model_api_workflow fixtures");
+    assert!(
+        seen >= 20,
+        "expected at least 20 model_api_workflow fixtures"
+    );
 }

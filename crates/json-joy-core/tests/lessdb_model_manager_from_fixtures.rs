@@ -1,11 +1,11 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use json_joy_core::less_db_compat::{
-    apply_patch, create_model, diff_model, fork_model, merge_with_pending_patches, model_from_binary,
-    model_load, model_to_binary, view_model, CompatModel,
-};
 use json_joy_core::diff_runtime::{diff_model_to_patch_bytes, DiffError};
+use json_joy_core::less_db_compat::{
+    apply_patch, create_model, diff_model, fork_model, merge_with_pending_patches,
+    model_from_binary, model_load, model_to_binary, view_model, CompatModel,
+};
 use json_joy_core::patch::Patch;
 use json_joy_core::patch_log::{append_patch, deserialize_patches};
 use serde_json::Value;
@@ -20,12 +20,16 @@ fn fixtures_dir() -> PathBuf {
 }
 
 fn read_json(path: &Path) -> Value {
-    let data = fs::read_to_string(path).unwrap_or_else(|e| panic!("failed to read {:?}: {e}", path));
+    let data =
+        fs::read_to_string(path).unwrap_or_else(|e| panic!("failed to read {:?}: {e}", path));
     serde_json::from_str(&data).unwrap_or_else(|e| panic!("failed to parse {:?}: {e}", path))
 }
 
 fn decode_hex(s: &str) -> Vec<u8> {
-    assert!(s.len() % 2 == 0, "hex string must have even length");
+    assert!(
+        s.len().is_multiple_of(2),
+        "hex string must have even length"
+    );
     let mut out = Vec::with_capacity(s.len() / 2);
     let bytes = s.as_bytes();
     for i in (0..bytes.len()).step_by(2) {
@@ -49,15 +53,21 @@ fn hex(bytes: &[u8]) -> String {
 fn load_lessdb_fixtures() -> Vec<(String, Value)> {
     let dir = fixtures_dir();
     let manifest = read_json(&dir.join("manifest.json"));
-    let fixtures = manifest["fixtures"].as_array().expect("manifest.fixtures must be array");
+    let fixtures = manifest["fixtures"]
+        .as_array()
+        .expect("manifest.fixtures must be array");
 
     let mut out = Vec::new();
     for entry in fixtures {
         if entry["scenario"].as_str() != Some("lessdb_model_manager") {
             continue;
         }
-        let name = entry["name"].as_str().expect("fixture entry name must be string");
-        let file = entry["file"].as_str().expect("fixture entry file must be string");
+        let name = entry["name"]
+            .as_str()
+            .expect("fixture entry name must be string");
+        let file = entry["file"]
+            .as_str()
+            .expect("fixture entry file must be string");
         out.push((name.to_string(), read_json(&dir.join(file))));
     }
     out
@@ -92,12 +102,19 @@ fn lessdb_create_diff_apply_matches_oracle() {
         }
         seen += 1;
 
-        let sid = fixture["input"]["sid"].as_u64().expect("input.sid must be u64");
+        let sid = fixture["input"]["sid"]
+            .as_u64()
+            .expect("input.sid must be u64");
         let initial = &fixture["input"]["initial_json"];
-        let ops = fixture["input"]["ops"].as_array().expect("input.ops must be array");
-        let steps = fixture["expected"]["steps"].as_array().expect("expected.steps must be array");
+        let ops = fixture["input"]["ops"]
+            .as_array()
+            .expect("input.ops must be array");
+        let steps = fixture["expected"]["steps"]
+            .as_array()
+            .expect("expected.steps must be array");
 
-        let mut model = create_model(initial, sid).unwrap_or_else(|e| panic!("create failed for {name}: {e}"));
+        let mut model =
+            create_model(initial, sid).unwrap_or_else(|e| panic!("create failed for {name}: {e}"));
         let mut last_diff: Option<Vec<u8>> = None;
         let mut pending = Vec::<u8>::new();
 
@@ -112,18 +129,28 @@ fn lessdb_create_diff_apply_matches_oracle() {
                     let expected_present = step["patch_present"]
                         .as_bool()
                         .expect("step.patch_present must be bool");
-                    assert_eq!(patch.is_some(), expected_present, "patch presence mismatch for fixture {name}");
+                    assert_eq!(
+                        patch.is_some(),
+                        expected_present,
+                        "patch presence mismatch for fixture {name}"
+                    );
                     if let Some(ref p) = patch {
                         let expected_hex = step["patch_binary_hex"]
                             .as_str()
                             .expect("step.patch_binary_hex must be string for patch-present steps");
-                        assert_eq!(hex(p), expected_hex, "patch bytes mismatch for fixture {name}");
+                        assert_eq!(
+                            hex(p),
+                            expected_hex,
+                            "patch bytes mismatch for fixture {name}"
+                        );
 
                         let decoded = Patch::from_binary(p)
                             .unwrap_or_else(|e| panic!("decoded patch failed for {name}: {e}"));
                         assert_eq!(
                             decoded.op_count(),
-                            step["patch_op_count"].as_u64().expect("step.patch_op_count must be u64"),
+                            step["patch_op_count"]
+                                .as_u64()
+                                .expect("step.patch_op_count must be u64"),
                             "patch op_count mismatch for fixture {name}"
                         );
                     }
@@ -148,13 +175,23 @@ fn lessdb_create_diff_apply_matches_oracle() {
                     let expected_hex = step["pending_patch_log_hex"]
                         .as_str()
                         .expect("step.pending_patch_log_hex must be string");
-                    assert_eq!(hex(&pending), expected_hex, "pending patch log mismatch for fixture {name}");
+                    assert_eq!(
+                        hex(&pending),
+                        expected_hex,
+                        "pending patch log mismatch for fixture {name}"
+                    );
                 }
                 "patch_log_deserialize" => {
                     let decoded = deserialize_patches(&pending)
                         .unwrap_or_else(|e| panic!("patch log decode failed for {name}: {e}"));
-                    let expected_count = step["patch_count"].as_u64().expect("step.patch_count must be u64");
-                    assert_eq!(decoded.len() as u64, expected_count, "patch log count mismatch for fixture {name}");
+                    let expected_count = step["patch_count"]
+                        .as_u64()
+                        .expect("step.patch_count must be u64");
+                    assert_eq!(
+                        decoded.len() as u64,
+                        expected_count,
+                        "patch log count mismatch for fixture {name}"
+                    );
                 }
                 other => panic!("unexpected op kind in create_diff_apply fixture: {other}"),
             }
@@ -163,7 +200,10 @@ fn lessdb_create_diff_apply_matches_oracle() {
         assert_final_state(&name, &fixture, &model);
     }
 
-    assert!(seen >= 20, "expected at least 20 create_diff_apply fixtures");
+    assert!(
+        seen >= 20,
+        "expected at least 20 create_diff_apply fixtures"
+    );
 }
 
 #[test]
@@ -175,17 +215,23 @@ fn lessdb_noop_diff_returns_none() {
         if fixture["input"]["workflow"].as_str() != Some("create_diff_apply") {
             continue;
         }
-        let steps = fixture["expected"]["steps"].as_array().expect("expected.steps must be array");
+        let steps = fixture["expected"]["steps"]
+            .as_array()
+            .expect("expected.steps must be array");
         if steps[0]["patch_present"].as_bool() != Some(false) {
             continue;
         }
         seen += 1;
 
-        let sid = fixture["input"]["sid"].as_u64().expect("input.sid must be u64");
+        let sid = fixture["input"]["sid"]
+            .as_u64()
+            .expect("input.sid must be u64");
         let initial = &fixture["input"]["initial_json"];
         let next = &fixture["input"]["ops"][0]["next_view_json"];
-        let model = create_model(initial, sid).unwrap_or_else(|e| panic!("create failed for {name}: {e}"));
-        let patch = diff_model(&model, next).unwrap_or_else(|e| panic!("diff failed for {name}: {e}"));
+        let model =
+            create_model(initial, sid).unwrap_or_else(|e| panic!("create failed for {name}: {e}"));
+        let patch =
+            diff_model(&model, next).unwrap_or_else(|e| panic!("diff failed for {name}: {e}"));
         assert!(patch.is_none(), "expected no-op diff for fixture {name}");
     }
 
@@ -238,15 +284,17 @@ fn lessdb_fork_and_merge_scenarios_match_oracle() {
         }
         seen += 1;
 
-        let sid = fixture["input"]["sid"].as_u64().expect("input.sid must be u64");
+        let sid = fixture["input"]["sid"]
+            .as_u64()
+            .expect("input.sid must be u64");
         let initial = &fixture["input"]["initial_json"];
         let fork_sid = fixture["input"]["ops"][0]["sid"]
             .as_u64()
             .expect("fork sid must be u64");
         let next = &fixture["input"]["ops"][1]["next_view_json"];
 
-        let mut base = create_model(initial, sid)
-            .unwrap_or_else(|e| panic!("create failed for {name}: {e}"));
+        let mut base =
+            create_model(initial, sid).unwrap_or_else(|e| panic!("create failed for {name}: {e}"));
         let mut fork = fork_model(&base, Some(fork_sid))
             .unwrap_or_else(|e| panic!("fork failed for {name}: {e}"));
 
@@ -270,13 +318,21 @@ fn lessdb_fork_and_merge_scenarios_match_oracle() {
 fn lessdb_load_size_limit_is_enforced() {
     let oversized = vec![0u8; (10 * 1024 * 1024) + 1];
 
-    let err1 = model_from_binary(&oversized).expect_err("model_from_binary should reject oversized payload");
+    let err1 = model_from_binary(&oversized)
+        .expect_err("model_from_binary should reject oversized payload");
     let msg1 = err1.to_string();
-    assert!(msg1.contains("too large"), "unexpected model_from_binary error: {msg1}");
+    assert!(
+        msg1.contains("too large"),
+        "unexpected model_from_binary error: {msg1}"
+    );
 
-    let err2 = model_load(&oversized, 75001).expect_err("model_load should reject oversized payload");
+    let err2 =
+        model_load(&oversized, 75001).expect_err("model_load should reject oversized payload");
     let msg2 = err2.to_string();
-    assert!(msg2.contains("too large"), "unexpected model_load error: {msg2}");
+    assert!(
+        msg2.contains("too large"),
+        "unexpected model_load error: {msg2}"
+    );
 }
 
 #[test]
@@ -292,9 +348,14 @@ fn lessdb_diff_native_support_inventory() {
             .expect("input.workflow must be string");
         match workflow {
             "create_diff_apply" => {
-                let sid = fixture["input"]["sid"].as_u64().expect("input.sid must be u64");
-                let model = create_model(&fixture["input"]["initial_json"], sid).expect("create must succeed");
-                let ops = fixture["input"]["ops"].as_array().expect("input.ops must be array");
+                let sid = fixture["input"]["sid"]
+                    .as_u64()
+                    .expect("input.sid must be u64");
+                let model = create_model(&fixture["input"]["initial_json"], sid)
+                    .expect("create must succeed");
+                let ops = fixture["input"]["ops"]
+                    .as_array()
+                    .expect("input.ops must be array");
                 for op in ops {
                     let kind = op["kind"].as_str().expect("op.kind must be string");
                     if kind == "diff" {
@@ -315,12 +376,15 @@ fn lessdb_diff_native_support_inventory() {
                 }
             }
             "fork_merge" => {
-                let sid = fixture["input"]["sid"].as_u64().expect("input.sid must be u64");
+                let sid = fixture["input"]["sid"]
+                    .as_u64()
+                    .expect("input.sid must be u64");
                 let fork_sid = fixture["input"]["ops"][0]["sid"]
                     .as_u64()
                     .expect("fork sid must be u64");
                 let next = &fixture["input"]["ops"][1]["next_view_json"];
-                let base = create_model(&fixture["input"]["initial_json"], sid).expect("create base must succeed");
+                let base = create_model(&fixture["input"]["initial_json"], sid)
+                    .expect("create base must succeed");
                 let fork = fork_model(&base, Some(fork_sid)).expect("fork must succeed");
                 match diff_model_to_patch_bytes(&model_to_binary(&fork), next, fork_sid) {
                     Ok(_) => supported += 1,

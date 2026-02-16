@@ -50,7 +50,15 @@ pub fn encode_model_binary_to_fields(
     let mut nodes: Vec<(&Id, &RuntimeNode)> = runtime.nodes.iter().collect();
     nodes.sort_by_key(|(id, _)| (id.sid, id.time));
     for (id, node) in nodes {
-        let field = format!("{}_{}", to_base36(*index_by_sid.get(&id.sid).ok_or(IndexedBinaryCodecError::InvalidFields)?), to_base36(id.time));
+        let field = format!(
+            "{}_{}",
+            to_base36(
+                *index_by_sid
+                    .get(&id.sid)
+                    .ok_or(IndexedBinaryCodecError::InvalidFields)?
+            ),
+            to_base36(id.time)
+        );
         let payload = encode_node_payload(node, &index_by_sid)?;
         out.insert(field, payload);
     }
@@ -61,7 +69,9 @@ pub fn encode_model_binary_to_fields(
 pub fn decode_fields_to_model_binary(
     fields: &IndexedFields,
 ) -> Result<Vec<u8>, IndexedBinaryCodecError> {
-    let c = fields.get("c").ok_or(IndexedBinaryCodecError::InvalidFields)?;
+    let c = fields
+        .get("c")
+        .ok_or(IndexedBinaryCodecError::InvalidFields)?;
     let clock_table = decode_clock_table(c)?;
     if clock_table.is_empty() {
         return Err(IndexedBinaryCodecError::InvalidFields);
@@ -133,7 +143,11 @@ fn to_base36(v: u64) -> String {
     let mut out = Vec::new();
     while n > 0 {
         let d = (n % 36) as u8;
-        out.push(if d < 10 { (b'0' + d) as char } else { (b'a' + (d - 10)) as char });
+        out.push(if d < 10 {
+            (b'0' + d) as char
+        } else {
+            (b'a' + (d - 10)) as char
+        });
         n /= 36;
     }
     out.iter().rev().collect()
@@ -171,7 +185,10 @@ fn encode_indexed_id(
     Ok(out)
 }
 
-fn decode_indexed_id(data: &[u8], clock_table: &[LogicalClockBase]) -> Result<Id, IndexedBinaryCodecError> {
+fn decode_indexed_id(
+    data: &[u8],
+    clock_table: &[LogicalClockBase],
+) -> Result<Id, IndexedBinaryCodecError> {
     if data.is_empty() {
         return Err(IndexedBinaryCodecError::InvalidFields);
     }
@@ -180,7 +197,8 @@ fn decode_indexed_id(data: &[u8], clock_table: &[LogicalClockBase]) -> Result<Id
         ((first >> 4) as u64, (first & 0x0f) as u64)
     } else {
         let mut pos = 0usize;
-        let (flag, x) = read_b1vu56(data, &mut pos).ok_or(IndexedBinaryCodecError::InvalidFields)?;
+        let (flag, x) =
+            read_b1vu56(data, &mut pos).ok_or(IndexedBinaryCodecError::InvalidFields)?;
         if flag != 1 {
             return Err(IndexedBinaryCodecError::InvalidFields);
         }
@@ -198,7 +216,10 @@ fn decode_indexed_id(data: &[u8], clock_table: &[LogicalClockBase]) -> Result<Id
     Ok(Id { sid, time })
 }
 
-fn parse_field_id(field: &str, clock_table: &[LogicalClockBase]) -> Result<Id, IndexedBinaryCodecError> {
+fn parse_field_id(
+    field: &str,
+    clock_table: &[LogicalClockBase],
+) -> Result<Id, IndexedBinaryCodecError> {
     let (sid_idx_s, time_s) = field
         .split_once('_')
         .ok_or(IndexedBinaryCodecError::InvalidFields)?;
@@ -314,15 +335,11 @@ fn json_from_cbor(v: &CborValue) -> Result<Value, IndexedBinaryCodecError> {
     Ok(match v {
         CborValue::Null => Value::Null,
         CborValue::Bool(b) => Value::Bool(*b),
-        CborValue::Integer(i) => {
-            if let Some(ii) = i64::try_from(*i).ok() {
-                Value::Number(ii.into())
-            } else if let Some(uu) = u64::try_from(*i).ok() {
-                Value::Number(uu.into())
-            } else {
-                return Err(IndexedBinaryCodecError::InvalidNode);
-            }
-        }
+        CborValue::Integer(i) => match (i64::try_from(*i), u64::try_from(*i)) {
+            (Ok(ii), _) => Value::Number(ii.into()),
+            (_, Ok(uu)) => Value::Number(uu.into()),
+            _ => return Err(IndexedBinaryCodecError::InvalidNode),
+        },
         CborValue::Float(f) => serde_json::Number::from_f64(*f)
             .map(Value::Number)
             .ok_or(IndexedBinaryCodecError::InvalidNode)?,
@@ -456,17 +473,22 @@ impl<'a> DecodeCursor<'a> {
         Ok(b)
     }
 
-    fn read_indexed_id(&mut self, table: &[LogicalClockBase]) -> Result<Id, IndexedBinaryCodecError> {
+    fn read_indexed_id(
+        &mut self,
+        table: &[LogicalClockBase],
+    ) -> Result<Id, IndexedBinaryCodecError> {
         let first = self.u8()?;
         let (x, y) = if first <= 0x7f {
             ((first >> 4) as u64, (first & 0x0f) as u64)
         } else {
             self.pos -= 1;
-            let (flag, x) = read_b1vu56(self.data, &mut self.pos).ok_or(IndexedBinaryCodecError::InvalidNode)?;
+            let (flag, x) = read_b1vu56(self.data, &mut self.pos)
+                .ok_or(IndexedBinaryCodecError::InvalidNode)?;
             if flag != 1 {
                 return Err(IndexedBinaryCodecError::InvalidNode);
             }
-            let y = read_vu57(self.data, &mut self.pos).ok_or(IndexedBinaryCodecError::InvalidNode)?;
+            let y =
+                read_vu57(self.data, &mut self.pos).ok_or(IndexedBinaryCodecError::InvalidNode)?;
             (x, y)
         };
         let sid = table
@@ -499,8 +521,8 @@ impl<'a> DecodeCursor<'a> {
     fn read_one_cbor(&mut self) -> Result<CborValue, IndexedBinaryCodecError> {
         let start = self.pos;
         let mut cursor = Cursor::new(&self.data[start..]);
-        let value: CborValue =
-            ciborium::de::from_reader(&mut cursor).map_err(|_| IndexedBinaryCodecError::InvalidNode)?;
+        let value: CborValue = ciborium::de::from_reader(&mut cursor)
+            .map_err(|_| IndexedBinaryCodecError::InvalidNode)?;
         let consumed = cursor.position() as usize;
         self.pos += consumed;
         Ok(value)
@@ -579,7 +601,8 @@ fn decode_node_payload(
                         }
                     }
                     CborValue::Integer(n) => {
-                        let span = u64::try_from(n).map_err(|_| IndexedBinaryCodecError::InvalidNode)?;
+                        let span =
+                            u64::try_from(n).map_err(|_| IndexedBinaryCodecError::InvalidNode)?;
                         for i in 0..span {
                             atoms.push(StrAtom {
                                 slot: Id {
@@ -599,7 +622,8 @@ fn decode_node_payload(
             let mut atoms = Vec::new();
             for _ in 0..len {
                 let id = r.read_indexed_id(clock_table)?;
-                let (deleted, span) = read_b1vu56(r.data, &mut r.pos).ok_or(IndexedBinaryCodecError::InvalidNode)?;
+                let (deleted, span) =
+                    read_b1vu56(r.data, &mut r.pos).ok_or(IndexedBinaryCodecError::InvalidNode)?;
                 if deleted == 1 {
                     for i in 0..span {
                         atoms.push(BinAtom {
@@ -629,7 +653,8 @@ fn decode_node_payload(
             let mut atoms = Vec::new();
             for _ in 0..len {
                 let id = r.read_indexed_id(clock_table)?;
-                let (deleted, span) = read_b1vu56(r.data, &mut r.pos).ok_or(IndexedBinaryCodecError::InvalidNode)?;
+                let (deleted, span) =
+                    read_b1vu56(r.data, &mut r.pos).ok_or(IndexedBinaryCodecError::InvalidNode)?;
                 if deleted == 1 {
                     for i in 0..span {
                         atoms.push(ArrAtom {

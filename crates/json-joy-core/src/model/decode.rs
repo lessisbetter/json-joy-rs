@@ -207,7 +207,7 @@ fn cbor_to_json(v: CborValue) -> Result<Value, ModelError> {
                 Value::Number(Number::from(s))
             }
         }
-        CborValue::Float(f) => Number::from_f64(f as f64)
+        CborValue::Float(f) => Number::from_f64(f)
             .map(Value::Number)
             .ok_or(ModelError::InvalidModelBinary)?,
         CborValue::Text(s) => Value::String(s),
@@ -351,7 +351,7 @@ impl<'a> Reader<'a> {
 
     fn skip_id(&mut self) -> Result<(), ModelError> {
         let byte = self.u8()?;
-        if byte <= 0b0_111_1111 {
+        if byte <= 0b0111_1111 {
             return Ok(());
         }
         self.pos -= 1;

@@ -31,7 +31,10 @@ fn upstream_port_schema_json_flat_object_matches_explicit_schema() {
     let model_a = apply_schema(&via_json, 123456789);
     let model_b = apply_schema(&explicit, 123456789);
     assert_eq!(model_a.view_json(), model_b.view_json());
-    assert_eq!(model_a.to_model_binary_like().unwrap(), model_b.to_model_binary_like().unwrap());
+    assert_eq!(
+        model_a.to_model_binary_like().unwrap(),
+        model_b.to_model_binary_like().unwrap()
+    );
 }
 
 #[test]
@@ -48,7 +51,10 @@ fn upstream_port_schema_json_array_matches_explicit_schema() {
     let model_a = apply_schema(&via_json, 456789123);
     let model_b = apply_schema(&explicit, 456789123);
     assert_eq!(model_a.view_json(), model_b.view_json());
-    assert_eq!(model_a.to_model_binary_like().unwrap(), model_b.to_model_binary_like().unwrap());
+    assert_eq!(
+        model_a.to_model_binary_like().unwrap(),
+        model_b.to_model_binary_like().unwrap()
+    );
 }
 
 #[test]

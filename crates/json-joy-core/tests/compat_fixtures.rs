@@ -14,7 +14,8 @@ fn fixtures_dir() -> PathBuf {
 }
 
 fn read_json(path: &Path) -> Value {
-    let data = fs::read_to_string(path).unwrap_or_else(|e| panic!("failed to read {:?}: {e}", path));
+    let data =
+        fs::read_to_string(path).unwrap_or_else(|e| panic!("failed to read {:?}: {e}", path));
     serde_json::from_str(&data).unwrap_or_else(|e| panic!("failed to parse {:?}: {e}", path))
 }
 
@@ -22,10 +23,16 @@ fn read_json(path: &Path) -> Value {
 fn fixture_manifest_exists_and_has_entries() {
     let dir = fixtures_dir();
     let manifest_path = dir.join("manifest.json");
-    assert!(manifest_path.exists(), "missing manifest: {:?}", manifest_path);
+    assert!(
+        manifest_path.exists(),
+        "missing manifest: {:?}",
+        manifest_path
+    );
 
     let manifest = read_json(&manifest_path);
-    let fixtures = manifest["fixtures"].as_array().expect("manifest.fixtures must be array");
+    let fixtures = manifest["fixtures"]
+        .as_array()
+        .expect("manifest.fixtures must be array");
     assert!(!fixtures.is_empty(), "manifest.fixtures must not be empty");
     assert_eq!(
         manifest["upstream_version"].as_str(),
@@ -46,21 +53,42 @@ fn every_manifest_fixture_file_exists_and_has_required_keys() {
     let dir = fixtures_dir();
     let manifest = read_json(&dir.join("manifest.json"));
 
-    for entry in manifest["fixtures"].as_array().expect("manifest.fixtures must be array") {
-        let file = entry["file"].as_str().expect("fixture entry file must be string");
+    for entry in manifest["fixtures"]
+        .as_array()
+        .expect("manifest.fixtures must be array")
+    {
+        let file = entry["file"]
+            .as_str()
+            .expect("fixture entry file must be string");
         let fixture_path = dir.join(file);
-        assert!(fixture_path.exists(), "fixture file missing: {:?}", fixture_path);
+        assert!(
+            fixture_path.exists(),
+            "fixture file missing: {:?}",
+            fixture_path
+        );
 
         let fixture = read_json(&fixture_path);
         assert_eq!(fixture["fixture_version"].as_i64(), Some(1));
         assert!(fixture["name"].is_string(), "fixture.name must be string");
-        assert!(fixture["scenario"].is_string(), "fixture.scenario must be string");
+        assert!(
+            fixture["scenario"].is_string(),
+            "fixture.scenario must be string"
+        );
         assert!(fixture["input"].is_object(), "fixture.input must be object");
-        assert!(fixture["expected"].is_object(), "fixture.expected must be object");
+        assert!(
+            fixture["expected"].is_object(),
+            "fixture.expected must be object"
+        );
         assert!(fixture["meta"].is_object(), "fixture.meta must be object");
-        assert_eq!(fixture["meta"]["upstream_version"].as_str(), Some("17.67.0"));
+        assert_eq!(
+            fixture["meta"]["upstream_version"].as_str(),
+            Some("17.67.0")
+        );
 
-        match fixture["scenario"].as_str().expect("scenario must be string") {
+        match fixture["scenario"]
+            .as_str()
+            .expect("scenario must be string")
+        {
             "patch_diff_apply" => {
                 assert!(
                     fixture["expected"]["patch_present"].is_boolean(),
@@ -519,7 +547,9 @@ fn every_manifest_fixture_file_exists_and_has_required_keys() {
 fn manifest_contains_required_scenarios() {
     let dir = fixtures_dir();
     let manifest = read_json(&dir.join("manifest.json"));
-    let fixtures = manifest["fixtures"].as_array().expect("manifest.fixtures must be array");
+    let fixtures = manifest["fixtures"]
+        .as_array()
+        .expect("manifest.fixtures must be array");
 
     let has_diff_apply = fixtures
         .iter()
@@ -658,8 +688,14 @@ fn manifest_contains_required_scenarios() {
         .iter()
         .any(|f| f["scenario"].as_str() == Some("patch_canonical_encode"));
 
-    assert!(has_diff_apply, "fixtures must include patch_diff_apply scenarios");
-    assert!(has_decode_error, "fixtures must include patch_decode_error scenarios");
+    assert!(
+        has_diff_apply,
+        "fixtures must include patch_diff_apply scenarios"
+    );
+    assert!(
+        has_decode_error,
+        "fixtures must include patch_decode_error scenarios"
+    );
     assert!(
         has_patch_alt_codecs,
         "fixtures must include patch_alt_codecs scenarios"
@@ -680,7 +716,10 @@ fn manifest_contains_required_scenarios() {
         has_patch_canonical_encode,
         "fixtures must include patch_canonical_encode scenarios"
     );
-    assert!(has_model_roundtrip, "fixtures must include model_roundtrip scenarios");
+    assert!(
+        has_model_roundtrip,
+        "fixtures must include model_roundtrip scenarios"
+    );
     assert!(
         has_model_decode_error,
         "fixtures must include model_decode_error scenarios"

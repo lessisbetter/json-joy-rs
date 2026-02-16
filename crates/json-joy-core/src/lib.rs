@@ -1,23 +1,23 @@
 //! Core primitives for json-joy-rs.
 
-pub mod model;
+pub mod codec_indexed_binary;
+pub mod codec_sidecar_binary;
 pub mod crdt_binary;
-pub mod model_runtime;
-pub mod model_api;
 pub mod diff_runtime;
 pub mod less_db_compat;
+pub mod model;
+pub mod model_api;
+pub mod model_runtime;
 pub mod patch;
 pub mod patch_builder;
+pub mod patch_clock_codec;
 pub mod patch_compact_binary_codec;
 pub mod patch_compact_codec;
 pub mod patch_compaction;
+pub mod patch_log;
 pub mod patch_verbose_codec;
 pub mod schema;
 pub mod util_diff;
-pub mod patch_log;
-pub mod codec_indexed_binary;
-pub mod codec_sidecar_binary;
-pub mod patch_clock_codec;
 
 use rand::Rng;
 

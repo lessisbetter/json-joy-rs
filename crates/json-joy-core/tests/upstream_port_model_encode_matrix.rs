@@ -15,12 +15,16 @@ fn fixtures_dir() -> PathBuf {
 }
 
 fn read_json(path: &Path) -> Value {
-    let data = fs::read_to_string(path).unwrap_or_else(|e| panic!("failed to read {:?}: {e}", path));
+    let data =
+        fs::read_to_string(path).unwrap_or_else(|e| panic!("failed to read {:?}: {e}", path));
     serde_json::from_str(&data).unwrap_or_else(|e| panic!("failed to parse {:?}: {e}", path))
 }
 
 fn decode_hex(s: &str) -> Vec<u8> {
-    assert!(s.len() % 2 == 0, "hex string must have even length");
+    assert!(
+        s.len().is_multiple_of(2),
+        "hex string must have even length"
+    );
     let mut out = Vec::with_capacity(s.len() / 2);
     let bytes = s.as_bytes();
     for i in (0..bytes.len()).step_by(2) {
@@ -45,7 +49,9 @@ fn hex(bytes: &[u8]) -> String {
 fn upstream_port_model_encode_inventory_from_apply_replay() {
     let dir = fixtures_dir();
     let manifest = read_json(&dir.join("manifest.json"));
-    let fixtures = manifest["fixtures"].as_array().expect("manifest.fixtures must be array");
+    let fixtures = manifest["fixtures"]
+        .as_array()
+        .expect("manifest.fixtures must be array");
 
     let mut seen = 0u32;
     let mut match_count = 0u32;
@@ -59,7 +65,9 @@ fn upstream_port_model_encode_inventory_from_apply_replay() {
         }
         seen += 1;
 
-        let file = entry["file"].as_str().expect("fixture entry file must be string");
+        let file = entry["file"]
+            .as_str()
+            .expect("fixture entry file must be string");
         let fixture = read_json(&dir.join(file));
         let name = fixture["name"].as_str().unwrap_or("unknown");
 
@@ -78,8 +86,8 @@ fn upstream_port_model_encode_inventory_from_apply_replay() {
             .as_array()
             .expect("input.replay_pattern must be array");
 
-        let mut runtime =
-            RuntimeModel::from_model_binary(&base).unwrap_or_else(|e| panic!("runtime decode failed for {name}: {e}"));
+        let mut runtime = RuntimeModel::from_model_binary(&base)
+            .unwrap_or_else(|e| panic!("runtime decode failed for {name}: {e}"));
         for idx in replay {
             let i = idx.as_u64().expect("replay index must be u64") as usize;
             let patch = Patch::from_binary(&patches[i])
@@ -117,7 +125,10 @@ fn upstream_port_model_encode_inventory_from_apply_replay() {
     );
     eprintln!("model encode mismatches: {}", mismatch_names.join(", "));
 
-    assert!(seen >= 50, "expected at least 50 model_apply_replay fixtures");
+    assert!(
+        seen >= 50,
+        "expected at least 50 model_apply_replay fixtures"
+    );
     assert!(
         mismatch_ids.is_empty(),
         "expected exact binary parity for all apply_replay fixtures; mismatches: {}",
@@ -129,7 +140,9 @@ fn upstream_port_model_encode_inventory_from_apply_replay() {
 fn upstream_port_model_encode_roundtrip_decode_matrix() {
     let dir = fixtures_dir();
     let manifest = read_json(&dir.join("manifest.json"));
-    let fixtures = manifest["fixtures"].as_array().expect("manifest.fixtures must be array");
+    let fixtures = manifest["fixtures"]
+        .as_array()
+        .expect("manifest.fixtures must be array");
 
     let mut seen = 0u32;
     let mut mismatches = Vec::new();
@@ -141,7 +154,9 @@ fn upstream_port_model_encode_roundtrip_decode_matrix() {
         }
         seen += 1;
 
-        let file = entry["file"].as_str().expect("fixture entry file must be string");
+        let file = entry["file"]
+            .as_str()
+            .expect("fixture entry file must be string");
         let fixture = read_json(&dir.join(file));
         let name = fixture["name"].as_str().unwrap_or("unknown");
         let expected = decode_hex(
@@ -181,5 +196,4 @@ fn upstream_port_model_encode_roundtrip_decode_matrix() {
         "roundtrip-decode model encode parity mismatches: {}",
         mismatches.join(", ")
     );
-
 }

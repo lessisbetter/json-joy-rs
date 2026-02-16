@@ -94,7 +94,10 @@ fn layer_prefixes_have_expected_depth() {
         }
     }
 
-    assert!(upstream >= 25, "expected at least 25 upstream_port suites, got {upstream}");
+    assert!(
+        upstream >= 25,
+        "expected at least 25 upstream_port suites, got {upstream}"
+    );
     assert!(
         fixtures >= 16,
         "expected at least 16 fixture-oriented suites, got {fixtures}"
@@ -103,7 +106,10 @@ fn layer_prefixes_have_expected_depth() {
         differential >= 6,
         "expected at least 6 differential suites, got {differential}"
     );
-    assert!(property >= 3, "expected at least 3 property suites, got {property}");
+    assert!(
+        property >= 3,
+        "expected at least 3 property suites, got {property}"
+    );
 }
 
 #[test]

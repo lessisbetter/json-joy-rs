@@ -98,8 +98,12 @@ fn differential_util_diff_seeded_matches_oracle() {
     while bin_cases.len() < 40 {
         let src_len = rng.range(16) as usize;
         let dst_len = rng.range(16) as usize;
-        let src = (0..src_len).map(|_| rng.range(256) as u8).collect::<Vec<_>>();
-        let dst = (0..dst_len).map(|_| rng.range(256) as u8).collect::<Vec<_>>();
+        let src = (0..src_len)
+            .map(|_| rng.range(256) as u8)
+            .collect::<Vec<_>>();
+        let dst = (0..dst_len)
+            .map(|_| rng.range(256) as u8)
+            .collect::<Vec<_>>();
         bin_cases.push((src, dst));
     }
 
@@ -108,7 +112,10 @@ fn differential_util_diff_seeded_matches_oracle() {
 
         let rust_diff = str::diff(src, dst);
         let rust_diff_json = patch_to_json(&rust_diff);
-        assert_eq!(rust_diff_json, oracle["diff"], "str.diff mismatch at case {idx}");
+        assert_eq!(
+            rust_diff_json, oracle["diff"],
+            "str.diff mismatch at case {idx}"
+        );
 
         let rust_diff_edit = str::diff_edit(src, dst, *caret);
         let rust_diff_edit_json = patch_to_json(&rust_diff_edit);
@@ -133,7 +140,10 @@ fn differential_util_diff_seeded_matches_oracle() {
         let rust_diff_json = patch_to_json(&rust_diff);
         let rust_src = Value::Array(bin::src(&rust_diff).into_iter().map(Value::from).collect());
         let rust_dst = Value::Array(bin::dst(&rust_diff).into_iter().map(Value::from).collect());
-        assert_eq!(rust_diff_json, oracle["diff"], "bin.diff mismatch at case {idx}");
+        assert_eq!(
+            rust_diff_json, oracle["diff"],
+            "bin.diff mismatch at case {idx}"
+        );
         assert_eq!(rust_src, oracle["src"], "bin.src mismatch at case {idx}");
         assert_eq!(rust_dst, oracle["dst"], "bin.dst mismatch at case {idx}");
     }
@@ -223,7 +233,9 @@ fn patch_to_json(patch: &str::Patch) -> Value {
     Value::Array(
         patch
             .iter()
-            .map(|(ty, txt)| Value::Array(vec![Value::from(*ty as i64), Value::String(txt.clone())]))
+            .map(|(ty, txt)| {
+                Value::Array(vec![Value::from(*ty as i64), Value::String(txt.clone())])
+            })
             .collect(),
     )
 }

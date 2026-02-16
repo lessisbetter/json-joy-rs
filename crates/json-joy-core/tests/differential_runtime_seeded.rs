@@ -87,10 +87,12 @@ fn differential_runtime_seeded_diff_and_apply_match_oracle() {
                     "patch bytes mismatch vs oracle (case={case_idx}, seed={seed})"
                 );
 
-                let mut runtime =
-                    RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
+                let mut runtime = RuntimeModel::from_model_binary(&base_model)
+                    .expect("runtime decode must succeed");
                 let patch = Patch::from_binary(&rust_patch).expect("patch decode must succeed");
-                runtime.apply_patch(&patch).expect("runtime apply must succeed");
+                runtime
+                    .apply_patch(&patch)
+                    .expect("runtime apply must succeed");
 
                 assert_eq!(
                     runtime.view_json(),
@@ -251,14 +253,16 @@ fn mutate_from_base(rng: &mut Lcg, base: &Value, depth: usize) -> Value {
                 out.insert(format!("k{}", rng.range(8)), random_scalar(rng));
             }
             if !out.is_empty() && rng.range(5) == 0 {
-                let key = out.keys().next().cloned().expect("non-empty object must have key");
+                let key = out
+                    .keys()
+                    .next()
+                    .cloned()
+                    .expect("non-empty object must have key");
                 out.remove(&key);
             }
             Value::Object(out)
         }
-        Value::Array(arr) => {
-            Value::Array(arr.clone())
-        }
+        Value::Array(arr) => Value::Array(arr.clone()),
         Value::String(s) => {
             if s.is_empty() {
                 return Value::String(format!("s{}", rng.range(100)));
@@ -282,7 +286,10 @@ fn hex(bytes: &[u8]) -> String {
 }
 
 fn decode_hex(s: &str) -> Vec<u8> {
-    assert!(s.len() % 2 == 0, "hex string must have even length");
+    assert!(
+        s.len().is_multiple_of(2),
+        "hex string must have even length"
+    );
     let mut out = Vec::with_capacity(s.len() / 2);
     let bytes = s.as_bytes();
     for i in (0..bytes.len()).step_by(2) {

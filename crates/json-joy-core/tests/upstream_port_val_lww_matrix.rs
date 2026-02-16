@@ -10,7 +10,9 @@ use json_joy_core::patch_builder::encode_patch_from_ops;
 fn apply_ops(runtime: &mut RuntimeModel, sid: u64, time: u64, ops: Vec<DecodedOp>) {
     let bytes = encode_patch_from_ops(sid, time, &ops).expect("patch encode must succeed");
     let patch = Patch::from_binary(&bytes).expect("patch decode must succeed");
-    runtime.apply_patch(&patch).expect("patch apply must succeed");
+    runtime
+        .apply_patch(&patch)
+        .expect("patch apply must succeed");
 }
 
 #[test]

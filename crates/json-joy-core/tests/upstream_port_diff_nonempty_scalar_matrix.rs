@@ -91,7 +91,9 @@ fn mutate_scalar_object(rng: &mut Lcg, base: &Value) -> Value {
         let next = match v {
             Value::Null => Value::Number(serde_json::Number::from(rng.range(10) as i64)),
             Value::Bool(b) => Value::Bool(!b),
-            Value::Number(_) => Value::Number(serde_json::Number::from((rng.range(50) as i64) - 10)),
+            Value::Number(_) => {
+                Value::Number(serde_json::Number::from((rng.range(50) as i64) - 10))
+            }
             Value::String(s) => mutate_string(rng, &s),
             Value::Object(_) => Value::Object(serde_json::Map::from_iter([(
                 "id".to_string(),
@@ -108,7 +110,11 @@ fn mutate_scalar_object(rng: &mut Lcg, base: &Value) -> Value {
         );
     }
     if !out.is_empty() && rng.range(5) == 0 {
-        let key = out.keys().next().cloned().expect("non-empty map must have key");
+        let key = out
+            .keys()
+            .next()
+            .cloned()
+            .expect("non-empty map must have key");
         out.remove(&key);
     }
     Value::Object(out)
@@ -176,7 +182,10 @@ fn hex(bytes: &[u8]) -> String {
 }
 
 fn decode_hex(s: &str) -> Vec<u8> {
-    assert!(s.len() % 2 == 0, "hex string must have even length");
+    assert!(
+        s.len().is_multiple_of(2),
+        "hex string must have even length"
+    );
     let mut out = Vec::with_capacity(s.len() / 2);
     let bytes = s.as_bytes();
     for i in (0..bytes.len()).step_by(2) {

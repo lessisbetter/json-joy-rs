@@ -21,7 +21,8 @@ pub fn compat_model_create(data_json: String, sid: u64) -> Vec<u8> {
 }
 
 pub fn compat_model_from_binary(model_binary: Vec<u8>) -> Vec<u8> {
-    let model = less_db_compat::model_from_binary(&model_binary).expect("compat_model_from_binary failed");
+    let model =
+        less_db_compat::model_from_binary(&model_binary).expect("compat_model_from_binary failed");
     less_db_compat::model_to_binary(&model)
 }
 
@@ -36,7 +37,8 @@ pub fn compat_model_view(model_binary: Vec<u8>) -> String {
 }
 
 pub fn compat_model_diff(model_binary: Vec<u8>, sid: u64, next_json: String) -> Vec<u8> {
-    let model = less_db_compat::model_load(&model_binary, sid).expect("compat_model_diff load failed");
+    let model =
+        less_db_compat::model_load(&model_binary, sid).expect("compat_model_diff load failed");
     let next: serde_json::Value = serde_json::from_str(&next_json).expect("invalid next JSON");
     less_db_compat::diff_model(&model, &next)
         .expect("compat_model_diff failed")
@@ -44,13 +46,15 @@ pub fn compat_model_diff(model_binary: Vec<u8>, sid: u64, next_json: String) -> 
 }
 
 pub fn compat_model_apply(model_binary: Vec<u8>, patch_binary: Vec<u8>) -> Vec<u8> {
-    let mut model = less_db_compat::model_from_binary(&model_binary).expect("compat_model_apply load failed");
+    let mut model =
+        less_db_compat::model_from_binary(&model_binary).expect("compat_model_apply load failed");
     less_db_compat::apply_patch(&mut model, &patch_binary).expect("compat_model_apply failed");
     less_db_compat::model_to_binary(&model)
 }
 
 pub fn compat_model_fork(model_binary: Vec<u8>, sid: i64) -> Vec<u8> {
-    let model = less_db_compat::model_from_binary(&model_binary).expect("compat_model_fork load failed");
+    let model =
+        less_db_compat::model_from_binary(&model_binary).expect("compat_model_fork load failed");
     let forked = if sid < 0 {
         less_db_compat::fork_model(&model, None)
     } else {

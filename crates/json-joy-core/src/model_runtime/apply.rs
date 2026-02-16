@@ -149,7 +149,8 @@ impl RuntimeModel {
                 if let Some(RuntimeNode::Obj(map)) = self.nodes.get_mut(&obj) {
                     for (k, vid) in data.iter().map(|(k, v)| (k, Id::from(*v))) {
                         if existing_ids.contains(&vid) && obj.time < vid.time {
-                            if let Some((_, v)) = map.iter_mut().find(|(existing, _)| existing == k) {
+                            if let Some((_, v)) = map.iter_mut().find(|(existing, _)| existing == k)
+                            {
                                 let old = *v;
                                 if cmp_id_time_sid(old, vid).is_lt() {
                                     *v = vid;
@@ -220,10 +221,7 @@ impl RuntimeModel {
                         if atoms.iter().any(|a| a.slot == slot) {
                             continue;
                         }
-                        inserted.push(StrAtom {
-                            slot,
-                            ch: Some(ch),
-                        });
+                        inserted.push(StrAtom { slot, ch: Some(ch) });
                     }
                     atoms.splice(idx..idx, inserted);
                 }

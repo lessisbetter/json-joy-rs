@@ -15,12 +15,16 @@ fn fixtures_dir() -> PathBuf {
 }
 
 fn read_json(path: &Path) -> Value {
-    let data = fs::read_to_string(path).unwrap_or_else(|e| panic!("failed to read {:?}: {e}", path));
+    let data =
+        fs::read_to_string(path).unwrap_or_else(|e| panic!("failed to read {:?}: {e}", path));
     serde_json::from_str(&data).unwrap_or_else(|e| panic!("failed to parse {:?}: {e}", path))
 }
 
 fn decode_hex(s: &str) -> Vec<u8> {
-    assert!(s.len() % 2 == 0, "hex string must have even length");
+    assert!(
+        s.len().is_multiple_of(2),
+        "hex string must have even length"
+    );
     let mut out = Vec::with_capacity(s.len() / 2);
     let bytes = s.as_bytes();
     for i in (0..bytes.len()).step_by(2) {
@@ -53,7 +57,9 @@ fn as_path(path: &Value) -> Vec<PathStep> {
 fn model_api_proxy_fanout_workflow_fixtures_match_expected_steps() {
     let dir = fixtures_dir();
     let manifest = read_json(&dir.join("manifest.json"));
-    let fixtures = manifest["fixtures"].as_array().expect("manifest.fixtures must be array");
+    let fixtures = manifest["fixtures"]
+        .as_array()
+        .expect("manifest.fixtures must be array");
     let mut seen = 0u32;
 
     for entry in fixtures {
@@ -65,7 +71,9 @@ fn model_api_proxy_fanout_workflow_fixtures_match_expected_steps() {
         let file = entry["file"].as_str().expect("fixture file must be string");
         let fixture = read_json(&dir.join(file));
 
-        let sid = fixture["input"]["sid"].as_u64().expect("input.sid must be u64");
+        let sid = fixture["input"]["sid"]
+            .as_u64()
+            .expect("input.sid must be u64");
         let base = decode_hex(
             fixture["input"]["base_model_binary_hex"]
                 .as_str()
@@ -77,7 +85,9 @@ fn model_api_proxy_fanout_workflow_fixtures_match_expected_steps() {
         let change_count = Arc::new(Mutex::new(0usize));
         let change_count_clone = Arc::clone(&change_count);
         api.on_change(move |_| {
-            let mut v = change_count_clone.lock().expect("change_count mutex poisoned");
+            let mut v = change_count_clone
+                .lock()
+                .expect("change_count mutex poisoned");
             *v += 1;
         });
 
@@ -85,15 +95,23 @@ fn model_api_proxy_fanout_workflow_fixtures_match_expected_steps() {
         let scoped_count = Arc::new(Mutex::new(0usize));
         let scoped_count_clone = Arc::clone(&scoped_count);
         api.on_change_at(scoped_path, move |_| {
-            let mut v = scoped_count_clone.lock().expect("scoped_count mutex poisoned");
+            let mut v = scoped_count_clone
+                .lock()
+                .expect("scoped_count mutex poisoned");
             *v += 1;
         });
 
-        let ops = fixture["input"]["ops"].as_array().expect("input.ops must be array");
+        let ops = fixture["input"]["ops"]
+            .as_array()
+            .expect("input.ops must be array");
         let expected_steps = fixture["expected"]["steps"]
             .as_array()
             .expect("expected.steps must be array");
-        assert_eq!(ops.len(), expected_steps.len(), "ops/expected step length mismatch for {name}");
+        assert_eq!(
+            ops.len(),
+            expected_steps.len(),
+            "ops/expected step length mismatch for {name}"
+        );
 
         for (op, step) in ops.iter().zip(expected_steps.iter()) {
             let path = op.get("path").map(as_path).unwrap_or_default();
@@ -124,7 +142,11 @@ fn model_api_proxy_fanout_workflow_fixtures_match_expected_steps() {
                         op["value_json"].clone(),
                     )
                     .unwrap_or_else(|e| panic!("node_obj_put failed for {name}: {e}"));
-                    assert_eq!(api.view(), step["view_json"], "node_obj_put step view mismatch for {name}");
+                    assert_eq!(
+                        api.view(),
+                        step["view_json"],
+                        "node_obj_put step view mismatch for {name}"
+                    );
                 }
                 "node_arr_push" => {
                     let mut node = api.node();
@@ -137,7 +159,11 @@ fn model_api_proxy_fanout_workflow_fixtures_match_expected_steps() {
                     }
                     node.arr_push(op["value_json"].clone())
                         .unwrap_or_else(|e| panic!("node_arr_push failed for {name}: {e}"));
-                    assert_eq!(api.view(), step["view_json"], "node_arr_push step view mismatch for {name}");
+                    assert_eq!(
+                        api.view(),
+                        step["view_json"],
+                        "node_arr_push step view mismatch for {name}"
+                    );
                 }
                 "node_str_ins" => {
                     let mut node = api.node();
@@ -150,10 +176,16 @@ fn model_api_proxy_fanout_workflow_fixtures_match_expected_steps() {
                     }
                     node.str_ins(
                         op["pos"].as_u64().expect("node_str_ins pos must be u64") as usize,
-                        op["text"].as_str().expect("node_str_ins text must be string"),
+                        op["text"]
+                            .as_str()
+                            .expect("node_str_ins text must be string"),
                     )
                     .unwrap_or_else(|e| panic!("node_str_ins failed for {name}: {e}"));
-                    assert_eq!(api.view(), step["view_json"], "node_str_ins step view mismatch for {name}");
+                    assert_eq!(
+                        api.view(),
+                        step["view_json"],
+                        "node_str_ins step view mismatch for {name}"
+                    );
                 }
                 "node_add" => {
                     let mut node = api.node();
@@ -166,7 +198,11 @@ fn model_api_proxy_fanout_workflow_fixtures_match_expected_steps() {
                     }
                     node.add(op["value_json"].clone())
                         .unwrap_or_else(|e| panic!("node_add failed for {name}: {e}"));
-                    assert_eq!(api.view(), step["view_json"], "node_add step view mismatch for {name}");
+                    assert_eq!(
+                        api.view(),
+                        step["view_json"],
+                        "node_add step view mismatch for {name}"
+                    );
                 }
                 "node_replace" => {
                     let mut node = api.node();
@@ -179,7 +215,11 @@ fn model_api_proxy_fanout_workflow_fixtures_match_expected_steps() {
                     }
                     node.replace(op["value_json"].clone())
                         .unwrap_or_else(|e| panic!("node_replace failed for {name}: {e}"));
-                    assert_eq!(api.view(), step["view_json"], "node_replace step view mismatch for {name}");
+                    assert_eq!(
+                        api.view(),
+                        step["view_json"],
+                        "node_replace step view mismatch for {name}"
+                    );
                 }
                 "node_remove" => {
                     let mut node = api.node();
@@ -192,13 +232,21 @@ fn model_api_proxy_fanout_workflow_fixtures_match_expected_steps() {
                     }
                     node.remove()
                         .unwrap_or_else(|e| panic!("node_remove failed for {name}: {e}"));
-                    assert_eq!(api.view(), step["view_json"], "node_remove step view mismatch for {name}");
+                    assert_eq!(
+                        api.view(),
+                        step["view_json"],
+                        "node_remove step view mismatch for {name}"
+                    );
                 }
                 other => panic!("unexpected op kind for {name}: {other}"),
             }
         }
 
-        assert_eq!(api.view(), fixture["expected"]["final_view_json"], "final view mismatch for {name}");
+        assert_eq!(
+            api.view(),
+            fixture["expected"]["final_view_json"],
+            "final view mismatch for {name}"
+        );
         assert_eq!(
             *change_count.lock().expect("change_count mutex poisoned") as u64,
             fixture["expected"]["fanout"]["change_count"]
@@ -215,5 +263,8 @@ fn model_api_proxy_fanout_workflow_fixtures_match_expected_steps() {
         );
     }
 
-    assert!(seen >= 40, "expected at least 40 model_api_proxy_fanout_workflow fixtures");
+    assert!(
+        seen >= 40,
+        "expected at least 40 model_api_proxy_fanout_workflow fixtures"
+    );
 }

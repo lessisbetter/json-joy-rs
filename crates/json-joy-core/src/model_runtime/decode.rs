@@ -8,9 +8,14 @@ use std::io::Cursor;
 
 use super::types::{ArrAtom, BinAtom, ConCell, Id, RuntimeNode, StrAtom};
 
-pub(super) fn decode_runtime_graph(
-    data: &[u8],
-) -> Result<(HashMap<Id, RuntimeNode>, Option<Id>, Vec<LogicalClockBase>, Option<u64>), ModelError> {
+type DecodedRuntimeGraph = (
+    HashMap<Id, RuntimeNode>,
+    Option<Id>,
+    Vec<LogicalClockBase>,
+    Option<u64>,
+);
+
+pub(super) fn decode_runtime_graph(data: &[u8]) -> Result<DecodedRuntimeGraph, ModelError> {
     if data.is_empty() {
         return Err(ModelError::InvalidModelBinary);
     }
@@ -76,7 +81,10 @@ struct DecodeCtx<'a> {
 }
 
 fn decode_root(ctx: &mut DecodeCtx<'_>) -> Result<Option<Id>, ModelError> {
-    let first = *ctx.data.get(ctx.pos).ok_or(ModelError::InvalidModelBinary)?;
+    let first = *ctx
+        .data
+        .get(ctx.pos)
+        .ok_or(ModelError::InvalidModelBinary)?;
     if first == 0 {
         ctx.pos += 1;
         return Ok(None);
@@ -105,7 +113,11 @@ fn decode_node(ctx: &mut DecodeCtx<'_>) -> Result<Id, ModelError> {
             ctx.nodes.insert(id, RuntimeNode::Val(child));
         }
         2 => {
-            let len = if minor != 31 { minor } else { read_vu57_ctx(ctx)? };
+            let len = if minor != 31 {
+                minor
+            } else {
+                read_vu57_ctx(ctx)?
+            };
             let mut entries = Vec::new();
             for _ in 0..len {
                 let key = match read_one_cbor(ctx)? {
@@ -118,7 +130,11 @@ fn decode_node(ctx: &mut DecodeCtx<'_>) -> Result<Id, ModelError> {
             ctx.nodes.insert(id, RuntimeNode::Obj(entries));
         }
         3 => {
-            let len = if minor != 31 { minor } else { read_vu57_ctx(ctx)? };
+            let len = if minor != 31 {
+                minor
+            } else {
+                read_vu57_ctx(ctx)?
+            };
             let mut map = BTreeMap::new();
             for i in 0..len {
                 if peek_u8(ctx)? == 0 {
@@ -131,7 +147,11 @@ fn decode_node(ctx: &mut DecodeCtx<'_>) -> Result<Id, ModelError> {
             ctx.nodes.insert(id, RuntimeNode::Vec(map));
         }
         4 => {
-            let len = if minor != 31 { minor } else { read_vu57_ctx(ctx)? };
+            let len = if minor != 31 {
+                minor
+            } else {
+                read_vu57_ctx(ctx)?
+            };
             let mut atoms = Vec::new();
             for _ in 0..len {
                 let chunk_id = decode_id(ctx)?;
@@ -166,7 +186,11 @@ fn decode_node(ctx: &mut DecodeCtx<'_>) -> Result<Id, ModelError> {
             ctx.nodes.insert(id, RuntimeNode::Str(atoms));
         }
         5 => {
-            let len = if minor != 31 { minor } else { read_vu57_ctx(ctx)? };
+            let len = if minor != 31 {
+                minor
+            } else {
+                read_vu57_ctx(ctx)?
+            };
             let mut atoms = Vec::new();
             for _ in 0..len {
                 let chunk_id = decode_id(ctx)?;
@@ -198,7 +222,11 @@ fn decode_node(ctx: &mut DecodeCtx<'_>) -> Result<Id, ModelError> {
             ctx.nodes.insert(id, RuntimeNode::Bin(atoms));
         }
         6 => {
-            let len = if minor != 31 { minor } else { read_vu57_ctx(ctx)? };
+            let len = if minor != 31 {
+                minor
+            } else {
+                read_vu57_ctx(ctx)?
+            };
             let mut atoms = Vec::new();
             for _ in 0..len {
                 let chunk_id = decode_id(ctx)?;
@@ -284,7 +312,8 @@ impl ViewBootstrap {
         match value {
             Value::Null | Value::Bool(_) | Value::Number(_) => {
                 let id = self.alloc_id();
-                self.nodes.insert(id, RuntimeNode::Con(ConCell::Json(value.clone())));
+                self.nodes
+                    .insert(id, RuntimeNode::Con(ConCell::Json(value.clone())));
                 id
             }
             Value::String(s) => {
@@ -355,7 +384,7 @@ fn cbor_to_json(v: CborValue) -> Result<Value, ModelError> {
                 ))
             }
         }
-        CborValue::Float(f) => Number::from_f64(f as f64)
+        CborValue::Float(f) => Number::from_f64(f)
             .map(Value::Number)
             .ok_or(ModelError::InvalidModelBinary)?,
         CborValue::Text(s) => Value::String(s),
@@ -403,7 +432,8 @@ fn decode_id(ctx: &mut DecodeCtx<'_>) -> Result<Id, ModelError> {
                 ctx.pos -= 1;
                 let (_flag, session_index) =
                     read_b1vu56(ctx.data, &mut ctx.pos).ok_or(ModelError::InvalidModelBinary)?;
-                let diff = read_vu57(ctx.data, &mut ctx.pos).ok_or(ModelError::InvalidModelBinary)?;
+                let diff =
+                    read_vu57(ctx.data, &mut ctx.pos).ok_or(ModelError::InvalidModelBinary)?;
                 decode_rel_id(&table, session_index as usize, diff)
             }
         }
@@ -425,11 +455,17 @@ fn decode_rel_id(
         .time
         .checked_sub(diff)
         .ok_or(ModelError::InvalidClockTable)?;
-    Ok(Id { sid: base.sid, time })
+    Ok(Id {
+        sid: base.sid,
+        time,
+    })
 }
 
 fn read_u8(ctx: &mut DecodeCtx<'_>) -> Result<u8, ModelError> {
-    let b = *ctx.data.get(ctx.pos).ok_or(ModelError::InvalidModelBinary)?;
+    let b = *ctx
+        .data
+        .get(ctx.pos)
+        .ok_or(ModelError::InvalidModelBinary)?;
     ctx.pos += 1;
     Ok(b)
 }

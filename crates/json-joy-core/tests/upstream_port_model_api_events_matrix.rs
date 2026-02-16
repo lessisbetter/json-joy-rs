@@ -18,7 +18,8 @@ fn upstream_port_model_api_events_local_change_and_unsubscribe_matrix() {
         seen2.lock().unwrap().push((ev.origin, ev.before, ev.after));
     });
 
-    api.set(&[PathStep::Key("k".to_string())], json!(2)).unwrap();
+    api.set(&[PathStep::Key("k".to_string())], json!(2))
+        .unwrap();
     {
         let v = seen.lock().unwrap();
         assert_eq!(v.len(), 1);
@@ -28,7 +29,8 @@ fn upstream_port_model_api_events_local_change_and_unsubscribe_matrix() {
     }
 
     assert!(api.off_change(id));
-    api.set(&[PathStep::Key("k".to_string())], json!(3)).unwrap();
+    api.set(&[PathStep::Key("k".to_string())], json!(3))
+        .unwrap();
     assert_eq!(seen.lock().unwrap().len(), 1);
 }
 
@@ -51,7 +53,10 @@ fn upstream_port_model_api_events_remote_origin_matrix() {
     });
 
     api.apply_patch(&patch).unwrap();
-    assert_eq!(seen.lock().unwrap().as_slice(), &[ChangeEventOrigin::Remote]);
+    assert_eq!(
+        seen.lock().unwrap().as_slice(),
+        &[ChangeEventOrigin::Remote]
+    );
 }
 
 #[test]
@@ -92,7 +97,8 @@ fn upstream_port_model_api_events_scoped_path_matrix() {
     // Upstream mapping:
     // - json-crdt/model/api/NodeEvents.ts path-scoped view change subscriptions.
     let sid = 99004;
-    let model = json_joy_core::less_db_compat::create_model(&json!({"doc":{"a":1,"b":1}}), sid).unwrap();
+    let model =
+        json_joy_core::less_db_compat::create_model(&json!({"doc":{"a":1,"b":1}}), sid).unwrap();
     let binary = json_joy_core::less_db_compat::model_to_binary(&model);
     let mut api = NativeModelApi::from_model_binary(&binary, Some(sid)).unwrap();
 

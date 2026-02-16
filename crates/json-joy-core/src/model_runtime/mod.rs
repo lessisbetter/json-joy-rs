@@ -75,7 +75,9 @@ impl RuntimeModel {
                 let sid = if data.first().is_some_and(|b| (b & 0x80) != 0) {
                     1
                 } else {
-                    first_logical_clock_sid_time(data).map(|(sid, _)| sid).unwrap_or(1)
+                    first_logical_clock_sid_time(data)
+                        .map(|(sid, _)| sid)
+                        .unwrap_or(1)
                 };
                 let (nodes, root, clock_table) = bootstrap_graph_from_view(&view, sid);
                 (nodes, root, clock_table, None, Value::Null)

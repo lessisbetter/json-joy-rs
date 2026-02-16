@@ -15,12 +15,16 @@ fn fixtures_dir() -> PathBuf {
 }
 
 fn read_json(path: &Path) -> Value {
-    let data = fs::read_to_string(path).unwrap_or_else(|e| panic!("failed to read {:?}: {e}", path));
+    let data =
+        fs::read_to_string(path).unwrap_or_else(|e| panic!("failed to read {:?}: {e}", path));
     serde_json::from_str(&data).unwrap_or_else(|e| panic!("failed to parse {:?}: {e}", path))
 }
 
 fn decode_hex(s: &str) -> Vec<u8> {
-    assert!(s.len() % 2 == 0, "hex string must have even length");
+    assert!(
+        s.len().is_multiple_of(2),
+        "hex string must have even length"
+    );
     let mut out = Vec::with_capacity(s.len() / 2);
     let bytes = s.as_bytes();
     for i in (0..bytes.len()).step_by(2) {
@@ -34,15 +38,21 @@ fn decode_hex(s: &str) -> Vec<u8> {
 fn load_apply_replay_fixtures() -> Vec<(String, Value)> {
     let dir = fixtures_dir();
     let manifest = read_json(&dir.join("manifest.json"));
-    let fixtures = manifest["fixtures"].as_array().expect("manifest.fixtures must be array");
+    let fixtures = manifest["fixtures"]
+        .as_array()
+        .expect("manifest.fixtures must be array");
 
     let mut out = Vec::new();
     for entry in fixtures {
         if entry["scenario"].as_str() != Some("model_apply_replay") {
             continue;
         }
-        let name = entry["name"].as_str().expect("fixture entry name must be string");
-        let file = entry["file"].as_str().expect("fixture entry file must be string");
+        let name = entry["name"]
+            .as_str()
+            .expect("fixture entry name must be string");
+        let file = entry["file"]
+            .as_str()
+            .expect("fixture entry file must be string");
         out.push((name.to_string(), read_json(&dir.join(file))));
     }
     out
@@ -51,7 +61,10 @@ fn load_apply_replay_fixtures() -> Vec<(String, Value)> {
 #[test]
 fn apply_replay_fixtures_match_oracle_view() {
     let fixtures = load_apply_replay_fixtures();
-    assert!(fixtures.len() >= 50, "expected at least 50 model_apply_replay fixtures");
+    assert!(
+        fixtures.len() >= 50,
+        "expected at least 50 model_apply_replay fixtures"
+    );
 
     for (name, fixture) in fixtures {
         let base_bytes = decode_hex(
@@ -84,9 +97,9 @@ fn apply_replay_fixtures_match_oracle_view() {
             runtime
                 .apply_patch(&patches[i])
                 .unwrap_or_else(|e| panic!("runtime apply failed for {name}: {e}"));
-            runtime
-                .validate_invariants()
-                .unwrap_or_else(|e| panic!("runtime invariants failed after apply for {name}: {e}"));
+            runtime.validate_invariants().unwrap_or_else(|e| {
+                panic!("runtime invariants failed after apply for {name}: {e}")
+            });
         }
 
         assert_eq!(
@@ -128,7 +141,8 @@ fn duplicate_patch_replay_is_idempotent() {
             })
             .collect::<Vec<_>>();
 
-        let mut runtime = RuntimeModel::from_model_binary(&base_bytes).expect("runtime model must decode");
+        let mut runtime =
+            RuntimeModel::from_model_binary(&base_bytes).expect("runtime model must decode");
         runtime
             .validate_invariants()
             .unwrap_or_else(|e| panic!("runtime invariants failed at base for {name}: {e}"));
@@ -136,10 +150,12 @@ fn duplicate_patch_replay_is_idempotent() {
         let mut first_view = None;
         for idx in replay {
             let i = idx.as_u64().expect("replay index must be u64") as usize;
-            runtime.apply_patch(&patches[i]).expect("runtime apply must succeed");
             runtime
-                .validate_invariants()
-                .unwrap_or_else(|e| panic!("runtime invariants failed after apply for {name}: {e}"));
+                .apply_patch(&patches[i])
+                .expect("runtime apply must succeed");
+            runtime.validate_invariants().unwrap_or_else(|e| {
+                panic!("runtime invariants failed after apply for {name}: {e}")
+            });
             if !first_seen {
                 first_seen = true;
                 first_view = Some(runtime.view_json());
@@ -151,7 +167,10 @@ fn duplicate_patch_replay_is_idempotent() {
             fixture["expected"]["view_json"],
             "duplicate replay expected view mismatch for fixture {name}"
         );
-        assert!(first_view.is_some(), "duplicate fixture should include at least one apply");
+        assert!(
+            first_view.is_some(),
+            "duplicate fixture should include at least one apply"
+        );
     }
 
     assert!(seen >= 4, "expected at least 4 duplicate replay fixtures");
@@ -188,16 +207,19 @@ fn out_of_order_replay_matches_oracle() {
             })
             .collect::<Vec<_>>();
 
-        let mut runtime = RuntimeModel::from_model_binary(&base_bytes).expect("runtime model must decode");
+        let mut runtime =
+            RuntimeModel::from_model_binary(&base_bytes).expect("runtime model must decode");
         runtime
             .validate_invariants()
             .unwrap_or_else(|e| panic!("runtime invariants failed at base for {name}: {e}"));
         for idx in replay {
             let i = idx.as_u64().expect("replay index must be u64") as usize;
-            runtime.apply_patch(&patches[i]).expect("runtime apply must succeed");
             runtime
-                .validate_invariants()
-                .unwrap_or_else(|e| panic!("runtime invariants failed after apply for {name}: {e}"));
+                .apply_patch(&patches[i])
+                .expect("runtime apply must succeed");
+            runtime.validate_invariants().unwrap_or_else(|e| {
+                panic!("runtime invariants failed after apply for {name}: {e}")
+            });
         }
 
         assert_eq!(
@@ -207,5 +229,8 @@ fn out_of_order_replay_matches_oracle() {
         );
     }
 
-    assert!(seen >= 10, "expected at least 10 out-of-order replay fixtures");
+    assert!(
+        seen >= 10,
+        "expected at least 10 out-of-order replay fixtures"
+    );
 }

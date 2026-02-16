@@ -64,15 +64,29 @@ fn property_model_api_event_convergence_for_batched_vs_incremental_apply() {
     }
     batched.apply_batch(&patches).unwrap();
 
-    assert_eq!(incremental.view(), batched.view(), "views diverged for event convergence flow");
-    assert_eq!(incremental.view(), builder.view(), "builder final view mismatch");
+    assert_eq!(
+        incremental.view(),
+        batched.view(),
+        "views diverged for event convergence flow"
+    );
+    assert_eq!(
+        incremental.view(),
+        builder.view(),
+        "builder final view mismatch"
+    );
 
     let inc_changes = *inc_change.lock().unwrap();
     let bat_changes = *bat_change.lock().unwrap();
     let inc_scoped_changes = *inc_scoped.lock().unwrap();
     let bat_scoped_changes = *bat_scoped.lock().unwrap();
 
-    assert!(inc_changes >= patches.len(), "incremental should see at least one change per patch");
+    assert!(
+        inc_changes >= patches.len(),
+        "incremental should see at least one change per patch"
+    );
     assert!(bat_changes >= 1, "batched apply should emit change events");
-    assert_eq!(inc_scoped_changes, bat_scoped_changes, "scoped fanout count should converge");
+    assert_eq!(
+        inc_scoped_changes, bat_scoped_changes,
+        "scoped fanout count should converge"
+    );
 }

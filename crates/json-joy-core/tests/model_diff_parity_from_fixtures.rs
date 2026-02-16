@@ -16,12 +16,16 @@ fn fixtures_dir() -> PathBuf {
 }
 
 fn read_json(path: &Path) -> Value {
-    let data = fs::read_to_string(path).unwrap_or_else(|e| panic!("failed to read {:?}: {e}", path));
+    let data =
+        fs::read_to_string(path).unwrap_or_else(|e| panic!("failed to read {:?}: {e}", path));
     serde_json::from_str(&data).unwrap_or_else(|e| panic!("failed to parse {:?}: {e}", path))
 }
 
 fn decode_hex(s: &str) -> Vec<u8> {
-    assert!(s.len() % 2 == 0, "hex string must have even length");
+    assert!(
+        s.len().is_multiple_of(2),
+        "hex string must have even length"
+    );
     let mut out = Vec::with_capacity(s.len() / 2);
     let bytes = s.as_bytes();
     for i in (0..bytes.len()).step_by(2) {
@@ -35,15 +39,21 @@ fn decode_hex(s: &str) -> Vec<u8> {
 fn load_diff_fixtures() -> Vec<(String, Value)> {
     let dir = fixtures_dir();
     let manifest = read_json(&dir.join("manifest.json"));
-    let fixtures = manifest["fixtures"].as_array().expect("manifest.fixtures must be array");
+    let fixtures = manifest["fixtures"]
+        .as_array()
+        .expect("manifest.fixtures must be array");
 
     let mut out = Vec::new();
     for entry in fixtures {
         if entry["scenario"].as_str() != Some("model_diff_parity") {
             continue;
         }
-        let name = entry["name"].as_str().expect("fixture entry name must be string");
-        let file = entry["file"].as_str().expect("fixture entry file must be string");
+        let name = entry["name"]
+            .as_str()
+            .expect("fixture entry name must be string");
+        let file = entry["file"]
+            .as_str()
+            .expect("fixture entry file must be string");
         out.push((name.to_string(), read_json(&dir.join(file))));
     }
     out
@@ -52,7 +62,10 @@ fn load_diff_fixtures() -> Vec<(String, Value)> {
 #[test]
 fn model_diff_parity_fixtures_match_oracle_patch_binary() {
     let fixtures = load_diff_fixtures();
-    assert!(fixtures.len() >= 100, "expected at least 100 model_diff_parity fixtures");
+    assert!(
+        fixtures.len() >= 100,
+        "expected at least 100 model_diff_parity fixtures"
+    );
 
     for (name, fixture) in fixtures {
         let base_bytes = decode_hex(
@@ -84,7 +97,10 @@ fn model_diff_parity_fixtures_match_oracle_patch_binary() {
                 .expect("expected.patch_binary_hex must be string"),
         );
 
-        assert_eq!(generated, expected, "patch bytes mismatch for fixture {name}");
+        assert_eq!(
+            generated, expected,
+            "patch bytes mismatch for fixture {name}"
+        );
 
         let patch = Patch::from_binary(&generated)
             .unwrap_or_else(|e| panic!("generated patch decode failed for {name}: {e}"));
@@ -114,11 +130,31 @@ fn model_diff_parity_fixtures_match_oracle_patch_binary() {
             })
             .collect();
 
-        assert_eq!(patch.op_count(), expected_op_count, "op_count mismatch for fixture {name}");
-        assert_eq!(patch.span(), expected_span, "span mismatch for fixture {name}");
-        assert_eq!(patch.id(), Some((expected_sid, expected_time)), "id mismatch for fixture {name}");
-        assert_eq!(patch.next_time(), expected_next_time, "next_time mismatch for fixture {name}");
-        assert_eq!(patch.opcodes(), expected_opcodes.as_slice(), "opcodes mismatch for fixture {name}");
+        assert_eq!(
+            patch.op_count(),
+            expected_op_count,
+            "op_count mismatch for fixture {name}"
+        );
+        assert_eq!(
+            patch.span(),
+            expected_span,
+            "span mismatch for fixture {name}"
+        );
+        assert_eq!(
+            patch.id(),
+            Some((expected_sid, expected_time)),
+            "id mismatch for fixture {name}"
+        );
+        assert_eq!(
+            patch.next_time(),
+            expected_next_time,
+            "next_time mismatch for fixture {name}"
+        );
+        assert_eq!(
+            patch.opcodes(),
+            expected_opcodes.as_slice(),
+            "opcodes mismatch for fixture {name}"
+        );
     }
 }
 
@@ -186,7 +222,10 @@ fn model_diff_noop_fixtures_return_none() {
         let generated = diff_model_to_patch_bytes(&base_bytes, next_view, sid)
             .unwrap_or_else(|e| panic!("diff runtime failed for {name}: {e}"));
 
-        assert!(generated.is_none(), "expected no patch for no-op fixture {name}");
+        assert!(
+            generated.is_none(),
+            "expected no patch for no-op fixture {name}"
+        );
     }
 
     assert!(seen >= 5, "expected at least 5 no-op diff fixtures");

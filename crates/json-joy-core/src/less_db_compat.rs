@@ -1,12 +1,12 @@
 //! less-db-js compatibility layer.
 
-use crate::diff_runtime;
 use crate::crdt_binary::first_logical_clock_sid_time;
-use crate::{generate_session_id, is_valid_session_id};
+use crate::diff_runtime;
 use crate::model::Model;
 use crate::model_runtime::RuntimeModel;
 use crate::patch::{ConValue, DecodedOp, Patch, Timestamp};
 use crate::patch_builder::encode_patch_from_ops;
+use crate::{generate_session_id, is_valid_session_id};
 use serde_json::Value;
 use thiserror::Error;
 
@@ -164,7 +164,8 @@ pub fn model_from_binary(data: &[u8]) -> Result<CompatModel, CompatError> {
             max: MAX_CRDT_BINARY_SIZE,
         });
     }
-    let parsed = Model::from_binary(data).map_err(|e| CompatError::ProcessFailure(e.to_string()))?;
+    let parsed =
+        Model::from_binary(data).map_err(|e| CompatError::ProcessFailure(e.to_string()))?;
     Ok(CompatModel {
         model_binary: data.to_vec(),
         view: parsed.view().clone(),
@@ -182,7 +183,8 @@ pub fn model_load(data: &[u8], sid: u64) -> Result<CompatModel, CompatError> {
             max: MAX_CRDT_BINARY_SIZE,
         });
     }
-    let parsed = Model::from_binary(data).map_err(|e| CompatError::ProcessFailure(e.to_string()))?;
+    let parsed =
+        Model::from_binary(data).map_err(|e| CompatError::ProcessFailure(e.to_string()))?;
     // Mirror upstream Model.load(..., sid) clock/session semantics by forking
     // runtime-local session id for logical-clock models.
     if data.first().is_some_and(|b| (b & 0x80) == 0) {

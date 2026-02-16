@@ -904,7 +904,7 @@ impl NativeModelApi {
         let mut next = self.runtime.view_json();
         match path {
             None => next = value,
-            Some(p) if p.is_empty() => next = value,
+            Some([]) => next = value,
             Some(p) => {
                 let Some(target) = get_path_mut(&mut next, p) else {
                     return false;

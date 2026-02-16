@@ -6,11 +6,9 @@ use serde_json::json;
 #[test]
 fn upstream_port_model_api_fanout_matrix_change_and_scoped_counts() {
     let sid = 99102;
-    let compat = json_joy_core::less_db_compat::create_model(
-        &json!({"doc":{"title":"ab","count":1}}),
-        sid,
-    )
-    .unwrap();
+    let compat =
+        json_joy_core::less_db_compat::create_model(&json!({"doc":{"title":"ab","count":1}}), sid)
+            .unwrap();
     let binary = json_joy_core::less_db_compat::model_to_binary(&compat);
     let mut api = NativeModelApi::from_model_binary(&binary, Some(sid)).unwrap();
 

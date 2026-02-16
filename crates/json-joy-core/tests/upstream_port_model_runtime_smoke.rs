@@ -28,8 +28,11 @@ fn upstream_port_runtime_apply_object_insert_from_empty_object_root() {
     let patch_bytes = encode_patch_from_ops(sid, 2, &ops).expect("encode must succeed");
     let patch = Patch::from_binary(&patch_bytes).expect("patch must decode");
 
-    let mut runtime = RuntimeModel::from_model_binary(&base_model).expect("base model decode must succeed");
-    runtime.apply_patch(&patch).expect("runtime apply must succeed");
+    let mut runtime =
+        RuntimeModel::from_model_binary(&base_model).expect("base model decode must succeed");
+    runtime
+        .apply_patch(&patch)
+        .expect("runtime apply must succeed");
 
     assert_eq!(runtime.view_json(), serde_json::json!({"x": 1}));
 }
@@ -53,15 +56,23 @@ fn upstream_port_runtime_duplicate_apply_is_stable_for_obj_insert() {
     let patch_bytes = encode_patch_from_ops(sid, 2, &ops).expect("encode must succeed");
     let patch = Patch::from_binary(&patch_bytes).expect("patch must decode");
 
-    let mut runtime = RuntimeModel::from_model_binary(&base_model).expect("base model decode must succeed");
-    runtime.apply_patch(&patch).expect("first apply must succeed");
-    runtime.apply_patch(&patch).expect("second apply must succeed");
+    let mut runtime =
+        RuntimeModel::from_model_binary(&base_model).expect("base model decode must succeed");
+    runtime
+        .apply_patch(&patch)
+        .expect("first apply must succeed");
+    runtime
+        .apply_patch(&patch)
+        .expect("second apply must succeed");
 
     assert_eq!(runtime.view_json(), serde_json::json!({"title": "A"}));
 }
 
 fn decode_hex(s: &str) -> Vec<u8> {
-    assert!(s.len() % 2 == 0, "hex string must have even length");
+    assert!(
+        s.len().is_multiple_of(2),
+        "hex string must have even length"
+    );
     let mut out = Vec::with_capacity(s.len() / 2);
     let bytes = s.as_bytes();
     for i in (0..bytes.len()).step_by(2) {

@@ -10,7 +10,8 @@ use json_joy_core::patch_builder::encode_patch_from_ops;
 
 fn apply_one(runtime: &mut RuntimeModel, op: DecodedOp) {
     let id = op.id();
-    let bytes = encode_patch_from_ops(id.sid, id.time, &[op]).expect("single-op patch encode must succeed");
+    let bytes =
+        encode_patch_from_ops(id.sid, id.time, &[op]).expect("single-op patch encode must succeed");
     let patch = Patch::from_binary(&bytes).expect("single-op patch decode must succeed");
     runtime
         .apply_patch(&patch)

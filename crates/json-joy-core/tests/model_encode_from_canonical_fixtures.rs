@@ -15,12 +15,16 @@ fn fixtures_dir() -> PathBuf {
 }
 
 fn read_json(path: &Path) -> Value {
-    let data = fs::read_to_string(path).unwrap_or_else(|e| panic!("failed to read {:?}: {e}", path));
+    let data =
+        fs::read_to_string(path).unwrap_or_else(|e| panic!("failed to read {:?}: {e}", path));
     serde_json::from_str(&data).unwrap_or_else(|e| panic!("failed to parse {:?}: {e}", path))
 }
 
 fn decode_hex(s: &str) -> Vec<u8> {
-    assert!(s.len() % 2 == 0, "hex string must have even length");
+    assert!(
+        s.len().is_multiple_of(2),
+        "hex string must have even length"
+    );
     let mut out = Vec::with_capacity(s.len() / 2);
     let bytes = s.as_bytes();
     for i in (0..bytes.len()).step_by(2) {
@@ -36,7 +40,8 @@ fn as_u64(v: &Value, label: &str) -> u64 {
 }
 
 fn as_str<'a>(v: &'a Value, label: &str) -> &'a str {
-    v.as_str().unwrap_or_else(|| panic!("{label} must be string"))
+    v.as_str()
+        .unwrap_or_else(|| panic!("{label} must be string"))
 }
 
 fn as_ts(v: &Value, label: &str) -> (u64, u64) {
@@ -167,11 +172,7 @@ fn encode_model_canonical(input: &Value) -> Vec<u8> {
         }
     };
 
-    fn encode_node(
-        w: &mut Writer,
-        node: &Value,
-        encode_id: &dyn Fn(&mut Writer, (u64, u64)),
-    ) {
+    fn encode_node(w: &mut Writer, node: &Value, encode_id: &dyn Fn(&mut Writer, (u64, u64))) {
         let id = as_ts(&node["id"], "node.id");
         encode_id(w, id);
 
@@ -194,7 +195,8 @@ fn encode_model_canonical(input: &Value) -> Vec<u8> {
                 for e in entries {
                     let key = as_str(&e["key"], "obj entry key");
                     let key_cbor = CborValue::Text(key.to_string());
-                    ciborium::ser::into_writer(&key_cbor, &mut w.bytes).expect("CBOR key encode must succeed");
+                    ciborium::ser::into_writer(&key_cbor, &mut w.bytes)
+                        .expect("CBOR key encode must succeed");
                     encode_node(w, &e["value"], encode_id);
                 }
             }
@@ -216,12 +218,15 @@ fn encode_model_canonical(input: &Value) -> Vec<u8> {
                     let cid = as_ts(&ch["id"], "str chunk id");
                     encode_id(w, cid);
                     if ch.get("text").is_some() {
-                        let cbor = CborValue::Text(as_str(&ch["text"], "str chunk text").to_string());
-                        ciborium::ser::into_writer(&cbor, &mut w.bytes).expect("CBOR str encode must succeed");
+                        let cbor =
+                            CborValue::Text(as_str(&ch["text"], "str chunk text").to_string());
+                        ciborium::ser::into_writer(&cbor, &mut w.bytes)
+                            .expect("CBOR str encode must succeed");
                     } else {
                         let del = as_u64(&ch["deleted"], "str chunk deleted");
                         let cbor = CborValue::Integer(Integer::from(del));
-                        ciborium::ser::into_writer(&cbor, &mut w.bytes).expect("CBOR del encode must succeed");
+                        ciborium::ser::into_writer(&cbor, &mut w.bytes)
+                            .expect("CBOR del encode must succeed");
                     }
                 }
             }
@@ -249,7 +254,9 @@ fn encode_model_canonical(input: &Value) -> Vec<u8> {
                     if ch.get("deleted").is_some() {
                         w.b1vu56(1, as_u64(&ch["deleted"], "arr chunk deleted"));
                     } else {
-                        let vals = ch["values"].as_array().expect("arr chunk values must be array");
+                        let vals = ch["values"]
+                            .as_array()
+                            .expect("arr chunk values must be array");
                         w.b1vu56(0, vals.len() as u64);
                         for v in vals {
                             encode_node(w, v, encode_id);
@@ -290,7 +297,9 @@ fn encode_model_canonical(input: &Value) -> Vec<u8> {
 fn model_canonical_encode_fixtures_match_oracle_binary() {
     let dir = fixtures_dir();
     let manifest = read_json(&dir.join("manifest.json"));
-    let fixtures = manifest["fixtures"].as_array().expect("manifest.fixtures must be array");
+    let fixtures = manifest["fixtures"]
+        .as_array()
+        .expect("manifest.fixtures must be array");
 
     let mut seen = 0u32;
     let mut seen_server = 0u32;
@@ -301,7 +310,9 @@ fn model_canonical_encode_fixtures_match_oracle_binary() {
         }
         seen += 1;
 
-        let file = entry["file"].as_str().expect("fixture entry file must be string");
+        let file = entry["file"]
+            .as_str()
+            .expect("fixture entry file must be string");
         let fixture = read_json(&dir.join(file));
 
         let mode = as_str(&fixture["input"]["mode"], "input.mode");
@@ -324,8 +335,12 @@ fn model_canonical_encode_fixtures_match_oracle_binary() {
             entry["name"]
         );
 
-        let model = Model::from_binary(&encoded)
-            .unwrap_or_else(|e| panic!("encoded canonical model failed to decode for {}: {e}", entry["name"]));
+        let model = Model::from_binary(&encoded).unwrap_or_else(|e| {
+            panic!(
+                "encoded canonical model failed to decode for {}: {e}",
+                entry["name"]
+            )
+        });
         assert_eq!(
             model.view(),
             &fixture["expected"]["view_json"],
@@ -334,7 +349,16 @@ fn model_canonical_encode_fixtures_match_oracle_binary() {
         );
     }
 
-    assert!(seen >= 12, "expected at least 12 model_canonical_encode fixtures");
-    assert!(seen_logical >= 3, "expected at least 3 logical canonical encode fixtures");
-    assert!(seen_server >= 2, "expected at least 2 server canonical encode fixtures");
+    assert!(
+        seen >= 12,
+        "expected at least 12 model_canonical_encode fixtures"
+    );
+    assert!(
+        seen_logical >= 3,
+        "expected at least 3 logical canonical encode fixtures"
+    );
+    assert!(
+        seen_server >= 2,
+        "expected at least 2 server canonical encode fixtures"
+    );
 }

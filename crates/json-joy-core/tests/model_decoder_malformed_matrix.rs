@@ -14,12 +14,16 @@ fn fixtures_dir() -> PathBuf {
 }
 
 fn read_json(path: &Path) -> Value {
-    let data = fs::read_to_string(path).unwrap_or_else(|e| panic!("failed to read {:?}: {e}", path));
+    let data =
+        fs::read_to_string(path).unwrap_or_else(|e| panic!("failed to read {:?}: {e}", path));
     serde_json::from_str(&data).unwrap_or_else(|e| panic!("failed to parse {:?}: {e}", path))
 }
 
 fn decode_hex(s: &str) -> Vec<u8> {
-    assert!(s.len() % 2 == 0, "hex string must have even length");
+    assert!(
+        s.len().is_multiple_of(2),
+        "hex string must have even length"
+    );
     let mut out = Vec::with_capacity(s.len() / 2);
     let bytes = s.as_bytes();
     for i in (0..bytes.len()).step_by(2) {
@@ -34,7 +38,9 @@ fn decode_hex(s: &str) -> Vec<u8> {
 fn decode_error_fixture_matrix_includes_required_classes() {
     let dir = fixtures_dir();
     let manifest = read_json(&dir.join("manifest.json"));
-    let fixtures = manifest["fixtures"].as_array().expect("manifest.fixtures must be array");
+    let fixtures = manifest["fixtures"]
+        .as_array()
+        .expect("manifest.fixtures must be array");
 
     let required = [
         "model_decode_error_clock_offset_overflow_v1",
@@ -63,14 +69,18 @@ fn decode_error_fixture_matrix_includes_required_classes() {
 fn decode_error_matrix_matches_oracle_per_fixture() {
     let dir = fixtures_dir();
     let manifest = read_json(&dir.join("manifest.json"));
-    let fixtures = manifest["fixtures"].as_array().expect("manifest.fixtures must be array");
+    let fixtures = manifest["fixtures"]
+        .as_array()
+        .expect("manifest.fixtures must be array");
 
     for entry in fixtures {
         if entry["scenario"].as_str() != Some("model_decode_error") {
             continue;
         }
 
-        let file = entry["file"].as_str().expect("fixture entry file must be string");
+        let file = entry["file"]
+            .as_str()
+            .expect("fixture entry file must be string");
         let fixture = read_json(&dir.join(file));
         let model_hex = fixture["input"]["model_binary_hex"]
             .as_str()
@@ -83,7 +93,11 @@ fn decode_error_matrix_matches_oracle_per_fixture() {
         if oracle_error == "NO_ERROR" {
             assert!(decoded.is_ok(), "oracle accepted fixture {}", entry["name"]);
         } else {
-            assert!(decoded.is_err(), "oracle rejected fixture {}", entry["name"]);
+            assert!(
+                decoded.is_err(),
+                "oracle rejected fixture {}",
+                entry["name"]
+            );
         }
     }
 }

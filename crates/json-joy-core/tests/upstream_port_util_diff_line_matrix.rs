@@ -43,10 +43,7 @@ fn upstream_port_util_diff_line_mix_replace_matrix() {
     let patch = line::diff(&src, &dst);
     assert_eq!(
         patch,
-        vec![
-            (LinePatchOpType::Mix, 0, 0),
-            (LinePatchOpType::Eql, 1, 1),
-        ]
+        vec![(LinePatchOpType::Mix, 0, 0), (LinePatchOpType::Eql, 1, 1),]
     );
 }
 
@@ -66,4 +63,3 @@ fn upstream_port_util_diff_line_apply_callbacks_matrix() {
     );
     assert!(!dels.is_empty() || !ins.is_empty() || !mix.is_empty());
 }
-

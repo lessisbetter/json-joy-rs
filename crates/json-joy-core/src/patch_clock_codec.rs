@@ -59,7 +59,8 @@ pub fn decode_relative_timestamp(data: &[u8]) -> Result<(u64, u64), PatchClockCo
         return Ok(((first >> 4) as u64, (first & 0x0f) as u64));
     }
     let mut pos = 0usize;
-    let (flag, session_index) = read_b1vu56(data, &mut pos).ok_or(PatchClockCodecError::InvalidRelativeId)?;
+    let (flag, session_index) =
+        read_b1vu56(data, &mut pos).ok_or(PatchClockCodecError::InvalidRelativeId)?;
     if flag != 1 {
         return Err(PatchClockCodecError::InvalidRelativeId);
     }
@@ -88,5 +89,8 @@ pub fn decode_with_clock_table(
         .time
         .checked_sub(time_diff)
         .ok_or(PatchClockCodecError::InvalidRelativeId)?;
-    Ok(Timestamp { sid: base.sid, time })
+    Ok(Timestamp {
+        sid: base.sid,
+        time,
+    })
 }

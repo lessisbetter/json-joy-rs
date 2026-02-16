@@ -43,7 +43,8 @@ fn upstream_port_diff_native_support_matrix_avoids_unsupported_shape_for_logical
                 let out = diff_model_to_patch_bytes(&base_model, &next, sid);
                 match out {
                     Ok(Some(bytes)) => {
-                        let patch = Patch::from_binary(&bytes).expect("diff output patch must decode");
+                        let patch =
+                            Patch::from_binary(&bytes).expect("diff output patch must decode");
                         let mut runtime = RuntimeModel::from_model_binary(&base_model)
                             .expect("runtime decode must succeed");
                         runtime
@@ -95,7 +96,11 @@ fn mutate_object(rng: &mut Lcg, map: &Map<String, Value>, depth: u32) -> Value {
         out.insert(format!("k{}", rng.range(8)), random_leaf(rng));
     }
     if !out.is_empty() && rng.range(10) == 0 {
-        let key = out.keys().next().cloned().expect("non-empty map must have key");
+        let key = out
+            .keys()
+            .next()
+            .cloned()
+            .expect("non-empty map must have key");
         out.remove(&key);
     }
     Value::Object(out)

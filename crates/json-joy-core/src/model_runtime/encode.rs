@@ -69,7 +69,8 @@ struct LogicalClockEncoder {
 
 impl LogicalClockEncoder {
     fn from_model(model: &RuntimeModel) -> Result<Self, ModelError> {
-        let (local_sid, mut local_time, mut peers) = if let Some(first) = model.clock_table.first() {
+        let (local_sid, mut local_time, mut peers) = if let Some(first) = model.clock_table.first()
+        {
             let mut peers: HashMap<u64, u64> = HashMap::new();
             for p in model.clock_table.iter().skip(1) {
                 peers
@@ -119,7 +120,9 @@ impl LogicalClockEncoder {
     fn append(&mut self, id: Id) -> Result<(u64, u64), ModelError> {
         if let Some(&idx) = self.by_sid.get(&id.sid) {
             let base = self.table[idx].time;
-            let diff = base.checked_sub(id.time).ok_or(ModelError::InvalidClockTable)?;
+            let diff = base
+                .checked_sub(id.time)
+                .ok_or(ModelError::InvalidClockTable)?;
             return Ok(((idx as u64) + 1, diff));
         }
         let base = self
@@ -127,7 +130,9 @@ impl LogicalClockEncoder {
             .get(&id.sid)
             .copied()
             .unwrap_or(self.local_time.saturating_sub(1));
-        let diff = base.checked_sub(id.time).ok_or(ModelError::InvalidClockTable)?;
+        let diff = base
+            .checked_sub(id.time)
+            .ok_or(ModelError::InvalidClockTable)?;
         let idx = self.table.len();
         self.by_sid.insert(id.sid, idx);
         self.table.push(LogicalClockBase {
@@ -151,8 +156,7 @@ fn encode_id(enc: &mut EncodeCtx<'_>, id: Id) -> Result<(), ModelError> {
         }
     };
     if session_index <= 0b111 && diff <= 0b1111 {
-        enc.out
-            .push(((session_index as u8) << 4) | (diff as u8));
+        enc.out.push(((session_index as u8) << 4) | (diff as u8));
     } else {
         write_b1vu56(enc.out, 1, session_index);
         write_vu57(enc.out, diff);
@@ -207,8 +211,7 @@ fn encode_node(enc: &mut EncodeCtx<'_>, id: Id, model: &RuntimeModel) -> Result<
                 if let Some(text) = chunk.text {
                     cbor_text_bytes(&text, enc.out)?;
                 } else {
-                    let cbor =
-                        CborValue::Integer(ciborium::value::Integer::from(chunk.span));
+                    let cbor = CborValue::Integer(ciborium::value::Integer::from(chunk.span));
                     ciborium::ser::into_writer(&cbor, &mut *enc.out)
                         .map_err(|_| ModelError::InvalidModelBinary)?;
                 }

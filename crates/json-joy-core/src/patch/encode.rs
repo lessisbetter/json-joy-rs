@@ -106,7 +106,7 @@ impl Writer {
                 data,
                 ..
             } => {
-                self.write_op_len(12, data.as_bytes().len() as u64);
+                self.write_op_len(12, data.len() as u64);
                 self.encode_id(*obj);
                 self.encode_id(*reference);
                 self.bytes.extend_from_slice(data.as_bytes());

@@ -40,7 +40,9 @@ fn property_replay_second_pass_matches_oracle() {
             .as_array()
             .expect("replay_pattern must be array")
             .iter()
-            .map(|v| usize::try_from(v.as_u64().expect("index must be u64")).expect("index out of range"))
+            .map(|v| {
+                usize::try_from(v.as_u64().expect("index must be u64")).expect("index out of range")
+            })
             .collect();
 
         let mut model = RuntimeModel::from_model_binary(&base).expect("base decode must succeed");
@@ -48,7 +50,9 @@ fn property_replay_second_pass_matches_oracle() {
             .validate_invariants()
             .expect("invariants must hold for base model");
         for idx in replay.iter().copied() {
-            model.apply_patch(&patches[idx]).expect("apply must succeed");
+            model
+                .apply_patch(&patches[idx])
+                .expect("apply must succeed");
             model
                 .validate_invariants()
                 .expect("invariants must hold after apply");
@@ -56,7 +60,9 @@ fn property_replay_second_pass_matches_oracle() {
         let once_view = model.view_json();
 
         for idx in replay.iter().copied() {
-            model.apply_patch(&patches[idx]).expect("second pass apply must succeed");
+            model
+                .apply_patch(&patches[idx])
+                .expect("second pass apply must succeed");
             model
                 .validate_invariants()
                 .expect("invariants must hold after second-pass apply");
@@ -118,17 +124,19 @@ fn property_duplicate_compression_preserves_view_for_duplicate_heavy_fixtures() 
             .as_array()
             .expect("replay_pattern must be array")
             .iter()
-            .map(|v| usize::try_from(v.as_u64().expect("index must be u64")).expect("index out of range"))
+            .map(|v| {
+                usize::try_from(v.as_u64().expect("index must be u64")).expect("index out of range")
+            })
             .collect();
 
         let compressed = compress_adjacent_duplicates(&replay);
 
         let mut full = RuntimeModel::from_model_binary(&base).expect("base decode must succeed");
-        full
-            .validate_invariants()
+        full.validate_invariants()
             .expect("invariants must hold for base model");
         for idx in replay.iter().copied() {
-            full.apply_patch(&patches[idx]).expect("full apply must succeed");
+            full.apply_patch(&patches[idx])
+                .expect("full apply must succeed");
             full.validate_invariants()
                 .expect("invariants must hold after full apply");
         }
@@ -138,7 +146,9 @@ fn property_duplicate_compression_preserves_view_for_duplicate_heavy_fixtures() 
             .validate_invariants()
             .expect("invariants must hold for base model");
         for idx in compressed.iter().copied() {
-            dedup.apply_patch(&patches[idx]).expect("dedup apply must succeed");
+            dedup
+                .apply_patch(&patches[idx])
+                .expect("dedup apply must succeed");
             dedup
                 .validate_invariants()
                 .expect("invariants must hold after dedup apply");
@@ -156,7 +166,9 @@ fn property_duplicate_compression_preserves_view_for_duplicate_heavy_fixtures() 
 fn load_apply_replay_fixtures() -> Vec<Value> {
     let dir = fixtures_dir();
     let manifest = read_json(&dir.join("manifest.json"));
-    let entries = manifest["fixtures"].as_array().expect("manifest.fixtures must be array");
+    let entries = manifest["fixtures"]
+        .as_array()
+        .expect("manifest.fixtures must be array");
 
     let mut out = Vec::new();
     for entry in entries {
@@ -193,12 +205,16 @@ fn fixtures_dir() -> PathBuf {
 }
 
 fn read_json(path: &Path) -> Value {
-    let data = fs::read_to_string(path).unwrap_or_else(|e| panic!("failed to read {:?}: {e}", path));
+    let data =
+        fs::read_to_string(path).unwrap_or_else(|e| panic!("failed to read {:?}: {e}", path));
     serde_json::from_str(&data).unwrap_or_else(|e| panic!("failed to parse {:?}: {e}", path))
 }
 
 fn decode_hex(s: &str) -> Vec<u8> {
-    assert!(s.len() % 2 == 0, "hex string must have even length");
+    assert!(
+        s.len().is_multiple_of(2),
+        "hex string must have even length"
+    );
     let mut out = Vec::with_capacity(s.len() / 2);
     let bytes = s.as_bytes();
     for i in (0..bytes.len()).step_by(2) {
@@ -255,8 +271,5 @@ process.stdout.write(JSON.stringify({once, twice}));
     );
     let parsed: Value =
         serde_json::from_slice(&output.stdout).expect("oracle replay output must be valid json");
-    (
-        parsed["once"].clone(),
-        parsed["twice"].clone(),
-    )
+    (parsed["once"].clone(), parsed["twice"].clone())
 }

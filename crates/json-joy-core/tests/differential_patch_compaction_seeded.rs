@@ -13,7 +13,10 @@ fn differential_patch_compaction_seeded_matches_oracle() {
 
     for (idx, patches) in cases.iter().enumerate() {
         let oracle = oracle_compaction(
-            &patches.iter().map(|p| hex(&p.to_binary())).collect::<Vec<_>>(),
+            &patches
+                .iter()
+                .map(|p| hex(&p.to_binary()))
+                .collect::<Vec<_>>(),
         );
 
         let rust_combined = combine_patches(patches)
@@ -221,7 +224,8 @@ process.stdout.write(JSON.stringify({
         String::from_utf8_lossy(&output.stderr)
     );
 
-    serde_json::from_slice(&output.stdout).expect("oracle patch compaction output must be valid json")
+    serde_json::from_slice(&output.stdout)
+        .expect("oracle patch compaction output must be valid json")
 }
 
 fn hex(bytes: &[u8]) -> String {

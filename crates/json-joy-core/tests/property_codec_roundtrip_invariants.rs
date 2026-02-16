@@ -1,5 +1,9 @@
-use json_joy_core::codec_indexed_binary::{decode_fields_to_model_binary, encode_model_binary_to_fields};
-use json_joy_core::codec_sidecar_binary::{decode_sidecar_to_model_binary, encode_model_binary_to_sidecar};
+use json_joy_core::codec_indexed_binary::{
+    decode_fields_to_model_binary, encode_model_binary_to_fields,
+};
+use json_joy_core::codec_sidecar_binary::{
+    decode_sidecar_to_model_binary, encode_model_binary_to_sidecar,
+};
 use json_joy_core::less_db_compat::{create_model, model_to_binary};
 use json_joy_core::model::Model;
 use serde_json::Value;
@@ -16,23 +20,31 @@ fn property_codec_roundtrip_invariants_hold_for_seeded_models() {
             .view()
             .clone();
 
-        let fields = encode_model_binary_to_fields(&base_binary).expect("indexed encode must succeed");
-        let indexed_binary = decode_fields_to_model_binary(&fields).expect("indexed decode must succeed");
+        let fields =
+            encode_model_binary_to_fields(&base_binary).expect("indexed encode must succeed");
+        let indexed_binary =
+            decode_fields_to_model_binary(&fields).expect("indexed decode must succeed");
         let indexed_view = Model::from_binary(&indexed_binary)
             .expect("indexed binary must decode")
             .view()
             .clone();
-        assert_eq!(indexed_view, base_view, "indexed view invariant mismatch seed={seed}");
+        assert_eq!(
+            indexed_view, base_view,
+            "indexed view invariant mismatch seed={seed}"
+        );
 
         let (side_view, side_meta) =
             encode_model_binary_to_sidecar(&base_binary).expect("sidecar encode must succeed");
-        let sidecar_binary =
-            decode_sidecar_to_model_binary(&side_view, &side_meta).expect("sidecar decode must succeed");
+        let sidecar_binary = decode_sidecar_to_model_binary(&side_view, &side_meta)
+            .expect("sidecar decode must succeed");
         let sidecar_view = Model::from_binary(&sidecar_binary)
             .expect("sidecar binary must decode")
             .view()
             .clone();
-        assert_eq!(sidecar_view, base_view, "sidecar view invariant mismatch seed={seed}");
+        assert_eq!(
+            sidecar_view, base_view,
+            "sidecar view invariant mismatch seed={seed}"
+        );
     }
 }
 

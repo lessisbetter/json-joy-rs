@@ -220,7 +220,9 @@ pub fn encode_patch_verbose(patch: &Patch) -> Result<Value, VerboseCodecError> {
 }
 
 pub fn decode_patch_verbose(verbose: &Value) -> Result<Patch, VerboseCodecError> {
-    let root = verbose.as_object().ok_or(VerboseCodecError::InvalidPayload)?;
+    let root = verbose
+        .as_object()
+        .ok_or(VerboseCodecError::InvalidPayload)?;
     let id_v = root.get("id").ok_or(VerboseCodecError::InvalidPayload)?;
     let id_a = id_v.as_array().ok_or(VerboseCodecError::InvalidPayload)?;
     if id_a.len() != 2 {
@@ -248,7 +250,8 @@ pub fn decode_patch_verbose(verbose: &Value) -> Result<Patch, VerboseCodecError>
                     DecodedOp::NewCon {
                         id,
                         value: ConValue::Ref(verbose_to_ts(
-                            obj.get("value").ok_or(VerboseCodecError::InvalidOperation)?,
+                            obj.get("value")
+                                .ok_or(VerboseCodecError::InvalidOperation)?,
                         )?),
                     }
                 } else {
@@ -273,7 +276,10 @@ pub fn decode_patch_verbose(verbose: &Value) -> Result<Patch, VerboseCodecError>
             "ins_val" => DecodedOp::InsVal {
                 id,
                 obj: verbose_to_ts(obj.get("obj").ok_or(VerboseCodecError::InvalidOperation)?)?,
-                val: verbose_to_ts(obj.get("value").ok_or(VerboseCodecError::InvalidOperation)?)?,
+                val: verbose_to_ts(
+                    obj.get("value")
+                        .ok_or(VerboseCodecError::InvalidOperation)?,
+                )?,
             },
             "ins_obj" => {
                 let data = obj
@@ -287,7 +293,9 @@ pub fn decode_patch_verbose(verbose: &Value) -> Result<Patch, VerboseCodecError>
                             return Err(VerboseCodecError::InvalidOperation);
                         }
                         Ok((
-                            a[0].as_str().ok_or(VerboseCodecError::InvalidOperation)?.to_string(),
+                            a[0].as_str()
+                                .ok_or(VerboseCodecError::InvalidOperation)?
+                                .to_string(),
                             verbose_to_ts(&a[1])?,
                         ))
                     })
@@ -325,7 +333,9 @@ pub fn decode_patch_verbose(verbose: &Value) -> Result<Patch, VerboseCodecError>
                 id,
                 obj: verbose_to_ts(obj.get("obj").ok_or(VerboseCodecError::InvalidOperation)?)?,
                 reference: verbose_to_ts(
-                    obj.get("after").or_else(|| obj.get("obj")).ok_or(VerboseCodecError::InvalidOperation)?,
+                    obj.get("after")
+                        .or_else(|| obj.get("obj"))
+                        .ok_or(VerboseCodecError::InvalidOperation)?,
                 )?,
                 data: obj
                     .get("value")
@@ -337,7 +347,9 @@ pub fn decode_patch_verbose(verbose: &Value) -> Result<Patch, VerboseCodecError>
                 id,
                 obj: verbose_to_ts(obj.get("obj").ok_or(VerboseCodecError::InvalidOperation)?)?,
                 reference: verbose_to_ts(
-                    obj.get("after").or_else(|| obj.get("obj")).ok_or(VerboseCodecError::InvalidOperation)?,
+                    obj.get("after")
+                        .or_else(|| obj.get("obj"))
+                        .ok_or(VerboseCodecError::InvalidOperation)?,
                 )?,
                 data: base64::engine::general_purpose::STANDARD
                     .decode(
@@ -351,7 +363,9 @@ pub fn decode_patch_verbose(verbose: &Value) -> Result<Patch, VerboseCodecError>
                 id,
                 obj: verbose_to_ts(obj.get("obj").ok_or(VerboseCodecError::InvalidOperation)?)?,
                 reference: verbose_to_ts(
-                    obj.get("after").or_else(|| obj.get("obj")).ok_or(VerboseCodecError::InvalidOperation)?,
+                    obj.get("after")
+                        .or_else(|| obj.get("obj"))
+                        .ok_or(VerboseCodecError::InvalidOperation)?,
                 )?,
                 data: obj
                     .get("values")
@@ -364,8 +378,13 @@ pub fn decode_patch_verbose(verbose: &Value) -> Result<Patch, VerboseCodecError>
             "upd_arr" => DecodedOp::UpdArr {
                 id,
                 obj: verbose_to_ts(obj.get("obj").ok_or(VerboseCodecError::InvalidOperation)?)?,
-                reference: verbose_to_ts(obj.get("ref").ok_or(VerboseCodecError::InvalidOperation)?)?,
-                val: verbose_to_ts(obj.get("value").ok_or(VerboseCodecError::InvalidOperation)?)?,
+                reference: verbose_to_ts(
+                    obj.get("ref").ok_or(VerboseCodecError::InvalidOperation)?,
+                )?,
+                val: verbose_to_ts(
+                    obj.get("value")
+                        .ok_or(VerboseCodecError::InvalidOperation)?,
+                )?,
             },
             "del" => DecodedOp::Del {
                 id,
@@ -391,4 +410,3 @@ pub fn decode_patch_verbose(verbose: &Value) -> Result<Patch, VerboseCodecError>
     let bytes = encode_patch_from_ops(sid, time, &ops)?;
     Ok(Patch::from_binary(&bytes)?)
 }
-

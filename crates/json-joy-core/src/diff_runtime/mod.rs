@@ -5,11 +5,11 @@
 //! - Covered parity envelope today is logical-clock object-root diffs used by
 //!   fixture corpus and less-db compatibility workflows.
 
+use crate::crdt_binary::first_model_clock_sid_time;
 use crate::model::Model;
 use crate::model_runtime::RuntimeModel;
 use crate::patch::{ConValue, DecodedOp, Timestamp};
 use crate::patch_builder::{encode_patch_from_ops, PatchBuildError};
-use crate::crdt_binary::first_model_clock_sid_time;
 use serde_json::Value;
 use thiserror::Error;
 
@@ -71,7 +71,9 @@ pub fn diff_model_to_patch_bytes(
     if let Some(native) = try_native_empty_obj_diff(base_model_binary, next_view, sid)? {
         return Ok(native);
     }
-    if let Some(native) = try_native_root_obj_multi_string_delta_diff(base_model_binary, next_view, sid)? {
+    if let Some(native) =
+        try_native_root_obj_multi_string_delta_diff(base_model_binary, next_view, sid)?
+    {
         return Ok(native);
     }
     if let Some(native) =
@@ -79,19 +81,28 @@ pub fn diff_model_to_patch_bytes(
     {
         return Ok(native);
     }
-    if let Some(native) = try_native_multi_root_nested_string_delta_diff(base_model_binary, next_view, sid)? {
+    if let Some(native) =
+        try_native_multi_root_nested_string_delta_diff(base_model_binary, next_view, sid)?
+    {
         return Ok(native);
     }
-    if let Some(native) = try_native_root_obj_string_delta_diff(base_model_binary, next_view, sid)? {
+    if let Some(native) = try_native_root_obj_string_delta_diff(base_model_binary, next_view, sid)?
+    {
         return Ok(native);
     }
-    if let Some(native) = try_native_nested_obj_string_delta_diff(base_model_binary, next_view, sid)? {
+    if let Some(native) =
+        try_native_nested_obj_string_delta_diff(base_model_binary, next_view, sid)?
+    {
         return Ok(native);
     }
-    if let Some(native) = try_native_root_obj_multi_bin_delta_diff(base_model_binary, next_view, sid)? {
+    if let Some(native) =
+        try_native_root_obj_multi_bin_delta_diff(base_model_binary, next_view, sid)?
+    {
         return Ok(native);
     }
-    if let Some(native) = try_native_multi_root_nested_bin_delta_diff(base_model_binary, next_view, sid)? {
+    if let Some(native) =
+        try_native_multi_root_nested_bin_delta_diff(base_model_binary, next_view, sid)?
+    {
         return Ok(native);
     }
     if let Some(native) = try_native_root_obj_bin_delta_diff(base_model_binary, next_view, sid)? {
@@ -103,19 +114,28 @@ pub fn diff_model_to_patch_bytes(
     if let Some(native) = try_native_root_obj_array_delta_diff(base_model_binary, next_view, sid)? {
         return Ok(native);
     }
-    if let Some(native) = try_native_root_obj_multi_array_delta_diff(base_model_binary, next_view, sid)? {
+    if let Some(native) =
+        try_native_root_obj_multi_array_delta_diff(base_model_binary, next_view, sid)?
+    {
         return Ok(native);
     }
-    if let Some(native) = try_native_multi_root_nested_array_delta_diff(base_model_binary, next_view, sid)? {
+    if let Some(native) =
+        try_native_multi_root_nested_array_delta_diff(base_model_binary, next_view, sid)?
+    {
         return Ok(native);
     }
-    if let Some(native) = try_native_nested_obj_array_delta_diff(base_model_binary, next_view, sid)? {
+    if let Some(native) = try_native_nested_obj_array_delta_diff(base_model_binary, next_view, sid)?
+    {
         return Ok(native);
     }
-    if let Some(native) = try_native_root_obj_multi_vec_delta_diff(base_model_binary, next_view, sid)? {
+    if let Some(native) =
+        try_native_root_obj_multi_vec_delta_diff(base_model_binary, next_view, sid)?
+    {
         return Ok(native);
     }
-    if let Some(native) = try_native_multi_root_nested_vec_delta_diff(base_model_binary, next_view, sid)? {
+    if let Some(native) =
+        try_native_multi_root_nested_vec_delta_diff(base_model_binary, next_view, sid)?
+    {
         return Ok(native);
     }
     if let Some(native) = try_native_root_obj_vec_delta_diff(base_model_binary, next_view, sid)? {
@@ -124,24 +144,34 @@ pub fn diff_model_to_patch_bytes(
     if let Some(native) = try_native_nested_obj_vec_delta_diff(base_model_binary, next_view, sid)? {
         return Ok(native);
     }
-    if let Some(native) = try_native_root_obj_mixed_recursive_diff(base_model_binary, next_view, sid)? {
+    if let Some(native) =
+        try_native_root_obj_mixed_recursive_diff(base_model_binary, next_view, sid)?
+    {
         return Ok(native);
     }
-    if let Some(native) = try_native_nested_obj_scalar_key_delta_diff(base_model_binary, next_view, sid)? {
+    if let Some(native) =
+        try_native_nested_obj_scalar_key_delta_diff(base_model_binary, next_view, sid)?
+    {
         return Ok(native);
     }
-    if let Some(native) = try_native_multi_root_nested_obj_generic_delta_diff(base_model_binary, next_view, sid)? {
+    if let Some(native) =
+        try_native_multi_root_nested_obj_generic_delta_diff(base_model_binary, next_view, sid)?
+    {
         return Ok(native);
     }
-    if let Some(native) = try_native_nested_obj_generic_delta_diff(base_model_binary, next_view, sid)? {
+    if let Some(native) =
+        try_native_nested_obj_generic_delta_diff(base_model_binary, next_view, sid)?
+    {
         return Ok(native);
     }
     // Native non-empty root-object scalar delta path (add/update/remove).
-    if let Some(native) = try_native_root_obj_scalar_delta_diff(base_model_binary, next_view, sid)? {
+    if let Some(native) = try_native_root_obj_scalar_delta_diff(base_model_binary, next_view, sid)?
+    {
         return Ok(native);
     }
     // Native generic root-object delta path.
-    if let Some(native) = try_native_root_obj_generic_delta_diff(base_model_binary, next_view, sid)? {
+    if let Some(native) = try_native_root_obj_generic_delta_diff(base_model_binary, next_view, sid)?
+    {
         return Ok(native);
     }
 

@@ -33,9 +33,12 @@ fn upstream_port_util_diff_str_normalize_src_dst_invert_apply_matrix() {
 
     let mut ins = Vec::new();
     let mut del = Vec::new();
-    str::apply(&patch, str::src(&patch).len(), |pos, s| ins.push((pos, s.to_string())), |pos, len, s| {
-        del.push((pos, len, s.to_string()))
-    });
+    str::apply(
+        &patch,
+        str::src(&patch).len(),
+        |pos, s| ins.push((pos, s.to_string())),
+        |pos, len, s| del.push((pos, len, s.to_string())),
+    );
     assert_eq!(ins, vec![(0usize, "ab".to_string())]);
     assert!(del.is_empty());
 }
@@ -50,6 +53,11 @@ fn upstream_port_util_diff_bin_roundtrip_matrix() {
 
     let mut ins = Vec::new();
     let mut del = Vec::new();
-    bin::apply(&patch, 3, |pos, data| ins.push((pos, data)), |pos, len| del.push((pos, len)));
+    bin::apply(
+        &patch,
+        3,
+        |pos, data| ins.push((pos, data)),
+        |pos, len| del.push((pos, len)),
+    );
     assert!(!ins.is_empty() || !del.is_empty());
 }

@@ -16,15 +16,28 @@ fn differential_codec_seeded_matches_oracle_encoders() {
         let model = create_model(&value, sid).expect("create_model must succeed");
         let binary = model_to_binary(&model);
 
-        let rust_indexed = encode_model_binary_to_fields(&binary).expect("indexed encode must succeed");
+        let rust_indexed =
+            encode_model_binary_to_fields(&binary).expect("indexed encode must succeed");
         let oracle_indexed = oracle_indexed_encode(&binary);
-        assert_eq!(fields_to_hex(&rust_indexed), oracle_indexed, "indexed codec mismatch seed={seed}");
+        assert_eq!(
+            fields_to_hex(&rust_indexed),
+            oracle_indexed,
+            "indexed codec mismatch seed={seed}"
+        );
 
         let (rust_view, rust_meta) =
             encode_model_binary_to_sidecar(&binary).expect("sidecar encode must succeed");
         let (oracle_view, oracle_meta) = oracle_sidecar_encode(&binary);
-        assert_eq!(hex(&rust_view), oracle_view, "sidecar view mismatch seed={seed}");
-        assert_eq!(hex(&rust_meta), oracle_meta, "sidecar meta mismatch seed={seed}");
+        assert_eq!(
+            hex(&rust_view),
+            oracle_view,
+            "sidecar view mismatch seed={seed}"
+        );
+        assert_eq!(
+            hex(&rust_meta),
+            oracle_meta,
+            "sidecar meta mismatch seed={seed}"
+        );
     }
 }
 
@@ -85,7 +98,8 @@ process.stdout.write(JSON.stringify({view_hex: Buffer.from(view).toString('hex')
         "sidecar codec oracle failed: {}",
         String::from_utf8_lossy(&output.stderr)
     );
-    let out: Value = serde_json::from_slice(&output.stdout).expect("sidecar oracle output must be json");
+    let out: Value =
+        serde_json::from_slice(&output.stdout).expect("sidecar oracle output must be json");
     (
         out["view_hex"]
             .as_str()

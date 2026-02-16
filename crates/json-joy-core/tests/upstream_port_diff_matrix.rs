@@ -16,12 +16,16 @@ fn fixtures_dir() -> PathBuf {
 }
 
 fn read_json(path: &Path) -> Value {
-    let data = fs::read_to_string(path).unwrap_or_else(|e| panic!("failed to read {:?}: {e}", path));
+    let data =
+        fs::read_to_string(path).unwrap_or_else(|e| panic!("failed to read {:?}: {e}", path));
     serde_json::from_str(&data).unwrap_or_else(|e| panic!("failed to parse {:?}: {e}", path))
 }
 
 fn decode_hex(s: &str) -> Vec<u8> {
-    assert!(s.len() % 2 == 0, "hex string must have even length");
+    assert!(
+        s.len().is_multiple_of(2),
+        "hex string must have even length"
+    );
     let mut out = Vec::with_capacity(s.len() / 2);
     let bytes = s.as_bytes();
     for i in (0..bytes.len()).step_by(2) {
@@ -45,15 +49,21 @@ fn hex(bytes: &[u8]) -> String {
 fn load_diff_fixtures() -> Vec<(String, Value)> {
     let dir = fixtures_dir();
     let manifest = read_json(&dir.join("manifest.json"));
-    let fixtures = manifest["fixtures"].as_array().expect("manifest.fixtures must be array");
+    let fixtures = manifest["fixtures"]
+        .as_array()
+        .expect("manifest.fixtures must be array");
 
     let mut out = Vec::new();
     for entry in fixtures {
         if entry["scenario"].as_str() != Some("model_diff_parity") {
             continue;
         }
-        let name = entry["name"].as_str().expect("fixture entry name must be string");
-        let file = entry["file"].as_str().expect("fixture entry file must be string");
+        let name = entry["name"]
+            .as_str()
+            .expect("fixture entry name must be string");
+        let file = entry["file"]
+            .as_str()
+            .expect("fixture entry file must be string");
         out.push((name.to_string(), read_json(&dir.join(file))));
     }
     out
@@ -71,7 +81,9 @@ fn upstream_port_diff_matrix_binary_and_apply_parity() {
                 .as_str()
                 .expect("input.base_model_binary_hex must be string"),
         );
-        let sid = fixture["input"]["sid"].as_u64().expect("input.sid must be u64");
+        let sid = fixture["input"]["sid"]
+            .as_u64()
+            .expect("input.sid must be u64");
         let next = &fixture["input"]["next_view_json"];
         let expected_present = fixture["expected"]["patch_present"]
             .as_bool()
@@ -88,7 +100,11 @@ fn upstream_port_diff_matrix_binary_and_apply_parity() {
             let expected_hex = fixture["expected"]["patch_binary_hex"]
                 .as_str()
                 .expect("expected.patch_binary_hex must be string when patch_present=true");
-            assert_eq!(hex(bytes), expected_hex, "patch bytes mismatch for fixture {name}");
+            assert_eq!(
+                hex(bytes),
+                expected_hex,
+                "patch bytes mismatch for fixture {name}"
+            );
 
             let decoded = Patch::from_binary(bytes)
                 .unwrap_or_else(|e| panic!("patch decode failed for {name}: {e}"));
@@ -104,12 +120,14 @@ fn upstream_port_diff_matrix_binary_and_apply_parity() {
             );
         } else {
             assert_eq!(
-                next,
-                &fixture["expected"]["view_after_apply_json"],
+                next, &fixture["expected"]["view_after_apply_json"],
                 "no-op fixture expected view mismatch for {name}"
             );
         }
     }
 
-    assert!(seen >= 100, "expected at least 100 model_diff_parity fixtures");
+    assert!(
+        seen >= 100,
+        "expected at least 100 model_diff_parity fixtures"
+    );
 }

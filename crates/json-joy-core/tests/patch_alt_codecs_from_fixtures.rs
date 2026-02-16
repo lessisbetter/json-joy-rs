@@ -19,7 +19,7 @@ fn fixtures_dir() -> std::path::PathBuf {
 }
 
 fn from_hex(s: &str) -> Vec<u8> {
-    assert!(s.len() % 2 == 0, "hex length must be even");
+    assert!(s.len().is_multiple_of(2), "hex length must be even");
     (0..s.len())
         .step_by(2)
         .map(|i| u8::from_str_radix(&s[i..i + 2], 16).expect("valid hex"))
@@ -34,8 +34,9 @@ fn read_fixture(path: &Path) -> Value {
 #[test]
 fn patch_alt_codecs_fixtures_match_oracle_outputs() {
     let dir = fixtures_dir();
-    let manifest: Value = serde_json::from_str(&fs::read_to_string(dir.join("manifest.json")).expect("manifest"))
-        .expect("manifest json");
+    let manifest: Value =
+        serde_json::from_str(&fs::read_to_string(dir.join("manifest.json")).expect("manifest"))
+            .expect("manifest json");
 
     let mut seen = 0u32;
     for entry in manifest["fixtures"].as_array().expect("fixtures array") {
@@ -44,14 +45,16 @@ fn patch_alt_codecs_fixtures_match_oracle_outputs() {
         }
         seen += 1;
         let fx = read_fixture(&dir.join(entry["file"].as_str().expect("fixture file")));
-        let patch_binary =
-            from_hex(fx["input"]["patch_binary_hex"].as_str().expect("input.patch_binary_hex"));
+        let patch_binary = from_hex(
+            fx["input"]["patch_binary_hex"]
+                .as_str()
+                .expect("input.patch_binary_hex"),
+        );
         let patch = Patch::from_binary(&patch_binary).expect("decode patch");
 
         let compact = encode_patch_compact(&patch).expect("encode compact");
         assert_eq!(
-            compact,
-            fx["expected"]["compact_json"],
+            compact, fx["expected"]["compact_json"],
             "compact json mismatch for {}",
             fx["name"]
         );
@@ -65,8 +68,7 @@ fn patch_alt_codecs_fixtures_match_oracle_outputs() {
 
         let verbose = encode_patch_verbose(&patch).expect("encode verbose");
         assert_eq!(
-            verbose,
-            fx["expected"]["verbose_json"],
+            verbose, fx["expected"]["verbose_json"],
             "verbose json mismatch for {}",
             fx["name"]
         );
