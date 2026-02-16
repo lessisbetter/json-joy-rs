@@ -50,7 +50,7 @@
 - [x] Normalize runtime node graph semantics (reduce fallback-view shortcuts).
 - [x] Replace oracle subprocess in `less_db_compat::apply_patch` with native runtime apply path.
 - [x] Replace oracle subprocess in `diff_runtime` with native Rust diff dispatcher.
-- [ ] Expand structural model encoder to support model-state generation from runtime graph.
+- [x] Expand structural model encoder to support model-state generation from runtime graph.
 - [x] Add upstream-mapped runtime-core test-port suites (`tests/upstream_port/*`).
 - [x] Add seeded differential parity suites for apply/diff/model roundtrip.
 - [x] Add property/state-machine convergence tests (idempotence/order/tombstones/clocks).

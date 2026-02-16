@@ -3,7 +3,6 @@ use std::path::{Path, PathBuf};
 
 use json_joy_core::model_runtime::RuntimeModel;
 use json_joy_core::patch::Patch;
-use std::collections::HashSet;
 use serde_json::Value;
 
 fn fixtures_dir() -> PathBuf {
@@ -120,29 +119,67 @@ fn upstream_port_model_encode_inventory_from_apply_replay() {
 
     assert!(seen >= 30, "expected at least 30 model_apply_replay fixtures");
     assert!(
-        match_count >= 24,
-        "expected at least 24 binary-parity matches in apply_replay inventory; got {match_count}"
+        mismatch_ids.is_empty(),
+        "expected exact binary parity for all apply_replay fixtures; mismatches: {}",
+        mismatch_ids.join(", ")
+    );
+}
+
+#[test]
+fn upstream_port_model_encode_roundtrip_decode_matrix() {
+    let dir = fixtures_dir();
+    let manifest = read_json(&dir.join("manifest.json"));
+    let fixtures = manifest["fixtures"].as_array().expect("manifest.fixtures must be array");
+
+    let mut seen = 0u32;
+    let mut mismatches = Vec::new();
+    let mut encode_error_ids = Vec::new();
+
+    for entry in fixtures {
+        if entry["scenario"].as_str() != Some("model_roundtrip") {
+            continue;
+        }
+        seen += 1;
+
+        let file = entry["file"].as_str().expect("fixture entry file must be string");
+        let fixture = read_json(&dir.join(file));
+        let name = fixture["name"].as_str().unwrap_or("unknown");
+        let expected = decode_hex(
+            fixture["expected"]["model_binary_hex"]
+                .as_str()
+                .expect("expected.model_binary_hex must be string"),
+        );
+
+        let runtime = RuntimeModel::from_model_binary(&expected)
+            .unwrap_or_else(|e| panic!("runtime decode failed for {name}: {e}"));
+        let encoded = match runtime.to_model_binary_like() {
+            Ok(v) => v,
+            Err(e) => {
+                encode_error_ids.push(name.to_string());
+                eprintln!("roundtrip encode error for {name}: {e}");
+                continue;
+            }
+        };
+        if encoded != expected {
+            mismatches.push(format!(
+                "{} expected={} actual={}",
+                name,
+                hex(&expected),
+                hex(&encoded)
+            ));
+        }
+    }
+
+    assert!(seen >= 60, "expected at least 60 model_roundtrip fixtures");
+    assert!(
+        encode_error_ids.is_empty(),
+        "expected all roundtrip fixtures to encode successfully; errors: {}",
+        encode_error_ids.join(", ")
+    );
+    assert!(
+        mismatches.is_empty(),
+        "roundtrip-decode model encode parity mismatches: {}",
+        mismatches.join(", ")
     );
 
-    let known: HashSet<&str> = [
-        "model_apply_replay_04_obj_in_order_v1",
-        "model_apply_replay_05_obj_out_of_order_v1",
-        "model_apply_replay_06_obj_interleaved_dup_v1",
-        "model_apply_replay_28_vec_in_order_v1",
-        "model_apply_replay_29_vec_out_of_order_v1",
-        "model_apply_replay_30_vec_interleaved_dup_v1",
-    ]
-    .into_iter()
-    .collect();
-    for id in &mismatch_ids {
-        assert!(
-            known.contains(id.as_str()),
-            "unexpected model encode mismatch fixture: {id}"
-        );
-    }
-    assert!(
-        mismatch_ids.len() <= known.len(),
-        "mismatch count regressed beyond known set: {}",
-        mismatch_ids.len()
-    );
 }
