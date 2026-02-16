@@ -9,6 +9,7 @@
 use crate::model::Model;
 use crate::patch::{ConValue, DecodedOp, Timestamp};
 use crate::patch_builder::{encode_patch_from_ops, PatchBuildError};
+use crate::crdt_binary::first_logical_clock_sid_time;
 use serde_json::{json, Value};
 use std::path::PathBuf;
 use std::process::Command;
@@ -123,7 +124,7 @@ fn try_native_empty_obj_diff(
         return Ok(Some(None));
     }
 
-    let (root_sid, base_time) = match logical_clock_sid_time(base_model_binary) {
+    let (root_sid, base_time) = match first_logical_clock_sid_time(base_model_binary) {
         Some(v) => v,
         None => return Ok(None),
     };
@@ -166,7 +167,7 @@ fn try_native_root_obj_scalar_delta_diff(
         _ => return Ok(None),
     };
 
-    let (root_sid, base_time) = match logical_clock_sid_time(base_model_binary) {
+    let (root_sid, base_time) = match first_logical_clock_sid_time(base_model_binary) {
         Some(v) => v,
         None => return Ok(None),
     };
@@ -333,46 +334,6 @@ impl NativeEmitter {
 
 fn is_con_scalar(value: &Value) -> bool {
     matches!(value, Value::Null | Value::Bool(_) | Value::Number(_))
-}
-
-fn logical_clock_sid_time(data: &[u8]) -> Option<(u64, u64)> {
-    if data.is_empty() {
-        return None;
-    }
-    // server-clock preamble is not handled by native path yet.
-    if (data[0] & 0x80) != 0 {
-        return None;
-    }
-    if data.len() < 4 {
-        return None;
-    }
-    let offset = u32::from_be_bytes([data[0], data[1], data[2], data[3]]) as usize;
-    let mut pos = 4usize.checked_add(offset)?;
-    let _table_len = read_vu57(data, &mut pos)?;
-    let sid = read_vu57(data, &mut pos)?;
-    let time = read_vu57(data, &mut pos)?;
-    Some((sid, time))
-}
-
-fn read_vu57(data: &[u8], pos: &mut usize) -> Option<u64> {
-    let mut result: u64 = 0;
-    let mut shift: u32 = 0;
-    for i in 0..8 {
-        let b = *data.get(*pos)?;
-        *pos += 1;
-        if i < 7 {
-            let part = (b & 0x7f) as u64;
-            result |= part.checked_shl(shift)?;
-            if (b & 0x80) == 0 {
-                return Some(result);
-            }
-            shift += 7;
-        } else {
-            result |= (b as u64).checked_shl(49)?;
-            return Some(result);
-        }
-    }
-    None
 }
 
 fn oracle_diff_script_path() -> PathBuf {

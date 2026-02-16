@@ -1,6 +1,7 @@
 //! less-db-js compatibility layer (M5, oracle-backed bridge).
 
 use crate::diff_runtime;
+use crate::crdt_binary::{first_logical_clock_sid_time, write_vu57};
 use crate::{generate_session_id, is_valid_session_id};
 use crate::model::Model;
 use crate::model_runtime::RuntimeModel;
@@ -256,20 +257,6 @@ fn empty_logical_model_binary(sid: u64) -> Vec<u8> {
     out
 }
 
-fn write_vu57(out: &mut Vec<u8>, mut value: u64) {
-    for _ in 0..7 {
-        let mut b = (value & 0x7f) as u8;
-        value >>= 7;
-        if value == 0 {
-            out.push(b);
-            return;
-        }
-        b |= 0x80;
-        out.push(b);
-    }
-    out.push((value & 0xff) as u8);
-}
-
 fn primary_sid_from_model_binary(data: &[u8]) -> Option<u64> {
     if data.is_empty() {
         return None;
@@ -277,34 +264,7 @@ fn primary_sid_from_model_binary(data: &[u8]) -> Option<u64> {
     if (data[0] & 0x80) != 0 {
         return Some(1);
     }
-    if data.len() < 4 {
-        return None;
-    }
-    let offset = u32::from_be_bytes([data[0], data[1], data[2], data[3]]) as usize;
-    let mut pos = 4usize.checked_add(offset)?;
-    let _table_len = read_vu57(data, &mut pos)?;
-    read_vu57(data, &mut pos)
-}
-
-fn read_vu57(data: &[u8], pos: &mut usize) -> Option<u64> {
-    let mut result: u64 = 0;
-    let mut shift: u32 = 0;
-    for i in 0..8 {
-        let b = *data.get(*pos)?;
-        *pos += 1;
-        if i < 7 {
-            let part = (b & 0x7f) as u64;
-            result |= part.checked_shl(shift)?;
-            if (b & 0x80) == 0 {
-                return Some(result);
-            }
-            shift += 7;
-        } else {
-            result |= (b as u64).checked_shl(49)?;
-            return Some(result);
-        }
-    }
-    None
+    first_logical_clock_sid_time(data).map(|(sid, _)| sid)
 }
 
 fn hex(bytes: &[u8]) -> String {
