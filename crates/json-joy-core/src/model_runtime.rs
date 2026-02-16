@@ -128,6 +128,18 @@ pub struct RuntimeModel {
 }
 
 impl RuntimeModel {
+    pub fn new_logical_empty(sid: u64) -> Self {
+        Self {
+            nodes: HashMap::new(),
+            root: None,
+            clock: ClockState::default(),
+            fallback_view: Value::Null,
+            infer_empty_object_root: false,
+            clock_table: vec![LogicalClockBase { sid, time: 0 }],
+            server_clock_time: None,
+        }
+    }
+
     pub fn from_model_binary(data: &[u8]) -> Result<Self, ModelError> {
         let model = Model::from_binary(data)?;
         let view = model.view().clone();

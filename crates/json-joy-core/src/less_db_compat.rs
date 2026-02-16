@@ -30,6 +30,8 @@ pub enum CompatError {
     ModelBinaryTooLarge { actual: usize, max: usize },
     #[error("failed to run oracle process: {0}")]
     ProcessIo(String),
+    #[error("unsupported shape for native compatibility path")]
+    UnsupportedShape,
     #[error("oracle process failed: {0}")]
     ProcessFailure(String),
     #[error("invalid oracle output")]
@@ -84,39 +86,7 @@ pub fn create_model(data: &Value, sid: u64) -> Result<CompatModel, CompatError> 
 pub fn diff_model(model: &CompatModel, next: &Value) -> Result<Option<PatchBytes>, CompatError> {
     match diff_runtime::diff_model_to_patch_bytes(&model.model_binary, next, model.sid) {
         Ok(v) => Ok(v),
-        Err(diff_runtime::DiffError::UnsupportedShape) => {
-            let output = Command::new("node")
-                .arg(oracle_diff_runtime_path())
-                .arg(
-                    json!({
-                        "base_model_binary_hex": hex(&model.model_binary),
-                        "next_view_json": next,
-                        "sid": model.sid
-                    })
-                    .to_string(),
-                )
-                .output()
-                .map_err(|e| CompatError::ProcessIo(e.to_string()))?;
-            if !output.status.success() {
-                return Err(CompatError::ProcessFailure(
-                    String::from_utf8_lossy(&output.stderr).into_owned(),
-                ));
-            }
-            let parsed: Value =
-                serde_json::from_slice(&output.stdout).map_err(|_| CompatError::InvalidOutput)?;
-            let present = parsed
-                .get("patch_present")
-                .and_then(Value::as_bool)
-                .ok_or(CompatError::InvalidOutput)?;
-            if !present {
-                return Ok(None);
-            }
-            let patch_hex = parsed
-                .get("patch_binary_hex")
-                .and_then(Value::as_str)
-                .ok_or(CompatError::InvalidOutput)?;
-            Ok(Some(decode_hex(patch_hex)?))
-        }
+        Err(diff_runtime::DiffError::UnsupportedShape) => Err(CompatError::UnsupportedShape),
         Err(e) => Err(CompatError::ProcessFailure(e.to_string())),
     }
 }
@@ -257,24 +227,6 @@ pub fn empty_patch_log() -> Vec<u8> {
     Vec::new()
 }
 
-fn oracle_model_runtime_path() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("..")
-        .join("..")
-        .join("tools")
-        .join("oracle-node")
-        .join("model-runtime.cjs")
-}
-
-fn oracle_diff_runtime_path() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("..")
-        .join("..")
-        .join("tools")
-        .join("oracle-node")
-        .join("diff-runtime.cjs")
-}
-
 fn primary_sid_from_model_binary(data: &[u8]) -> Option<u64> {
     if data.is_empty() {
         return None;
@@ -285,14 +237,13 @@ fn primary_sid_from_model_binary(data: &[u8]) -> Option<u64> {
     first_logical_clock_sid_time(data).map(|(sid, _)| sid)
 }
 
-fn hex(bytes: &[u8]) -> String {
-    const HEX: &[u8; 16] = b"0123456789abcdef";
-    let mut out = String::with_capacity(bytes.len() * 2);
-    for b in bytes {
-        out.push(HEX[(b >> 4) as usize] as char);
-        out.push(HEX[(b & 0x0f) as usize] as char);
-    }
-    out
+fn oracle_model_runtime_path() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("..")
+        .join("..")
+        .join("tools")
+        .join("oracle-node")
+        .join("model-runtime.cjs")
 }
 
 fn decode_hex(s: &str) -> Result<Vec<u8>, CompatError> {
