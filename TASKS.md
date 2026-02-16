@@ -47,7 +47,7 @@
 
 - [x] Add `CORE_PARITY_MATRIX.md` with runtime-core family status and gate tracking.
 - [x] Add native `PatchBuilder` + production patch encode path in `json-joy-core`.
-- [ ] Normalize runtime node graph semantics (reduce fallback-view shortcuts).
+- [x] Normalize runtime node graph semantics (reduce fallback-view shortcuts).
 - [x] Replace oracle subprocess in `less_db_compat::apply_patch` with native runtime apply path.
 - [x] Replace oracle subprocess in `diff_runtime` with native Rust diff dispatcher.
 - [ ] Expand structural model encoder to support model-state generation from runtime graph.

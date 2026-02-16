@@ -6,7 +6,10 @@
 //!   replay semantics in apply logic, instead of re-implementing full model
 //!   binary node-id decoding in this milestone.
 
-use crate::crdt_binary::{read_b1vu56, read_vu57, write_b1vu56, write_vu57, LogicalClockBase};
+use crate::crdt_binary::{
+    first_logical_clock_sid_time, read_b1vu56, read_vu57, write_b1vu56, write_vu57,
+    LogicalClockBase,
+};
 use crate::model::{Model, ModelError};
 use crate::patch::{ConValue, DecodedOp, Patch, Timestamp};
 use ciborium::value::Value as CborValue;
@@ -156,16 +159,29 @@ impl RuntimeModel {
         let infer_empty_object_root = matches!(view, Value::Object(ref m) if m.is_empty());
 
         let decoded = decode_runtime_graph(data);
-        let (nodes, root, clock_table, server_clock_time) = match decoded {
-            Ok(v) => v,
-            Err(_) => (HashMap::new(), None, Vec::new(), None),
+        let (nodes, root, clock_table, server_clock_time, fallback_view) = match decoded {
+            Ok((nodes, root, clock_table, server_clock_time)) => {
+                (nodes, root, clock_table, server_clock_time, Value::Null)
+            }
+            Err(_) => {
+                // Reduce fallback-only behavior by materializing a deterministic
+                // runtime graph from already-parsed JSON view when structural
+                // graph decode is unavailable.
+                let sid = if data.first().is_some_and(|b| (b & 0x80) != 0) {
+                    1
+                } else {
+                    first_logical_clock_sid_time(data).map(|(sid, _)| sid).unwrap_or(1)
+                };
+                let (nodes, root, clock_table) = bootstrap_graph_from_view(&view, sid);
+                (nodes, root, clock_table, None, Value::Null)
+            }
         };
 
         Ok(Self {
             nodes,
             root,
             clock: ClockState::default(),
-            fallback_view: view,
+            fallback_view,
             infer_empty_object_root,
             clock_table,
             server_clock_time,
@@ -1364,6 +1380,111 @@ struct ArrChunkEnc {
     id: Id,
     span: u64,
     values: Option<Vec<Id>>,
+}
+
+struct ViewBootstrap {
+    sid: u64,
+    next_time: u64,
+    nodes: HashMap<Id, RuntimeNode>,
+}
+
+impl ViewBootstrap {
+    fn new(sid: u64) -> Self {
+        Self {
+            sid,
+            next_time: 1,
+            nodes: HashMap::new(),
+        }
+    }
+
+    fn alloc_id(&mut self) -> Id {
+        let id = Id {
+            sid: self.sid,
+            time: self.next_time,
+        };
+        self.next_time = self.next_time.saturating_add(1);
+        id
+    }
+
+    fn alloc_slots(&mut self, len: usize) -> Id {
+        let base = Id {
+            sid: self.sid,
+            time: self.next_time,
+        };
+        self.next_time = self.next_time.saturating_add(len as u64);
+        base
+    }
+
+    fn build_node(&mut self, value: &Value) -> Id {
+        match value {
+            Value::Null | Value::Bool(_) | Value::Number(_) => {
+                let id = self.alloc_id();
+                self.nodes.insert(id, RuntimeNode::Con(ConCell::Json(value.clone())));
+                id
+            }
+            Value::String(s) => {
+                let id = self.alloc_id();
+                let base = self.alloc_slots(s.chars().count());
+                let mut atoms = Vec::new();
+                for (i, ch) in s.chars().enumerate() {
+                    atoms.push(StrAtom {
+                        slot: Id {
+                            sid: self.sid,
+                            time: base.time + i as u64,
+                        },
+                        ch: Some(ch),
+                    });
+                }
+                self.nodes.insert(id, RuntimeNode::Str(atoms));
+                id
+            }
+            Value::Array(items) => {
+                let id = self.alloc_id();
+                let mut child_ids = Vec::with_capacity(items.len());
+                for item in items {
+                    child_ids.push(self.build_node(item));
+                }
+                let mut atoms = Vec::with_capacity(child_ids.len());
+                if !child_ids.is_empty() {
+                    let base = self.alloc_slots(child_ids.len());
+                    for (i, child_id) in child_ids.into_iter().enumerate() {
+                        atoms.push(ArrAtom {
+                            slot: Id {
+                                sid: self.sid,
+                                time: base.time + i as u64,
+                            },
+                            value: Some(child_id),
+                        });
+                    }
+                }
+                self.nodes.insert(id, RuntimeNode::Arr(atoms));
+                id
+            }
+            Value::Object(map) => {
+                let id = self.alloc_id();
+                let mut entries = Vec::with_capacity(map.len());
+                for (k, v) in map {
+                    let child = self.build_node(v);
+                    entries.push((k.clone(), child));
+                }
+                self.nodes.insert(id, RuntimeNode::Obj(entries));
+                id
+            }
+        }
+    }
+}
+
+fn bootstrap_graph_from_view(
+    view: &Value,
+    sid: u64,
+) -> (HashMap<Id, RuntimeNode>, Option<Id>, Vec<LogicalClockBase>) {
+    let mut b = ViewBootstrap::new(sid);
+    let root = Some(b.build_node(view));
+    let table = vec![LogicalClockBase {
+        sid,
+        time: b.next_time.saturating_sub(1),
+    }];
+    (b.nodes, root, table)
 }
 
 fn group_str_chunks(atoms: &[StrAtom]) -> Vec<StrChunkEnc> {
