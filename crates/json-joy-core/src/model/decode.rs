@@ -261,55 +261,11 @@ impl<'a> Reader<'a> {
     }
 
     fn vu57(&mut self) -> Result<u64, ModelError> {
-        let mut result: u64 = 0;
-        let mut shift: u32 = 0;
-        for i in 0..8 {
-            let b = self.u8()?;
-            if i < 7 {
-                let part = (b & 0x7f) as u64;
-                result |= part
-                    .checked_shl(shift)
-                    .ok_or(ModelError::InvalidModelBinary)?;
-                if (b & 0x80) == 0 {
-                    return Ok(result);
-                }
-                shift += 7;
-            } else {
-                result |= (b as u64)
-                    .checked_shl(49)
-                    .ok_or(ModelError::InvalidModelBinary)?;
-                return Ok(result);
-            }
-        }
-        Err(ModelError::InvalidModelBinary)
+        read_vu57(self.data, &mut self.pos).ok_or(ModelError::InvalidModelBinary)
     }
 
     fn b1vu56(&mut self) -> Result<(u8, u64), ModelError> {
-        let first = self.u8()?;
-        let flag = (first >> 7) & 1;
-        let mut result: u64 = (first & 0x3f) as u64;
-        if (first & 0x40) == 0 {
-            return Ok((flag, result));
-        }
-        let mut shift: u32 = 6;
-        for i in 0..7 {
-            let b = self.u8()?;
-            if i < 6 {
-                result |= ((b & 0x7f) as u64)
-                    .checked_shl(shift)
-                    .ok_or(ModelError::InvalidModelBinary)?;
-                if (b & 0x80) == 0 {
-                    return Ok((flag, result));
-                }
-                shift += 7;
-            } else {
-                result |= (b as u64)
-                    .checked_shl(48)
-                    .ok_or(ModelError::InvalidModelBinary)?;
-                return Ok((flag, result));
-            }
-        }
-        Err(ModelError::InvalidModelBinary)
+        read_b1vu56(self.data, &mut self.pos).ok_or(ModelError::InvalidModelBinary)
     }
 
     fn skip_id(&mut self) -> Result<(), ModelError> {
@@ -331,3 +287,4 @@ impl<'a> Reader<'a> {
         Ok(val)
     }
 }
+use crate::crdt_binary::{read_b1vu56, read_vu57};

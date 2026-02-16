@@ -21,6 +21,10 @@ This repository is structured as a Rust-core + bindings monorepo, following the 
   - Workspace CBOR/json-pack foundation crate.
   - Provides shared CBOR encode/decode + JSON conversion + json-pack-style
     string/number writer semantics used by core patch/model codecs.
+  - CBOR internals are organized by upstream family names under
+    `crates/json-joy-json-pack/src/cbor/` (`encoder_fast`, `encoder`,
+    `decoder`, `decoder_base`, `decoder_dag`, `encoder_stable`,
+    `encoder_dag`, `codec`, `constants`, `convert`, `error`).
 
 - `crates/json-joy-ffi`
   - UniFFI UDL + exported API surface.

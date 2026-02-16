@@ -6,6 +6,7 @@
 //   (`0x78/0x79/0x7a` selected by max UTF-8 size, not shortest canonical).
 
 use crate::patch_builder::PatchBuildError;
+use crate::{crdt_binary::write_b1vu56, crdt_binary::write_vu57};
 use json_joy_json_pack::{write_cbor_text_like_json_pack, write_json_like_json_pack};
 
 pub fn encode_patch_from_ops(
@@ -190,41 +191,11 @@ impl Writer {
             .expect("json-pack CBOR encode must succeed for serde_json::Value");
     }
 
-    fn vu57(&mut self, mut value: u64) {
-        for _ in 0..7 {
-            let mut b = (value & 0x7f) as u8;
-            value >>= 7;
-            if value == 0 {
-                self.bytes.push(b);
-                return;
-            }
-            b |= 0x80;
-            self.bytes.push(b);
-        }
-        self.bytes.push((value & 0xff) as u8);
+    fn vu57(&mut self, value: u64) {
+        write_vu57(&mut self.bytes, value);
     }
 
-    fn b1vu56(&mut self, flag: u8, mut value: u64) {
-        let low6 = (value & 0x3f) as u8;
-        value >>= 6;
-        let mut first = (flag << 7) | low6;
-        if value == 0 {
-            self.bytes.push(first);
-            return;
-        }
-        first |= 0x40;
-        self.bytes.push(first);
-
-        for _ in 0..6 {
-            let mut b = (value & 0x7f) as u8;
-            value >>= 7;
-            if value == 0 {
-                self.bytes.push(b);
-                return;
-            }
-            b |= 0x80;
-            self.bytes.push(b);
-        }
-        self.bytes.push((value & 0xff) as u8);
+    fn b1vu56(&mut self, flag: u8, value: u64) {
+        write_b1vu56(&mut self.bytes, flag, value);
     }
 }

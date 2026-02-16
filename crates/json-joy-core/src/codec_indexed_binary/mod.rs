@@ -2,6 +2,9 @@ use std::collections::{BTreeMap, HashMap};
 use std::io::Cursor;
 
 use ciborium::value::Value as CborValue;
+use json_joy_json_pack::{
+    write_cbor_text_like_json_pack, write_cbor_uint_major, write_json_like_json_pack,
+};
 use serde_json::Value;
 use thiserror::Error;
 
@@ -251,84 +254,8 @@ fn write_type_len(out: &mut Vec<u8>, major: u8, len: u64) {
     }
 }
 
-fn write_cbor_uint(out: &mut Vec<u8>, major: u8, value: u64) {
-    if value <= 23 {
-        out.push((major << 5) | (value as u8));
-    } else if value <= 0xff {
-        out.push((major << 5) | 24);
-        out.push(value as u8);
-    } else if value <= 0xffff {
-        out.push((major << 5) | 25);
-        out.extend_from_slice(&(value as u16).to_be_bytes());
-    } else if value <= 0xffff_ffff {
-        out.push((major << 5) | 26);
-        out.extend_from_slice(&(value as u32).to_be_bytes());
-    } else {
-        out.push((major << 5) | 27);
-        out.extend_from_slice(&value.to_be_bytes());
-    }
-}
-
-fn write_json_pack_str(out: &mut Vec<u8>, s: &str) {
-    let max_size = s.len().saturating_mul(4);
-    let utf8 = s.as_bytes();
-    let len = utf8.len();
-    if max_size <= 23 {
-        out.push(0x60 | (len as u8));
-    } else if max_size <= 0xff {
-        out.push(0x78);
-        out.push(len as u8);
-    } else if max_size <= 0xffff {
-        out.push(0x79);
-        out.extend_from_slice(&(len as u16).to_be_bytes());
-    } else {
-        out.push(0x7a);
-        out.extend_from_slice(&(len as u32).to_be_bytes());
-    }
-    out.extend_from_slice(utf8);
-}
-
 fn write_json_pack_any(out: &mut Vec<u8>, v: &Value) {
-    match v {
-        Value::Null => out.push(0xf6),
-        Value::Bool(false) => out.push(0xf4),
-        Value::Bool(true) => out.push(0xf5),
-        Value::Number(n) => {
-            if let Some(i) = n.as_i64() {
-                if i >= 0 {
-                    write_cbor_uint(out, 0, i as u64);
-                } else {
-                    write_cbor_uint(out, 1, (-1 - i) as u64);
-                }
-            } else if let Some(u) = n.as_u64() {
-                write_cbor_uint(out, 0, u);
-            } else {
-                let f = n.as_f64().unwrap_or(0.0);
-                let f32v = f as f32;
-                if (f32v as f64) == f {
-                    out.push(0xfa);
-                    out.extend_from_slice(&f32v.to_be_bytes());
-                } else {
-                    out.push(0xfb);
-                    out.extend_from_slice(&f.to_be_bytes());
-                }
-            }
-        }
-        Value::String(s) => write_json_pack_str(out, s),
-        Value::Array(arr) => {
-            write_cbor_uint(out, 4, arr.len() as u64);
-            for item in arr {
-                write_json_pack_any(out, item);
-            }
-        }
-        Value::Object(map) => {
-            write_cbor_uint(out, 5, map.len() as u64);
-            for (k, item) in map {
-                write_json_pack_str(out, k);
-                write_json_pack_any(out, item);
-            }
-        }
-    }
+    write_json_like_json_pack(out, v).expect("json-pack encode must support serde_json::Value");
 }
 
 fn json_from_cbor(v: &CborValue) -> Result<Value, IndexedBinaryCodecError> {
@@ -360,7 +287,7 @@ fn encode_node_payload(
         RuntimeNode::Obj(entries) => {
             write_type_len(&mut out, 2, entries.len() as u64);
             for (k, v) in entries {
-                write_json_pack_str(&mut out, k);
+                write_cbor_text_like_json_pack(&mut out, k);
                 out.extend_from_slice(&encode_indexed_id(*v, index_by_sid)?);
             }
         }
@@ -382,9 +309,9 @@ fn encode_node_payload(
             for ch in chunks {
                 out.extend_from_slice(&encode_indexed_id(ch.id, index_by_sid)?);
                 if let Some(text) = ch.text {
-                    write_json_pack_str(&mut out, &text);
+                    write_cbor_text_like_json_pack(&mut out, &text);
                 } else {
-                    write_cbor_uint(&mut out, 0, ch.span);
+                    write_cbor_uint_major(&mut out, 0, ch.span);
                 }
             }
         }

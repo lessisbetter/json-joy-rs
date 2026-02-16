@@ -9,7 +9,8 @@ pub use cbor::{
     cbor_to_json, cbor_to_json_owned, decode_cbor_value, decode_cbor_value_with_consumed,
     decode_json_from_cbor_bytes, encode_cbor_value, encode_json_to_cbor_bytes, json_to_cbor,
     validate_cbor_exact_size, write_cbor_signed, write_cbor_text_like_json_pack,
-    write_cbor_uint_major, write_json_like_json_pack, CborError, CborJsonValueCodec,
+    write_cbor_uint_major, write_cbor_value_like_json_pack, write_json_like_json_pack, CborError,
+    CborJsonValueCodec,
 };
 
 #[cfg(test)]

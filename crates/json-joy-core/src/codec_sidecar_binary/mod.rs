@@ -1,6 +1,7 @@
 use std::collections::{BTreeMap, HashMap};
 
 use ciborium::value::Value as CborValue;
+use json_joy_json_pack::write_cbor_value_like_json_pack;
 use serde_json::Value;
 use thiserror::Error;
 
@@ -31,7 +32,8 @@ pub fn encode_model_binary_to_sidecar(
         Some(root) if root.sid != 0 => {
             let view_cbor = encode_node_view(root, &runtime, &mut ctx, &mut meta)?;
             let mut encoded = Vec::new();
-            write_cbor_value_json_pack(&mut encoded, &view_cbor)?;
+            write_cbor_value_like_json_pack(&mut encoded, &view_cbor)
+                .map_err(|_| SidecarBinaryCodecError::InvalidPayload)?;
             encoded
         }
         _ => {
@@ -233,97 +235,6 @@ fn write_type_len(out: &mut Vec<u8>, major: u8, len: u64) {
         out.push(((len >> 8) & 0xff) as u8);
         out.push((len & 0xff) as u8);
     }
-}
-
-fn write_cbor_uint(out: &mut Vec<u8>, major: u8, value: u64) {
-    if value <= 23 {
-        out.push((major << 5) | (value as u8));
-    } else if value <= 0xff {
-        out.push((major << 5) | 24);
-        out.push(value as u8);
-    } else if value <= 0xffff {
-        out.push((major << 5) | 25);
-        out.extend_from_slice(&(value as u16).to_be_bytes());
-    } else if value <= 0xffff_ffff {
-        out.push((major << 5) | 26);
-        out.extend_from_slice(&(value as u32).to_be_bytes());
-    } else {
-        out.push((major << 5) | 27);
-        out.extend_from_slice(&value.to_be_bytes());
-    }
-}
-
-fn write_json_pack_str(out: &mut Vec<u8>, s: &str) {
-    let max_size = s.len().saturating_mul(4);
-    let utf8 = s.as_bytes();
-    let len = utf8.len();
-    if max_size <= 23 {
-        out.push(0x60 | (len as u8));
-    } else if max_size <= 0xff {
-        out.push(0x78);
-        out.push(len as u8);
-    } else if max_size <= 0xffff {
-        out.push(0x79);
-        out.extend_from_slice(&(len as u16).to_be_bytes());
-    } else {
-        out.push(0x7a);
-        out.extend_from_slice(&(len as u32).to_be_bytes());
-    }
-    out.extend_from_slice(utf8);
-}
-
-fn write_cbor_value_json_pack(
-    out: &mut Vec<u8>,
-    v: &CborValue,
-) -> Result<(), SidecarBinaryCodecError> {
-    match v {
-        CborValue::Null => out.push(0xf6),
-        CborValue::Bool(false) => out.push(0xf4),
-        CborValue::Bool(true) => out.push(0xf5),
-        CborValue::Integer(i) => {
-            if let Ok(u) = u64::try_from(*i) {
-                write_cbor_uint(out, 0, u);
-            } else if let Ok(s) = i64::try_from(*i) {
-                write_cbor_uint(out, 1, (-1 - s) as u64);
-            } else {
-                return Err(SidecarBinaryCodecError::InvalidPayload);
-            }
-        }
-        CborValue::Float(f) => {
-            let f32v = *f as f32;
-            if (f32v as f64) == *f {
-                out.push(0xfa);
-                out.extend_from_slice(&f32v.to_be_bytes());
-            } else {
-                out.push(0xfb);
-                out.extend_from_slice(&f.to_be_bytes());
-            }
-        }
-        CborValue::Text(s) => write_json_pack_str(out, s),
-        CborValue::Bytes(b) => {
-            write_cbor_uint(out, 2, b.len() as u64);
-            out.extend_from_slice(b);
-        }
-        CborValue::Array(arr) => {
-            write_cbor_uint(out, 4, arr.len() as u64);
-            for item in arr {
-                write_cbor_value_json_pack(out, item)?;
-            }
-        }
-        CborValue::Map(map) => {
-            write_cbor_uint(out, 5, map.len() as u64);
-            for (k, item) in map {
-                write_cbor_value_json_pack(out, k)?;
-                write_cbor_value_json_pack(out, item)?;
-            }
-        }
-        CborValue::Tag(tag, inner) => {
-            write_cbor_uint(out, 6, *tag);
-            write_cbor_value_json_pack(out, inner)?;
-        }
-        _ => return Err(SidecarBinaryCodecError::InvalidPayload),
-    }
-    Ok(())
 }
 
 fn cbor_from_json(v: &Value) -> CborValue {
