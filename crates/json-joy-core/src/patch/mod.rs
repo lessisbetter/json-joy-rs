@@ -8,8 +8,6 @@
 //!   handling for many malformed payloads).
 
 use ciborium::value::Value;
-use serde_json::Number;
-use std::io::Cursor;
 use thiserror::Error;
 
 include!("types.rs");

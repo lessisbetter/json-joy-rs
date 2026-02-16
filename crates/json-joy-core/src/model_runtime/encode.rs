@@ -1,6 +1,7 @@
 use crate::crdt_binary::{write_b1vu56, write_vu57, LogicalClockBase};
 use crate::model::ModelError;
 use ciborium::value::Value as CborValue;
+use json_joy_json_pack::{write_cbor_text_like_json_pack, write_json_like_json_pack};
 use serde_json::Value;
 use std::collections::HashMap;
 
@@ -444,99 +445,5 @@ fn cbor_text_bytes(s: &str, out: &mut Vec<u8>) -> Result<(), ModelError> {
 }
 
 fn json_to_cbor_bytes(v: &Value, out: &mut Vec<u8>) -> Result<(), ModelError> {
-    write_json_like_json_pack(out, v)?;
-    Ok(())
-}
-
-fn write_cbor_text_like_json_pack(out: &mut Vec<u8>, value: &str) {
-    let utf8 = value.as_bytes();
-    let bytes_len = utf8.len();
-    let max_size = value.chars().count().saturating_mul(4);
-
-    if max_size <= 23 {
-        out.push(0x60u8.saturating_add(bytes_len as u8));
-    } else if max_size <= 0xff {
-        out.push(0x78);
-        out.push(bytes_len as u8);
-    } else if max_size <= 0xffff {
-        out.push(0x79);
-        out.extend_from_slice(&(bytes_len as u16).to_be_bytes());
-    } else {
-        out.push(0x7a);
-        out.extend_from_slice(&(bytes_len as u32).to_be_bytes());
-    }
-
-    out.extend_from_slice(utf8);
-}
-
-fn write_cbor_uint_major(out: &mut Vec<u8>, major: u8, n: u64) {
-    let major_bits = major << 5;
-    if n <= 23 {
-        out.push(major_bits | (n as u8));
-    } else if n <= 0xff {
-        out.push(major_bits | 24);
-        out.push(n as u8);
-    } else if n <= 0xffff {
-        out.push(major_bits | 25);
-        out.extend_from_slice(&(n as u16).to_be_bytes());
-    } else if n <= 0xffff_ffff {
-        out.push(major_bits | 26);
-        out.extend_from_slice(&(n as u32).to_be_bytes());
-    } else {
-        out.push(major_bits | 27);
-        out.extend_from_slice(&n.to_be_bytes());
-    }
-}
-
-fn write_cbor_signed(out: &mut Vec<u8>, n: i64) {
-    if n >= 0 {
-        write_cbor_uint_major(out, 0, n as u64);
-    } else {
-        let encoded = (-1i128 - n as i128) as u64;
-        write_cbor_uint_major(out, 1, encoded);
-    }
-}
-
-fn write_json_like_json_pack(out: &mut Vec<u8>, value: &Value) -> Result<(), ModelError> {
-    match value {
-        Value::Null => out.push(0xf6),
-        Value::Bool(b) => out.push(if *b { 0xf5 } else { 0xf4 }),
-        Value::Number(n) => {
-            if let Some(i) = n.as_i64() {
-                write_cbor_signed(out, i);
-            } else if let Some(u) = n.as_u64() {
-                write_cbor_uint_major(out, 0, u);
-            } else if let Some(f) = n.as_f64() {
-                if !f.is_finite() {
-                    return Err(ModelError::InvalidModelBinary);
-                }
-                // Match upstream json-pack float preference: use f32 when it
-                // round-trips, otherwise encode as f64.
-                if (f as f32) as f64 == f {
-                    out.push(0xfa);
-                    out.extend_from_slice(&(f as f32).to_bits().to_be_bytes());
-                } else {
-                    out.push(0xfb);
-                    out.extend_from_slice(&f.to_bits().to_be_bytes());
-                }
-            } else {
-                return Err(ModelError::InvalidModelBinary);
-            }
-        }
-        Value::String(s) => write_cbor_text_like_json_pack(out, s),
-        Value::Array(items) => {
-            write_cbor_uint_major(out, 4, items.len() as u64);
-            for item in items {
-                write_json_like_json_pack(out, item)?;
-            }
-        }
-        Value::Object(map) => {
-            write_cbor_uint_major(out, 5, map.len() as u64);
-            for (k, v) in map {
-                write_cbor_text_like_json_pack(out, k);
-                write_json_like_json_pack(out, v)?;
-            }
-        }
-    }
-    Ok(())
+    write_json_like_json_pack(out, v).map_err(|_| ModelError::InvalidModelBinary)
 }

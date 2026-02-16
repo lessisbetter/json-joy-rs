@@ -42,6 +42,7 @@ Gate legend:
 | Upstream family | Rust target | Status | test-port mapped | fixture coverage | differential parity | no bridge | Notes |
 |---|---|---|---|---|---|---|---|
 | `json-pointer` (`util.ts` parse/format/escape/unescape) | `crates/json-joy-json-pointer/src/lib.rs` (re-exported by `crates/json-joy-core/src/lib.rs`) | native | yes | no | no | yes | Shared pointer utility used by `model_api/path.rs`; covered by upstream-shaped matrix tests in `tests/upstream_port_json_pointer_matrix.rs` and model API pointer workflow matrices. |
+| `json-pack/cbor/*` (core CBOR helpers used by runtime codecs) | `crates/json-joy-json-pack/src/cbor.rs` (consumed by `json-joy-core` patch/model/runtime codecs) | native | yes | no | no | yes | Consolidated CBOR conversion + json-pack-style writer semantics now shared across core; workspace tests cover roundtrips/header behavior and core integration remains parity green. |
 
 ## M6 exit targets
 

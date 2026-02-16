@@ -19,7 +19,8 @@ This repository is structured as a Rust-core + bindings monorepo, following the 
 
 - `crates/json-joy-json-pack`
   - Workspace CBOR/json-pack foundation crate.
-  - Currently focused on CBOR value encode/decode and JSON conversion helpers.
+  - Provides shared CBOR encode/decode + JSON conversion + json-pack-style
+    string/number writer semantics used by core patch/model codecs.
 
 - `crates/json-joy-ffi`
   - UniFFI UDL + exported API surface.
@@ -50,6 +51,9 @@ This repository is structured as a Rust-core + bindings monorepo, following the 
 - Patch binary construction is centralized through the native patch family:
   `crates/json-joy-core/src/patch/encode.rs` is the shared encoder path used by
   `patch_builder`.
+- CBOR helper logic is centralized in `crates/json-joy-json-pack/src/cbor.rs`;
+  core consumes this via `json_joy_core::json_pack` re-export and direct crate
+  dependency to avoid duplicate conversion/encoding implementations.
 - Oracle tooling remains for fixture generation and differential verification.
 - Differential hardening runs with 40-seed/case deterministic suites across
   runtime/model codecs/patch codecs/patch compaction/schema/util diff.

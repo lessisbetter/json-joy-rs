@@ -1,111 +1,20 @@
-//! CBOR-focused json-pack primitives for workspace-wide reuse.
+//! CBOR-focused `json-pack` primitives for workspace-wide reuse.
 //!
-//! This crate intentionally starts with a compact API:
-//! - decode/encode CBOR values,
-//! - convert between CBOR values and `serde_json::Value`.
-//!
-//! It is intended to become the shared CBOR foundation for runtime crates.
+//! Upstream reference:
+//! - `/Users/nchapman/Code/json-joy/packages/json-pack/src/cbor/*`
 
-use ciborium::value::Value as CborValue;
-use serde_json::{Map, Number, Value};
-use std::convert::TryFrom;
-use std::io::Cursor;
-use thiserror::Error;
+pub mod cbor;
 
-#[derive(Debug, Error)]
-pub enum CborError {
-    #[error("invalid cbor payload")]
-    InvalidPayload,
-    #[error("unsupported cbor feature for json conversion")]
-    Unsupported,
-}
-
-pub fn decode_cbor_value(bytes: &[u8]) -> Result<CborValue, CborError> {
-    let mut cursor = Cursor::new(bytes);
-    ciborium::de::from_reader::<CborValue, _>(&mut cursor).map_err(|_| CborError::InvalidPayload)
-}
-
-pub fn encode_cbor_value(value: &CborValue) -> Result<Vec<u8>, CborError> {
-    let mut out = Vec::new();
-    ciborium::ser::into_writer(value, &mut out).map_err(|_| CborError::InvalidPayload)?;
-    Ok(out)
-}
-
-pub fn cbor_to_json(v: &CborValue) -> Result<Value, CborError> {
-    Ok(match v {
-        CborValue::Null => Value::Null,
-        CborValue::Bool(b) => Value::Bool(*b),
-        CborValue::Integer(i) => {
-            let signed: i128 = (*i).into();
-            if signed >= 0 {
-                Value::Number(Number::from(
-                    u64::try_from(signed).map_err(|_| CborError::Unsupported)?,
-                ))
-            } else {
-                Value::Number(Number::from(
-                    i64::try_from(signed).map_err(|_| CborError::Unsupported)?,
-                ))
-            }
-        }
-        CborValue::Float(f) => Number::from_f64(*f)
-            .map(Value::Number)
-            .ok_or(CborError::Unsupported)?,
-        CborValue::Text(s) => Value::String(s.clone()),
-        CborValue::Bytes(bytes) => Value::Array(
-            bytes
-                .iter()
-                .copied()
-                .map(|b| Value::Number(Number::from(b)))
-                .collect(),
-        ),
-        CborValue::Array(items) => Value::Array(
-            items
-                .iter()
-                .map(cbor_to_json)
-                .collect::<Result<Vec<_>, _>>()?,
-        ),
-        CborValue::Map(entries) => {
-            let mut out = Map::new();
-            for (k, v) in entries {
-                let key = match k {
-                    CborValue::Text(s) => s.clone(),
-                    _ => return Err(CborError::Unsupported),
-                };
-                out.insert(key, cbor_to_json(v)?);
-            }
-            Value::Object(out)
-        }
-        CborValue::Tag(_, _) => return Err(CborError::Unsupported),
-        _ => return Err(CborError::Unsupported),
-    })
-}
-
-pub fn json_to_cbor(v: &Value) -> CborValue {
-    match v {
-        Value::Null => CborValue::Null,
-        Value::Bool(b) => CborValue::Bool(*b),
-        Value::Number(n) => {
-            if let Some(i) = n.as_i64() {
-                CborValue::Integer(i.into())
-            } else if let Some(u) = n.as_u64() {
-                CborValue::Integer(u.into())
-            } else {
-                CborValue::Float(n.as_f64().unwrap_or(0.0))
-            }
-        }
-        Value::String(s) => CborValue::Text(s.clone()),
-        Value::Array(arr) => CborValue::Array(arr.iter().map(json_to_cbor).collect()),
-        Value::Object(map) => CborValue::Map(
-            map.iter()
-                .map(|(k, v)| (CborValue::Text(k.clone()), json_to_cbor(v)))
-                .collect(),
-        ),
-    }
-}
+pub use cbor::{
+    cbor_to_json, cbor_to_json_owned, decode_cbor_value, decode_cbor_value_with_consumed,
+    decode_json_from_cbor_bytes, encode_cbor_value, encode_json_to_cbor_bytes, json_to_cbor,
+    validate_cbor_exact_size, write_cbor_signed, write_cbor_text_like_json_pack,
+    write_cbor_uint_major, write_json_like_json_pack, CborError, CborJsonValueCodec,
+};
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::cbor::*;
     use serde_json::json;
 
     #[test]
@@ -125,5 +34,36 @@ mod tests {
             let back = cbor_to_json(&decoded).expect("cbor to json");
             assert_eq!(back, case);
         }
+    }
+
+    #[test]
+    fn json_pack_text_header_behavior_uses_max_utf8_size_guess() {
+        // Six 3-byte codepoints: actual bytes=18 (fits short header), but
+        // json-pack-style encoding uses max-size guess (6*4=24) => 0x78 length.
+        let s = "€€€€€€";
+        let mut out = Vec::new();
+        write_cbor_text_like_json_pack(&mut out, s);
+        assert_eq!(out[0], 0x78);
+        assert_eq!(out[1], 18);
+    }
+
+    #[test]
+    fn json_bytes_roundtrip_via_json_pack_encoding() {
+        let value = json!({
+            "k": ["x", 1, -2, true, null, {"nested": "v"}]
+        });
+        let bytes = encode_json_to_cbor_bytes(&value).expect("json-pack encode");
+        let decoded = decode_json_from_cbor_bytes(&bytes).expect("decode to json");
+        assert_eq!(decoded, value);
+    }
+
+    #[test]
+    fn cbor_json_value_codec_roundtrip() {
+        let codec = CborJsonValueCodec;
+        let value = json!({"a":[1,2,3],"b":"x"});
+        let bytes = codec.encode(&value).expect("encode");
+        assert!(validate_cbor_exact_size(&bytes, bytes.len()).is_ok());
+        let out = codec.decode(&bytes).expect("decode");
+        assert_eq!(out, value);
     }
 }

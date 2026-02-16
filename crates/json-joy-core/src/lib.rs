@@ -18,6 +18,7 @@ pub mod patch_log;
 pub mod patch_verbose_codec;
 pub mod schema;
 pub mod util_diff;
+pub use json_joy_json_pack as json_pack;
 pub use json_joy_json_pointer as json_pointer;
 
 use rand::Rng;

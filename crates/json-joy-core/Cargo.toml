@@ -8,6 +8,7 @@ description = "Core Rust primitives for json-joy-rs"
 [dependencies]
 base64 = "0.22"
 ciborium = "0.2"
+json-joy-json-pack = { path = "../json-joy-json-pack" }
 json-joy-json-pointer = { path = "../json-joy-json-pointer" }
 rand = "0.8"
 serde_json = { version = "1.0", features = ["preserve_order"] }

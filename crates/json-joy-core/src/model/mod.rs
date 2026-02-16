@@ -8,7 +8,6 @@
 
 use ciborium::value::Value as CborValue;
 use serde_json::{Map, Number, Value};
-use std::io::Cursor;
 use thiserror::Error;
 
 include!("error.rs");

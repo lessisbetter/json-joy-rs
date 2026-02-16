@@ -194,44 +194,7 @@ fn decode_arr(reader: &mut Reader<'_>, len: u64) -> Result<Value, ModelError> {
 }
 
 fn cbor_to_json(v: CborValue) -> Result<Value, ModelError> {
-    Ok(match v {
-        CborValue::Null => Value::Null,
-        CborValue::Bool(b) => Value::Bool(b),
-        CborValue::Integer(i) => {
-            let signed: i128 = i.into();
-            if signed >= 0 {
-                let u = u64::try_from(signed).map_err(|_| ModelError::InvalidModelBinary)?;
-                Value::Number(Number::from(u))
-            } else {
-                let s = i64::try_from(signed).map_err(|_| ModelError::InvalidModelBinary)?;
-                Value::Number(Number::from(s))
-            }
-        }
-        CborValue::Float(f) => Number::from_f64(f)
-            .map(Value::Number)
-            .ok_or(ModelError::InvalidModelBinary)?,
-        CborValue::Text(s) => Value::String(s),
-        CborValue::Bytes(bytes) => Value::Array(bytes.into_iter().map(|b| Value::Number(Number::from(b))).collect()),
-        CborValue::Array(items) => {
-            let mut out = Vec::with_capacity(items.len());
-            for item in items {
-                out.push(cbor_to_json(item)?);
-            }
-            Value::Array(out)
-        }
-        CborValue::Map(entries) => {
-            let mut out = Map::new();
-            for (k, v) in entries {
-                let key = match k {
-                    CborValue::Text(s) => s,
-                    _ => return Err(ModelError::InvalidModelBinary),
-                };
-                out.insert(key, cbor_to_json(v)?);
-            }
-            Value::Object(out)
-        }
-        _ => return Err(ModelError::InvalidModelBinary),
-    })
+    json_joy_json_pack::cbor_to_json_owned(v).map_err(|_| ModelError::InvalidModelBinary)
 }
 
 #[derive(Debug)]
@@ -362,10 +325,8 @@ impl<'a> Reader<'a> {
 
     fn read_one_cbor(&mut self) -> Result<CborValue, ModelError> {
         let slice = &self.data[self.pos..];
-        let mut cursor = Cursor::new(slice);
-        let val = ciborium::de::from_reader::<CborValue, _>(&mut cursor)
+        let (val, consumed) = json_joy_json_pack::decode_cbor_value_with_consumed(slice)
             .map_err(|_| ModelError::InvalidModelBinary)?;
-        let consumed = cursor.position() as usize;
         self.skip(consumed)?;
         Ok(val)
     }

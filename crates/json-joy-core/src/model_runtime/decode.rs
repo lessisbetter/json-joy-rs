@@ -1,10 +1,9 @@
 use crate::crdt_binary::{read_b1vu56, read_vu57, LogicalClockBase};
 use crate::model::ModelError;
 use ciborium::value::Value as CborValue;
-use serde_json::{Map, Number, Value};
+use json_joy_json_pack::{cbor_to_json_owned, decode_cbor_value_with_consumed};
+use serde_json::Value;
 use std::collections::{BTreeMap, HashMap};
-use std::convert::TryFrom;
-use std::io::Cursor;
 
 use super::types::{ArrAtom, BinAtom, ConCell, Id, RuntimeNode, StrAtom};
 
@@ -369,51 +368,7 @@ impl ViewBootstrap {
 }
 
 fn cbor_to_json(v: CborValue) -> Result<Value, ModelError> {
-    Ok(match v {
-        CborValue::Null => Value::Null,
-        CborValue::Bool(b) => Value::Bool(b),
-        CborValue::Integer(i) => {
-            let signed: i128 = i.into();
-            if signed >= 0 {
-                Value::Number(Number::from(
-                    u64::try_from(signed).map_err(|_| ModelError::InvalidModelBinary)?,
-                ))
-            } else {
-                Value::Number(Number::from(
-                    i64::try_from(signed).map_err(|_| ModelError::InvalidModelBinary)?,
-                ))
-            }
-        }
-        CborValue::Float(f) => Number::from_f64(f)
-            .map(Value::Number)
-            .ok_or(ModelError::InvalidModelBinary)?,
-        CborValue::Text(s) => Value::String(s),
-        CborValue::Bytes(bytes) => Value::Array(
-            bytes
-                .into_iter()
-                .map(|b| Value::Number(Number::from(b)))
-                .collect(),
-        ),
-        CborValue::Array(items) => {
-            let mut out = Vec::with_capacity(items.len());
-            for item in items {
-                out.push(cbor_to_json(item)?);
-            }
-            Value::Array(out)
-        }
-        CborValue::Map(entries) => {
-            let mut out = Map::new();
-            for (k, v) in entries {
-                let key = match k {
-                    CborValue::Text(s) => s,
-                    _ => return Err(ModelError::InvalidModelBinary),
-                };
-                out.insert(key, cbor_to_json(v)?);
-            }
-            Value::Object(out)
-        }
-        _ => return Err(ModelError::InvalidModelBinary),
-    })
+    cbor_to_json_owned(v).map_err(|_| ModelError::InvalidModelBinary)
 }
 
 fn decode_id(ctx: &mut DecodeCtx<'_>) -> Result<Id, ModelError> {
@@ -492,10 +447,8 @@ fn read_vu57_ctx(ctx: &mut DecodeCtx<'_>) -> Result<u64, ModelError> {
 
 fn read_one_cbor(ctx: &mut DecodeCtx<'_>) -> Result<CborValue, ModelError> {
     let slice = &ctx.data[ctx.pos..];
-    let mut cursor = Cursor::new(slice);
-    let val = ciborium::de::from_reader::<CborValue, _>(&mut cursor)
-        .map_err(|_| ModelError::InvalidModelBinary)?;
-    let consumed = cursor.position() as usize;
+    let (val, consumed) =
+        decode_cbor_value_with_consumed(slice).map_err(|_| ModelError::InvalidModelBinary)?;
     ctx.pos += consumed;
     Ok(val)
 }

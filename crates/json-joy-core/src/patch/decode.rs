@@ -103,59 +103,15 @@ impl<'a> Reader<'a> {
 
     fn read_one_cbor(&mut self) -> Result<Value, PatchError> {
         let slice = &self.data[self.pos..];
-        let mut cursor = Cursor::new(slice);
-        let val = ciborium::de::from_reader::<Value, _>(&mut cursor)
+        let (val, consumed) = json_joy_json_pack::decode_cbor_value_with_consumed(slice)
             .map_err(|_| PatchError::InvalidCbor)?;
-        let consumed = cursor.position() as usize;
         self.skip(consumed)?;
         Ok(val)
     }
 }
 
 fn cbor_to_json(v: Value) -> Result<serde_json::Value, PatchError> {
-    Ok(match v {
-        Value::Null => serde_json::Value::Null,
-        Value::Bool(b) => serde_json::Value::Bool(b),
-        Value::Integer(i) => {
-            let signed: i128 = i.into();
-            if signed >= 0 {
-                let u = u64::try_from(signed).map_err(|_| PatchError::InvalidCbor)?;
-                serde_json::Value::Number(Number::from(u))
-            } else {
-                let s = i64::try_from(signed).map_err(|_| PatchError::InvalidCbor)?;
-                serde_json::Value::Number(Number::from(s))
-            }
-        }
-        Value::Float(f) => Number::from_f64(f)
-            .map(serde_json::Value::Number)
-            .ok_or(PatchError::InvalidCbor)?,
-        Value::Text(s) => serde_json::Value::String(s),
-        Value::Bytes(bytes) => serde_json::Value::Array(
-            bytes
-                .into_iter()
-                .map(|b| serde_json::Value::Number(Number::from(b)))
-                .collect(),
-        ),
-        Value::Array(items) => {
-            let mut out = Vec::with_capacity(items.len());
-            for item in items {
-                out.push(cbor_to_json(item)?);
-            }
-            serde_json::Value::Array(out)
-        }
-        Value::Map(entries) => {
-            let mut out = serde_json::Map::new();
-            for (k, v) in entries {
-                let key = match k {
-                    Value::Text(s) => s,
-                    _ => return Err(PatchError::InvalidCbor),
-                };
-                out.insert(key, cbor_to_json(v)?);
-            }
-            serde_json::Value::Object(out)
-        }
-        _ => return Err(PatchError::InvalidCbor),
-    })
+    json_joy_json_pack::cbor_to_json_owned(v).map_err(|_| PatchError::InvalidCbor)
 }
 
 type DecodedPatchPayload = (u64, u64, u64, u64, Vec<u8>, Vec<DecodedOp>);

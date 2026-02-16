@@ -327,62 +327,11 @@ fn write_cbor_value_json_pack(
 }
 
 fn cbor_from_json(v: &Value) -> CborValue {
-    match v {
-        Value::Null => CborValue::Null,
-        Value::Bool(b) => CborValue::Bool(*b),
-        Value::Number(n) => {
-            if let Some(i) = n.as_i64() {
-                CborValue::Integer(i.into())
-            } else if let Some(u) = n.as_u64() {
-                CborValue::Integer(u.into())
-            } else {
-                CborValue::Float(n.as_f64().unwrap_or(0.0))
-            }
-        }
-        Value::String(s) => CborValue::Text(s.clone()),
-        Value::Array(arr) => CborValue::Array(arr.iter().map(cbor_from_json).collect()),
-        Value::Object(map) => CborValue::Map(
-            map.iter()
-                .map(|(k, v)| (CborValue::Text(k.clone()), cbor_from_json(v)))
-                .collect(),
-        ),
-    }
+    json_joy_json_pack::json_to_cbor(v)
 }
 
 fn json_from_cbor(v: &CborValue) -> Result<Value, SidecarBinaryCodecError> {
-    Ok(match v {
-        CborValue::Null => Value::Null,
-        CborValue::Bool(b) => Value::Bool(*b),
-        CborValue::Integer(i) => match (i64::try_from(*i), u64::try_from(*i)) {
-            (Ok(ii), _) => Value::Number(ii.into()),
-            (_, Ok(uu)) => Value::Number(uu.into()),
-            _ => return Err(SidecarBinaryCodecError::InvalidPayload),
-        },
-        CborValue::Float(f) => serde_json::Number::from_f64(*f)
-            .map(Value::Number)
-            .ok_or(SidecarBinaryCodecError::InvalidPayload)?,
-        CborValue::Text(s) => Value::String(s.clone()),
-        CborValue::Array(arr) => Value::Array(
-            arr.iter()
-                .map(json_from_cbor)
-                .collect::<Result<Vec<_>, _>>()?,
-        ),
-        CborValue::Map(map) => {
-            let mut out = serde_json::Map::new();
-            for (k, v) in map {
-                let key = match k {
-                    CborValue::Text(s) => s.clone(),
-                    _ => return Err(SidecarBinaryCodecError::InvalidPayload),
-                };
-                out.insert(key, json_from_cbor(v)?);
-            }
-            Value::Object(out)
-        }
-        CborValue::Bytes(_) | CborValue::Tag(_, _) => {
-            return Err(SidecarBinaryCodecError::InvalidPayload)
-        }
-        _ => return Err(SidecarBinaryCodecError::InvalidPayload),
-    })
+    json_joy_json_pack::cbor_to_json(v).map_err(|_| SidecarBinaryCodecError::InvalidPayload)
 }
 
 fn encode_node_view(

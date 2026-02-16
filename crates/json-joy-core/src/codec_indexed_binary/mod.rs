@@ -332,39 +332,7 @@ fn write_json_pack_any(out: &mut Vec<u8>, v: &Value) {
 }
 
 fn json_from_cbor(v: &CborValue) -> Result<Value, IndexedBinaryCodecError> {
-    Ok(match v {
-        CborValue::Null => Value::Null,
-        CborValue::Bool(b) => Value::Bool(*b),
-        CborValue::Integer(i) => match (i64::try_from(*i), u64::try_from(*i)) {
-            (Ok(ii), _) => Value::Number(ii.into()),
-            (_, Ok(uu)) => Value::Number(uu.into()),
-            _ => return Err(IndexedBinaryCodecError::InvalidNode),
-        },
-        CborValue::Float(f) => serde_json::Number::from_f64(*f)
-            .map(Value::Number)
-            .ok_or(IndexedBinaryCodecError::InvalidNode)?,
-        CborValue::Text(s) => Value::String(s.clone()),
-        CborValue::Array(arr) => Value::Array(
-            arr.iter()
-                .map(json_from_cbor)
-                .collect::<Result<Vec<_>, _>>()?,
-        ),
-        CborValue::Map(map) => {
-            let mut out = serde_json::Map::new();
-            for (k, v) in map {
-                let key = match k {
-                    CborValue::Text(s) => s.clone(),
-                    _ => return Err(IndexedBinaryCodecError::InvalidNode),
-                };
-                out.insert(key, json_from_cbor(v)?);
-            }
-            Value::Object(out)
-        }
-        CborValue::Bytes(_) | CborValue::Tag(_, _) => {
-            return Err(IndexedBinaryCodecError::InvalidNode)
-        }
-        _ => return Err(IndexedBinaryCodecError::InvalidNode),
-    })
+    json_joy_json_pack::cbor_to_json(v).map_err(|_| IndexedBinaryCodecError::InvalidNode)
 }
 
 fn encode_node_payload(

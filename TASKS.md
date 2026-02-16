@@ -166,3 +166,9 @@
 - [x] Add upstream-mapped `Patch.ts` timeline transform baseline (`rewrite_time`/`rebase`) in
   `crates/json-joy-core/src/patch/mod.rs` with matrix tests in
   `crates/json-joy-core/tests/upstream_port_patch_rebase_matrix.rs`.
+- [x] Consolidate shared CBOR/json-pack encode+decode helpers into workspace crate usage.
+  Added `crates/json-joy-json-pack/src/cbor.rs` with reusable CBOR APIs
+  (`encode_json_to_cbor_bytes`, `decode_json_from_cbor_bytes`,
+  `write_json_like_json_pack`, `write_cbor_text_like_json_pack`, conversion helpers),
+  then migrated core call sites in patch/model/runtime/indexed/sidecar codecs
+  to use shared crate logic and removed duplicate in-core CBOR conversion code.

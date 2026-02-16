@@ -346,6 +346,7 @@ version = "0.1.0"
 dependencies = [
  "base64",
  "ciborium",
+ "json-joy-json-pack",
  "json-joy-json-pointer",
  "rand",
  "serde_json",

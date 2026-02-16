@@ -6,6 +6,7 @@
 //   (`0x78/0x79/0x7a` selected by max UTF-8 size, not shortest canonical).
 
 use crate::patch_builder::PatchBuildError;
+use json_joy_json_pack::{write_cbor_text_like_json_pack, write_json_like_json_pack};
 
 pub fn encode_patch_from_ops(
     sid: u64,
@@ -181,91 +182,12 @@ impl Writer {
     }
 
     fn push_cbor_text_like_json_pack(&mut self, value: &str) {
-        let utf8 = value.as_bytes();
-        let bytes_len = utf8.len();
-        let max_size = value.chars().count().saturating_mul(4);
-
-        if max_size <= 23 {
-            self.bytes.push(0x60u8.saturating_add(bytes_len as u8));
-        } else if max_size <= 0xff {
-            self.bytes.push(0x78);
-            self.bytes.push(bytes_len as u8);
-        } else if max_size <= 0xffff {
-            self.bytes.push(0x79);
-            self.bytes
-                .extend_from_slice(&(bytes_len as u16).to_be_bytes());
-        } else {
-            self.bytes.push(0x7a);
-            self.bytes
-                .extend_from_slice(&(bytes_len as u32).to_be_bytes());
-        }
-
-        self.bytes.extend_from_slice(utf8);
+        write_cbor_text_like_json_pack(&mut self.bytes, value);
     }
 
     fn push_json_like_json_pack(&mut self, value: &serde_json::Value) {
-        match value {
-            serde_json::Value::Null => self.bytes.push(0xf6),
-            serde_json::Value::Bool(b) => self.bytes.push(if *b { 0xf5 } else { 0xf4 }),
-            serde_json::Value::Number(n) => {
-                if let Some(i) = n.as_i64() {
-                    self.write_signed(i);
-                } else if let Some(u) = n.as_u64() {
-                    self.write_unsigned_major(0, u);
-                } else {
-                    let f = n.as_f64().expect("finite f64");
-                    if is_f32_roundtrip(f) {
-                        self.bytes.push(0xfa);
-                        self.bytes.extend_from_slice(&(f as f32).to_bits().to_be_bytes());
-                    } else {
-                        self.bytes.push(0xfb);
-                        self.bytes.extend_from_slice(&f.to_bits().to_be_bytes());
-                    }
-                }
-            }
-            serde_json::Value::String(s) => self.push_cbor_text_like_json_pack(s),
-            serde_json::Value::Array(arr) => {
-                self.write_unsigned_major(4, arr.len() as u64);
-                for item in arr {
-                    self.push_json_like_json_pack(item);
-                }
-            }
-            serde_json::Value::Object(map) => {
-                self.write_unsigned_major(5, map.len() as u64);
-                for (k, v) in map {
-                    self.push_cbor_text_like_json_pack(k);
-                    self.push_json_like_json_pack(v);
-                }
-            }
-        }
-    }
-
-    fn write_signed(&mut self, n: i64) {
-        if n >= 0 {
-            self.write_unsigned_major(0, n as u64);
-        } else {
-            let encoded = (-1i128 - n as i128) as u64;
-            self.write_unsigned_major(1, encoded);
-        }
-    }
-
-    fn write_unsigned_major(&mut self, major: u8, n: u64) {
-        let major_bits = major << 5;
-        if n <= 23 {
-            self.bytes.push(major_bits | (n as u8));
-        } else if n <= 0xff {
-            self.bytes.push(major_bits | 24);
-            self.bytes.push(n as u8);
-        } else if n <= 0xffff {
-            self.bytes.push(major_bits | 25);
-            self.bytes.extend_from_slice(&(n as u16).to_be_bytes());
-        } else if n <= 0xffff_ffff {
-            self.bytes.push(major_bits | 26);
-            self.bytes.extend_from_slice(&(n as u32).to_be_bytes());
-        } else {
-            self.bytes.push(major_bits | 27);
-            self.bytes.extend_from_slice(&n.to_be_bytes());
-        }
+        write_json_like_json_pack(&mut self.bytes, value)
+            .expect("json-pack CBOR encode must succeed for serde_json::Value");
     }
 
     fn vu57(&mut self, mut value: u64) {
@@ -305,11 +227,4 @@ impl Writer {
         }
         self.bytes.push((value & 0xff) as u8);
     }
-}
-
-fn is_f32_roundtrip(v: f64) -> bool {
-    if !v.is_finite() {
-        return false;
-    }
-    (v as f32) as f64 == v
 }
