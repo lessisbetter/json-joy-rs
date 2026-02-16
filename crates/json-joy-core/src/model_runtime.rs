@@ -373,6 +373,10 @@ impl RuntimeModel {
         }
     }
 
+    pub(crate) fn root_id(&self) -> Option<Timestamp> {
+        self.root.map(Into::into)
+    }
+
     pub(crate) fn object_field(&self, obj: Timestamp, key: &str) -> Option<Timestamp> {
         match self.nodes.get(&Id::from(obj))? {
             RuntimeNode::Obj(entries) => entries
