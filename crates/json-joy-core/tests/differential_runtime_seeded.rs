@@ -11,36 +11,53 @@ fn differential_runtime_seeded_diff_and_apply_match_oracle() {
     // model_roundtrip_empty_object_v1 fixture payload (sid=73012).
     let base_model = decode_hex("00000002114001b4ba0402");
     let sid = 73012;
+    let seeds = [
+        0x5eed_c0de_u64,
+        0x0000_0000_0000_0001_u64,
+        0x0000_0000_0000_00ff_u64,
+        0x0000_0000_00c0_ffee_u64,
+        0x0123_4567_89ab_cdef_u64,
+    ];
 
-    let mut rng = Lcg::new(0x5eed_c0de_u64);
-    for _ in 0..40 {
-        let next = random_object(&mut rng, 3);
+    for seed in seeds {
+        let mut rng = Lcg::new(seed);
+        for _ in 0..30 {
+            let next = random_object(&mut rng, 3);
 
-        let rust_patch = diff_model_to_patch_bytes(&base_model, &next, sid)
-            .expect("rust diff should succeed");
-        let oracle_diff = oracle_diff(&base_model, &next, sid);
+            let rust_patch = diff_model_to_patch_bytes(&base_model, &next, sid)
+                .expect("rust diff should succeed");
+            let oracle_diff = oracle_diff(&base_model, &next, sid);
 
-        let oracle_present = oracle_diff["patch_present"]
-            .as_bool()
-            .expect("oracle patch_present must be bool");
-        if !oracle_present {
-            assert!(rust_patch.is_none(), "rust returned patch while oracle returned none");
-            continue;
+            let oracle_present = oracle_diff["patch_present"]
+                .as_bool()
+                .expect("oracle patch_present must be bool");
+            if !oracle_present {
+                assert!(
+                    rust_patch.is_none(),
+                    "rust returned patch while oracle returned none (seed={seed})"
+                );
+                continue;
+            }
+
+            let rust_patch = rust_patch.expect("rust patch expected");
+            let oracle_patch = decode_hex(
+                oracle_diff["patch_binary_hex"]
+                    .as_str()
+                    .expect("oracle patch hex must be string"),
+            );
+            assert_eq!(rust_patch, oracle_patch, "patch bytes mismatch vs oracle (seed={seed})");
+
+            let mut runtime =
+                RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
+            let patch = Patch::from_binary(&rust_patch).expect("patch decode must succeed");
+            runtime.apply_patch(&patch).expect("runtime apply must succeed");
+
+            assert_eq!(
+                runtime.view_json(),
+                next,
+                "runtime view should match next object (seed={seed})"
+            );
         }
-
-        let rust_patch = rust_patch.expect("rust patch expected");
-        let oracle_patch = decode_hex(
-            oracle_diff["patch_binary_hex"]
-                .as_str()
-                .expect("oracle patch hex must be string"),
-        );
-        assert_eq!(rust_patch, oracle_patch, "patch bytes mismatch vs oracle");
-
-        let mut runtime = RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
-        let patch = Patch::from_binary(&rust_patch).expect("patch decode must succeed");
-        runtime.apply_patch(&patch).expect("runtime apply must succeed");
-
-        assert_eq!(runtime.view_json(), next, "runtime view should match next object");
     }
 }
 
