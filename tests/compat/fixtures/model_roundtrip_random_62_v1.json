@@ -1,0 +1,18 @@
+{
+  "fixture_version": 1,
+  "name": "model_roundtrip_random_62_v1",
+  "scenario": "model_roundtrip",
+  "input": {
+    "sid": 73161,
+    "data": true
+  },
+  "expected": {
+    "model_binary_hex": "000000031100f501c9bb0402",
+    "view_json": true
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

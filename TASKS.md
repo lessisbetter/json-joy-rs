@@ -93,10 +93,13 @@
     - `crates/json-joy-core/src/patch/{types,rewrite,decode,encode}.rs`
     - `crates/json-joy-core/src/model/{error,view,decode,encode}.rs`
 - Fixture floors hardened:
-  - `model_diff_parity >= 100`
-  - `model_apply_replay >= 50`
-  - `lessdb_model_manager >= 50`
-  - `model_canonical_encode >= 12`
+  - `model_roundtrip >= 110`
+  - `model_decode_error >= 35`
+  - `model_canonical_encode >= 30`
+  - `model_apply_replay >= 140`
+  - `model_diff_parity >= 300`
+  - `model_diff_dst_keys >= 80`
+  - `lessdb_model_manager >= 90`
 
 ### Matrix expansion follow-ups from upstream sweep (`/Users/nchapman/Drive/Code/json-joy/packages/json-joy/src`)
 

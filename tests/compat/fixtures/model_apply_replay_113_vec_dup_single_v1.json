@@ -1,0 +1,48 @@
+{
+  "fixture_version": 1,
+  "name": "model_apply_replay_113_vec_dup_single_v1",
+  "scenario": "model_apply_replay",
+  "input": {
+    "base_model_binary_hex": "00000002114001f9c90402",
+    "patches_binary_hex": [
+      "d4d50401f705184880000100070061785a0100030204",
+      "d4d50406f702000859010106",
+      "ded50401f70200f45981d4d5040201"
+    ],
+    "replay_pattern": [
+      0,
+      0
+    ],
+    "label": "vec_dup_single"
+  },
+  "expected": {
+    "view_json": [
+      7,
+      null,
+      "x"
+    ],
+    "model_binary_hex": "0000000a2463220007002100617802f9c90405d4d50405",
+    "applied_patch_count_effective": 1,
+    "clock_observed": {
+      "patch_ids": [
+        [
+          76500,
+          1
+        ],
+        [
+          76500,
+          6
+        ],
+        [
+          76510,
+          1
+        ]
+      ]
+    }
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

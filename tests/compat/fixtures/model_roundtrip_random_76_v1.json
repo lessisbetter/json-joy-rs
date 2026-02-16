@@ -1,0 +1,104 @@
+{
+  "fixture_version": 1,
+  "name": "model_roundtrip_random_76_v1",
+  "scenario": "model_roundtrip",
+  "input": {
+    "sid": 73175,
+    "data": {
+      "cx3": {
+        "2r480c": -69.6,
+        "09v": null
+      },
+      "rx59hl85ax": {
+        "29unj2cp8x": false,
+        "vi2r": [
+          [],
+          null
+        ]
+      },
+      "2xe1rz03": {
+        "8ok": {
+          "i7q1": "njpl3zb",
+          "7kdqj43z": "77qy26ctj7t",
+          "nmfzhyc": "p384rtofdjzg",
+          "vs": [
+            "qzujdqqkh9w"
+          ]
+        }
+      },
+      "0vgzd9": [
+        [
+          "",
+          "co8po",
+          null
+        ],
+        [],
+        {
+          "b1": "",
+          "4a0zo": {
+            "33s6zdat4e": true,
+            "59ew4u5nio": "nk9fub5hoqw0jidr",
+            "97ds2fxs7": null
+          },
+          "dfx": {}
+        },
+        [
+          [],
+          "bm5a"
+        ]
+      ]
+    }
+  },
+  "expected": {
+    "model_binary_hex": "00000168817944636378338178427806327234383063817700fbc05166666666666663303976817600f6780a72783539686c38356178817442780a3239756e6a3263703878817300f464766932728172c1816d028171c0817020816f00f6780832786531727a3033816a4163386f6b8169446469377131816881816778076e6a706c337a627808376b64716a34337a816081815f780b37377179323663746a377478076e6d667a6879638154818153780c7033383472746f66646a7a676276738147c1813a018146818145780b717a756a6471716b68397778063076677a64398137c115048136c1812b03813580813481813365636f38706f812e20812d00f68128c0812743626231812680653461307a6f812543780a333373367a6461743465812400f5780a353965773475356e696f812381812278106e6b3966756235686f7177306a6964727809393764733266787337811200f6636466788110401ec117021dc01c811b64626d356101d7bb047a",
+    "view_json": {
+      "cx3": {
+        "2r480c": -69.6,
+        "09v": null
+      },
+      "rx59hl85ax": {
+        "29unj2cp8x": false,
+        "vi2r": [
+          [],
+          null
+        ]
+      },
+      "2xe1rz03": {
+        "8ok": {
+          "i7q1": "njpl3zb",
+          "7kdqj43z": "77qy26ctj7t",
+          "nmfzhyc": "p384rtofdjzg",
+          "vs": [
+            "qzujdqqkh9w"
+          ]
+        }
+      },
+      "0vgzd9": [
+        [
+          "",
+          "co8po",
+          null
+        ],
+        [],
+        {
+          "b1": "",
+          "4a0zo": {
+            "33s6zdat4e": true,
+            "59ew4u5nio": "nk9fub5hoqw0jidr",
+            "97ds2fxs7": null
+          },
+          "dfx": {}
+        },
+        [
+          [],
+          "bm5a"
+        ]
+      ]
+    }
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "fixture_version": 1,
+  "name": "model_roundtrip_random_81_v1",
+  "scenario": "model_roundtrip",
+  "input": {
+    "sid": 73180,
+    "data": [
+      {},
+      {
+        "wlz6aazvu": "jc10q3tag"
+      }
+    ]
+  },
+  "expected": {
+    "model_binary_hex": "000000228110c112021f401e417809776c7a3661617a76751d811c78096a633130713374616701dcbb0411",
+    "view_json": [
+      {},
+      {
+        "wlz6aazvu": "jc10q3tag"
+      }
+    ]
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

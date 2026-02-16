@@ -1,0 +1,78 @@
+{
+  "fixture_version": 1,
+  "name": "model_roundtrip_random_52_v1",
+  "scenario": "model_roundtrip",
+  "input": {
+    "sid": 73151,
+    "data": [
+      [
+        {
+          "f4x36tyci": [
+            "kkwt6s65sos7",
+            true,
+            true,
+            "z0lreh9afxad"
+          ]
+        },
+        {
+          "q5zu": {
+            "ci29jioal": false
+          },
+          "6glz75m": "smmapnipi1ykct",
+          "izowto6eh": "hn0685tgdydyp7"
+        },
+        "",
+        []
+      ],
+      [
+        -16.2,
+        {
+          "y4leip": "mv",
+          "k8cznyfh": true,
+          "4fhugcj8": 92.8
+        }
+      ],
+      null,
+      "4zke7ehva8p"
+    ]
+  },
+  "expected": {
+    "model_binary_hex": "000001158172c114048171c18124048170417809663478333674796369816fc1814e04816e81816d780c6b6b777436733635736f7337816120816000f5815e20815d00f5815b81815a780c7a306c7265683961667861648149436471357a758148417809636932396a696f616c814700f4780736676c7a37356d8145818144780e736d6d61706e69706931796b63747809697a6f77746f3665688136818135780e686e3036383574676479647970378126808125c08120c1811502811f20811e00fbc030333333333333811c43780679346c656970811b81811a626d7678086b38637a6e796668811800f578083466687567636a38811700fb4057333333333333811320811200f68110811f780b347a6b653765687661387001bfbb0473",
+    "view_json": [
+      [
+        {
+          "f4x36tyci": [
+            "kkwt6s65sos7",
+            true,
+            true,
+            "z0lreh9afxad"
+          ]
+        },
+        {
+          "q5zu": {
+            "ci29jioal": false
+          },
+          "6glz75m": "smmapnipi1ykct",
+          "izowto6eh": "hn0685tgdydyp7"
+        },
+        "",
+        []
+      ],
+      [
+        -16.2,
+        {
+          "y4leip": "mv",
+          "k8cznyfh": true,
+          "4fhugcj8": 92.8
+        }
+      ],
+      null,
+      "4zke7ehva8p"
+    ]
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

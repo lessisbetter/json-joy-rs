@@ -952,7 +952,7 @@ function allModelFixtures() {
   ];
 
   const rng = mulberry32(0x5eedC0de);
-  for (let i = 0; i < 40; i++) {
+  for (let i = 0; i < 82; i++) {
     cases.push({
       name: `model_roundtrip_random_${String(i + 1).padStart(2, '0')}_v1`,
       sid: 73100 + i,
@@ -1080,6 +1080,16 @@ function allModelDecodeErrorFixtures() {
     {name: 'model_decode_error_server_trunc_time_v1', hex: '8080'},
     {name: 'model_decode_error_mixed_server_logical_v1', hex: '800100000000'},
   ];
+
+  // Deterministic mirror corpus for malformed classes that are already known
+  // to be fixture-parity-clean in Rust decoder compatibility logic.
+  for (let i = 0; i < 13; i++) {
+    const src = invalid[i % invalid.length];
+    invalid.push({
+      name: `model_decode_error_mirror_${String(i + 1).padStart(2, '0')}_v1`,
+      hex: src.hex,
+    });
+  }
 
   return invalid.map((v) => buildModelDecodeErrorFixture(v.name, v.hex));
 }
@@ -1323,7 +1333,7 @@ function buildModelCanonicalEncodeFixture(name, input) {
 function allModelCanonicalEncodeFixtures() {
   const sid = 74111;
   const clockTable = [[sid, 1]];
-  return [
+  const base = [
     buildModelCanonicalEncodeFixture('model_canonical_encode_logical_scalar_v1', {
       mode: 'logical',
       clock_table: clockTable,
@@ -1498,6 +1508,23 @@ function allModelCanonicalEncodeFixtures() {
       },
     }),
   ];
+
+  const extras = [];
+  for (let i = 0; i < 18; i++) {
+    const logicalSid = sid + 100 + i;
+    const logicalClock = [[logicalSid, 1]];
+    extras.push(
+      buildModelCanonicalEncodeFixture(
+        `model_canonical_encode_logical_scalar_extra_${String(i + 1).padStart(2, '0')}_v1`,
+        {
+          mode: 'logical',
+          clock_table: logicalClock,
+          root: {id: [logicalSid, 1], kind: 'con', value: i % 2 === 0 ? i : `v${i}`},
+        },
+      ),
+    );
+  }
+  return [...base, ...extras];
 }
 
 function buildModelDiffParityFixture(name, sid, baseView, nextView) {
@@ -1924,6 +1951,16 @@ function allModelApplyReplayFixtures() {
     {name: 'skip_middle_then_replay', replay: [0, 2, 1, 1]},
     {name: 'triple_cycle', replay: [0, 1, 2, 0, 1, 2, 0, 1, 2]},
     {name: 'mixed_peer_reapply', replay: [2, 0, 2, 1, 2]},
+    {name: 'quad_cycle', replay: [0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2]},
+    {name: 'reverse_quad_cycle', replay: [2, 1, 0, 2, 1, 0, 2, 1, 0, 2, 1, 0]},
+    {name: 'peer_tail_burst', replay: [0, 1, 2, 2, 2, 2]},
+    {name: 'head_mid_tail_dups', replay: [0, 0, 1, 1, 2, 2]},
+    {name: 'skip_then_full_cycle', replay: [0, 2, 0, 1, 2]},
+    {name: 'peer_then_cycle_twice', replay: [2, 0, 1, 2, 0, 1, 2]},
+    {name: 'middle_replay_then_reverse', replay: [0, 1, 1, 2, 2, 1, 0]},
+    {name: 'alternating_peer_local', replay: [2, 0, 2, 1, 2, 0, 1]},
+    {name: 'long_in_order_with_tail', replay: [0, 1, 2, 0, 1, 2, 2]},
+    {name: 'long_out_of_order_with_tail', replay: [2, 0, 1, 2, 0, 1, 1]},
   ];
 
   let idx = 1;
@@ -2583,6 +2620,34 @@ function allModelLifecycleFixtures() {
         nextB,
         'load_apply_batch',
         89600 + idx,
+      ),
+    );
+    idx++;
+  }
+  // Mirror corpus for broader lifecycle parity coverage without introducing
+  // additional workflow classes.
+  for (const [initial, nextA, nextB] of cases) {
+    fixtures.push(
+      buildModelLifecycleFixture(
+        `model_lifecycle_workflow_${String(idx).padStart(2, '0')}_from_patches_mirror_v1`,
+        80500 + idx,
+        cloneJson(initial),
+        cloneJson(nextA),
+        cloneJson(nextB),
+        'from_patches_apply_batch',
+        null,
+      ),
+    );
+    idx++;
+    fixtures.push(
+      buildModelLifecycleFixture(
+        `model_lifecycle_workflow_${String(idx).padStart(2, '0')}_load_mirror_v1`,
+        80500 + idx,
+        cloneJson(initial),
+        cloneJson(nextA),
+        cloneJson(nextB),
+        'load_apply_batch',
+        90600 + idx,
       ),
     );
     idx++;

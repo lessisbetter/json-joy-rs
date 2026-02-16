@@ -1,0 +1,32 @@
+{
+  "fixture_version": 1,
+  "name": "model_canonical_encode_logical_scalar_extra_15_v1",
+  "scenario": "model_canonical_encode",
+  "input": {
+    "mode": "logical",
+    "clock_table": [
+      [
+        74225,
+        1
+      ]
+    ],
+    "root": {
+      "id": [
+        74225,
+        1
+      ],
+      "kind": "con",
+      "value": 14
+    }
+  },
+  "expected": {
+    "model_binary_hex": "0000000300000e01f1c30401",
+    "view_json": null,
+    "decode_error_message": "NO_ERROR"
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

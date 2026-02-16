@@ -1,0 +1,54 @@
+{
+  "fixture_version": 1,
+  "name": "model_roundtrip_random_75_v1",
+  "scenario": "model_roundtrip",
+  "input": {
+    "sid": 73174,
+    "data": {
+      "f9osqqh": [
+        "8dhc24sasaqqe85",
+        {
+          "47m": "svyddkj",
+          "4c4k4ynp": [],
+          "xjvqy": "5c",
+          "twnl8o": {}
+        },
+        "433ejn19v9y5h8h3"
+      ],
+      "25fu2y": "dhvag",
+      "l4tcuuao": [
+        true,
+        null,
+        [],
+        "3ut1dfewit6yu"
+      ]
+    }
+  },
+  "expected": {
+    "model_binary_hex": "000000c1815643780766396f737171688155c18124038154818153780f3864686332347361736171716538358144446334376d8143818142780773767964646b6a78083463346b34796e70813bc065786a767179813a818139623563780674776e6c386f81374081358181347810343333656a6e313976397935683868337806323566753279812181812065646876616778086c3474637575616f811bc11504811a20811900f5811720811600f68114c08113818112780d3375743164666577697436797501d6bb0457",
+    "view_json": {
+      "f9osqqh": [
+        "8dhc24sasaqqe85",
+        {
+          "47m": "svyddkj",
+          "4c4k4ynp": [],
+          "xjvqy": "5c",
+          "twnl8o": {}
+        },
+        "433ejn19v9y5h8h3"
+      ],
+      "25fu2y": "dhvag",
+      "l4tcuuao": [
+        true,
+        null,
+        [],
+        "3ut1dfewit6yu"
+      ]
+    }
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

@@ -1,0 +1,76 @@
+{
+  "fixture_version": 1,
+  "name": "model_roundtrip_random_55_v1",
+  "scenario": "model_roundtrip",
+  "input": {
+    "sid": 73154,
+    "data": [
+      [
+        [
+          null,
+          false
+        ],
+        {
+          "ojvrc": false,
+          "mvviduxdf": null
+        }
+      ],
+      [
+        "wjq5keejg"
+      ],
+      [
+        "x4q",
+        [
+          {
+            "64t8": null,
+            "0ae": "x5blc",
+            "m9g1v004o7": null
+          }
+        ],
+        [
+          [],
+          null,
+          "8njty9uyv56mq"
+        ]
+      ]
+    ]
+  },
+  "expected": {
+    "model_binary_hex": "000000b3814ac113038149c1813b028148c1814102814720814600f6814420814300f4813f42656f6a767263813e00f478096d7676696475786466813d00f68139c1812e0181388181377809776a71356b65656a67812dc11603812c81812b637834718128c1811d018127436436347438812600f6633061658125818124657835626c63780a6d396731763030346f37811f00f6811cc11903811bc0811a20811900f68117818116780d386e6a74793975797635366d7101c2bb044b",
+    "view_json": [
+      [
+        [
+          null,
+          false
+        ],
+        {
+          "ojvrc": false,
+          "mvviduxdf": null
+        }
+      ],
+      [
+        "wjq5keejg"
+      ],
+      [
+        "x4q",
+        [
+          {
+            "64t8": null,
+            "0ae": "x5blc",
+            "m9g1v004o7": null
+          }
+        ],
+        [
+          [],
+          null,
+          "8njty9uyv56mq"
+        ]
+      ]
+    ]
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

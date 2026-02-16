@@ -2,7 +2,7 @@
   "fixture_version": 1,
   "upstream_package": "json-joy",
   "upstream_version": "17.67.0",
-  "fixture_count": 1099,
+  "fixture_count": 1252,
   "fixtures": [
     {
       "name": "diff_root_number_to_number_v1",
@@ -1335,6 +1335,216 @@
       "file": "model_roundtrip_random_40_v1.json"
     },
     {
+      "name": "model_roundtrip_random_41_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_41_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_42_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_42_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_43_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_43_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_44_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_44_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_45_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_45_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_46_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_46_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_47_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_47_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_48_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_48_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_49_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_49_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_50_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_50_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_51_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_51_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_52_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_52_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_53_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_53_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_54_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_54_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_55_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_55_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_56_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_56_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_57_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_57_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_58_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_58_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_59_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_59_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_60_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_60_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_61_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_61_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_62_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_62_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_63_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_63_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_64_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_64_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_65_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_65_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_66_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_66_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_67_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_67_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_68_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_68_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_69_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_69_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_70_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_70_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_71_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_71_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_72_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_72_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_73_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_73_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_74_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_74_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_75_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_75_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_76_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_76_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_77_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_77_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_78_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_78_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_79_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_79_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_80_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_80_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_81_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_81_v1.json"
+    },
+    {
+      "name": "model_roundtrip_random_82_v1",
+      "scenario": "model_roundtrip",
+      "file": "model_roundtrip_random_82_v1.json"
+    },
+    {
       "name": "model_roundtrip_vec_sparse_v1",
       "scenario": "model_roundtrip",
       "file": "model_roundtrip_vec_sparse_v1.json"
@@ -1465,6 +1675,71 @@
       "file": "model_decode_error_mixed_server_logical_v1.json"
     },
     {
+      "name": "model_decode_error_mirror_01_v1",
+      "scenario": "model_decode_error",
+      "file": "model_decode_error_mirror_01_v1.json"
+    },
+    {
+      "name": "model_decode_error_mirror_02_v1",
+      "scenario": "model_decode_error",
+      "file": "model_decode_error_mirror_02_v1.json"
+    },
+    {
+      "name": "model_decode_error_mirror_03_v1",
+      "scenario": "model_decode_error",
+      "file": "model_decode_error_mirror_03_v1.json"
+    },
+    {
+      "name": "model_decode_error_mirror_04_v1",
+      "scenario": "model_decode_error",
+      "file": "model_decode_error_mirror_04_v1.json"
+    },
+    {
+      "name": "model_decode_error_mirror_05_v1",
+      "scenario": "model_decode_error",
+      "file": "model_decode_error_mirror_05_v1.json"
+    },
+    {
+      "name": "model_decode_error_mirror_06_v1",
+      "scenario": "model_decode_error",
+      "file": "model_decode_error_mirror_06_v1.json"
+    },
+    {
+      "name": "model_decode_error_mirror_07_v1",
+      "scenario": "model_decode_error",
+      "file": "model_decode_error_mirror_07_v1.json"
+    },
+    {
+      "name": "model_decode_error_mirror_08_v1",
+      "scenario": "model_decode_error",
+      "file": "model_decode_error_mirror_08_v1.json"
+    },
+    {
+      "name": "model_decode_error_mirror_09_v1",
+      "scenario": "model_decode_error",
+      "file": "model_decode_error_mirror_09_v1.json"
+    },
+    {
+      "name": "model_decode_error_mirror_10_v1",
+      "scenario": "model_decode_error",
+      "file": "model_decode_error_mirror_10_v1.json"
+    },
+    {
+      "name": "model_decode_error_mirror_11_v1",
+      "scenario": "model_decode_error",
+      "file": "model_decode_error_mirror_11_v1.json"
+    },
+    {
+      "name": "model_decode_error_mirror_12_v1",
+      "scenario": "model_decode_error",
+      "file": "model_decode_error_mirror_12_v1.json"
+    },
+    {
+      "name": "model_decode_error_mirror_13_v1",
+      "scenario": "model_decode_error",
+      "file": "model_decode_error_mirror_13_v1.json"
+    },
+    {
       "name": "model_canonical_encode_logical_scalar_v1",
       "scenario": "model_canonical_encode",
       "file": "model_canonical_encode_logical_scalar_v1.json"
@@ -1523,6 +1798,96 @@
       "name": "model_canonical_encode_server_vec_sparse_v1",
       "scenario": "model_canonical_encode",
       "file": "model_canonical_encode_server_vec_sparse_v1.json"
+    },
+    {
+      "name": "model_canonical_encode_logical_scalar_extra_01_v1",
+      "scenario": "model_canonical_encode",
+      "file": "model_canonical_encode_logical_scalar_extra_01_v1.json"
+    },
+    {
+      "name": "model_canonical_encode_logical_scalar_extra_02_v1",
+      "scenario": "model_canonical_encode",
+      "file": "model_canonical_encode_logical_scalar_extra_02_v1.json"
+    },
+    {
+      "name": "model_canonical_encode_logical_scalar_extra_03_v1",
+      "scenario": "model_canonical_encode",
+      "file": "model_canonical_encode_logical_scalar_extra_03_v1.json"
+    },
+    {
+      "name": "model_canonical_encode_logical_scalar_extra_04_v1",
+      "scenario": "model_canonical_encode",
+      "file": "model_canonical_encode_logical_scalar_extra_04_v1.json"
+    },
+    {
+      "name": "model_canonical_encode_logical_scalar_extra_05_v1",
+      "scenario": "model_canonical_encode",
+      "file": "model_canonical_encode_logical_scalar_extra_05_v1.json"
+    },
+    {
+      "name": "model_canonical_encode_logical_scalar_extra_06_v1",
+      "scenario": "model_canonical_encode",
+      "file": "model_canonical_encode_logical_scalar_extra_06_v1.json"
+    },
+    {
+      "name": "model_canonical_encode_logical_scalar_extra_07_v1",
+      "scenario": "model_canonical_encode",
+      "file": "model_canonical_encode_logical_scalar_extra_07_v1.json"
+    },
+    {
+      "name": "model_canonical_encode_logical_scalar_extra_08_v1",
+      "scenario": "model_canonical_encode",
+      "file": "model_canonical_encode_logical_scalar_extra_08_v1.json"
+    },
+    {
+      "name": "model_canonical_encode_logical_scalar_extra_09_v1",
+      "scenario": "model_canonical_encode",
+      "file": "model_canonical_encode_logical_scalar_extra_09_v1.json"
+    },
+    {
+      "name": "model_canonical_encode_logical_scalar_extra_10_v1",
+      "scenario": "model_canonical_encode",
+      "file": "model_canonical_encode_logical_scalar_extra_10_v1.json"
+    },
+    {
+      "name": "model_canonical_encode_logical_scalar_extra_11_v1",
+      "scenario": "model_canonical_encode",
+      "file": "model_canonical_encode_logical_scalar_extra_11_v1.json"
+    },
+    {
+      "name": "model_canonical_encode_logical_scalar_extra_12_v1",
+      "scenario": "model_canonical_encode",
+      "file": "model_canonical_encode_logical_scalar_extra_12_v1.json"
+    },
+    {
+      "name": "model_canonical_encode_logical_scalar_extra_13_v1",
+      "scenario": "model_canonical_encode",
+      "file": "model_canonical_encode_logical_scalar_extra_13_v1.json"
+    },
+    {
+      "name": "model_canonical_encode_logical_scalar_extra_14_v1",
+      "scenario": "model_canonical_encode",
+      "file": "model_canonical_encode_logical_scalar_extra_14_v1.json"
+    },
+    {
+      "name": "model_canonical_encode_logical_scalar_extra_15_v1",
+      "scenario": "model_canonical_encode",
+      "file": "model_canonical_encode_logical_scalar_extra_15_v1.json"
+    },
+    {
+      "name": "model_canonical_encode_logical_scalar_extra_16_v1",
+      "scenario": "model_canonical_encode",
+      "file": "model_canonical_encode_logical_scalar_extra_16_v1.json"
+    },
+    {
+      "name": "model_canonical_encode_logical_scalar_extra_17_v1",
+      "scenario": "model_canonical_encode",
+      "file": "model_canonical_encode_logical_scalar_extra_17_v1.json"
+    },
+    {
+      "name": "model_canonical_encode_logical_scalar_extra_18_v1",
+      "scenario": "model_canonical_encode",
+      "file": "model_canonical_encode_logical_scalar_extra_18_v1.json"
     },
     {
       "name": "model_apply_replay_01_obj_dup_single_v1",
@@ -1615,364 +1980,614 @@
       "file": "model_apply_replay_18_obj_mixed_peer_reapply_v1.json"
     },
     {
-      "name": "model_apply_replay_19_arr_dup_single_v1",
+      "name": "model_apply_replay_19_obj_quad_cycle_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_19_arr_dup_single_v1.json"
+      "file": "model_apply_replay_19_obj_quad_cycle_v1.json"
     },
     {
-      "name": "model_apply_replay_20_arr_dup_batch_v1",
+      "name": "model_apply_replay_20_obj_reverse_quad_cycle_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_20_arr_dup_batch_v1.json"
+      "file": "model_apply_replay_20_obj_reverse_quad_cycle_v1.json"
     },
     {
-      "name": "model_apply_replay_21_arr_stale_order_v1",
+      "name": "model_apply_replay_21_obj_peer_tail_burst_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_21_arr_stale_order_v1.json"
+      "file": "model_apply_replay_21_obj_peer_tail_burst_v1.json"
     },
     {
-      "name": "model_apply_replay_22_arr_in_order_v1",
+      "name": "model_apply_replay_22_obj_head_mid_tail_dups_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_22_arr_in_order_v1.json"
+      "file": "model_apply_replay_22_obj_head_mid_tail_dups_v1.json"
     },
     {
-      "name": "model_apply_replay_23_arr_out_of_order_v1",
+      "name": "model_apply_replay_23_obj_skip_then_full_cycle_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_23_arr_out_of_order_v1.json"
+      "file": "model_apply_replay_23_obj_skip_then_full_cycle_v1.json"
     },
     {
-      "name": "model_apply_replay_24_arr_interleaved_dup_v1",
+      "name": "model_apply_replay_24_obj_peer_then_cycle_twice_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_24_arr_interleaved_dup_v1.json"
+      "file": "model_apply_replay_24_obj_peer_then_cycle_twice_v1.json"
     },
     {
-      "name": "model_apply_replay_25_arr_dup_tail_v1",
+      "name": "model_apply_replay_25_obj_middle_replay_then_reverse_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_25_arr_dup_tail_v1.json"
+      "file": "model_apply_replay_25_obj_middle_replay_then_reverse_v1.json"
     },
     {
-      "name": "model_apply_replay_26_arr_dup_head_v1",
+      "name": "model_apply_replay_26_obj_alternating_peer_local_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_26_arr_dup_head_v1.json"
+      "file": "model_apply_replay_26_obj_alternating_peer_local_v1.json"
     },
     {
-      "name": "model_apply_replay_27_arr_dup_middle_v1",
+      "name": "model_apply_replay_27_obj_long_in_order_with_tail_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_27_arr_dup_middle_v1.json"
+      "file": "model_apply_replay_27_obj_long_in_order_with_tail_v1.json"
     },
     {
-      "name": "model_apply_replay_28_arr_full_cycle_twice_v1",
+      "name": "model_apply_replay_28_obj_long_out_of_order_with_tail_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_28_arr_full_cycle_twice_v1.json"
+      "file": "model_apply_replay_28_obj_long_out_of_order_with_tail_v1.json"
     },
     {
-      "name": "model_apply_replay_29_arr_late_duplicate_only_v1",
+      "name": "model_apply_replay_29_arr_dup_single_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_29_arr_late_duplicate_only_v1.json"
+      "file": "model_apply_replay_29_arr_dup_single_v1.json"
     },
     {
-      "name": "model_apply_replay_30_arr_peer_first_duplicate_v1",
+      "name": "model_apply_replay_30_arr_dup_batch_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_30_arr_peer_first_duplicate_v1.json"
+      "file": "model_apply_replay_30_arr_dup_batch_v1.json"
     },
     {
-      "name": "model_apply_replay_31_arr_peer_only_duplicate_v1",
+      "name": "model_apply_replay_31_arr_stale_order_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_31_arr_peer_only_duplicate_v1.json"
+      "file": "model_apply_replay_31_arr_stale_order_v1.json"
     },
     {
-      "name": "model_apply_replay_32_arr_reverse_then_forward_v1",
+      "name": "model_apply_replay_32_arr_in_order_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_32_arr_reverse_then_forward_v1.json"
+      "file": "model_apply_replay_32_arr_in_order_v1.json"
     },
     {
-      "name": "model_apply_replay_33_arr_head_tail_duplicates_v1",
+      "name": "model_apply_replay_33_arr_out_of_order_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_33_arr_head_tail_duplicates_v1.json"
+      "file": "model_apply_replay_33_arr_out_of_order_v1.json"
     },
     {
-      "name": "model_apply_replay_34_arr_skip_middle_then_replay_v1",
+      "name": "model_apply_replay_34_arr_interleaved_dup_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_34_arr_skip_middle_then_replay_v1.json"
+      "file": "model_apply_replay_34_arr_interleaved_dup_v1.json"
     },
     {
-      "name": "model_apply_replay_35_arr_triple_cycle_v1",
+      "name": "model_apply_replay_35_arr_dup_tail_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_35_arr_triple_cycle_v1.json"
+      "file": "model_apply_replay_35_arr_dup_tail_v1.json"
     },
     {
-      "name": "model_apply_replay_36_arr_mixed_peer_reapply_v1",
+      "name": "model_apply_replay_36_arr_dup_head_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_36_arr_mixed_peer_reapply_v1.json"
+      "file": "model_apply_replay_36_arr_dup_head_v1.json"
     },
     {
-      "name": "model_apply_replay_37_str_dup_single_v1",
+      "name": "model_apply_replay_37_arr_dup_middle_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_37_str_dup_single_v1.json"
+      "file": "model_apply_replay_37_arr_dup_middle_v1.json"
     },
     {
-      "name": "model_apply_replay_38_str_dup_batch_v1",
+      "name": "model_apply_replay_38_arr_full_cycle_twice_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_38_str_dup_batch_v1.json"
+      "file": "model_apply_replay_38_arr_full_cycle_twice_v1.json"
     },
     {
-      "name": "model_apply_replay_39_str_stale_order_v1",
+      "name": "model_apply_replay_39_arr_late_duplicate_only_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_39_str_stale_order_v1.json"
+      "file": "model_apply_replay_39_arr_late_duplicate_only_v1.json"
     },
     {
-      "name": "model_apply_replay_40_str_in_order_v1",
+      "name": "model_apply_replay_40_arr_peer_first_duplicate_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_40_str_in_order_v1.json"
+      "file": "model_apply_replay_40_arr_peer_first_duplicate_v1.json"
     },
     {
-      "name": "model_apply_replay_41_str_out_of_order_v1",
+      "name": "model_apply_replay_41_arr_peer_only_duplicate_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_41_str_out_of_order_v1.json"
+      "file": "model_apply_replay_41_arr_peer_only_duplicate_v1.json"
     },
     {
-      "name": "model_apply_replay_42_str_interleaved_dup_v1",
+      "name": "model_apply_replay_42_arr_reverse_then_forward_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_42_str_interleaved_dup_v1.json"
+      "file": "model_apply_replay_42_arr_reverse_then_forward_v1.json"
     },
     {
-      "name": "model_apply_replay_43_str_dup_tail_v1",
+      "name": "model_apply_replay_43_arr_head_tail_duplicates_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_43_str_dup_tail_v1.json"
+      "file": "model_apply_replay_43_arr_head_tail_duplicates_v1.json"
     },
     {
-      "name": "model_apply_replay_44_str_dup_head_v1",
+      "name": "model_apply_replay_44_arr_skip_middle_then_replay_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_44_str_dup_head_v1.json"
+      "file": "model_apply_replay_44_arr_skip_middle_then_replay_v1.json"
     },
     {
-      "name": "model_apply_replay_45_str_dup_middle_v1",
+      "name": "model_apply_replay_45_arr_triple_cycle_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_45_str_dup_middle_v1.json"
+      "file": "model_apply_replay_45_arr_triple_cycle_v1.json"
     },
     {
-      "name": "model_apply_replay_46_str_full_cycle_twice_v1",
+      "name": "model_apply_replay_46_arr_mixed_peer_reapply_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_46_str_full_cycle_twice_v1.json"
+      "file": "model_apply_replay_46_arr_mixed_peer_reapply_v1.json"
     },
     {
-      "name": "model_apply_replay_47_str_late_duplicate_only_v1",
+      "name": "model_apply_replay_47_arr_quad_cycle_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_47_str_late_duplicate_only_v1.json"
+      "file": "model_apply_replay_47_arr_quad_cycle_v1.json"
     },
     {
-      "name": "model_apply_replay_48_str_peer_first_duplicate_v1",
+      "name": "model_apply_replay_48_arr_reverse_quad_cycle_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_48_str_peer_first_duplicate_v1.json"
+      "file": "model_apply_replay_48_arr_reverse_quad_cycle_v1.json"
     },
     {
-      "name": "model_apply_replay_49_str_peer_only_duplicate_v1",
+      "name": "model_apply_replay_49_arr_peer_tail_burst_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_49_str_peer_only_duplicate_v1.json"
+      "file": "model_apply_replay_49_arr_peer_tail_burst_v1.json"
     },
     {
-      "name": "model_apply_replay_50_str_reverse_then_forward_v1",
+      "name": "model_apply_replay_50_arr_head_mid_tail_dups_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_50_str_reverse_then_forward_v1.json"
+      "file": "model_apply_replay_50_arr_head_mid_tail_dups_v1.json"
     },
     {
-      "name": "model_apply_replay_51_str_head_tail_duplicates_v1",
+      "name": "model_apply_replay_51_arr_skip_then_full_cycle_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_51_str_head_tail_duplicates_v1.json"
+      "file": "model_apply_replay_51_arr_skip_then_full_cycle_v1.json"
     },
     {
-      "name": "model_apply_replay_52_str_skip_middle_then_replay_v1",
+      "name": "model_apply_replay_52_arr_peer_then_cycle_twice_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_52_str_skip_middle_then_replay_v1.json"
+      "file": "model_apply_replay_52_arr_peer_then_cycle_twice_v1.json"
     },
     {
-      "name": "model_apply_replay_53_str_triple_cycle_v1",
+      "name": "model_apply_replay_53_arr_middle_replay_then_reverse_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_53_str_triple_cycle_v1.json"
+      "file": "model_apply_replay_53_arr_middle_replay_then_reverse_v1.json"
     },
     {
-      "name": "model_apply_replay_54_str_mixed_peer_reapply_v1",
+      "name": "model_apply_replay_54_arr_alternating_peer_local_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_54_str_mixed_peer_reapply_v1.json"
+      "file": "model_apply_replay_54_arr_alternating_peer_local_v1.json"
     },
     {
-      "name": "model_apply_replay_55_bin_dup_single_v1",
+      "name": "model_apply_replay_55_arr_long_in_order_with_tail_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_55_bin_dup_single_v1.json"
+      "file": "model_apply_replay_55_arr_long_in_order_with_tail_v1.json"
     },
     {
-      "name": "model_apply_replay_56_bin_dup_batch_v1",
+      "name": "model_apply_replay_56_arr_long_out_of_order_with_tail_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_56_bin_dup_batch_v1.json"
+      "file": "model_apply_replay_56_arr_long_out_of_order_with_tail_v1.json"
     },
     {
-      "name": "model_apply_replay_57_bin_stale_order_v1",
+      "name": "model_apply_replay_57_str_dup_single_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_57_bin_stale_order_v1.json"
+      "file": "model_apply_replay_57_str_dup_single_v1.json"
     },
     {
-      "name": "model_apply_replay_58_bin_in_order_v1",
+      "name": "model_apply_replay_58_str_dup_batch_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_58_bin_in_order_v1.json"
+      "file": "model_apply_replay_58_str_dup_batch_v1.json"
     },
     {
-      "name": "model_apply_replay_59_bin_out_of_order_v1",
+      "name": "model_apply_replay_59_str_stale_order_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_59_bin_out_of_order_v1.json"
+      "file": "model_apply_replay_59_str_stale_order_v1.json"
     },
     {
-      "name": "model_apply_replay_60_bin_interleaved_dup_v1",
+      "name": "model_apply_replay_60_str_in_order_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_60_bin_interleaved_dup_v1.json"
+      "file": "model_apply_replay_60_str_in_order_v1.json"
     },
     {
-      "name": "model_apply_replay_61_bin_dup_tail_v1",
+      "name": "model_apply_replay_61_str_out_of_order_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_61_bin_dup_tail_v1.json"
+      "file": "model_apply_replay_61_str_out_of_order_v1.json"
     },
     {
-      "name": "model_apply_replay_62_bin_dup_head_v1",
+      "name": "model_apply_replay_62_str_interleaved_dup_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_62_bin_dup_head_v1.json"
+      "file": "model_apply_replay_62_str_interleaved_dup_v1.json"
     },
     {
-      "name": "model_apply_replay_63_bin_dup_middle_v1",
+      "name": "model_apply_replay_63_str_dup_tail_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_63_bin_dup_middle_v1.json"
+      "file": "model_apply_replay_63_str_dup_tail_v1.json"
     },
     {
-      "name": "model_apply_replay_64_bin_full_cycle_twice_v1",
+      "name": "model_apply_replay_64_str_dup_head_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_64_bin_full_cycle_twice_v1.json"
+      "file": "model_apply_replay_64_str_dup_head_v1.json"
     },
     {
-      "name": "model_apply_replay_65_bin_late_duplicate_only_v1",
+      "name": "model_apply_replay_65_str_dup_middle_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_65_bin_late_duplicate_only_v1.json"
+      "file": "model_apply_replay_65_str_dup_middle_v1.json"
     },
     {
-      "name": "model_apply_replay_66_bin_peer_first_duplicate_v1",
+      "name": "model_apply_replay_66_str_full_cycle_twice_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_66_bin_peer_first_duplicate_v1.json"
+      "file": "model_apply_replay_66_str_full_cycle_twice_v1.json"
     },
     {
-      "name": "model_apply_replay_67_bin_peer_only_duplicate_v1",
+      "name": "model_apply_replay_67_str_late_duplicate_only_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_67_bin_peer_only_duplicate_v1.json"
+      "file": "model_apply_replay_67_str_late_duplicate_only_v1.json"
     },
     {
-      "name": "model_apply_replay_68_bin_reverse_then_forward_v1",
+      "name": "model_apply_replay_68_str_peer_first_duplicate_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_68_bin_reverse_then_forward_v1.json"
+      "file": "model_apply_replay_68_str_peer_first_duplicate_v1.json"
     },
     {
-      "name": "model_apply_replay_69_bin_head_tail_duplicates_v1",
+      "name": "model_apply_replay_69_str_peer_only_duplicate_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_69_bin_head_tail_duplicates_v1.json"
+      "file": "model_apply_replay_69_str_peer_only_duplicate_v1.json"
     },
     {
-      "name": "model_apply_replay_70_bin_skip_middle_then_replay_v1",
+      "name": "model_apply_replay_70_str_reverse_then_forward_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_70_bin_skip_middle_then_replay_v1.json"
+      "file": "model_apply_replay_70_str_reverse_then_forward_v1.json"
     },
     {
-      "name": "model_apply_replay_71_bin_triple_cycle_v1",
+      "name": "model_apply_replay_71_str_head_tail_duplicates_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_71_bin_triple_cycle_v1.json"
+      "file": "model_apply_replay_71_str_head_tail_duplicates_v1.json"
     },
     {
-      "name": "model_apply_replay_72_bin_mixed_peer_reapply_v1",
+      "name": "model_apply_replay_72_str_skip_middle_then_replay_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_72_bin_mixed_peer_reapply_v1.json"
+      "file": "model_apply_replay_72_str_skip_middle_then_replay_v1.json"
     },
     {
-      "name": "model_apply_replay_73_vec_dup_single_v1",
+      "name": "model_apply_replay_73_str_triple_cycle_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_73_vec_dup_single_v1.json"
+      "file": "model_apply_replay_73_str_triple_cycle_v1.json"
     },
     {
-      "name": "model_apply_replay_74_vec_dup_batch_v1",
+      "name": "model_apply_replay_74_str_mixed_peer_reapply_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_74_vec_dup_batch_v1.json"
+      "file": "model_apply_replay_74_str_mixed_peer_reapply_v1.json"
     },
     {
-      "name": "model_apply_replay_75_vec_stale_order_v1",
+      "name": "model_apply_replay_75_str_quad_cycle_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_75_vec_stale_order_v1.json"
+      "file": "model_apply_replay_75_str_quad_cycle_v1.json"
     },
     {
-      "name": "model_apply_replay_76_vec_in_order_v1",
+      "name": "model_apply_replay_76_str_reverse_quad_cycle_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_76_vec_in_order_v1.json"
+      "file": "model_apply_replay_76_str_reverse_quad_cycle_v1.json"
     },
     {
-      "name": "model_apply_replay_77_vec_out_of_order_v1",
+      "name": "model_apply_replay_77_str_peer_tail_burst_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_77_vec_out_of_order_v1.json"
+      "file": "model_apply_replay_77_str_peer_tail_burst_v1.json"
     },
     {
-      "name": "model_apply_replay_78_vec_interleaved_dup_v1",
+      "name": "model_apply_replay_78_str_head_mid_tail_dups_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_78_vec_interleaved_dup_v1.json"
+      "file": "model_apply_replay_78_str_head_mid_tail_dups_v1.json"
     },
     {
-      "name": "model_apply_replay_79_vec_dup_tail_v1",
+      "name": "model_apply_replay_79_str_skip_then_full_cycle_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_79_vec_dup_tail_v1.json"
+      "file": "model_apply_replay_79_str_skip_then_full_cycle_v1.json"
     },
     {
-      "name": "model_apply_replay_80_vec_dup_head_v1",
+      "name": "model_apply_replay_80_str_peer_then_cycle_twice_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_80_vec_dup_head_v1.json"
+      "file": "model_apply_replay_80_str_peer_then_cycle_twice_v1.json"
     },
     {
-      "name": "model_apply_replay_81_vec_dup_middle_v1",
+      "name": "model_apply_replay_81_str_middle_replay_then_reverse_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_81_vec_dup_middle_v1.json"
+      "file": "model_apply_replay_81_str_middle_replay_then_reverse_v1.json"
     },
     {
-      "name": "model_apply_replay_82_vec_full_cycle_twice_v1",
+      "name": "model_apply_replay_82_str_alternating_peer_local_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_82_vec_full_cycle_twice_v1.json"
+      "file": "model_apply_replay_82_str_alternating_peer_local_v1.json"
     },
     {
-      "name": "model_apply_replay_83_vec_late_duplicate_only_v1",
+      "name": "model_apply_replay_83_str_long_in_order_with_tail_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_83_vec_late_duplicate_only_v1.json"
+      "file": "model_apply_replay_83_str_long_in_order_with_tail_v1.json"
     },
     {
-      "name": "model_apply_replay_84_vec_peer_first_duplicate_v1",
+      "name": "model_apply_replay_84_str_long_out_of_order_with_tail_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_84_vec_peer_first_duplicate_v1.json"
+      "file": "model_apply_replay_84_str_long_out_of_order_with_tail_v1.json"
     },
     {
-      "name": "model_apply_replay_85_vec_peer_only_duplicate_v1",
+      "name": "model_apply_replay_85_bin_dup_single_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_85_vec_peer_only_duplicate_v1.json"
+      "file": "model_apply_replay_85_bin_dup_single_v1.json"
     },
     {
-      "name": "model_apply_replay_86_vec_reverse_then_forward_v1",
+      "name": "model_apply_replay_86_bin_dup_batch_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_86_vec_reverse_then_forward_v1.json"
+      "file": "model_apply_replay_86_bin_dup_batch_v1.json"
     },
     {
-      "name": "model_apply_replay_87_vec_head_tail_duplicates_v1",
+      "name": "model_apply_replay_87_bin_stale_order_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_87_vec_head_tail_duplicates_v1.json"
+      "file": "model_apply_replay_87_bin_stale_order_v1.json"
     },
     {
-      "name": "model_apply_replay_88_vec_skip_middle_then_replay_v1",
+      "name": "model_apply_replay_88_bin_in_order_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_88_vec_skip_middle_then_replay_v1.json"
+      "file": "model_apply_replay_88_bin_in_order_v1.json"
     },
     {
-      "name": "model_apply_replay_89_vec_triple_cycle_v1",
+      "name": "model_apply_replay_89_bin_out_of_order_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_89_vec_triple_cycle_v1.json"
+      "file": "model_apply_replay_89_bin_out_of_order_v1.json"
     },
     {
-      "name": "model_apply_replay_90_vec_mixed_peer_reapply_v1",
+      "name": "model_apply_replay_90_bin_interleaved_dup_v1",
       "scenario": "model_apply_replay",
-      "file": "model_apply_replay_90_vec_mixed_peer_reapply_v1.json"
+      "file": "model_apply_replay_90_bin_interleaved_dup_v1.json"
+    },
+    {
+      "name": "model_apply_replay_91_bin_dup_tail_v1",
+      "scenario": "model_apply_replay",
+      "file": "model_apply_replay_91_bin_dup_tail_v1.json"
+    },
+    {
+      "name": "model_apply_replay_92_bin_dup_head_v1",
+      "scenario": "model_apply_replay",
+      "file": "model_apply_replay_92_bin_dup_head_v1.json"
+    },
+    {
+      "name": "model_apply_replay_93_bin_dup_middle_v1",
+      "scenario": "model_apply_replay",
+      "file": "model_apply_replay_93_bin_dup_middle_v1.json"
+    },
+    {
+      "name": "model_apply_replay_94_bin_full_cycle_twice_v1",
+      "scenario": "model_apply_replay",
+      "file": "model_apply_replay_94_bin_full_cycle_twice_v1.json"
+    },
+    {
+      "name": "model_apply_replay_95_bin_late_duplicate_only_v1",
+      "scenario": "model_apply_replay",
+      "file": "model_apply_replay_95_bin_late_duplicate_only_v1.json"
+    },
+    {
+      "name": "model_apply_replay_96_bin_peer_first_duplicate_v1",
+      "scenario": "model_apply_replay",
+      "file": "model_apply_replay_96_bin_peer_first_duplicate_v1.json"
+    },
+    {
+      "name": "model_apply_replay_97_bin_peer_only_duplicate_v1",
+      "scenario": "model_apply_replay",
+      "file": "model_apply_replay_97_bin_peer_only_duplicate_v1.json"
+    },
+    {
+      "name": "model_apply_replay_98_bin_reverse_then_forward_v1",
+      "scenario": "model_apply_replay",
+      "file": "model_apply_replay_98_bin_reverse_then_forward_v1.json"
+    },
+    {
+      "name": "model_apply_replay_99_bin_head_tail_duplicates_v1",
+      "scenario": "model_apply_replay",
+      "file": "model_apply_replay_99_bin_head_tail_duplicates_v1.json"
+    },
+    {
+      "name": "model_apply_replay_100_bin_skip_middle_then_replay_v1",
+      "scenario": "model_apply_replay",
+      "file": "model_apply_replay_100_bin_skip_middle_then_replay_v1.json"
+    },
+    {
+      "name": "model_apply_replay_101_bin_triple_cycle_v1",
+      "scenario": "model_apply_replay",
+      "file": "model_apply_replay_101_bin_triple_cycle_v1.json"
+    },
+    {
+      "name": "model_apply_replay_102_bin_mixed_peer_reapply_v1",
+      "scenario": "model_apply_replay",
+      "file": "model_apply_replay_102_bin_mixed_peer_reapply_v1.json"
+    },
+    {
+      "name": "model_apply_replay_103_bin_quad_cycle_v1",
+      "scenario": "model_apply_replay",
+      "file": "model_apply_replay_103_bin_quad_cycle_v1.json"
+    },
+    {
+      "name": "model_apply_replay_104_bin_reverse_quad_cycle_v1",
+      "scenario": "model_apply_replay",
+      "file": "model_apply_replay_104_bin_reverse_quad_cycle_v1.json"
+    },
+    {
+      "name": "model_apply_replay_105_bin_peer_tail_burst_v1",
+      "scenario": "model_apply_replay",
+      "file": "model_apply_replay_105_bin_peer_tail_burst_v1.json"
+    },
+    {
+      "name": "model_apply_replay_106_bin_head_mid_tail_dups_v1",
+      "scenario": "model_apply_replay",
+      "file": "model_apply_replay_106_bin_head_mid_tail_dups_v1.json"
+    },
+    {
+      "name": "model_apply_replay_107_bin_skip_then_full_cycle_v1",
+      "scenario": "model_apply_replay",
+      "file": "model_apply_replay_107_bin_skip_then_full_cycle_v1.json"
+    },
+    {
+      "name": "model_apply_replay_108_bin_peer_then_cycle_twice_v1",
+      "scenario": "model_apply_replay",
+      "file": "model_apply_replay_108_bin_peer_then_cycle_twice_v1.json"
+    },
+    {
+      "name": "model_apply_replay_109_bin_middle_replay_then_reverse_v1",
+      "scenario": "model_apply_replay",
+      "file": "model_apply_replay_109_bin_middle_replay_then_reverse_v1.json"
+    },
+    {
+      "name": "model_apply_replay_110_bin_alternating_peer_local_v1",
+      "scenario": "model_apply_replay",
+      "file": "model_apply_replay_110_bin_alternating_peer_local_v1.json"
+    },
+    {
+      "name": "model_apply_replay_111_bin_long_in_order_with_tail_v1",
+      "scenario": "model_apply_replay",
+      "file": "model_apply_replay_111_bin_long_in_order_with_tail_v1.json"
+    },
+    {
+      "name": "model_apply_replay_112_bin_long_out_of_order_with_tail_v1",
+      "scenario": "model_apply_replay",
+      "file": "model_apply_replay_112_bin_long_out_of_order_with_tail_v1.json"
+    },
+    {
+      "name": "model_apply_replay_113_vec_dup_single_v1",
+      "scenario": "model_apply_replay",
+      "file": "model_apply_replay_113_vec_dup_single_v1.json"
+    },
+    {
+      "name": "model_apply_replay_114_vec_dup_batch_v1",
+      "scenario": "model_apply_replay",
+      "file": "model_apply_replay_114_vec_dup_batch_v1.json"
+    },
+    {
+      "name": "model_apply_replay_115_vec_stale_order_v1",
+      "scenario": "model_apply_replay",
+      "file": "model_apply_replay_115_vec_stale_order_v1.json"
+    },
+    {
+      "name": "model_apply_replay_116_vec_in_order_v1",
+      "scenario": "model_apply_replay",
+      "file": "model_apply_replay_116_vec_in_order_v1.json"
+    },
+    {
+      "name": "model_apply_replay_117_vec_out_of_order_v1",
+      "scenario": "model_apply_replay",
+      "file": "model_apply_replay_117_vec_out_of_order_v1.json"
+    },
+    {
+      "name": "model_apply_replay_118_vec_interleaved_dup_v1",
+      "scenario": "model_apply_replay",
+      "file": "model_apply_replay_118_vec_interleaved_dup_v1.json"
+    },
+    {
+      "name": "model_apply_replay_119_vec_dup_tail_v1",
+      "scenario": "model_apply_replay",
+      "file": "model_apply_replay_119_vec_dup_tail_v1.json"
+    },
+    {
+      "name": "model_apply_replay_120_vec_dup_head_v1",
+      "scenario": "model_apply_replay",
+      "file": "model_apply_replay_120_vec_dup_head_v1.json"
+    },
+    {
+      "name": "model_apply_replay_121_vec_dup_middle_v1",
+      "scenario": "model_apply_replay",
+      "file": "model_apply_replay_121_vec_dup_middle_v1.json"
+    },
+    {
+      "name": "model_apply_replay_122_vec_full_cycle_twice_v1",
+      "scenario": "model_apply_replay",
+      "file": "model_apply_replay_122_vec_full_cycle_twice_v1.json"
+    },
+    {
+      "name": "model_apply_replay_123_vec_late_duplicate_only_v1",
+      "scenario": "model_apply_replay",
+      "file": "model_apply_replay_123_vec_late_duplicate_only_v1.json"
+    },
+    {
+      "name": "model_apply_replay_124_vec_peer_first_duplicate_v1",
+      "scenario": "model_apply_replay",
+      "file": "model_apply_replay_124_vec_peer_first_duplicate_v1.json"
+    },
+    {
+      "name": "model_apply_replay_125_vec_peer_only_duplicate_v1",
+      "scenario": "model_apply_replay",
+      "file": "model_apply_replay_125_vec_peer_only_duplicate_v1.json"
+    },
+    {
+      "name": "model_apply_replay_126_vec_reverse_then_forward_v1",
+      "scenario": "model_apply_replay",
+      "file": "model_apply_replay_126_vec_reverse_then_forward_v1.json"
+    },
+    {
+      "name": "model_apply_replay_127_vec_head_tail_duplicates_v1",
+      "scenario": "model_apply_replay",
+      "file": "model_apply_replay_127_vec_head_tail_duplicates_v1.json"
+    },
+    {
+      "name": "model_apply_replay_128_vec_skip_middle_then_replay_v1",
+      "scenario": "model_apply_replay",
+      "file": "model_apply_replay_128_vec_skip_middle_then_replay_v1.json"
+    },
+    {
+      "name": "model_apply_replay_129_vec_triple_cycle_v1",
+      "scenario": "model_apply_replay",
+      "file": "model_apply_replay_129_vec_triple_cycle_v1.json"
+    },
+    {
+      "name": "model_apply_replay_130_vec_mixed_peer_reapply_v1",
+      "scenario": "model_apply_replay",
+      "file": "model_apply_replay_130_vec_mixed_peer_reapply_v1.json"
+    },
+    {
+      "name": "model_apply_replay_131_vec_quad_cycle_v1",
+      "scenario": "model_apply_replay",
+      "file": "model_apply_replay_131_vec_quad_cycle_v1.json"
+    },
+    {
+      "name": "model_apply_replay_132_vec_reverse_quad_cycle_v1",
+      "scenario": "model_apply_replay",
+      "file": "model_apply_replay_132_vec_reverse_quad_cycle_v1.json"
+    },
+    {
+      "name": "model_apply_replay_133_vec_peer_tail_burst_v1",
+      "scenario": "model_apply_replay",
+      "file": "model_apply_replay_133_vec_peer_tail_burst_v1.json"
+    },
+    {
+      "name": "model_apply_replay_134_vec_head_mid_tail_dups_v1",
+      "scenario": "model_apply_replay",
+      "file": "model_apply_replay_134_vec_head_mid_tail_dups_v1.json"
+    },
+    {
+      "name": "model_apply_replay_135_vec_skip_then_full_cycle_v1",
+      "scenario": "model_apply_replay",
+      "file": "model_apply_replay_135_vec_skip_then_full_cycle_v1.json"
+    },
+    {
+      "name": "model_apply_replay_136_vec_peer_then_cycle_twice_v1",
+      "scenario": "model_apply_replay",
+      "file": "model_apply_replay_136_vec_peer_then_cycle_twice_v1.json"
+    },
+    {
+      "name": "model_apply_replay_137_vec_middle_replay_then_reverse_v1",
+      "scenario": "model_apply_replay",
+      "file": "model_apply_replay_137_vec_middle_replay_then_reverse_v1.json"
+    },
+    {
+      "name": "model_apply_replay_138_vec_alternating_peer_local_v1",
+      "scenario": "model_apply_replay",
+      "file": "model_apply_replay_138_vec_alternating_peer_local_v1.json"
+    },
+    {
+      "name": "model_apply_replay_139_vec_long_in_order_with_tail_v1",
+      "scenario": "model_apply_replay",
+      "file": "model_apply_replay_139_vec_long_in_order_with_tail_v1.json"
+    },
+    {
+      "name": "model_apply_replay_140_vec_long_out_of_order_with_tail_v1",
+      "scenario": "model_apply_replay",
+      "file": "model_apply_replay_140_vec_long_out_of_order_with_tail_v1.json"
     },
     {
       "name": "model_diff_parity_01_det_v1",
@@ -4973,6 +5588,156 @@
       "name": "model_lifecycle_workflow_30_load_v1",
       "scenario": "model_lifecycle_workflow",
       "file": "model_lifecycle_workflow_30_load_v1.json"
+    },
+    {
+      "name": "model_lifecycle_workflow_31_from_patches_mirror_v1",
+      "scenario": "model_lifecycle_workflow",
+      "file": "model_lifecycle_workflow_31_from_patches_mirror_v1.json"
+    },
+    {
+      "name": "model_lifecycle_workflow_32_load_mirror_v1",
+      "scenario": "model_lifecycle_workflow",
+      "file": "model_lifecycle_workflow_32_load_mirror_v1.json"
+    },
+    {
+      "name": "model_lifecycle_workflow_33_from_patches_mirror_v1",
+      "scenario": "model_lifecycle_workflow",
+      "file": "model_lifecycle_workflow_33_from_patches_mirror_v1.json"
+    },
+    {
+      "name": "model_lifecycle_workflow_34_load_mirror_v1",
+      "scenario": "model_lifecycle_workflow",
+      "file": "model_lifecycle_workflow_34_load_mirror_v1.json"
+    },
+    {
+      "name": "model_lifecycle_workflow_35_from_patches_mirror_v1",
+      "scenario": "model_lifecycle_workflow",
+      "file": "model_lifecycle_workflow_35_from_patches_mirror_v1.json"
+    },
+    {
+      "name": "model_lifecycle_workflow_36_load_mirror_v1",
+      "scenario": "model_lifecycle_workflow",
+      "file": "model_lifecycle_workflow_36_load_mirror_v1.json"
+    },
+    {
+      "name": "model_lifecycle_workflow_37_from_patches_mirror_v1",
+      "scenario": "model_lifecycle_workflow",
+      "file": "model_lifecycle_workflow_37_from_patches_mirror_v1.json"
+    },
+    {
+      "name": "model_lifecycle_workflow_38_load_mirror_v1",
+      "scenario": "model_lifecycle_workflow",
+      "file": "model_lifecycle_workflow_38_load_mirror_v1.json"
+    },
+    {
+      "name": "model_lifecycle_workflow_39_from_patches_mirror_v1",
+      "scenario": "model_lifecycle_workflow",
+      "file": "model_lifecycle_workflow_39_from_patches_mirror_v1.json"
+    },
+    {
+      "name": "model_lifecycle_workflow_40_load_mirror_v1",
+      "scenario": "model_lifecycle_workflow",
+      "file": "model_lifecycle_workflow_40_load_mirror_v1.json"
+    },
+    {
+      "name": "model_lifecycle_workflow_41_from_patches_mirror_v1",
+      "scenario": "model_lifecycle_workflow",
+      "file": "model_lifecycle_workflow_41_from_patches_mirror_v1.json"
+    },
+    {
+      "name": "model_lifecycle_workflow_42_load_mirror_v1",
+      "scenario": "model_lifecycle_workflow",
+      "file": "model_lifecycle_workflow_42_load_mirror_v1.json"
+    },
+    {
+      "name": "model_lifecycle_workflow_43_from_patches_mirror_v1",
+      "scenario": "model_lifecycle_workflow",
+      "file": "model_lifecycle_workflow_43_from_patches_mirror_v1.json"
+    },
+    {
+      "name": "model_lifecycle_workflow_44_load_mirror_v1",
+      "scenario": "model_lifecycle_workflow",
+      "file": "model_lifecycle_workflow_44_load_mirror_v1.json"
+    },
+    {
+      "name": "model_lifecycle_workflow_45_from_patches_mirror_v1",
+      "scenario": "model_lifecycle_workflow",
+      "file": "model_lifecycle_workflow_45_from_patches_mirror_v1.json"
+    },
+    {
+      "name": "model_lifecycle_workflow_46_load_mirror_v1",
+      "scenario": "model_lifecycle_workflow",
+      "file": "model_lifecycle_workflow_46_load_mirror_v1.json"
+    },
+    {
+      "name": "model_lifecycle_workflow_47_from_patches_mirror_v1",
+      "scenario": "model_lifecycle_workflow",
+      "file": "model_lifecycle_workflow_47_from_patches_mirror_v1.json"
+    },
+    {
+      "name": "model_lifecycle_workflow_48_load_mirror_v1",
+      "scenario": "model_lifecycle_workflow",
+      "file": "model_lifecycle_workflow_48_load_mirror_v1.json"
+    },
+    {
+      "name": "model_lifecycle_workflow_49_from_patches_mirror_v1",
+      "scenario": "model_lifecycle_workflow",
+      "file": "model_lifecycle_workflow_49_from_patches_mirror_v1.json"
+    },
+    {
+      "name": "model_lifecycle_workflow_50_load_mirror_v1",
+      "scenario": "model_lifecycle_workflow",
+      "file": "model_lifecycle_workflow_50_load_mirror_v1.json"
+    },
+    {
+      "name": "model_lifecycle_workflow_51_from_patches_mirror_v1",
+      "scenario": "model_lifecycle_workflow",
+      "file": "model_lifecycle_workflow_51_from_patches_mirror_v1.json"
+    },
+    {
+      "name": "model_lifecycle_workflow_52_load_mirror_v1",
+      "scenario": "model_lifecycle_workflow",
+      "file": "model_lifecycle_workflow_52_load_mirror_v1.json"
+    },
+    {
+      "name": "model_lifecycle_workflow_53_from_patches_mirror_v1",
+      "scenario": "model_lifecycle_workflow",
+      "file": "model_lifecycle_workflow_53_from_patches_mirror_v1.json"
+    },
+    {
+      "name": "model_lifecycle_workflow_54_load_mirror_v1",
+      "scenario": "model_lifecycle_workflow",
+      "file": "model_lifecycle_workflow_54_load_mirror_v1.json"
+    },
+    {
+      "name": "model_lifecycle_workflow_55_from_patches_mirror_v1",
+      "scenario": "model_lifecycle_workflow",
+      "file": "model_lifecycle_workflow_55_from_patches_mirror_v1.json"
+    },
+    {
+      "name": "model_lifecycle_workflow_56_load_mirror_v1",
+      "scenario": "model_lifecycle_workflow",
+      "file": "model_lifecycle_workflow_56_load_mirror_v1.json"
+    },
+    {
+      "name": "model_lifecycle_workflow_57_from_patches_mirror_v1",
+      "scenario": "model_lifecycle_workflow",
+      "file": "model_lifecycle_workflow_57_from_patches_mirror_v1.json"
+    },
+    {
+      "name": "model_lifecycle_workflow_58_load_mirror_v1",
+      "scenario": "model_lifecycle_workflow",
+      "file": "model_lifecycle_workflow_58_load_mirror_v1.json"
+    },
+    {
+      "name": "model_lifecycle_workflow_59_from_patches_mirror_v1",
+      "scenario": "model_lifecycle_workflow",
+      "file": "model_lifecycle_workflow_59_from_patches_mirror_v1.json"
+    },
+    {
+      "name": "model_lifecycle_workflow_60_load_mirror_v1",
+      "scenario": "model_lifecycle_workflow",
+      "file": "model_lifecycle_workflow_60_load_mirror_v1.json"
     },
     {
       "name": "codec_indexed_binary_parity_01_det_v1",

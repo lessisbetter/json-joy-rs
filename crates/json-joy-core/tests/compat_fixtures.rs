@@ -754,20 +754,20 @@ fn manifest_contains_required_scenarios() {
         "fixtures must include at least 20 patch_canonical_encode scenarios"
     );
     assert!(
-        model_roundtrip_count >= 60,
-        "fixtures must include at least 60 model_roundtrip scenarios"
+        model_roundtrip_count >= 110,
+        "fixtures must include at least 110 model_roundtrip scenarios"
     );
     assert!(
-        model_decode_error_count >= 20,
-        "fixtures must include at least 20 model_decode_error scenarios"
+        model_decode_error_count >= 35,
+        "fixtures must include at least 35 model_decode_error scenarios"
     );
     assert!(
-        model_canonical_encode_count >= 12,
-        "fixtures must include at least 12 model_canonical_encode scenarios"
+        model_canonical_encode_count >= 30,
+        "fixtures must include at least 30 model_canonical_encode scenarios"
     );
     assert!(
-        model_apply_replay_count >= 90,
-        "fixtures must include at least 90 model_apply_replay scenarios"
+        model_apply_replay_count >= 140,
+        "fixtures must include at least 140 model_apply_replay scenarios"
     );
     assert!(
         model_diff_parity_count >= 300,
@@ -790,8 +790,8 @@ fn manifest_contains_required_scenarios() {
         "fixtures must include at least 40 model_api_proxy_fanout_workflow scenarios"
     );
     assert!(
-        model_lifecycle_workflow_count >= 30,
-        "fixtures must include at least 30 model_lifecycle_workflow scenarios"
+        model_lifecycle_workflow_count >= 60,
+        "fixtures must include at least 60 model_lifecycle_workflow scenarios"
     );
     assert!(
         codec_indexed_binary_parity_count >= 40,
