@@ -59,6 +59,9 @@ pub fn diff_model_to_patch_bytes(
     if let Some(native) = try_native_root_obj_bin_delta_diff(base_model_binary, next_view, sid)? {
         return Ok(native);
     }
+    if let Some(native) = try_native_nested_obj_bin_delta_diff(base_model_binary, next_view, sid)? {
+        return Ok(native);
+    }
     if let Some(native) = try_native_root_obj_array_delta_diff(base_model_binary, next_view, sid)? {
         return Ok(native);
     }
@@ -563,6 +566,60 @@ fn try_native_root_obj_bin_delta_diff(
     }
 
     let encoded = match emit_bin_delta_patch(base_model_binary, patch_sid, bin_node, &slots, &old, &new)? {
+        Some(v) => v,
+        None => return Ok(Some(None)),
+    };
+    Ok(Some(Some(encoded)))
+}
+
+fn try_native_nested_obj_bin_delta_diff(
+    base_model_binary: &[u8],
+    next_view: &Value,
+    patch_sid: u64,
+) -> Result<Option<Option<Vec<u8>>>, DiffError> {
+    let model = match Model::from_binary(base_model_binary) {
+        Ok(v) => v,
+        Err(_) => return Ok(None),
+    };
+    let base_obj = match model.view() {
+        Value::Object(map) if !map.is_empty() => map,
+        _ => return Ok(None),
+    };
+    let next_obj = match next_view {
+        Value::Object(map) => map,
+        _ => return Ok(None),
+    };
+
+    let (path, old, new) = match find_single_bin_delta_path(base_obj, next_obj) {
+        Some(v) => v,
+        None => return Ok(None),
+    };
+    if path.is_empty() {
+        return Ok(None);
+    }
+
+    let runtime = match RuntimeModel::from_model_binary(base_model_binary) {
+        Ok(v) => v,
+        Err(_) => return Ok(None),
+    };
+    let mut node = match runtime.root_object_field(&path[0]) {
+        Some(id) => id,
+        None => return Ok(None),
+    };
+    for seg in path.iter().skip(1) {
+        node = match runtime.object_field(node, seg) {
+            Some(id) => id,
+            None => return Ok(None),
+        };
+    }
+    if !runtime.node_is_bin(node) {
+        return Ok(None);
+    }
+    let slots = match runtime.bin_visible_slots(node) {
+        Some(v) => v,
+        None => return Ok(None),
+    };
+    let encoded = match emit_bin_delta_patch(base_model_binary, patch_sid, node, &slots, &old, &new)? {
         Some(v) => v,
         None => return Ok(Some(None)),
     };
@@ -1584,6 +1641,73 @@ fn find_single_array_delta_value<'a>(
                     continue;
                 }
                 let delta = find_single_array_delta_value(bv, nv)?;
+                if found.is_some() {
+                    return None;
+                }
+                let mut path = vec![k.clone()];
+                path.extend(delta.0);
+                found = Some((path, delta.1, delta.2));
+            }
+            found
+        }
+        _ => None,
+    }
+}
+
+fn find_single_bin_delta_path(
+    base: &serde_json::Map<String, Value>,
+    next: &serde_json::Map<String, Value>,
+) -> Option<(Vec<String>, Vec<u8>, Vec<u8>)> {
+    if base.len() != next.len() {
+        return None;
+    }
+    if base.keys().any(|k| !next.contains_key(k)) {
+        return None;
+    }
+
+    let mut found: Option<(Vec<String>, Vec<u8>, Vec<u8>)> = None;
+    for (k, base_v) in base {
+        let next_v = next.get(k)?;
+        if base_v == next_v {
+            continue;
+        }
+        let delta = find_single_bin_delta_value(base_v, next_v)?;
+        if found.is_some() {
+            return None;
+        }
+        let mut path = vec![k.clone()];
+        path.extend(delta.0);
+        found = Some((path, delta.1, delta.2));
+    }
+    found
+}
+
+fn find_single_bin_delta_value(
+    base: &Value,
+    next: &Value,
+) -> Option<(Vec<String>, Vec<u8>, Vec<u8>)> {
+    match (base, next) {
+        (Value::Object(_), Value::Object(_)) => {
+            if let (Some(old), Some(new)) = (parse_bin_object(base), parse_bin_object(next)) {
+                return Some((Vec::new(), old, new));
+            }
+
+            let bm = base.as_object()?;
+            let nm = next.as_object()?;
+            if bm.len() != nm.len() {
+                return None;
+            }
+            if bm.keys().any(|k| !nm.contains_key(k)) {
+                return None;
+            }
+
+            let mut found: Option<(Vec<String>, Vec<u8>, Vec<u8>)> = None;
+            for (k, bv) in bm {
+                let nv = nm.get(k)?;
+                if bv == nv {
+                    continue;
+                }
+                let delta = find_single_bin_delta_value(bv, nv)?;
                 if found.is_some() {
                     return None;
                 }
