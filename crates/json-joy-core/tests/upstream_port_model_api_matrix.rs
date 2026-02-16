@@ -412,3 +412,44 @@ fn upstream_port_model_api_extended_typed_wrappers_matrix() {
 
     assert_eq!(api.view(), json!({"bin":[9,8,2,3],"vec":[1,null,null,7],"con":"z"}));
 }
+
+#[test]
+fn upstream_port_model_api_diff_merge_matrix() {
+    // Upstream mapping:
+    // - json-crdt/model/api/nodes.ts NodeApi.{diff,merge,op('merge')} behavior slice.
+    let sid = 97008;
+    let mut api = NativeModelApi::from_patches(&[patch_from_ops(
+        sid,
+        1,
+        &[
+            DecodedOp::NewObj {
+                id: Timestamp { sid, time: 1 },
+            },
+            DecodedOp::InsVal {
+                id: Timestamp { sid, time: 2 },
+                obj: Timestamp { sid: 0, time: 0 },
+                val: Timestamp { sid, time: 1 },
+            },
+        ],
+    )])
+    .expect("from_patches must succeed");
+
+    api.obj_put(&[], "doc", json!({"a":1,"b":[1]}))
+        .expect("seed put must succeed");
+
+    let diff = api
+        .diff(&json!({"doc":{"a":2,"b":[1,2]}}))
+        .expect("diff must succeed");
+    assert!(diff.is_some());
+
+    assert!(api.merge(
+        Some(&[PathStep::Key("doc".into()), PathStep::Key("a".into())]),
+        json!(2)
+    ));
+    assert!(api.op(ApiOperation::Merge {
+        path: vec![PathStep::Key("doc".into()), PathStep::Key("b".into())],
+        value: json!([1, 2]),
+    }));
+
+    assert_eq!(api.view(), json!({"doc":{"a":2,"b":[1,2]}}));
+}

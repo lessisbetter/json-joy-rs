@@ -80,7 +80,7 @@
 ### Matrix expansion follow-ups from upstream sweep (`/Users/nchapman/Drive/Code/json-joy/packages/json-joy/src`)
 
 - [~] Add explicit matrix/test-port coverage for `json-crdt/model/api/*` (`ModelApi`, `NodeApi`, finder/proxy/events).
-  Baseline added in `crates/json-joy-core/src/model_api.rs` + `crates/json-joy-core/tests/upstream_port_model_api_matrix.rs` and `crates/json-joy-core/tests/upstream_port_model_api_events_matrix.rs` (`from_patches`, `apply_batch`, `find/read/select`, core mutators, tolerant `add/replace/remove/op`, path-bound `NodeHandle` proxy-style mutations, typed wrappers `as_obj/as_arr/as_str/as_val/as_bin/as_vec/as_con`, `on_change`/`off_change`, local-vs-remote change origin). Remaining gap is generated proxy tree semantics and extension-specific API typing.
+  Baseline added in `crates/json-joy-core/src/model_api.rs` + `crates/json-joy-core/tests/upstream_port_model_api_matrix.rs` and `crates/json-joy-core/tests/upstream_port_model_api_events_matrix.rs` (`from_patches`, `apply_batch`, `find/read/select`, root `diff`, `merge`, core mutators, tolerant `add/replace/remove/op`, path-bound `NodeHandle` proxy-style mutations, typed wrappers `as_obj/as_arr/as_str/as_val/as_bin/as_vec/as_con`, `on_change`/`off_change`, local-vs-remote change origin). Remaining gap is generated proxy tree semantics and extension-specific API typing.
 - [~] Add explicit matrix/test-port coverage for `Model.ts` lifecycle helpers (`fromPatches`, `applyBatch`, schema-aware `load`).
   Lifecycle baseline now fixture-backed via `model_lifecycle_workflow` + `crates/json-joy-core/tests/model_lifecycle_from_fixtures.rs` and native `NativeModelApi::{from_patches,apply_batch,from_model_binary(load sid)}`.
   Schema-aware typing behavior remains deferred.

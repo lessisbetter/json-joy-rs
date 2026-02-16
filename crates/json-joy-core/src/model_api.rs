@@ -27,6 +27,7 @@ pub enum ApiOperation {
     Add { path: Vec<PathStep>, value: Value },
     Replace { path: Vec<PathStep>, value: Value },
     Remove { path: Vec<PathStep>, length: usize },
+    Merge { path: Vec<PathStep>, value: Value },
 }
 
 #[derive(Debug, Error)]
@@ -347,7 +348,36 @@ impl NativeModelApi {
             ApiOperation::Add { path, value } => self.try_add(&path, value),
             ApiOperation::Replace { path, value } => self.try_replace(&path, value),
             ApiOperation::Remove { path, .. } => self.try_remove(&path),
+            ApiOperation::Merge { path, value } => self.merge(Some(&path), value),
         }
+    }
+
+    pub fn diff(&self, next: &Value) -> Result<Option<Patch>, ModelApiError> {
+        let base = self.runtime.to_model_binary_like()?;
+        let patch = diff_model_to_patch_bytes(&base, next, self.sid)?;
+        match patch {
+            Some(bytes) => {
+                let decoded = Patch::from_binary(&bytes)
+                    .map_err(|e| ModelApiError::PatchDecode(e.to_string()))?;
+                Ok(Some(decoded))
+            }
+            None => Ok(None),
+        }
+    }
+
+    pub fn merge(&mut self, path: Option<&[PathStep]>, value: Value) -> bool {
+        let mut next = self.runtime.view_json();
+        match path {
+            None => next = value,
+            Some(p) if p.is_empty() => next = value,
+            Some(p) => {
+                let Some(target) = get_path_mut(&mut next, p) else {
+                    return false;
+                };
+                *target = value;
+            }
+        }
+        self.apply_target_view(next).is_ok()
     }
 
     pub fn node(&mut self) -> NodeHandle<'_> {
