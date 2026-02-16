@@ -129,10 +129,20 @@ fn choose_sequence_insert_reference(
     slots: &[Timestamp],
     container: Timestamp,
     lcp: usize,
+    ins_len: usize,
     del_len: usize,
     old_len: usize,
 ) -> Timestamp {
-    if lcp > 0 {
+    // Upstream str/bin differ emits inserts while walking edits from the end.
+    // For mixed replace windows this frequently anchors insertion on the last
+    // deleted atom rather than the prefix atom.
+    if ins_len > 0 && del_len > 0 {
+        let idx = lcp.saturating_add(del_len).saturating_sub(1);
+        if idx < slots.len() {
+            return slots[idx];
+        }
+    }
+    if lcp > 0 && lcp - 1 < slots.len() {
         return slots[lcp - 1];
     }
     if old_len > 0 && del_len == old_len {
@@ -196,8 +206,14 @@ fn try_native_non_object_root_diff(
                 .iter()
                 .collect();
             if !ins.is_empty() {
-                let reference =
-                    choose_sequence_insert_reference(&slots, root, lcp, del_len, old_chars.len());
+                let reference = choose_sequence_insert_reference(
+                    &slots,
+                    root,
+                    lcp,
+                    ins.chars().count(),
+                    del_len,
+                    old_chars.len(),
+                );
                 emitter.push(DecodedOp::InsStr {
                     id: emitter.next_id(),
                     obj: root,
@@ -276,8 +292,14 @@ fn try_native_non_object_root_diff(
             let del_len = old_bin.len().saturating_sub(lcp + lcs);
             let ins_bytes = &new_bin[lcp..new_bin.len().saturating_sub(lcs)];
             if !ins_bytes.is_empty() {
-                let reference =
-                    choose_sequence_insert_reference(&slots, root, lcp, del_len, old_bin.len());
+                let reference = choose_sequence_insert_reference(
+                    &slots,
+                    root,
+                    lcp,
+                    ins_bytes.len(),
+                    del_len,
+                    old_bin.len(),
+                );
                 emitter.push(DecodedOp::InsBin {
                     id: emitter.next_id(),
                     obj: root,
@@ -774,6 +796,7 @@ fn try_native_root_obj_multi_string_delta_diff(
                 &slots,
                 str_node,
                 lcp,
+                ins_len,
                 del_len,
                 old_chars.len(),
             );
@@ -1113,8 +1136,14 @@ fn try_native_root_obj_multi_bin_delta_diff(
         let del_len = old.len().saturating_sub(lcp + lcs);
         let ins_bytes = &new[lcp..new.len().saturating_sub(lcs)];
         if !ins_bytes.is_empty() {
-            let reference =
-                choose_sequence_insert_reference(&slots, bin_node, lcp, del_len, old.len());
+            let reference = choose_sequence_insert_reference(
+                &slots,
+                bin_node,
+                lcp,
+                ins_bytes.len(),
+                del_len,
+                old.len(),
+            );
             emitter.push(DecodedOp::InsBin {
                 id: emitter.next_id(),
                 obj: bin_node,
@@ -1299,8 +1328,14 @@ fn try_native_multi_root_nested_bin_delta_diff(
             let del_len = old.len().saturating_sub(lcp + lcs);
             let ins_bytes = &new[lcp..new.len().saturating_sub(lcs)];
             if !ins_bytes.is_empty() {
-                let reference =
-                    choose_sequence_insert_reference(&slots, node, lcp, del_len, old.len());
+                let reference = choose_sequence_insert_reference(
+                    &slots,
+                    node,
+                    lcp,
+                    ins_bytes.len(),
+                    del_len,
+                    old.len(),
+                );
                 emitter.push(DecodedOp::InsBin {
                     id: emitter.next_id(),
                     obj: node,
@@ -1794,6 +1829,7 @@ fn try_emit_child_recursive_diff(
                     &slots,
                     child,
                     lcp,
+                    ins.chars().count(),
                     del_len,
                     old_chars.len(),
                 );
@@ -1858,8 +1894,14 @@ fn try_emit_child_recursive_diff(
             let del_len = old_bin.len().saturating_sub(lcp + lcs);
             let ins_bytes = &new_bin[lcp..new_bin.len().saturating_sub(lcs)];
             if !ins_bytes.is_empty() {
-                let reference =
-                    choose_sequence_insert_reference(&slots, child, lcp, del_len, old_bin.len());
+                let reference = choose_sequence_insert_reference(
+                    &slots,
+                    child,
+                    lcp,
+                    ins_bytes.len(),
+                    del_len,
+                    old_bin.len(),
+                );
                 emitter.push(DecodedOp::InsBin {
                     id: emitter.next_id(),
                     obj: child,
@@ -2965,8 +3007,14 @@ fn try_native_multi_root_nested_string_delta_diff(
                 .collect();
             let ins_len = ins.chars().count();
             if ins_len > 0 {
-                let reference =
-                    choose_sequence_insert_reference(&slots, node, lcp, del_len, old_chars.len());
+                let reference = choose_sequence_insert_reference(
+                    &slots,
+                    node,
+                    lcp,
+                    ins_len,
+                    del_len,
+                    old_chars.len(),
+                );
                 emitter.push(DecodedOp::InsStr {
                     id: emitter.next_id(),
                     obj: node,
@@ -3049,8 +3097,14 @@ fn emit_string_delta_patch(
     let mut emitter = NativeEmitter::new(patch_sid, base_time.saturating_add(1));
 
     if ins_len > 0 {
-        let reference =
-            choose_sequence_insert_reference(slots, str_node, lcp, del_len, old_chars.len());
+        let reference = choose_sequence_insert_reference(
+            slots,
+            str_node,
+            lcp,
+            ins_len,
+            del_len,
+            old_chars.len(),
+        );
         emitter.push(DecodedOp::InsStr {
             id: emitter.next_id(),
             obj: str_node,
@@ -3122,7 +3176,14 @@ fn emit_bin_delta_patch(
     let mut emitter = NativeEmitter::new(patch_sid, base_time.saturating_add(1));
 
     if !ins_bytes.is_empty() {
-        let reference = choose_sequence_insert_reference(slots, bin_node, lcp, del_len, old.len());
+        let reference = choose_sequence_insert_reference(
+            slots,
+            bin_node,
+            lcp,
+            ins_bytes.len(),
+            del_len,
+            old.len(),
+        );
         emitter.push(DecodedOp::InsBin {
             id: emitter.next_id(),
             obj: bin_node,
