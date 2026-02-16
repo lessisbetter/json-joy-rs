@@ -66,6 +66,10 @@ fn canonical_ops(input: &Value) -> Vec<DecodedOp> {
                 id,
                 value: ConValue::Json(op["value"].clone()),
             },
+            "new_con_ref" => DecodedOp::NewCon {
+                id,
+                value: ConValue::Ref(as_ts(&op["value_ref"], "op.value_ref")),
+            },
             "new_val" => DecodedOp::NewVal { id },
             "new_obj" => DecodedOp::NewObj { id },
             "new_vec" => DecodedOp::NewVec { id },

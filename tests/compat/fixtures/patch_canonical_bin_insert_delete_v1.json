@@ -1,0 +1,89 @@
+{
+  "fixture_version": 1,
+  "name": "patch_canonical_bin_insert_delete_v1",
+  "scenario": "patch_canonical_encode",
+  "input": {
+    "sid": 74001,
+    "time": 1,
+    "meta_kind": "undefined",
+    "ops": [
+      {
+        "op": "new_bin",
+        "id": [
+          74001,
+          1
+        ]
+      },
+      {
+        "op": "ins_val",
+        "id": [
+          74001,
+          2
+        ],
+        "obj": [
+          0,
+          0
+        ],
+        "val": [
+          74001,
+          1
+        ]
+      },
+      {
+        "op": "ins_bin",
+        "id": [
+          74001,
+          3
+        ],
+        "obj": [
+          74001,
+          1
+        ],
+        "ref": [
+          74001,
+          1
+        ],
+        "data": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      {
+        "op": "del",
+        "id": [
+          74001,
+          7
+        ],
+        "obj": [
+          74001,
+          1
+        ],
+        "what": [
+          [
+            74001,
+            4,
+            2
+          ]
+        ]
+      }
+    ]
+  },
+  "expected": {
+    "patch_binary_hex": "91c20401f70428488000016c01010102030481010402",
+    "patch_op_count": 4,
+    "patch_span": 7,
+    "patch_opcodes": [
+      5,
+      9,
+      13,
+      16
+    ]
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

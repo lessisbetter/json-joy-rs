@@ -49,6 +49,7 @@ const UPSTREAM_VERSION = '17.67.0';
 const FIXTURE_VERSION = 1;
 const OPCODE_BY_NAME = {
   new_con: 0,
+  new_con_ref: 0,
   new_val: 1,
   new_obj: 2,
   new_vec: 3,
@@ -200,14 +201,23 @@ function canonicalPatchFromModel(input) {
       case 'new_con':
         patch.ops.push(new NewConOp(tsFromTuple(op.id), op.value));
         break;
+      case 'new_con_ref':
+        patch.ops.push(new NewConOp(tsFromTuple(op.id), tsFromTuple(op.value_ref)));
+        break;
       case 'new_val':
         patch.ops.push(new NewValOp(tsFromTuple(op.id)));
         break;
       case 'new_obj':
         patch.ops.push(new NewObjOp(tsFromTuple(op.id)));
         break;
+      case 'new_vec':
+        patch.ops.push(new NewVecOp(tsFromTuple(op.id)));
+        break;
       case 'new_str':
         patch.ops.push(new NewStrOp(tsFromTuple(op.id)));
+        break;
+      case 'new_bin':
+        patch.ops.push(new NewBinOp(tsFromTuple(op.id)));
         break;
       case 'new_arr':
         patch.ops.push(new NewArrOp(tsFromTuple(op.id)));
@@ -224,8 +234,27 @@ function canonicalPatchFromModel(input) {
           )
         );
         break;
+      case 'ins_vec':
+        patch.ops.push(
+          new InsVecOp(
+            tsFromTuple(op.id),
+            tsFromTuple(op.obj),
+            op.data.map(([k, v]) => [k, tsFromTuple(v)])
+          )
+        );
+        break;
       case 'ins_str':
         patch.ops.push(new InsStrOp(tsFromTuple(op.id), tsFromTuple(op.obj), tsFromTuple(op.ref), op.data));
+        break;
+      case 'ins_bin':
+        patch.ops.push(
+          new InsBinOp(
+            tsFromTuple(op.id),
+            tsFromTuple(op.obj),
+            tsFromTuple(op.ref),
+            new Uint8Array(op.data)
+          )
+        );
         break;
       case 'ins_arr':
         patch.ops.push(
@@ -234,6 +263,25 @@ function canonicalPatchFromModel(input) {
             tsFromTuple(op.obj),
             tsFromTuple(op.ref),
             op.data.map((v) => tsFromTuple(v))
+          )
+        );
+        break;
+      case 'upd_arr':
+        patch.ops.push(
+          new UpdArrOp(
+            tsFromTuple(op.id),
+            tsFromTuple(op.obj),
+            tsFromTuple(op.ref),
+            tsFromTuple(op.val)
+          )
+        );
+        break;
+      case 'del':
+        patch.ops.push(
+          new DelOp(
+            tsFromTuple(op.id),
+            tsFromTuple(op.obj),
+            op.what.map((s) => tss(s[0], s[1], s[2]))
           )
         );
         break;
@@ -311,6 +359,56 @@ function allCanonicalEncodeFixtures() {
         {op: 'ins_val', id: [sid, 2], obj: [0, 0], val: [sid, 1]},
         {op: 'ins_str', id: [sid, 3], obj: [sid, 1], ref: [sid, 1], data: 'hello'},
         {op: 'nop', id: [sid, 8], len: 2},
+      ],
+    }),
+    buildCanonicalEncodeFixture('patch_canonical_bin_insert_delete_v1', {
+      sid,
+      time: 1,
+      meta_kind: 'undefined',
+      ops: [
+        {op: 'new_bin', id: [sid, 1]},
+        {op: 'ins_val', id: [sid, 2], obj: [0, 0], val: [sid, 1]},
+        {op: 'ins_bin', id: [sid, 3], obj: [sid, 1], ref: [sid, 1], data: [1, 2, 3, 4]},
+        {op: 'del', id: [sid, 7], obj: [sid, 1], what: [[sid, 4, 2]]},
+      ],
+    }),
+    buildCanonicalEncodeFixture('patch_canonical_vec_insert_v1', {
+      sid,
+      time: 1,
+      meta_kind: 'undefined',
+      ops: [
+        {op: 'new_vec', id: [sid, 1]},
+        {op: 'ins_val', id: [sid, 2], obj: [0, 0], val: [sid, 1]},
+        {op: 'new_con', id: [sid, 3], value: true},
+        {op: 'new_con', id: [sid, 4], value: 9},
+        {op: 'ins_vec', id: [sid, 5], obj: [sid, 1], data: [[0, [sid, 3]], [2, [sid, 4]]]},
+      ],
+    }),
+    buildCanonicalEncodeFixture('patch_canonical_arr_update_v1', {
+      sid,
+      time: 1,
+      meta_kind: 'undefined',
+      ops: [
+        {op: 'new_arr', id: [sid, 1]},
+        {op: 'ins_val', id: [sid, 2], obj: [0, 0], val: [sid, 1]},
+        {op: 'new_con', id: [sid, 3], value: 'a'},
+        {op: 'new_con', id: [sid, 4], value: 'b'},
+        {op: 'new_con', id: [sid, 5], value: 'c'},
+        {op: 'ins_arr', id: [sid, 6], obj: [sid, 1], ref: [sid, 1], data: [[sid, 3], [sid, 4], [sid, 5]]},
+        {op: 'new_con', id: [sid, 9], value: 'B'},
+        {op: 'upd_arr', id: [sid, 10], obj: [sid, 1], ref: [sid, 4], val: [sid, 9]},
+      ],
+    }),
+    buildCanonicalEncodeFixture('patch_canonical_con_ref_v1', {
+      sid,
+      time: 1,
+      meta_kind: 'undefined',
+      ops: [
+        {op: 'new_con', id: [sid, 1], value: 1},
+        {op: 'new_con_ref', id: [sid, 2], value_ref: [sid, 1]},
+        {op: 'new_obj', id: [sid, 3]},
+        {op: 'ins_val', id: [sid, 4], obj: [0, 0], val: [sid, 3]},
+        {op: 'ins_obj', id: [sid, 5], obj: [sid, 3], data: [['ref', [sid, 2]]]},
       ],
     }),
   ];

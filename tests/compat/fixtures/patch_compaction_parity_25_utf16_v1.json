@@ -1,6 +1,6 @@
 {
   "fixture_version": 1,
-  "name": "patch_compaction_parity_21_utf16_v1",
+  "name": "patch_compaction_parity_25_utf16_v1",
   "scenario": "patch_compaction_parity",
   "input": {
     "patch_binary_hex": "f4c20401f7042048800001640101f09f988061010478"

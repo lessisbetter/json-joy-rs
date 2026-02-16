@@ -3,18 +3,18 @@
   "name": "patch_alt_codecs_06_v1",
   "scenario": "patch_alt_codecs",
   "input": {
-    "patch_binary_hex": "91c20409f706104880000900f40065786275756f5209626b310b626d310c89"
+    "patch_binary_hex": "91c20401f705184880000100f500095a0100030204"
   },
   "expected": {
     "compact_json": [
       [
         [
           74001,
-          9
+          1
         ]
       ],
       [
-        2
+        3
       ],
       [
         9,
@@ -22,42 +22,39 @@
           0,
           0
         ],
+        1
+      ],
+      [
+        0,
+        true
+      ],
+      [
+        0,
         9
       ],
       [
-        0,
-        false
-      ],
-      [
-        0,
-        "xbuuo"
-      ],
-      [
-        10,
-        9,
+        11,
+        1,
         [
           [
-            "k1",
-            11
+            0,
+            3
           ],
           [
-            "m1",
-            12
+            2,
+            4
           ]
         ]
-      ],
-      [
-        17
       ]
     ],
     "verbose_json": {
       "id": [
         74001,
-        9
+        1
       ],
       "ops": [
         {
-          "op": "new_obj"
+          "op": "new_vec"
         },
         {
           "op": "ins_val",
@@ -67,46 +64,43 @@
           ],
           "value": [
             74001,
-            9
+            1
           ]
         },
         {
           "op": "new_con",
-          "value": false
+          "value": true
         },
         {
           "op": "new_con",
-          "value": "xbuuo"
+          "value": 9
         },
         {
-          "op": "ins_obj",
+          "op": "ins_vec",
           "obj": [
             74001,
-            9
+            1
           ],
           "value": [
             [
-              "k1",
+              0,
               [
                 74001,
-                11
+                3
               ]
             ],
             [
-              "m1",
+              2,
               [
                 74001,
-                12
+                4
               ]
             ]
           ]
-        },
-        {
-          "op": "nop"
         }
       ]
     },
-    "compact_binary_hex": "8781821a000121110981028309820000098200f4820065786275756f830a098282626b310b82626d310c8111"
+    "compact_binary_hex": "8681821a000121110181038309820000018200f5820009830b0182820003820204"
   },
   "meta": {
     "upstream_package": "json-joy",

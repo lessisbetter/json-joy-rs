@@ -1,0 +1,94 @@
+{
+  "fixture_version": 1,
+  "name": "patch_canonical_vec_insert_v1",
+  "scenario": "patch_canonical_encode",
+  "input": {
+    "sid": 74001,
+    "time": 1,
+    "meta_kind": "undefined",
+    "ops": [
+      {
+        "op": "new_vec",
+        "id": [
+          74001,
+          1
+        ]
+      },
+      {
+        "op": "ins_val",
+        "id": [
+          74001,
+          2
+        ],
+        "obj": [
+          0,
+          0
+        ],
+        "val": [
+          74001,
+          1
+        ]
+      },
+      {
+        "op": "new_con",
+        "id": [
+          74001,
+          3
+        ],
+        "value": true
+      },
+      {
+        "op": "new_con",
+        "id": [
+          74001,
+          4
+        ],
+        "value": 9
+      },
+      {
+        "op": "ins_vec",
+        "id": [
+          74001,
+          5
+        ],
+        "obj": [
+          74001,
+          1
+        ],
+        "data": [
+          [
+            0,
+            [
+              74001,
+              3
+            ]
+          ],
+          [
+            2,
+            [
+              74001,
+              4
+            ]
+          ]
+        ]
+      }
+    ]
+  },
+  "expected": {
+    "patch_binary_hex": "91c20401f705184880000100f500095a0100030204",
+    "patch_op_count": 5,
+    "patch_span": 5,
+    "patch_opcodes": [
+      3,
+      9,
+      0,
+      0,
+      11
+    ]
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

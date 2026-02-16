@@ -3,10 +3,10 @@
   "name": "patch_compaction_parity_15_v1",
   "scenario": "patch_compaction_parity",
   "input": {
-    "patch_binary_hex": "91c20451f706104880005101003400626b72525101636b31305301636d3130540189"
+    "patch_binary_hex": "91c20431f706104880003100fb404af3333333333300f65231626b3633626d363489"
   },
   "expected": {
-    "compacted_patch_binary_hex": "91c20451f706104880005101003400626b72525101636b31305301636d3130540189",
+    "compacted_patch_binary_hex": "91c20431f706104880003100fb404af3333333333300f65231626b3633626d363489",
     "changed": false
   },
   "meta": {

@@ -66,6 +66,10 @@ fn canonical_ops(input: &Value) -> Vec<DecodedOp> {
                 id,
                 value: ConValue::Json(op["value"].clone()),
             },
+            "new_con_ref" => DecodedOp::NewCon {
+                id,
+                value: ConValue::Ref(as_ts(&op["value_ref"], "op.value_ref")),
+            },
             "new_val" => DecodedOp::NewVal { id },
             "new_obj" => DecodedOp::NewObj { id },
             "new_vec" => DecodedOp::NewVec { id },
@@ -222,7 +226,13 @@ fn patch_canonical_encode_fixtures_match_oracle_binary() {
             .as_array()
             .expect("expected.patch_opcodes must be array")
             .iter()
-            .map(|v| u8::try_from(v.as_u64().expect("opcode must be u64")).expect("opcode must fit u8"))
+            .map(|v| {
+                let n = v
+                    .as_u64()
+                    .or_else(|| v.as_i64().and_then(|i| u64::try_from(i).ok()))
+                    .unwrap_or_else(|| panic!("opcode must be integer, got {v:?}"));
+                u8::try_from(n).expect("opcode must fit u8")
+            })
             .collect();
 
         assert_eq!(patch.op_count(), expected_op_count);
