@@ -38,6 +38,13 @@ impl Hash for Id {
     }
 }
 
+fn cmp_id_time_sid(a: Id, b: Id) -> std::cmp::Ordering {
+    match a.time.cmp(&b.time) {
+        std::cmp::Ordering::Equal => a.sid.cmp(&b.sid),
+        ord => ord,
+    }
+}
+
 impl From<Timestamp> for Id {
     fn from(v: Timestamp) -> Self {
         Self {
@@ -552,8 +559,8 @@ impl RuntimeModel {
                         if existing_ids.contains(&vid) && obj.time < vid.time {
                             if let Some((_, v)) = map.iter_mut().find(|(existing, _)| existing == k) {
                                 let old = *v;
-                                *v = vid;
-                                if old != vid {
+                                if cmp_id_time_sid(old, vid).is_lt() {
+                                    *v = vid;
                                     gc.push(old);
                                 }
                             } else {
@@ -580,10 +587,13 @@ impl RuntimeModel {
                     for (idx, v) in data {
                         let vid = Id::from(*v);
                         if existing_ids.contains(&vid) && obj.time < vid.time {
-                            if let Some(old) = map.insert(*idx, vid) {
-                                if old != vid {
+                            if let Some(old) = map.get(idx).copied() {
+                                if cmp_id_time_sid(old, vid).is_lt() {
+                                    let old = map.insert(*idx, vid).unwrap_or(old);
                                     gc.push(old);
                                 }
+                            } else if let Some(old) = map.insert(*idx, vid) {
+                                gc.push(old);
                             }
                         }
                     }
@@ -699,11 +709,13 @@ impl RuntimeModel {
                 if let Some(RuntimeNode::Arr(atoms)) = self.nodes.get_mut(&obj) {
                     if let Some(atom) = atoms.iter_mut().find(|a| a.slot == reference) {
                         let old = atom.value;
-                        atom.value = Some(val);
                         if let Some(old) = old {
-                            if old != val {
+                            if cmp_id_time_sid(old, val).is_lt() {
+                                atom.value = Some(val);
                                 self.gc_tree(old);
                             }
+                        } else {
+                            atom.value = Some(val);
                         }
                     }
                 }
