@@ -127,6 +127,15 @@ pub struct BatchChangeEvent {
     pub after: Value,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct ScopedChangeEvent {
+    pub path: Vec<PathStep>,
+    pub before: Option<Value>,
+    pub after: Option<Value>,
+    pub patch_id: Option<(u64, u64)>,
+    pub origin: ChangeEventOrigin,
+}
+
 impl NativeModelApi {
     pub fn from_model_binary(data: &[u8], sid_hint: Option<u64>) -> Result<Self, ModelApiError> {
         let mut runtime = RuntimeModel::from_model_binary(data)?;
@@ -189,6 +198,25 @@ impl NativeModelApi {
 
     pub fn off_changes(&mut self, listener_id: u64) -> bool {
         self.batch_listeners.remove(&listener_id).is_some()
+    }
+
+    pub fn on_change_at<F>(&mut self, path: Vec<PathStep>, mut listener: F) -> u64
+    where
+        F: FnMut(ScopedChangeEvent) + Send + Sync + 'static,
+    {
+        self.on_change(move |ev| {
+            let before = value_at_path(&ev.before, &path).cloned();
+            let after = value_at_path(&ev.after, &path).cloned();
+            if before != after {
+                listener(ScopedChangeEvent {
+                    path: path.clone(),
+                    before,
+                    after,
+                    patch_id: ev.patch_id,
+                    origin: ev.origin,
+                });
+            }
+        })
     }
 
     pub fn apply_patch(&mut self, patch: &Patch) -> Result<(), ModelApiError> {
@@ -809,6 +837,19 @@ fn get_path_mut<'a>(value: &'a mut Value, path: &[PathStep]) -> Option<&'a mut V
             }
             _ => return None,
         }
+    }
+    Some(cur)
+}
+
+fn value_at_path<'a>(value: &'a Value, path: &[PathStep]) -> Option<&'a Value> {
+    let mut cur = value;
+    for step in path {
+        cur = match (step, cur) {
+            (PathStep::Key(key), Value::Object(map)) => map.get(key)?,
+            (PathStep::Index(idx), Value::Array(arr)) => arr.get(*idx)?,
+            (PathStep::Append, _) => return None,
+            _ => return None,
+        };
     }
     Some(cur)
 }

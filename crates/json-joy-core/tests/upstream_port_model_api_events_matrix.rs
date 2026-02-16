@@ -86,3 +86,41 @@ fn upstream_port_model_api_events_batch_fanout_matrix() {
     api.apply_batch(&[]).unwrap();
     assert_eq!(seen.lock().unwrap().len(), 1);
 }
+
+#[test]
+fn upstream_port_model_api_events_scoped_path_matrix() {
+    // Upstream mapping:
+    // - json-crdt/model/api/NodeEvents.ts path-scoped view change subscriptions.
+    let sid = 99004;
+    let model = json_joy_core::less_db_compat::create_model(&json!({"doc":{"a":1,"b":1}}), sid).unwrap();
+    let binary = json_joy_core::less_db_compat::model_to_binary(&model);
+    let mut api = NativeModelApi::from_model_binary(&binary, Some(sid)).unwrap();
+
+    let seen = Arc::new(Mutex::new(Vec::new()));
+    let seen_clone = Arc::clone(&seen);
+    let sub = api.on_change_at(
+        vec![PathStep::Key("doc".into()), PathStep::Key("a".into())],
+        move |ev| {
+            seen_clone.lock().unwrap().push((ev.before, ev.after));
+        },
+    );
+
+    api.set(
+        &[PathStep::Key("doc".into()), PathStep::Key("b".into())],
+        json!(2),
+    )
+    .unwrap();
+    api.set(
+        &[PathStep::Key("doc".into()), PathStep::Key("a".into())],
+        json!(3),
+    )
+    .unwrap();
+
+    let events = seen.lock().unwrap();
+    assert_eq!(events.len(), 1);
+    assert_eq!(events[0].0, Some(json!(1)));
+    assert_eq!(events[0].1, Some(json!(3)));
+    drop(events);
+
+    assert!(api.off_change(sub));
+}
