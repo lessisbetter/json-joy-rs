@@ -1,4 +1,4 @@
-use json_joy_core::model_api::{NativeModelApi, PathStep};
+use json_joy_core::model_api::{ApiOperation, NativeModelApi, PathStep};
 use json_joy_core::patch::{DecodedOp, Patch, Timestamp};
 use json_joy_core::patch_builder::encode_patch_from_ops;
 use serde_json::json;
@@ -172,4 +172,60 @@ fn upstream_port_model_api_mutator_matrix() {
         .expect("set must succeed");
 
     assert_eq!(api.view(), json!({"title":"world","list":[7,9,2],"name":"aZb"}));
+}
+
+#[test]
+fn upstream_port_model_api_tolerant_ops_matrix() {
+    // Upstream mapping:
+    // - json-crdt/model/api/nodes.ts NodeApi.{add,replace,remove,op,read,select}
+    let sid = 97004;
+    let mut api = NativeModelApi::from_patches(&[patch_from_ops(
+        sid,
+        1,
+        &[
+            DecodedOp::NewObj {
+                id: Timestamp { sid, time: 1 },
+            },
+            DecodedOp::InsVal {
+                id: Timestamp { sid, time: 2 },
+                obj: Timestamp { sid: 0, time: 0 },
+                val: Timestamp { sid, time: 1 },
+            },
+        ],
+    )])
+    .expect("from_patches must succeed");
+
+    assert_eq!(api.read(None), Some(json!({})));
+    assert_eq!(api.select(Some(&[PathStep::Key("missing".into())])), None);
+
+    assert!(api.try_add(&[PathStep::Key("items".into())], json!([1, 2])));
+    assert!(api.try_add(
+        &[PathStep::Key("items".into()), PathStep::Append],
+        json!(3)
+    ));
+    assert!(api.try_replace(
+        &[PathStep::Key("items".into()), PathStep::Index(0)],
+        json!(7)
+    ));
+    assert!(api.try_remove(&[
+        PathStep::Key("items".into()),
+        PathStep::Index(1)
+    ]));
+    assert!(api.op(ApiOperation::Add {
+        path: vec![PathStep::Key("title".into())],
+        value: json!("ok"),
+    }));
+    assert!(api.op(ApiOperation::Replace {
+        path: vec![PathStep::Key("title".into())],
+        value: json!("ready"),
+    }));
+    assert!(api.op(ApiOperation::Remove {
+        path: vec![PathStep::Key("title".into())],
+        length: 1,
+    }));
+
+    assert_eq!(api.read(Some(&[PathStep::Key("items".into())])), Some(json!([7, 3])));
+    assert!(!api.try_add(&[], json!(1)));
+    assert!(!api.try_replace(&[PathStep::Key("missing".into())], json!(1)));
+    assert!(!api.try_remove(&[]));
 }

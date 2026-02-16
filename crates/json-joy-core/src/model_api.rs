@@ -19,6 +19,14 @@ use thiserror::Error;
 pub enum PathStep {
     Key(String),
     Index(usize),
+    Append,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum ApiOperation {
+    Add { path: Vec<PathStep>, value: Value },
+    Replace { path: Vec<PathStep>, value: Value },
+    Remove { path: Vec<PathStep>, length: usize },
 }
 
 #[derive(Debug, Error)]
@@ -156,10 +164,22 @@ impl NativeModelApi {
             node = match (step, node) {
                 (PathStep::Key(k), Value::Object(map)) => map.get(k)?.clone(),
                 (PathStep::Index(i), Value::Array(arr)) => arr.get(*i)?.clone(),
+                (PathStep::Append, _) => return None,
                 _ => return None,
             };
         }
         Some(node)
+    }
+
+    pub fn read(&self, path: Option<&[PathStep]>) -> Option<Value> {
+        match path {
+            None => Some(self.runtime.view_json()),
+            Some(p) => self.find(p),
+        }
+    }
+
+    pub fn select(&self, path: Option<&[PathStep]>) -> Option<Value> {
+        self.read(path)
     }
 
     pub fn set(&mut self, path: &[PathStep], value: Value) -> Result<(), ModelApiError> {
@@ -230,6 +250,9 @@ impl NativeModelApi {
                 let i = (*idx).min(arr.len());
                 arr.insert(i, value);
             }
+            (Value::Array(arr), PathStep::Append) => {
+                arr.push(value);
+            }
             _ => return Err(ModelApiError::InvalidPathOp),
         }
         self.apply_target_view(next)
@@ -265,9 +288,33 @@ impl NativeModelApi {
                     arr.remove(*idx);
                 }
             }
+            (Value::Array(arr), PathStep::Append) => {
+                let _ = arr.pop();
+            }
             _ => return Err(ModelApiError::InvalidPathOp),
         }
         self.apply_target_view(next)
+    }
+
+    // Upstream-compatible tolerant operation helpers: return false on invalid paths/types.
+    pub fn try_add(&mut self, path: &[PathStep], value: Value) -> bool {
+        self.add(path, value).is_ok()
+    }
+
+    pub fn try_replace(&mut self, path: &[PathStep], value: Value) -> bool {
+        self.replace(path, value).is_ok()
+    }
+
+    pub fn try_remove(&mut self, path: &[PathStep]) -> bool {
+        self.remove(path).is_ok()
+    }
+
+    pub fn op(&mut self, operation: ApiOperation) -> bool {
+        match operation {
+            ApiOperation::Add { path, value } => self.try_add(&path, value),
+            ApiOperation::Replace { path, value } => self.try_replace(&path, value),
+            ApiOperation::Remove { path, .. } => self.try_remove(&path),
+        }
     }
 
     fn apply_target_view(&mut self, next: Value) -> Result<(), ModelApiError> {
