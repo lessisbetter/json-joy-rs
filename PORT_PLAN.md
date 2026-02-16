@@ -248,12 +248,11 @@ Exit criteria:
 
 Implementation note:
 - M5 compatibility layer initially used oracle-backed lifecycle operations.
-- Native status update (M6): `apply_patch` is now fully native in
-  `crates/json-joy-core/src/less_db_compat.rs` via `RuntimeModel`
-  decode/apply/encode.
-- Remaining bridge surface is in compatibility orchestration (`less_db_compat`
-  `create_model` and fallback `diff_model` for unsupported native shapes).
-- `diff_runtime` production path is now native-only.
+- Native status update (M6): `create_model`, `diff_model`, and `apply_patch`
+  are now native in `crates/json-joy-core/src/less_db_compat.rs`.
+- `diff_runtime` production path is native-only.
+- Oracle scripts under `tools/oracle-node` are test tooling only
+  (fixture/differential generation), not production runtime dependencies.
 
 ## M6: Python Package Hardening
 

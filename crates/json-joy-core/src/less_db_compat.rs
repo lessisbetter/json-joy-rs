@@ -5,10 +5,9 @@ use crate::crdt_binary::first_logical_clock_sid_time;
 use crate::{generate_session_id, is_valid_session_id};
 use crate::model::Model;
 use crate::model_runtime::RuntimeModel;
-use crate::patch::Patch;
-use serde_json::{json, Value};
-use std::path::PathBuf;
-use std::process::Command;
+use crate::patch::{ConValue, DecodedOp, Patch, Timestamp};
+use crate::patch_builder::encode_patch_from_ops;
+use serde_json::Value;
 use thiserror::Error;
 
 pub type PatchBytes = Vec<u8>;
@@ -28,57 +27,32 @@ pub enum CompatError {
     InvalidSessionId(u64),
     #[error("CRDT binary too large: {actual} bytes (max {max})")]
     ModelBinaryTooLarge { actual: usize, max: usize },
-    #[error("failed to run oracle process: {0}")]
-    ProcessIo(String),
     #[error("unsupported shape for native compatibility path")]
     UnsupportedShape,
     #[error("oracle process failed: {0}")]
     ProcessFailure(String),
-    #[error("invalid oracle output")]
-    InvalidOutput,
-    #[error("invalid hex")]
-    InvalidHex,
 }
 
 pub fn create_model(data: &Value, sid: u64) -> Result<CompatModel, CompatError> {
     if !is_valid_session_id(sid) {
         return Err(CompatError::InvalidSessionId(sid));
     }
-    // Bootstrap parity for initial model creation is still delegated to
-    // upstream oracle runtime to match exact binary initialization behavior.
-    let output = Command::new("node")
-        .arg(oracle_model_runtime_path())
-        .arg(
-            json!({
-                "op": "create",
-                "sid": sid,
-                "data_json": data,
-            })
-            .to_string(),
-        )
-        .output()
-        .map_err(|e| CompatError::ProcessIo(e.to_string()))?;
-    if !output.status.success() {
-        return Err(CompatError::ProcessFailure(
-            String::from_utf8_lossy(&output.stderr).into_owned(),
-        ));
-    }
-    let parsed: Value = serde_json::from_slice(&output.stdout).map_err(|_| CompatError::InvalidOutput)?;
-    let model_hex = parsed
-        .get("model_binary_hex")
-        .and_then(Value::as_str)
-        .ok_or(CompatError::InvalidOutput)?;
-    let view = parsed
-        .get("view_json")
-        .cloned()
-        .ok_or(CompatError::InvalidOutput)?;
-    let sid = parsed
-        .get("sid")
-        .and_then(Value::as_u64)
-        .ok_or(CompatError::InvalidOutput)?;
+    let mut runtime = RuntimeModel::new_logical_empty(sid);
+    let ops = build_create_ops(data, sid, 1);
+    let patch_bytes = encode_patch_from_ops(sid, 1, &ops)
+        .map_err(|e| CompatError::ProcessFailure(format!("create patch encode failed: {e}")))?;
+    let patch = Patch::from_binary(&patch_bytes)
+        .map_err(|e| CompatError::ProcessFailure(format!("create patch decode failed: {e}")))?;
+    runtime
+        .apply_patch(&patch)
+        .map_err(|e| CompatError::ProcessFailure(format!("create apply failed: {e}")))?;
+    let model_binary = runtime
+        .to_model_binary_like()
+        .map_err(|e| CompatError::ProcessFailure(format!("create model encode failed: {e}")))?;
+
     Ok(CompatModel {
-        model_binary: decode_hex(model_hex)?,
-        view,
+        model_binary,
+        view: runtime.view_json(),
         sid,
     })
 }
@@ -237,27 +211,124 @@ fn primary_sid_from_model_binary(data: &[u8]) -> Option<u64> {
     first_logical_clock_sid_time(data).map(|(sid, _)| sid)
 }
 
-fn oracle_model_runtime_path() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("..")
-        .join("..")
-        .join("tools")
-        .join("oracle-node")
-        .join("model-runtime.cjs")
+fn build_create_ops(data: &Value, sid: u64, start_time: u64) -> Vec<DecodedOp> {
+    let mut emitter = CreateEmitter {
+        sid,
+        cursor: start_time,
+        ops: Vec::new(),
+    };
+    let root_val = emitter.const_or_json(data);
+    emitter.push(DecodedOp::InsVal {
+        id: emitter.next_id(),
+        obj: Timestamp { sid: 0, time: 0 },
+        val: root_val,
+    });
+    emitter.ops
 }
 
-fn decode_hex(s: &str) -> Result<Vec<u8>, CompatError> {
-    if s.len() % 2 != 0 {
-        return Err(CompatError::InvalidHex);
+struct CreateEmitter {
+    sid: u64,
+    cursor: u64,
+    ops: Vec<DecodedOp>,
+}
+
+impl CreateEmitter {
+    fn next_id(&self) -> Timestamp {
+        Timestamp {
+            sid: self.sid,
+            time: self.cursor,
+        }
     }
-    let mut out = Vec::with_capacity(s.len() / 2);
-    let bytes = s.as_bytes();
-    for i in (0..bytes.len()).step_by(2) {
-        let hi = (bytes[i] as char).to_digit(16).ok_or(CompatError::InvalidHex)? as u8;
-        let lo = (bytes[i + 1] as char)
-            .to_digit(16)
-            .ok_or(CompatError::InvalidHex)? as u8;
-        out.push((hi << 4) | lo);
+
+    fn push(&mut self, op: DecodedOp) {
+        self.cursor = self.cursor.saturating_add(op.span());
+        self.ops.push(op);
     }
-    Ok(out)
+
+    fn con(&mut self, value: ConValue) -> Timestamp {
+        let id = self.next_id();
+        self.push(DecodedOp::NewCon { id, value });
+        id
+    }
+
+    fn val(&mut self, json: &Value) -> Timestamp {
+        let val_id = self.next_id();
+        self.push(DecodedOp::NewVal { id: val_id });
+        let con_id = self.con(ConValue::Json(json.clone()));
+        self.push(DecodedOp::InsVal {
+            id: self.next_id(),
+            obj: val_id,
+            val: con_id,
+        });
+        val_id
+    }
+
+    fn json(&mut self, json: &Value) -> Timestamp {
+        match json {
+            Value::Null | Value::Bool(_) | Value::Number(_) => self.val(json),
+            Value::String(s) => {
+                let id = self.next_id();
+                self.push(DecodedOp::NewStr { id });
+                if !s.is_empty() {
+                    self.push(DecodedOp::InsStr {
+                        id: self.next_id(),
+                        obj: id,
+                        reference: id,
+                        data: s.clone(),
+                    });
+                }
+                id
+            }
+            Value::Array(items) => {
+                let id = self.next_id();
+                self.push(DecodedOp::NewArr { id });
+                if !items.is_empty() {
+                    let mut values = Vec::with_capacity(items.len());
+                    for item in items {
+                        values.push(self.json(item));
+                    }
+                    self.push(DecodedOp::InsArr {
+                        id: self.next_id(),
+                        obj: id,
+                        reference: id,
+                        data: values,
+                    });
+                }
+                id
+            }
+            Value::Object(map) => {
+                let id = self.next_id();
+                self.push(DecodedOp::NewObj { id });
+                if !map.is_empty() {
+                    let mut data = Vec::with_capacity(map.len());
+                    for (k, v) in map {
+                        let child = if is_const(v) {
+                            self.con(ConValue::Json(v.clone()))
+                        } else {
+                            self.json(v)
+                        };
+                        data.push((k.clone(), child));
+                    }
+                    self.push(DecodedOp::InsObj {
+                        id: self.next_id(),
+                        obj: id,
+                        data,
+                    });
+                }
+                id
+            }
+        }
+    }
+
+    fn const_or_json(&mut self, value: &Value) -> Timestamp {
+        if is_const(value) {
+            self.con(ConValue::Json(value.clone()))
+        } else {
+            self.json(value)
+        }
+    }
+}
+
+fn is_const(value: &Value) -> bool {
+    matches!(value, Value::Null | Value::Bool(_) | Value::Number(_))
 }

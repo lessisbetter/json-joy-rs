@@ -32,10 +32,9 @@ Do not start implementation for a section until its fixture/test surface is in p
 
 ## Temporary bridge policy (M5)
 
-- M5 allows oracle-backed behavior for compatibility-layer lifecycle operations.
-- Keep this dependency explicit in code comments and milestone docs.
-- Do not treat oracle-backed behavior as long-term final architecture; replace
-  incrementally with native Rust implementations in hardening milestones.
+- M5 allowed oracle-backed behavior for compatibility-layer lifecycle operations.
+- That bridge has now been removed from production runtime paths in `json-joy-core`.
+- Keep oracle tooling in `tools/oracle-node` for fixture generation and differential tests only.
 
 ## Required execution flow per section
 
@@ -71,13 +70,11 @@ When workflow changes, update this file and relevant plan docs (`PORT_PLAN.md`) 
 - Do not mark a family `native` unless production code has no oracle subprocess
   dependency for that family.
 
-## Current bridge boundaries (keep shrinking)
+## Runtime bridge boundaries
 
-- Native in production now:
-  - `crates/json-joy-core/src/less_db_compat.rs` `apply_patch`
-  - `crates/json-joy-core/src/diff_runtime.rs` core dispatcher (no subprocess in this module)
-- Remaining compatibility-layer oracle fallback:
-  - `crates/json-joy-core/src/less_db_compat.rs` `create_model`
-  - `crates/json-joy-core/src/less_db_compat.rs` `diff_model` only when `DiffError::UnsupportedShape`
-
-When replacing these, keep fixture parity exact and update `CORE_PARITY_MATRIX.md` and `TASKS.md` in the same change.
+- Production runtime bridge boundaries are now empty:
+  - `crates/json-joy-core/src/diff_runtime.rs` is native-only.
+  - `crates/json-joy-core/src/less_db_compat.rs` lifecycle paths are native-only.
+- Node oracle usage is restricted to:
+  - fixture generation under `tools/oracle-node`
+  - differential tests.
