@@ -10,6 +10,7 @@ use thiserror::Error;
 use crate::crdt_binary::{read_b1vu56, read_vu57, write_b1vu56, write_vu57, LogicalClockBase};
 use crate::model::ModelError;
 use crate::model_runtime::types::{ArrAtom, BinAtom, Id, StrAtom};
+use crate::patch_clock_codec;
 
 pub type IndexedFields = BTreeMap<String, Vec<u8>>;
 
@@ -24,33 +25,13 @@ pub enum IndexedBinaryCodecError {
 }
 
 pub(super) fn encode_clock_table(clock_table: &[LogicalClockBase]) -> Vec<u8> {
-    let mut out = Vec::new();
-    write_vu57(&mut out, clock_table.len() as u64);
-    for c in clock_table {
-        write_vu57(&mut out, c.sid);
-        write_vu57(&mut out, c.time);
-    }
-    out
+    patch_clock_codec::encode_clock_table(clock_table)
 }
 
 pub(super) fn decode_clock_table(
     data: &[u8],
 ) -> Result<Vec<LogicalClockBase>, IndexedBinaryCodecError> {
-    let mut pos = 0usize;
-    let len = read_vu57(data, &mut pos).ok_or(IndexedBinaryCodecError::InvalidFields)? as usize;
-    if len == 0 {
-        return Err(IndexedBinaryCodecError::InvalidFields);
-    }
-    let mut out = Vec::with_capacity(len);
-    for _ in 0..len {
-        let sid = read_vu57(data, &mut pos).ok_or(IndexedBinaryCodecError::InvalidFields)?;
-        let time = read_vu57(data, &mut pos).ok_or(IndexedBinaryCodecError::InvalidFields)?;
-        out.push(LogicalClockBase { sid, time });
-    }
-    if pos != data.len() {
-        return Err(IndexedBinaryCodecError::InvalidFields);
-    }
-    Ok(out)
+    patch_clock_codec::decode_clock_table(data).map_err(|_| IndexedBinaryCodecError::InvalidFields)
 }
 
 pub(super) fn to_base36(v: u64) -> String {

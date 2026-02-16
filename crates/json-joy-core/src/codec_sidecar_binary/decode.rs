@@ -3,9 +3,10 @@ use std::collections::{BTreeMap, HashMap};
 use ciborium::value::Value as CborValue;
 use serde_json::Value;
 
-use crate::crdt_binary::{read_b1vu56, read_vu57, LogicalClockBase};
+use crate::crdt_binary::{read_b1vu56, LogicalClockBase};
 use crate::model_runtime::types::{ArrAtom, BinAtom, ConCell, Id, RuntimeNode, StrAtom};
 use crate::model_runtime::RuntimeModel;
+use crate::patch_clock_codec;
 
 use super::types::{decode_sidecar_id, json_from_cbor, MetaCursor, SidecarBinaryCodecError};
 
@@ -26,20 +27,8 @@ pub fn decode_sidecar_to_model_binary(
         return Err(SidecarBinaryCodecError::InvalidPayload);
     }
 
-    let mut table_pos = 4 + offset;
-    let len = read_vu57(meta_binary, &mut table_pos)
-        .ok_or(SidecarBinaryCodecError::InvalidPayload)? as usize;
-    if len == 0 {
-        return Err(SidecarBinaryCodecError::InvalidPayload);
-    }
-    let mut table = Vec::with_capacity(len);
-    for _ in 0..len {
-        let sid = read_vu57(meta_binary, &mut table_pos)
-            .ok_or(SidecarBinaryCodecError::InvalidPayload)?;
-        let time = read_vu57(meta_binary, &mut table_pos)
-            .ok_or(SidecarBinaryCodecError::InvalidPayload)?;
-        table.push(LogicalClockBase { sid, time });
-    }
+    let table = patch_clock_codec::decode_clock_table(&meta_binary[4 + offset..])
+        .map_err(|_| SidecarBinaryCodecError::InvalidPayload)?;
 
     let mut dec = MetaCursor::new(&meta_binary[4..4 + offset]);
     let mut nodes = HashMap::new();

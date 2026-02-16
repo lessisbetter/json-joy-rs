@@ -2,9 +2,10 @@ use json_joy_json_pack::write_cbor_value_like_json_pack;
 
 use ciborium::value::Value as CborValue;
 
-use crate::crdt_binary::{write_b1vu56, write_vu57};
+use crate::crdt_binary::write_b1vu56;
 use crate::model_runtime::types::{ConCell, Id, RuntimeNode};
 use crate::model_runtime::RuntimeModel;
+use crate::patch_clock_codec;
 
 use super::types::{
     cbor_from_json, group_arr_chunks, group_bin_chunks, group_str_chunks, write_type_len,
@@ -41,11 +42,7 @@ pub fn encode_model_binary_to_sidecar(
     meta[2] = ((table_offset >> 8) & 0xff) as u8;
     meta[3] = (table_offset & 0xff) as u8;
 
-    write_vu57(&mut meta, ctx.table.len() as u64);
-    for c in &ctx.table {
-        write_vu57(&mut meta, c.sid);
-        write_vu57(&mut meta, c.time);
-    }
+    meta.extend_from_slice(&patch_clock_codec::encode_clock_table(&ctx.table));
 
     Ok((view, meta))
 }
