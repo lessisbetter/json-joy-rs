@@ -14,11 +14,16 @@ use crate::model::{Model, ModelError};
 use crate::patch::{ConValue, DecodedOp, Patch, Timestamp};
 use ciborium::value::Value as CborValue;
 use serde_json::{Map, Number, Value};
-use std::convert::TryFrom;
 use std::collections::{BTreeMap, HashMap};
-use std::hash::{Hash, Hasher};
+use std::convert::TryFrom;
 use std::io::Cursor;
 use thiserror::Error;
+
+mod rga;
+mod types;
+
+use rga::{find_insert_index_arr, find_insert_index_bin, find_insert_index_str};
+use types::{cmp_id_time_sid, ArrAtom, BinAtom, ClockState, ConCell, Id, RuntimeNode, StrAtom};
 
 #[derive(Debug, Error)]
 pub enum ApplyError {
@@ -26,107 +31,6 @@ pub enum ApplyError {
     UnsupportedOpForM3,
     #[error("runtime graph invariant violation: {0}")]
     InvariantViolation(String),
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct Id {
-    sid: u64,
-    time: u64,
-}
-
-impl Hash for Id {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.sid.hash(state);
-        self.time.hash(state);
-    }
-}
-
-fn cmp_id_time_sid(a: Id, b: Id) -> std::cmp::Ordering {
-    match a.time.cmp(&b.time) {
-        std::cmp::Ordering::Equal => a.sid.cmp(&b.sid),
-        ord => ord,
-    }
-}
-
-impl From<Timestamp> for Id {
-    fn from(v: Timestamp) -> Self {
-        Self {
-            sid: v.sid,
-            time: v.time,
-        }
-    }
-}
-
-impl From<Id> for Timestamp {
-    fn from(v: Id) -> Self {
-        Self {
-            sid: v.sid,
-            time: v.time,
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-enum RuntimeNode {
-    Con(ConCell),
-    Val(Id),
-    Obj(Vec<(String, Id)>),
-    Vec(BTreeMap<u64, Id>),
-    Str(Vec<StrAtom>),
-    Bin(Vec<BinAtom>),
-    Arr(Vec<ArrAtom>),
-}
-
-#[derive(Debug, Clone)]
-enum ConCell {
-    Json(Value),
-    Ref(Id),
-    Undef,
-}
-
-#[derive(Debug, Clone)]
-struct StrAtom {
-    slot: Id,
-    ch: Option<char>,
-}
-
-#[derive(Debug, Clone)]
-struct BinAtom {
-    slot: Id,
-    byte: Option<u8>,
-}
-
-#[derive(Debug, Clone)]
-struct ArrAtom {
-    slot: Id,
-    value: Option<Id>,
-}
-
-#[derive(Debug, Default, Clone)]
-struct ClockState {
-    observed: HashMap<u64, Vec<(u64, u64)>>,
-}
-
-impl ClockState {
-    fn observe(&mut self, sid: u64, start: u64, span: u64) {
-        let end = start + span.saturating_sub(1);
-        let ranges = self.observed.entry(sid).or_default();
-        ranges.push((start, end));
-        ranges.sort_by_key(|(a, _)| *a);
-        let mut merged: Vec<(u64, u64)> = Vec::with_capacity(ranges.len());
-        for (a, b) in ranges.iter().copied() {
-            if let Some(last) = merged.last_mut() {
-                if a <= last.1.saturating_add(1) {
-                    last.1 = last.1.max(b);
-                } else {
-                    merged.push((a, b));
-                }
-            } else {
-                merged.push((a, b));
-            }
-        }
-        *ranges = merged;
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -2019,59 +1923,4 @@ fn read_one_cbor(ctx: &mut DecodeCtx<'_>) -> Result<CborValue, ModelError> {
     let consumed = cursor.position() as usize;
     ctx.pos += consumed;
     Ok(val)
-}
-
-fn find_insert_index_rga(slots: &[Id], reference: Id, container: Id, id: Id) -> Option<usize> {
-    let mut left = if reference == container {
-        if slots.is_empty() {
-            return Some(0);
-        }
-        let first = slots[0];
-        if cmp_id_time_sid(first, id).is_lt() {
-            return Some(0);
-        }
-        if first == id {
-            return None;
-        }
-        0usize
-    } else {
-        slots.iter().position(|slot| *slot == reference)?
-    };
-
-    loop {
-        let right = left + 1;
-        if right >= slots.len() {
-            break;
-        }
-        let right_id = slots[right];
-        if right_id.time < id.time {
-            break;
-        }
-        if right_id.time == id.time {
-            if right_id.sid == id.sid {
-                return None;
-            }
-            if right_id.sid < id.sid {
-                break;
-            }
-        }
-        left = right;
-    }
-
-    Some(left + 1)
-}
-
-fn find_insert_index_str(atoms: &[StrAtom], reference: Id, container: Id, id: Id) -> Option<usize> {
-    let slots = atoms.iter().map(|a| a.slot).collect::<Vec<_>>();
-    find_insert_index_rga(&slots, reference, container, id)
-}
-
-fn find_insert_index_bin(atoms: &[BinAtom], reference: Id, container: Id, id: Id) -> Option<usize> {
-    let slots = atoms.iter().map(|a| a.slot).collect::<Vec<_>>();
-    find_insert_index_rga(&slots, reference, container, id)
-}
-
-fn find_insert_index_arr(atoms: &[ArrAtom], reference: Id, container: Id, id: Id) -> Option<usize> {
-    let slots = atoms.iter().map(|a| a.slot).collect::<Vec<_>>();
-    find_insert_index_rga(&slots, reference, container, id)
 }

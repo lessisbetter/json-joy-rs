@@ -46,7 +46,7 @@ This repository is structured as a Rust-core + bindings monorepo, following the 
 - Runtime-heavy modules are organized as folder modules to mirror upstream file
   families and keep porting diffs localized:
   - `crates/json-joy-core/src/model_api/mod.rs` (+ `events.rs`, `path.rs`)
-  - `crates/json-joy-core/src/model_runtime/mod.rs`
+  - `crates/json-joy-core/src/model_runtime/mod.rs` (+ `types.rs`, `rga.rs`)
   - `crates/json-joy-core/src/diff_runtime/mod.rs`
 - This layout is intentionally aligned with the upstream `json-crdt/model/api`,
   `json-crdt/model`, and `json-crdt-diff` families for easier side-by-side

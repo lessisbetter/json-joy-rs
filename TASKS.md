@@ -71,6 +71,10 @@
 - Structural model-encode parity inventory added:
   - `crates/json-joy-core/tests/upstream_port_model_encode_matrix.rs`
   - Current baseline: `50/50` replay fixtures exact-binary match.
+- Runtime layout hardening for faster upstream side-by-side ports:
+  - `crates/json-joy-core/src/model_runtime/mod.rs` now delegates shared runtime graph types and RGA insertion ordering helpers to:
+    - `crates/json-joy-core/src/model_runtime/types.rs`
+    - `crates/json-joy-core/src/model_runtime/rga.rs`
 - Fixture floors hardened:
   - `model_diff_parity >= 100`
   - `model_apply_replay >= 50`
