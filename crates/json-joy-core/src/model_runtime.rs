@@ -186,6 +186,102 @@ impl RuntimeModel {
         encode_logical(self)
     }
 
+    pub fn validate_invariants(&self) -> Result<(), String> {
+        if let Some(root) = self.root {
+            if !self.nodes.contains_key(&root) {
+                return Err("root points to missing node".to_string());
+            }
+        }
+
+        for (id, node) in &self.nodes {
+            match node {
+                RuntimeNode::Con(_) => {}
+                RuntimeNode::Val(child) => {
+                    if !self.nodes.contains_key(child) {
+                        return Err(format!(
+                            "val node {}.{} points to missing child {}.{}",
+                            id.sid, id.time, child.sid, child.time
+                        ));
+                    }
+                }
+                RuntimeNode::Obj(entries) => {
+                    let mut seen = std::collections::HashSet::new();
+                    for (k, v) in entries {
+                        if !seen.insert(k) {
+                            return Err(format!(
+                                "obj node {}.{} has duplicate key {}",
+                                id.sid, id.time, k
+                            ));
+                        }
+                        if !self.nodes.contains_key(v) {
+                            return Err(format!(
+                                "obj node {}.{} key {} points to missing child {}.{}",
+                                id.sid, id.time, k, v.sid, v.time
+                            ));
+                        }
+                    }
+                }
+                RuntimeNode::Vec(map) => {
+                    for (idx, v) in map {
+                        if !self.nodes.contains_key(v) {
+                            return Err(format!(
+                                "vec node {}.{} index {} points to missing child {}.{}",
+                                id.sid, id.time, idx, v.sid, v.time
+                            ));
+                        }
+                    }
+                }
+                RuntimeNode::Str(atoms) => {
+                    let mut seen = std::collections::HashSet::new();
+                    for atom in atoms {
+                        if !seen.insert(atom.slot) {
+                            return Err(format!(
+                                "str node {}.{} has duplicate slot {}.{}",
+                                id.sid, id.time, atom.slot.sid, atom.slot.time
+                            ));
+                        }
+                    }
+                }
+                RuntimeNode::Bin(atoms) => {
+                    let mut seen = std::collections::HashSet::new();
+                    for atom in atoms {
+                        if !seen.insert(atom.slot) {
+                            return Err(format!(
+                                "bin node {}.{} has duplicate slot {}.{}",
+                                id.sid, id.time, atom.slot.sid, atom.slot.time
+                            ));
+                        }
+                    }
+                }
+                RuntimeNode::Arr(atoms) => {
+                    let mut seen = std::collections::HashSet::new();
+                    for atom in atoms {
+                        if !seen.insert(atom.slot) {
+                            return Err(format!(
+                                "arr node {}.{} has duplicate slot {}.{}",
+                                id.sid, id.time, atom.slot.sid, atom.slot.time
+                            ));
+                        }
+                        if let Some(value_id) = atom.value {
+                            if !self.nodes.contains_key(&value_id) {
+                                return Err(format!(
+                                    "arr node {}.{} slot {}.{} points to missing child {}.{}",
+                                    id.sid,
+                                    id.time,
+                                    atom.slot.sid,
+                                    atom.slot.time,
+                                    value_id.sid,
+                                    value_id.time
+                                ));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
     pub(crate) fn root_object_field(&self, key: &str) -> Option<Timestamp> {
         let root = self.root?;
         match self.nodes.get(&root)? {
