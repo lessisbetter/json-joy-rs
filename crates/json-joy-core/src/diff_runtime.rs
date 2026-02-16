@@ -59,6 +59,9 @@ pub fn diff_model_to_patch_bytes(
     if let Some(native) = try_native_root_obj_array_delta_diff(base_model_binary, next_view, sid)? {
         return Ok(native);
     }
+    if let Some(native) = try_native_nested_obj_scalar_key_delta_diff(base_model_binary, next_view, sid)? {
+        return Ok(native);
+    }
     // Native non-empty root-object scalar delta path (add/update/remove).
     if let Some(native) = try_native_root_obj_scalar_delta_diff(base_model_binary, next_view, sid)? {
         return Ok(native);
@@ -532,6 +535,147 @@ fn is_array_native_supported(value: &Value) -> bool {
     is_con_scalar(value) || matches!(value, Value::String(_))
 }
 
+fn try_native_nested_obj_scalar_key_delta_diff(
+    base_model_binary: &[u8],
+    next_view: &Value,
+    patch_sid: u64,
+) -> Result<Option<Option<Vec<u8>>>, DiffError> {
+    let model = match Model::from_binary(base_model_binary) {
+        Ok(v) => v,
+        Err(_) => return Ok(None),
+    };
+    let base_obj = match model.view() {
+        Value::Object(map) if !map.is_empty() => map,
+        _ => return Ok(None),
+    };
+    let next_obj = match next_view {
+        Value::Object(map) => map,
+        _ => return Ok(None),
+    };
+
+    if base_obj.len() != next_obj.len() {
+        return Ok(None);
+    }
+    if base_obj.keys().any(|k| !next_obj.contains_key(k)) {
+        return Ok(None);
+    }
+
+    let changed: Vec<&String> = base_obj
+        .iter()
+        .filter_map(|(k, v)| (next_obj.get(k) != Some(v)).then_some(k))
+        .collect();
+    if changed.len() != 1 {
+        return Ok(None);
+    }
+    let root_key = changed[0];
+    let old = match base_obj.get(root_key) {
+        Some(v) => v,
+        None => return Ok(None),
+    };
+    let new = match next_obj.get(root_key) {
+        Some(v) => v,
+        None => return Ok(None),
+    };
+
+    let runtime = match RuntimeModel::from_model_binary(base_model_binary) {
+        Ok(v) => v,
+        Err(_) => return Ok(None),
+    };
+
+    let target_obj = match (old, new) {
+        (Value::Object(old_obj), Value::Object(new_obj)) => {
+            let obj_id = match runtime.root_object_field(root_key) {
+                Some(id) if runtime.node_is_object(id) => id,
+                _ => return Ok(None),
+            };
+            let (_changed_key, _new_con) = match object_single_scalar_key_delta(old_obj, new_obj) {
+                Some(v) => v,
+                None => return Ok(None),
+            };
+            obj_id
+        }
+        (Value::Array(old_arr), Value::Array(new_arr)) => {
+            if old_arr.len() != new_arr.len() || old_arr.is_empty() {
+                return Ok(None);
+            }
+            let mut changed_idx: Option<usize> = None;
+            for i in 0..old_arr.len() {
+                if old_arr[i] != new_arr[i] {
+                    if changed_idx.is_some() {
+                        return Ok(None);
+                    }
+                    changed_idx = Some(i);
+                }
+            }
+            let idx = match changed_idx {
+                Some(v) => v,
+                None => return Ok(None),
+            };
+            let old_obj = match &old_arr[idx] {
+                Value::Object(v) => v,
+                _ => return Ok(None),
+            };
+            let new_obj = match &new_arr[idx] {
+                Value::Object(v) => v,
+                _ => return Ok(None),
+            };
+            let (_changed_key, _new_con) = match object_single_scalar_key_delta(old_obj, new_obj) {
+                Some(v) => v,
+                None => return Ok(None),
+            };
+            let arr_id = match runtime.root_object_field(root_key) {
+                Some(id) if runtime.node_is_array(id) => id,
+                _ => return Ok(None),
+            };
+            let values = match runtime.array_visible_values(arr_id) {
+                Some(v) => v,
+                None => return Ok(None),
+            };
+            if idx >= values.len() {
+                return Ok(None);
+            }
+            let obj_id = values[idx];
+            if !runtime.node_is_object(obj_id) {
+                return Ok(None);
+            }
+            obj_id
+        }
+        _ => return Ok(None),
+    };
+
+    let (changed_key, new_con) = match (old, new) {
+        (Value::Object(old_obj), Value::Object(new_obj)) => {
+            object_single_scalar_key_delta(old_obj, new_obj).expect("checked above")
+        }
+        (Value::Array(old_arr), Value::Array(new_arr)) => {
+            let idx = old_arr
+                .iter()
+                .zip(new_arr.iter())
+                .position(|(a, b)| a != b)
+                .expect("checked above");
+            let old_obj = old_arr[idx].as_object().expect("checked above");
+            let new_obj = new_arr[idx].as_object().expect("checked above");
+            object_single_scalar_key_delta(old_obj, new_obj).expect("checked above")
+        }
+        _ => return Ok(None),
+    };
+
+    let (_, base_time) = match first_logical_clock_sid_time(base_model_binary) {
+        Some(v) => v,
+        None => return Ok(None),
+    };
+    let mut emitter = NativeEmitter::new(patch_sid, base_time.saturating_add(1));
+    let con_id = emitter.next_id();
+    emitter.push(DecodedOp::NewCon { id: con_id, value: new_con });
+    emitter.push(DecodedOp::InsObj {
+        id: emitter.next_id(),
+        obj: target_obj,
+        data: vec![(changed_key, con_id)],
+    });
+    let encoded = encode_patch_from_ops(patch_sid, base_time.saturating_add(1), &emitter.ops)?;
+    Ok(Some(Some(encoded)))
+}
+
 fn try_native_nested_obj_string_delta_diff(
     base_model_binary: &[u8],
     next_view: &Value,
@@ -729,4 +873,49 @@ fn find_single_string_delta_value<'a>(
         }
         _ => None,
     }
+}
+
+fn object_single_scalar_key_delta(
+    old: &serde_json::Map<String, Value>,
+    new: &serde_json::Map<String, Value>,
+) -> Option<(String, ConValue)> {
+    let mut changed: Option<(String, ConValue)> = None;
+
+    for (k, old_v) in old {
+        match new.get(k) {
+            Some(new_v) => {
+                if old_v == new_v {
+                    continue;
+                }
+                if !is_con_scalar(new_v) {
+                    return None;
+                }
+                if changed.is_some() {
+                    return None;
+                }
+                changed = Some((k.clone(), ConValue::Json(new_v.clone())));
+            }
+            None => {
+                if changed.is_some() {
+                    return None;
+                }
+                changed = Some((k.clone(), ConValue::Undef));
+            }
+        }
+    }
+
+    for (k, new_v) in new {
+        if old.contains_key(k) {
+            continue;
+        }
+        if !is_con_scalar(new_v) {
+            return None;
+        }
+        if changed.is_some() {
+            return None;
+        }
+        changed = Some((k.clone(), ConValue::Json(new_v.clone())));
+    }
+
+    changed
 }
