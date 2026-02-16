@@ -70,3 +70,14 @@ When workflow changes, update this file and relevant plan docs (`PORT_PLAN.md`) 
   (`test-port mapped`, `fixture coverage`, `differential parity`, `no bridge`).
 - Do not mark a family `native` unless production code has no oracle subprocess
   dependency for that family.
+
+## Current bridge boundaries (keep shrinking)
+
+- Native in production now:
+  - `crates/json-joy-core/src/less_db_compat.rs` `apply_patch`
+  - `crates/json-joy-core/src/diff_runtime.rs` core dispatcher (no subprocess in this module)
+- Remaining compatibility-layer oracle fallback:
+  - `crates/json-joy-core/src/less_db_compat.rs` `create_model`
+  - `crates/json-joy-core/src/less_db_compat.rs` `diff_model` only when `DiffError::UnsupportedShape`
+
+When replacing these, keep fixture parity exact and update `CORE_PARITY_MATRIX.md` and `TASKS.md` in the same change.
