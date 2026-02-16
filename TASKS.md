@@ -56,7 +56,7 @@
 - [x] Add property/state-machine convergence tests (idempotence/order/tombstones/clocks).
 - [x] Add less-db diff native-support inventory test to track fallback reduction over time.
 - [x] Ensure oracle scripts are test tooling only (no production runtime dependency).
-- [ ] Update docs (`PORT_PLAN.md`, `AGENTS.md`, `ARCHITECTURE.md`) for bridge-retired runtime.
+- [x] Update docs (`PORT_PLAN.md`, `AGENTS.md`, `ARCHITECTURE.md`) for bridge-retired runtime.
 
 ### M6 coverage notes (current)
 
