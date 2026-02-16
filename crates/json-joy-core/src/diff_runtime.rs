@@ -50,6 +50,15 @@ pub fn diff_model_to_patch_bytes(
         return Ok(native);
     }
 
+    // Broad upstream-style object recursion path.
+    //
+    // Mirrors JsonCrdtDiff.diffObj two-pass ordering (deletes first, then
+    // destination traversal with recursive child diff attempts) and covers
+    // mixed nested families in one native dispatcher.
+    if let Some(native) = try_native_root_obj_recursive_diff(base_model_binary, next_view, sid)? {
+        return Ok(native);
+    }
+
     // Native logical empty-object root path.
     if let Some(native) = try_native_empty_obj_diff(base_model_binary, next_view, sid)? {
         return Ok(native);
@@ -424,6 +433,45 @@ fn try_native_empty_obj_diff(
         data: pairs,
     });
 
+    let encoded = encode_patch_from_ops(patch_sid, base_time.saturating_add(1), &emitter.ops)?;
+    Ok(Some(Some(encoded)))
+}
+
+fn try_native_root_obj_recursive_diff(
+    base_model_binary: &[u8],
+    next_view: &Value,
+    patch_sid: u64,
+) -> Result<Option<Option<Vec<u8>>>, DiffError> {
+    let model = match Model::from_binary(base_model_binary) {
+        Ok(v) => v,
+        Err(_) => return Ok(None),
+    };
+    let base_obj = match model.view() {
+        Value::Object(map) => map,
+        _ => return Ok(None),
+    };
+    let next_obj = match next_view {
+        Value::Object(map) => map,
+        _ => return Ok(None),
+    };
+
+    let runtime = match RuntimeModel::from_model_binary(base_model_binary) {
+        Ok(v) => v,
+        Err(_) => return Ok(None),
+    };
+    let root = match runtime.root_id().and_then(|id| runtime.resolve_object_node(id)) {
+        Some(id) => id,
+        None => return Ok(None),
+    };
+    let (_, base_time) = match first_logical_clock_sid_time(base_model_binary) {
+        Some(v) => v,
+        None => return Ok(None),
+    };
+    let mut emitter = NativeEmitter::new(patch_sid, base_time.saturating_add(1));
+    let _ = try_emit_object_recursive_diff(&runtime, &mut emitter, root, base_obj, next_obj)?;
+    if emitter.ops.is_empty() {
+        return Ok(Some(None));
+    }
     let encoded = encode_patch_from_ops(patch_sid, base_time.saturating_add(1), &emitter.ops)?;
     Ok(Some(Some(encoded)))
 }
@@ -1910,14 +1958,16 @@ fn try_emit_array_indexwise_diff(
         }
         let child = values[i];
         if runtime.node_is_val(child) {
-            let val = emitter.emit_value(&new[i]);
-            emitter.push(DecodedOp::InsVal {
-                id: emitter.next_id(),
-                obj: child,
-                val,
-            });
-            changed = true;
-            continue;
+            // Upstream array diffs recurse for object children but otherwise
+            // prefer array-level edits (`ins_arr`/`del`) over `ins_val`
+            // rewrites for element replacement.
+            if let Some(inner) = runtime.val_child(child) {
+                if try_emit_child_recursive_diff(runtime, emitter, inner, Some(&old[i]), &new[i])? {
+                    changed = true;
+                    continue;
+                }
+            }
+            return Ok(false);
         }
         if try_emit_child_recursive_diff(runtime, emitter, child, Some(&old[i]), &new[i])? {
             changed = true;

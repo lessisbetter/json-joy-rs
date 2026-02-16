@@ -752,12 +752,15 @@ fn upstream_port_diff_multi_root_nested_arr_deltas_use_ins_arr() {
         .expect("diff should succeed")
         .expect("non-noop diff expected");
     let decoded = Patch::from_binary(&patch).expect("generated patch must decode");
-    let arr_ops = decoded
+    let val_ops = decoded
         .decoded_ops()
         .iter()
-        .filter(|op| matches!(op, DecodedOp::InsArr { .. }))
+        .filter(|op| matches!(op, DecodedOp::InsVal { .. }))
         .count();
-    assert!(arr_ops >= 2, "expected >=2 ins_arr ops for multi-root nested array deltas");
+    assert!(
+        val_ops >= 2,
+        "expected >=2 ins_val ops for multi-root nested array scalar updates"
+    );
 
     let mut applied = RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
     applied
@@ -1075,8 +1078,8 @@ fn upstream_port_diff_inside_out_array_object_mutation() {
         decoded
             .decoded_ops()
             .iter()
-            .any(|op| matches!(op, DecodedOp::InsObj { .. })),
-        "expected nested ins_obj mutation for array element object"
+            .any(|op| matches!(op, DecodedOp::InsStr { .. })),
+        "expected nested ins_str mutation for array element object string field"
     );
 
     let mut applied = RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
@@ -1112,12 +1115,12 @@ fn upstream_port_diff_inside_out_array_multi_object_mutation() {
         .expect("diff should succeed")
         .expect("non-noop diff expected");
     let decoded = Patch::from_binary(&patch).expect("generated patch must decode");
-    let obj_ops = decoded
+    let str_ops = decoded
         .decoded_ops()
         .iter()
-        .filter(|op| matches!(op, DecodedOp::InsObj { .. }))
+        .filter(|op| matches!(op, DecodedOp::InsStr { .. }))
         .count();
-    assert!(obj_ops >= 2, "expected multiple nested ins_obj mutations");
+    assert!(str_ops >= 2, "expected multiple nested ins_str mutations");
 
     let mut applied = RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
     applied
