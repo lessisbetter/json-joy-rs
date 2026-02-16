@@ -1,0 +1,51 @@
+{
+  "fixture_version": 1,
+  "name": "util_diff_parity_72_bin_rnd_v1",
+  "scenario": "util_diff_parity",
+  "input": {
+    "kind": "bin",
+    "src": [
+      51,
+      114,
+      69,
+      14,
+      138,
+      23
+    ],
+    "dst": [
+      177,
+      255,
+      20
+    ]
+  },
+  "expected": {
+    "patch": [
+      [
+        -1,
+        "3rE\u000e\u0017"
+      ],
+      [
+        1,
+        "±ÿ\u0014"
+      ]
+    ],
+    "src_from_patch": [
+      51,
+      114,
+      69,
+      14,
+      138,
+      23
+    ],
+    "dst_from_patch": [
+      177,
+      255,
+      20
+    ]
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

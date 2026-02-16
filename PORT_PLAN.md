@@ -1,6 +1,6 @@
 # json-joy-rs Port Plan (Test-First, Compatibility-First)
 
-Last updated: 2026-02-15  
+Last updated: 2026-02-16  
 Project: `/Users/nchapman/Drive/Code/json-joy-rs`
 
 ## 1. Goal
@@ -286,7 +286,29 @@ Current M6 suite expansion:
   - `upstream_port_patch_builder_matrix`
 - Runtime graph integrity is validated across replay fixtures in:
   - `upstream_port_model_graph_invariants`
-- Differential runtime suite uses a five-seed deterministic matrix.
+- Differential/runtime-core hardening now uses 40-seed/case deterministic
+  matrices across:
+  - `differential_runtime_seeded`
+  - `differential_codec_seeded`
+  - `differential_patch_codecs_seeded` (40 fixture samples)
+  - `differential_patch_compaction_seeded`
+  - `differential_patch_schema_seeded`
+  - `differential_util_diff_seeded`
+- Fixture contract floors are now enforced at:
+  - `patch_canonical_encode >= 40`
+  - `patch_decode_error >= 35`
+  - `patch_alt_codecs >= 40`
+  - `patch_compaction_parity >= 40`
+  - `patch_schema_parity >= 45`
+  - `patch_clock_codec_parity >= 40`
+  - `util_diff_parity >= 80`
+  - `model_roundtrip >= 110`
+  - `model_decode_error >= 35`
+  - `model_canonical_encode >= 30`
+  - `model_apply_replay >= 140`
+  - `model_diff_parity >= 300`
+  - `model_diff_dst_keys >= 80`
+  - `lessdb_model_manager >= 90`
 
 ## 8. CI Gates
 

@@ -1,0 +1,116 @@
+{
+  "fixture_version": 1,
+  "name": "patch_alt_codecs_40_v1",
+  "scenario": "patch_alt_codecs",
+  "input": {
+    "patch_binary_hex": "91c204f901f70610488000790300f600fb405479999999999a527903636b33317b03636d33317c0389"
+  },
+  "expected": {
+    "compact_json": [
+      [
+        [
+          74001,
+          249
+        ]
+      ],
+      [
+        2
+      ],
+      [
+        9,
+        [
+          0,
+          0
+        ],
+        249
+      ],
+      [
+        0,
+        null
+      ],
+      [
+        0,
+        81.9
+      ],
+      [
+        10,
+        249,
+        [
+          [
+            "k31",
+            251
+          ],
+          [
+            "m31",
+            252
+          ]
+        ]
+      ],
+      [
+        17
+      ]
+    ],
+    "verbose_json": {
+      "id": [
+        74001,
+        249
+      ],
+      "ops": [
+        {
+          "op": "new_obj"
+        },
+        {
+          "op": "ins_val",
+          "obj": [
+            0,
+            0
+          ],
+          "value": [
+            74001,
+            249
+          ]
+        },
+        {
+          "op": "new_con",
+          "value": null
+        },
+        {
+          "op": "new_con",
+          "value": 81.9
+        },
+        {
+          "op": "ins_obj",
+          "obj": [
+            74001,
+            249
+          ],
+          "value": [
+            [
+              "k31",
+              [
+                74001,
+                251
+              ]
+            ],
+            [
+              "m31",
+              [
+                74001,
+                252
+              ]
+            ]
+          ]
+        },
+        {
+          "op": "nop"
+        }
+      ]
+    },
+    "compact_binary_hex": "8781821a0001211118f98102830982000018f98200f68200fb405479999999999a830a18f98282636b333118fb82636d333118fc8111"
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

@@ -1,0 +1,103 @@
+{
+  "fixture_version": 1,
+  "name": "patch_canonical_generated_25_v1",
+  "scenario": "patch_canonical_encode",
+  "input": {
+    "sid": 74001,
+    "time": 193,
+    "meta_kind": "undefined",
+    "ops": [
+      {
+        "op": "new_obj",
+        "id": [
+          74001,
+          193
+        ]
+      },
+      {
+        "op": "ins_val",
+        "id": [
+          74001,
+          194
+        ],
+        "obj": [
+          0,
+          0
+        ],
+        "val": [
+          74001,
+          193
+        ]
+      },
+      {
+        "op": "new_con",
+        "id": [
+          74001,
+          195
+        ],
+        "value": -53.4
+      },
+      {
+        "op": "new_con",
+        "id": [
+          74001,
+          196
+        ],
+        "value": "2241"
+      },
+      {
+        "op": "ins_obj",
+        "id": [
+          74001,
+          197
+        ],
+        "obj": [
+          74001,
+          193
+        ],
+        "data": [
+          [
+            "k24",
+            [
+              74001,
+              195
+            ]
+          ],
+          [
+            "m24",
+            [
+              74001,
+              196
+            ]
+          ]
+        ]
+      },
+      {
+        "op": "nop",
+        "id": [
+          74001,
+          198
+        ],
+        "len": 1
+      }
+    ]
+  },
+  "expected": {
+    "patch_binary_hex": "91c204c101f70610488000410300fbc04ab33333333333006432323431524103636b32344303636d3234440389",
+    "patch_op_count": 6,
+    "patch_span": 6,
+    "patch_opcodes": [
+      2,
+      9,
+      0,
+      0,
+      10,
+      17
+    ]
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

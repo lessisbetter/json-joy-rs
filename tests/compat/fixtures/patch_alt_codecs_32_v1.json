@@ -1,0 +1,116 @@
+{
+  "fixture_version": 1,
+  "name": "patch_alt_codecs_32_v1",
+  "scenario": "patch_alt_codecs",
+  "input": {
+    "patch_binary_hex": "91c204b901f70610488000790200780a616b66323273796d617700780a32627235677436343937527902636b32337b02636d32337c0289"
+  },
+  "expected": {
+    "compact_json": [
+      [
+        [
+          74001,
+          185
+        ]
+      ],
+      [
+        2
+      ],
+      [
+        9,
+        [
+          0,
+          0
+        ],
+        185
+      ],
+      [
+        0,
+        "akf22symaw"
+      ],
+      [
+        0,
+        "2br5gt6497"
+      ],
+      [
+        10,
+        185,
+        [
+          [
+            "k23",
+            187
+          ],
+          [
+            "m23",
+            188
+          ]
+        ]
+      ],
+      [
+        17
+      ]
+    ],
+    "verbose_json": {
+      "id": [
+        74001,
+        185
+      ],
+      "ops": [
+        {
+          "op": "new_obj"
+        },
+        {
+          "op": "ins_val",
+          "obj": [
+            0,
+            0
+          ],
+          "value": [
+            74001,
+            185
+          ]
+        },
+        {
+          "op": "new_con",
+          "value": "akf22symaw"
+        },
+        {
+          "op": "new_con",
+          "value": "2br5gt6497"
+        },
+        {
+          "op": "ins_obj",
+          "obj": [
+            74001,
+            185
+          ],
+          "value": [
+            [
+              "k23",
+              [
+                74001,
+                187
+              ]
+            ],
+            [
+              "m23",
+              [
+                74001,
+                188
+              ]
+            ]
+          ]
+        },
+        {
+          "op": "nop"
+        }
+      ]
+    },
+    "compact_binary_hex": "8781821a0001211118b98102830982000018b98200780a616b66323273796d61778200780a32627235677436343937830a18b98282636b323318bb82636d323318bc8111"
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

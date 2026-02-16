@@ -1,0 +1,116 @@
+{
+  "fixture_version": 1,
+  "name": "patch_alt_codecs_29_v1",
+  "scenario": "patch_alt_codecs",
+  "input": {
+    "patch_binary_hex": "91c204a101f706104880006102006530706c667800f4526102636b32306302636d3230640289"
+  },
+  "expected": {
+    "compact_json": [
+      [
+        [
+          74001,
+          161
+        ]
+      ],
+      [
+        2
+      ],
+      [
+        9,
+        [
+          0,
+          0
+        ],
+        161
+      ],
+      [
+        0,
+        "0plfx"
+      ],
+      [
+        0,
+        false
+      ],
+      [
+        10,
+        161,
+        [
+          [
+            "k20",
+            163
+          ],
+          [
+            "m20",
+            164
+          ]
+        ]
+      ],
+      [
+        17
+      ]
+    ],
+    "verbose_json": {
+      "id": [
+        74001,
+        161
+      ],
+      "ops": [
+        {
+          "op": "new_obj"
+        },
+        {
+          "op": "ins_val",
+          "obj": [
+            0,
+            0
+          ],
+          "value": [
+            74001,
+            161
+          ]
+        },
+        {
+          "op": "new_con",
+          "value": "0plfx"
+        },
+        {
+          "op": "new_con",
+          "value": false
+        },
+        {
+          "op": "ins_obj",
+          "obj": [
+            74001,
+            161
+          ],
+          "value": [
+            [
+              "k20",
+              [
+                74001,
+                163
+              ]
+            ],
+            [
+              "m20",
+              [
+                74001,
+                164
+              ]
+            ]
+          ]
+        },
+        {
+          "op": "nop"
+        }
+      ]
+    },
+    "compact_binary_hex": "8781821a0001211118a18102830982000018a182006530706c66788200f4830a18a18282636b323018a382636d323018a48111"
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

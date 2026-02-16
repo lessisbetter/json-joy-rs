@@ -1,0 +1,78 @@
+{
+  "fixture_version": 1,
+  "name": "patch_schema_parity_34_rnd_v1",
+  "scenario": "patch_schema_parity",
+  "input": {
+    "sid": 81834,
+    "time": 1,
+    "value_json": [
+      {
+        "gh": [
+          -96.5,
+          {
+            "kqzn8mc5": null,
+            "xbqsf": "4cafng9sy93qehhq",
+            "i8d2": true,
+            "s4pt8dvsfr": "6bdkclqg6t65ff"
+          },
+          {
+            "zzv": "gyt5gpbo",
+            "0cejo": false
+          },
+          "h"
+        ],
+        "y": [
+          [],
+          -26.8
+        ]
+      },
+      null
+    ]
+  },
+  "expected": {
+    "patch_binary_hex": "aaff0401f7223010300800fac2c100004804051000f62060100909346361666e673973793933716568687100f520600e1b1b3662646b636c7167367436356666540778086b717a6e386d6335086578627173660964693864321a780a733470743864767366721b102060082c2c677974356770626f00f4522b637a7a762c653063656a6f35206137376874030304072b3730300800fbc03acccccccccccd483f4001723d3d3e3f52026267680361793d0800f6484501460172010102450148800001",
+    "patch_opcodes": [
+      6,
+      2,
+      6,
+      1,
+      0,
+      9,
+      2,
+      0,
+      4,
+      12,
+      0,
+      4,
+      12,
+      10,
+      2,
+      4,
+      12,
+      0,
+      10,
+      4,
+      12,
+      14,
+      6,
+      6,
+      1,
+      0,
+      9,
+      14,
+      10,
+      1,
+      0,
+      9,
+      14,
+      9
+    ],
+    "patch_op_count": 34,
+    "patch_span": 74
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

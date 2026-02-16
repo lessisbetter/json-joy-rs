@@ -1,0 +1,52 @@
+{
+  "fixture_version": 1,
+  "name": "util_diff_parity_39_line_rnd_v1",
+  "scenario": "util_diff_parity",
+  "input": {
+    "kind": "line",
+    "src": [
+      "p9"
+    ],
+    "dst": [
+      "73n",
+      "0mv5jq1o",
+      "",
+      "g6tqc",
+      "2"
+    ]
+  },
+  "expected": {
+    "patch": [
+      [
+        1,
+        -1,
+        0
+      ],
+      [
+        1,
+        -1,
+        1
+      ],
+      [
+        1,
+        -1,
+        2
+      ],
+      [
+        1,
+        -1,
+        3
+      ],
+      [
+        2,
+        0,
+        4
+      ]
+    ]
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

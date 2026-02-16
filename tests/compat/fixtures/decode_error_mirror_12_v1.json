@@ -1,0 +1,16 @@
+{
+  "fixture_version": 1,
+  "name": "decode_error_mirror_12_v1",
+  "scenario": "patch_decode_error",
+  "input": {
+    "patch_binary_hex": "00"
+  },
+  "expected": {
+    "error_message": "NO_ERROR"
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

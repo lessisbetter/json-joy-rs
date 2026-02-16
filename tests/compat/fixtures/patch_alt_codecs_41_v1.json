@@ -1,0 +1,116 @@
+{
+  "fixture_version": 1,
+  "name": "patch_alt_codecs_41_v1",
+  "scenario": "patch_alt_codecs",
+  "input": {
+    "patch_binary_hex": "91c2048102f70610488000410400f600f6524104636b33324304636d3332440489"
+  },
+  "expected": {
+    "compact_json": [
+      [
+        [
+          74001,
+          257
+        ]
+      ],
+      [
+        2
+      ],
+      [
+        9,
+        [
+          0,
+          0
+        ],
+        257
+      ],
+      [
+        0,
+        null
+      ],
+      [
+        0,
+        null
+      ],
+      [
+        10,
+        257,
+        [
+          [
+            "k32",
+            259
+          ],
+          [
+            "m32",
+            260
+          ]
+        ]
+      ],
+      [
+        17
+      ]
+    ],
+    "verbose_json": {
+      "id": [
+        74001,
+        257
+      ],
+      "ops": [
+        {
+          "op": "new_obj"
+        },
+        {
+          "op": "ins_val",
+          "obj": [
+            0,
+            0
+          ],
+          "value": [
+            74001,
+            257
+          ]
+        },
+        {
+          "op": "new_con",
+          "value": null
+        },
+        {
+          "op": "new_con",
+          "value": null
+        },
+        {
+          "op": "ins_obj",
+          "obj": [
+            74001,
+            257
+          ],
+          "value": [
+            [
+              "k32",
+              [
+                74001,
+                259
+              ]
+            ],
+            [
+              "m32",
+              [
+                74001,
+                260
+              ]
+            ]
+          ]
+        },
+        {
+          "op": "nop"
+        }
+      ]
+    },
+    "compact_binary_hex": "8781821a00012111190101810283098200001901018200f68200f6830a1901018282636b333219010382636d33321901048111"
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

@@ -221,7 +221,7 @@ impl Patch {
         }
         let first = ops.first().expect("checked non-empty patch");
         let first_id = first.id();
-        let bytes = crate::patch_builder::encode_patch_from_ops(first_id.sid, first_id.time, &ops)?;
+        let bytes = crate::patch::encode_patch_from_ops(first_id.sid, first_id.time, &ops)?;
         Ok(Patch::from_binary(&bytes).expect("encoded patch must decode"))
     }
 

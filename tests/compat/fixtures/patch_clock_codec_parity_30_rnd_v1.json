@@ -1,0 +1,73 @@
+{
+  "fixture_version": 1,
+  "name": "patch_clock_codec_parity_30_rnd_v1",
+  "scenario": "patch_clock_codec_parity",
+  "input": {
+    "sid": 81524,
+    "model_binary_hex": "00000053811b4478086d31707738656972811a00f664676f69708119c1811402811840811720811600fb4010666666666666780873376f757a6974768112c0616d8111818110780f6f7171746b733361776f356d6c756e01f4fc041c"
+  },
+  "expected": {
+    "clock_table_binary_hex": "01f4fc041c",
+    "clock_table": [
+      [
+        81524,
+        28
+      ]
+    ],
+    "relative_ids": [
+      {
+        "id": [
+          81524,
+          1
+        ],
+        "session_index": 1,
+        "time_diff": 27,
+        "decoded_id": [
+          81524,
+          1
+        ]
+      },
+      {
+        "id": [
+          81524,
+          2
+        ],
+        "session_index": 1,
+        "time_diff": 26,
+        "decoded_id": [
+          81524,
+          2
+        ]
+      },
+      {
+        "id": [
+          81524,
+          3
+        ],
+        "session_index": 1,
+        "time_diff": 25,
+        "decoded_id": [
+          81524,
+          3
+        ]
+      },
+      {
+        "id": [
+          81524,
+          4
+        ],
+        "session_index": 1,
+        "time_diff": 24,
+        "decoded_id": [
+          81524,
+          4
+        ]
+      }
+    ]
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

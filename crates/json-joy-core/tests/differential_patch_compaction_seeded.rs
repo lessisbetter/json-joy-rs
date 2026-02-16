@@ -119,7 +119,58 @@ fn build_cases() -> Vec<Vec<Patch>> {
         }],
     );
 
-    vec![vec![p1.clone()], vec![p1, p2, p3], vec![q1, q2]]
+    let mut out = vec![vec![p1.clone()], vec![p1, p2, p3], vec![q1, q2]];
+
+    // Keep this suite deterministic and broad enough to mirror the seeded
+    // differential depth used in other runtime-core parity tests.
+    for i in 0..37u64 {
+        let sidx = 94100 + i;
+        let r1 = patch_from_ops(
+            sidx,
+            1,
+            vec![
+                DecodedOp::NewStr {
+                    id: Timestamp { sid: sidx, time: 1 },
+                },
+                DecodedOp::InsVal {
+                    id: Timestamp { sid: sidx, time: 2 },
+                    obj: Timestamp { sid: 0, time: 0 },
+                    val: Timestamp { sid: sidx, time: 1 },
+                },
+                DecodedOp::InsStr {
+                    id: Timestamp { sid: sidx, time: 3 },
+                    obj: Timestamp { sid: sidx, time: 1 },
+                    reference: Timestamp { sid: sidx, time: 1 },
+                    data: "a".to_string(),
+                },
+                DecodedOp::InsStr {
+                    id: Timestamp { sid: sidx, time: 4 },
+                    obj: Timestamp { sid: sidx, time: 1 },
+                    reference: Timestamp { sid: sidx, time: 3 },
+                    data: "b".to_string(),
+                },
+            ],
+        );
+        let r2 = patch_from_ops(
+            sidx,
+            5,
+            vec![DecodedOp::Nop {
+                id: Timestamp { sid: sidx, time: 5 },
+                len: 1 + (i % 3),
+            }],
+        );
+        let r3 = patch_from_ops(
+            sidx,
+            8,
+            vec![DecodedOp::NewCon {
+                id: Timestamp { sid: sidx, time: 8 },
+                value: ConValue::Json(Value::from((i as i64) - 10)),
+            }],
+        );
+        out.push(vec![r1, r2, r3]);
+    }
+
+    out
 }
 
 fn patch_from_ops(sid: u64, time: u64, ops: Vec<DecodedOp>) -> Patch {

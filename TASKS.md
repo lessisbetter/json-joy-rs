@@ -54,7 +54,7 @@
 - [x] Add upstream-mapped runtime-core test-port suites (`tests/upstream_port/*`).
 - [x] Add seeded differential parity suites for apply/diff/model roundtrip.
 - [x] Add property/state-machine convergence tests (idempotence/order/tombstones/clocks).
-- [x] Raise deterministic differential seed set to 20 (`differential_runtime_seeded.rs`, `differential_codec_seeded.rs`).
+- [x] Raise deterministic differential seed set to 40 (`differential_runtime_seeded.rs`, `differential_codec_seeded.rs`, `differential_patch_compaction_seeded.rs`, `differential_patch_schema_seeded.rs`, `differential_util_diff_seeded.rs`; `differential_patch_codecs_seeded.rs` already uses 40 fixture samples).
 - [x] Add seeded codec differential parity suite (`differential_codec_seeded.rs`) and codec roundtrip invariant property suite (`property_codec_roundtrip_invariants.rs`).
 - [x] Add model API event convergence property suite (`property_model_api_event_convergence.rs`).
 - [x] Add less-db diff native-support inventory test to track fallback reduction over time.
@@ -69,8 +69,13 @@
   - `crates/json-joy-core/tests/upstream_port_patch_builder_matrix.rs`
 - Added runtime graph invariant matrix:
   - `crates/json-joy-core/tests/upstream_port_model_graph_invariants.rs`
-- Expanded differential seeds from single-seed to five deterministic seeds:
+- Expanded deterministic differential depth to 40-seed/case matrices across:
   - `crates/json-joy-core/tests/differential_runtime_seeded.rs`
+  - `crates/json-joy-core/tests/differential_codec_seeded.rs`
+  - `crates/json-joy-core/tests/differential_patch_codecs_seeded.rs`
+  - `crates/json-joy-core/tests/differential_patch_compaction_seeded.rs`
+  - `crates/json-joy-core/tests/differential_patch_schema_seeded.rs`
+  - `crates/json-joy-core/tests/differential_util_diff_seeded.rs`
 - Structural model-encode parity inventory added:
   - `crates/json-joy-core/tests/upstream_port_model_encode_matrix.rs`
   - Current baseline: `50/50` replay fixtures exact-binary match.
@@ -93,6 +98,13 @@
     - `crates/json-joy-core/src/patch/{types,rewrite,decode,encode}.rs`
     - `crates/json-joy-core/src/model/{error,view,decode,encode}.rs`
 - Fixture floors hardened:
+  - `patch_canonical_encode >= 40`
+  - `patch_decode_error >= 35`
+  - `patch_alt_codecs >= 40`
+  - `patch_compaction_parity >= 40`
+  - `patch_schema_parity >= 45`
+  - `patch_clock_codec_parity >= 40`
+  - `util_diff_parity >= 80`
   - `model_roundtrip >= 110`
   - `model_decode_error >= 35`
   - `model_canonical_encode >= 30`
@@ -109,9 +121,9 @@
   Lifecycle baseline now fixture-backed via `model_lifecycle_workflow` + `crates/json-joy-core/tests/model_lifecycle_from_fixtures.rs` and native `NativeModelApi::{from_patches,apply_batch,from_model_binary(load sid)}`.
   Schema-aware typing behavior remains deferred.
 - [x] Port and track `json-crdt/codec/indexed/*` and `json-crdt/codec/sidecar/*` with fixture parity and differential checks.
-- [~] Add dedicated tracking/tests for `json-crdt-diff` destination-key mode (`diffDstKeys` parity or explicit defer).
-  Added native entrypoint `diff_model_dst_keys_to_patch_bytes` + fixture scenario `model_diff_dst_keys` (20 deterministic cases) and parity test `crates/json-joy-core/tests/model_diff_dst_keys_from_fixtures.rs`.
-- [~] Add dedicated tracking/tests for low-level `util/diff/{str,bin,line}` parity (beyond fixture black-box coverage).
+- [x] Add dedicated tracking/tests for `json-crdt-diff` destination-key mode (`diffDstKeys` parity or explicit defer).
+  Added native entrypoint `diff_model_dst_keys_to_patch_bytes` + fixture scenario `model_diff_dst_keys` (80 deterministic cases) and parity test `crates/json-joy-core/tests/model_diff_dst_keys_from_fixtures.rs`.
+- [x] Add dedicated tracking/tests for low-level `util/diff/{str,bin,line}` parity (beyond fixture black-box coverage).
   Native baseline added for `str` + `bin` + `line` in
   `crates/json-joy-core/src/util_diff/{str,bin,line}.rs`
   with upstream-mapped tests in
@@ -119,9 +131,9 @@
   `crates/json-joy-core/tests/upstream_port_util_diff_line_matrix.rs`.
   Added seeded Node differential parity checks in
   `crates/json-joy-core/tests/differential_util_diff_seeded.rs` covering
-  `str.diff`, `str.diffEdit`, and `line.diff` against local upstream.
+  `str.diff`, `str.diffEdit`, `bin.diff`, and `line.diff` against local upstream.
 - [x] Port and track `json-crdt-patch/compaction.ts` baseline (`combine` + `compact`) with upstream-mapped tests.
-- [~] Port/track patch alternate codecs (`compact`, `compact-binary`, `verbose`).
+- [x] Port/track patch alternate codecs (`compact`, `compact-binary`, `verbose`).
   Native baseline now includes `codec/compact` encode/decode in
   `crates/json-joy-core/src/patch_compact_codec.rs` with upstream-mapped tests in
   `crates/json-joy-core/tests/upstream_port_patch_compact_codec_matrix.rs`.
@@ -135,7 +147,7 @@
   `crates/json-joy-core/tests/differential_patch_codecs_seeded.rs` and
   patch compaction parity in
   `crates/json-joy-core/tests/differential_patch_compaction_seeded.rs`.
-- [~] Port and track `json-crdt-patch/schema.ts`.
+- [x] Port and track `json-crdt-patch/schema.ts`.
   Native baseline added in `crates/json-joy-core/src/schema.rs` with upstream-mapped tests in
   `crates/json-joy-core/tests/upstream_port_patch_schema_matrix.rs`.
   Added seeded Node differential parity checks in

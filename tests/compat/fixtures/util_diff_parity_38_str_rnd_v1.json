@@ -1,0 +1,49 @@
+{
+  "fixture_version": 1,
+  "name": "util_diff_parity_38_str_rnd_v1",
+  "scenario": "util_diff_parity",
+  "input": {
+    "kind": "str",
+    "src": "bh9ib4fzmgaszq",
+    "dst": "q05kil6v2n9d7g"
+  },
+  "expected": {
+    "patch": [
+      [
+        -1,
+        "bh9"
+      ],
+      [
+        1,
+        "q05k"
+      ],
+      [
+        0,
+        "i"
+      ],
+      [
+        -1,
+        "b4fzm"
+      ],
+      [
+        1,
+        "l6v2n9d7"
+      ],
+      [
+        0,
+        "g"
+      ],
+      [
+        -1,
+        "aszq"
+      ]
+    ],
+    "src_from_patch": "bh9ib4fzmgaszq",
+    "dst_from_patch": "q05kil6v2n9d7g"
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

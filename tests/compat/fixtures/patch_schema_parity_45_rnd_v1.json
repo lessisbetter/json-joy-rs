@@ -1,0 +1,37 @@
+{
+  "fixture_version": 1,
+  "name": "patch_schema_parity_45_rnd_v1",
+  "scenario": "patch_schema_parity",
+  "input": {
+    "sid": 81845,
+    "time": 1,
+    "value_json": [
+      false,
+      48.3,
+      "7kybc93o0rqpr"
+    ]
+  },
+  "expected": {
+    "patch_binary_hex": "b5ff0401f70b300800f44802030800fb404826666666666648050620600d0808376b79626339336f307271707273010102050848800001",
+    "patch_opcodes": [
+      6,
+      1,
+      0,
+      9,
+      1,
+      0,
+      9,
+      4,
+      12,
+      14,
+      9
+    ],
+    "patch_op_count": 11,
+    "patch_span": 25
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

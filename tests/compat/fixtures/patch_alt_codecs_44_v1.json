@@ -1,0 +1,116 @@
+{
+  "fixture_version": 1,
+  "name": "patch_alt_codecs_44_v1",
+  "scenario": "patch_alt_codecs",
+  "input": {
+    "patch_binary_hex": "91c2049902f70610488000590400f500f4525904636b33355b04636d33355c0489"
+  },
+  "expected": {
+    "compact_json": [
+      [
+        [
+          74001,
+          281
+        ]
+      ],
+      [
+        2
+      ],
+      [
+        9,
+        [
+          0,
+          0
+        ],
+        281
+      ],
+      [
+        0,
+        true
+      ],
+      [
+        0,
+        false
+      ],
+      [
+        10,
+        281,
+        [
+          [
+            "k35",
+            283
+          ],
+          [
+            "m35",
+            284
+          ]
+        ]
+      ],
+      [
+        17
+      ]
+    ],
+    "verbose_json": {
+      "id": [
+        74001,
+        281
+      ],
+      "ops": [
+        {
+          "op": "new_obj"
+        },
+        {
+          "op": "ins_val",
+          "obj": [
+            0,
+            0
+          ],
+          "value": [
+            74001,
+            281
+          ]
+        },
+        {
+          "op": "new_con",
+          "value": true
+        },
+        {
+          "op": "new_con",
+          "value": false
+        },
+        {
+          "op": "ins_obj",
+          "obj": [
+            74001,
+            281
+          ],
+          "value": [
+            [
+              "k35",
+              [
+                74001,
+                283
+              ]
+            ],
+            [
+              "m35",
+              [
+                74001,
+                284
+              ]
+            ]
+          ]
+        },
+        {
+          "op": "nop"
+        }
+      ]
+    },
+    "compact_binary_hex": "8781821a00012111190119810283098200001901198200f58200f4830a1901198282636b333519011b82636d333519011c8111"
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

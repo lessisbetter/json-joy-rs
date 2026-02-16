@@ -114,7 +114,7 @@ fn oracle_cwd() -> PathBuf {
         .join("oracle-node")
 }
 
-fn seeds() -> [u64; 20] {
+fn seeds() -> [u64; 40] {
     [
         0x5eed_c0de_u64,
         0x0000_0000_0000_0001_u64,
@@ -136,6 +136,26 @@ fn seeds() -> [u64; 20] {
         0x1357_9bdf_2468_ace0_u64,
         0x0f0f_f0f0_55aa_aa55_u64,
         0xa5a5_5a5a_dead_beef_u64,
+        0x0101_0101_0101_0101_u64,
+        0x0202_0202_0202_0202_u64,
+        0x0303_0303_0303_0303_u64,
+        0x0404_0404_0404_0404_u64,
+        0x0505_0505_0505_0505_u64,
+        0x0606_0606_0606_0606_u64,
+        0x0707_0707_0707_0707_u64,
+        0x0808_0808_0808_0808_u64,
+        0x0909_0909_0909_0909_u64,
+        0x0a0a_0a0a_0a0a_0a0a_u64,
+        0xbeef_dead_0000_0001_u64,
+        0xbeef_dead_0000_0002_u64,
+        0xbeef_dead_0000_0003_u64,
+        0x7777_7777_8888_8888_u64,
+        0x8888_8888_9999_9999_u64,
+        0x9999_9999_aaaa_aaaa_u64,
+        0xaaaa_aaaa_bbbb_bbbb_u64,
+        0xbbbb_bbbb_cccc_cccc_u64,
+        0xcccc_cccc_dddd_dddd_u64,
+        0xdddd_dddd_eeee_eeee_u64,
     ]
 }
 

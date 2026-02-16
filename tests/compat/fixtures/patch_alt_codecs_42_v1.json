@@ -1,0 +1,116 @@
+{
+  "fixture_version": 1,
+  "name": "patch_alt_codecs_42_v1",
+  "scenario": "patch_alt_codecs",
+  "input": {
+    "patch_binary_hex": "91c2048902f706104880004904006571797a677700f5524904636b33334b04636d33334c0489"
+  },
+  "expected": {
+    "compact_json": [
+      [
+        [
+          74001,
+          265
+        ]
+      ],
+      [
+        2
+      ],
+      [
+        9,
+        [
+          0,
+          0
+        ],
+        265
+      ],
+      [
+        0,
+        "qyzgw"
+      ],
+      [
+        0,
+        true
+      ],
+      [
+        10,
+        265,
+        [
+          [
+            "k33",
+            267
+          ],
+          [
+            "m33",
+            268
+          ]
+        ]
+      ],
+      [
+        17
+      ]
+    ],
+    "verbose_json": {
+      "id": [
+        74001,
+        265
+      ],
+      "ops": [
+        {
+          "op": "new_obj"
+        },
+        {
+          "op": "ins_val",
+          "obj": [
+            0,
+            0
+          ],
+          "value": [
+            74001,
+            265
+          ]
+        },
+        {
+          "op": "new_con",
+          "value": "qyzgw"
+        },
+        {
+          "op": "new_con",
+          "value": true
+        },
+        {
+          "op": "ins_obj",
+          "obj": [
+            74001,
+            265
+          ],
+          "value": [
+            [
+              "k33",
+              [
+                74001,
+                267
+              ]
+            ],
+            [
+              "m33",
+              [
+                74001,
+                268
+              ]
+            ]
+          ]
+        },
+        {
+          "op": "nop"
+        }
+      ]
+    },
+    "compact_binary_hex": "8781821a000121111901098102830982000019010982006571797a67778200f5830a1901098282636b333319010b82636d333319010c8111"
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

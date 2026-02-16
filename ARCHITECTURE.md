@@ -39,7 +39,12 @@ This repository is structured as a Rust-core + bindings monorepo, following the 
 - Runtime-core parity progress is tracked in `CORE_PARITY_MATRIX.md`.
 - Production bridge paths in `json-joy-core` have been removed; runtime
   diff/apply/create lifecycle paths are native.
+- Patch binary construction is centralized through the native patch family:
+  `crates/json-joy-core/src/patch/encode.rs` is the shared encoder path used by
+  `patch_builder`.
 - Oracle tooling remains for fixture generation and differential verification.
+- Differential hardening runs with 40-seed/case deterministic suites across
+  runtime/model codecs/patch codecs/patch compaction/schema/util diff.
 
 ## Core module layout
 

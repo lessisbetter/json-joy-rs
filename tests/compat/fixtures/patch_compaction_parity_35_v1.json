@@ -1,0 +1,17 @@
+{
+  "fixture_version": 1,
+  "name": "patch_compaction_parity_35_v1",
+  "scenario": "patch_compaction_parity",
+  "input": {
+    "patch_binary_hex": "91c204d101f70610488000510300f400780f6d796e627477397a727a6b61723531525103636b32365303636d3236540389"
+  },
+  "expected": {
+    "compacted_patch_binary_hex": "91c204d101f70610488000510300f400780f6d796e627477397a727a6b61723531525103636b32365303636d3236540389",
+    "changed": false
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

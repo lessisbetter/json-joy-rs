@@ -730,28 +730,28 @@ fn manifest_contains_required_scenarios() {
         "fixtures must include patch_clock_codec_parity scenarios"
     );
     assert!(
-        patch_decode_error_count >= 25,
-        "fixtures must include at least 25 patch_decode_error scenarios"
+        patch_decode_error_count >= 35,
+        "fixtures must include at least 35 patch_decode_error scenarios"
     );
     assert!(
-        patch_alt_codecs_count >= 20,
-        "fixtures must include at least 20 patch_alt_codecs scenarios"
+        patch_alt_codecs_count >= 40,
+        "fixtures must include at least 40 patch_alt_codecs scenarios"
     );
     assert!(
-        patch_compaction_parity_count >= 20,
-        "fixtures must include at least 20 patch_compaction_parity scenarios"
+        patch_compaction_parity_count >= 40,
+        "fixtures must include at least 40 patch_compaction_parity scenarios"
     );
     assert!(
-        patch_schema_parity_count >= 25,
-        "fixtures must include at least 25 patch_schema_parity scenarios"
+        patch_schema_parity_count >= 45,
+        "fixtures must include at least 45 patch_schema_parity scenarios"
     );
     assert!(
-        util_diff_parity_count >= 30,
-        "fixtures must include at least 30 util_diff_parity scenarios"
+        util_diff_parity_count >= 80,
+        "fixtures must include at least 80 util_diff_parity scenarios"
     );
     assert!(
-        patch_canonical_encode_count >= 20,
-        "fixtures must include at least 20 patch_canonical_encode scenarios"
+        patch_canonical_encode_count >= 40,
+        "fixtures must include at least 40 patch_canonical_encode scenarios"
     );
     assert!(
         model_roundtrip_count >= 110,
@@ -802,7 +802,7 @@ fn manifest_contains_required_scenarios() {
         "fixtures must include at least 40 codec_sidecar_binary_parity scenarios"
     );
     assert!(
-        patch_clock_codec_parity_count >= 25,
-        "fixtures must include at least 25 patch_clock_codec_parity scenarios"
+        patch_clock_codec_parity_count >= 40,
+        "fixtures must include at least 40 patch_clock_codec_parity scenarios"
     );
 }

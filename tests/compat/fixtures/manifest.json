@@ -2,7 +2,7 @@
   "fixture_version": 1,
   "upstream_package": "json-joy",
   "upstream_version": "17.67.0",
-  "fixture_count": 1252,
+  "fixture_count": 1398,
   "fixtures": [
     {
       "name": "diff_root_number_to_number_v1",
@@ -255,79 +255,129 @@
       "file": "decode_error_long_random_v1.json"
     },
     {
-      "name": "decode_error_random_extra_01_v1",
+      "name": "decode_error_mirror_01_v1",
       "scenario": "patch_decode_error",
-      "file": "decode_error_random_extra_01_v1.json"
+      "file": "decode_error_mirror_01_v1.json"
     },
     {
-      "name": "decode_error_random_extra_02_v1",
+      "name": "decode_error_mirror_02_v1",
       "scenario": "patch_decode_error",
-      "file": "decode_error_random_extra_02_v1.json"
+      "file": "decode_error_mirror_02_v1.json"
     },
     {
-      "name": "decode_error_random_extra_03_v1",
+      "name": "decode_error_mirror_03_v1",
       "scenario": "patch_decode_error",
-      "file": "decode_error_random_extra_03_v1.json"
+      "file": "decode_error_mirror_03_v1.json"
     },
     {
-      "name": "decode_error_random_extra_04_v1",
+      "name": "decode_error_mirror_04_v1",
       "scenario": "patch_decode_error",
-      "file": "decode_error_random_extra_04_v1.json"
+      "file": "decode_error_mirror_04_v1.json"
     },
     {
-      "name": "decode_error_random_extra_05_v1",
+      "name": "decode_error_mirror_05_v1",
       "scenario": "patch_decode_error",
-      "file": "decode_error_random_extra_05_v1.json"
+      "file": "decode_error_mirror_05_v1.json"
     },
     {
-      "name": "decode_error_random_extra_06_v1",
+      "name": "decode_error_mirror_06_v1",
       "scenario": "patch_decode_error",
-      "file": "decode_error_random_extra_06_v1.json"
+      "file": "decode_error_mirror_06_v1.json"
     },
     {
-      "name": "decode_error_random_extra_07_v1",
+      "name": "decode_error_mirror_07_v1",
       "scenario": "patch_decode_error",
-      "file": "decode_error_random_extra_07_v1.json"
+      "file": "decode_error_mirror_07_v1.json"
     },
     {
-      "name": "decode_error_random_extra_08_v1",
+      "name": "decode_error_mirror_08_v1",
       "scenario": "patch_decode_error",
-      "file": "decode_error_random_extra_08_v1.json"
+      "file": "decode_error_mirror_08_v1.json"
     },
     {
-      "name": "decode_error_random_extra_09_v1",
+      "name": "decode_error_mirror_09_v1",
       "scenario": "patch_decode_error",
-      "file": "decode_error_random_extra_09_v1.json"
+      "file": "decode_error_mirror_09_v1.json"
     },
     {
-      "name": "decode_error_random_extra_10_v1",
+      "name": "decode_error_mirror_10_v1",
       "scenario": "patch_decode_error",
-      "file": "decode_error_random_extra_10_v1.json"
+      "file": "decode_error_mirror_10_v1.json"
     },
     {
-      "name": "decode_error_random_extra_11_v1",
+      "name": "decode_error_mirror_11_v1",
       "scenario": "patch_decode_error",
-      "file": "decode_error_random_extra_11_v1.json"
+      "file": "decode_error_mirror_11_v1.json"
     },
     {
-      "name": "decode_error_random_extra_12_v1",
+      "name": "decode_error_mirror_12_v1",
       "scenario": "patch_decode_error",
-      "file": "decode_error_random_extra_12_v1.json"
+      "file": "decode_error_mirror_12_v1.json"
     },
     {
-      "name": "decode_error_random_extra_13_v1",
+      "name": "decode_error_mirror_13_v1",
       "scenario": "patch_decode_error",
-      "file": "decode_error_random_extra_13_v1.json"
+      "file": "decode_error_mirror_13_v1.json"
     },
     {
-      "name": "decode_error_random_extra_14_v1",
+      "name": "decode_error_mirror_14_v1",
       "scenario": "patch_decode_error",
-      "file": "decode_error_random_extra_14_v1.json"
+      "file": "decode_error_mirror_14_v1.json"
     },
     {
-      "name": "decode_error_random_extra_15_v1",
+      "name": "decode_error_mirror_15_v1",
       "scenario": "patch_decode_error",
-      "file": "decode_error_random_extra_15_v1.json"
+      "file": "decode_error_mirror_15_v1.json"
+    },
+    {
+      "name": "decode_error_mirror_16_v1",
+      "scenario": "patch_decode_error",
+      "file": "decode_error_mirror_16_v1.json"
+    },
+    {
+      "name": "decode_error_mirror_17_v1",
+      "scenario": "patch_decode_error",
+      "file": "decode_error_mirror_17_v1.json"
+    },
+    {
+      "name": "decode_error_mirror_18_v1",
+      "scenario": "patch_decode_error",
+      "file": "decode_error_mirror_18_v1.json"
+    },
+    {
+      "name": "decode_error_mirror_19_v1",
+      "scenario": "patch_decode_error",
+      "file": "decode_error_mirror_19_v1.json"
+    },
+    {
+      "name": "decode_error_mirror_20_v1",
+      "scenario": "patch_decode_error",
+      "file": "decode_error_mirror_20_v1.json"
+    },
+    {
+      "name": "decode_error_mirror_21_v1",
+      "scenario": "patch_decode_error",
+      "file": "decode_error_mirror_21_v1.json"
+    },
+    {
+      "name": "decode_error_mirror_22_v1",
+      "scenario": "patch_decode_error",
+      "file": "decode_error_mirror_22_v1.json"
+    },
+    {
+      "name": "decode_error_mirror_23_v1",
+      "scenario": "patch_decode_error",
+      "file": "decode_error_mirror_23_v1.json"
+    },
+    {
+      "name": "decode_error_mirror_24_v1",
+      "scenario": "patch_decode_error",
+      "file": "decode_error_mirror_24_v1.json"
+    },
+    {
+      "name": "decode_error_mirror_25_v1",
+      "scenario": "patch_decode_error",
+      "file": "decode_error_mirror_25_v1.json"
     },
     {
       "name": "patch_canonical_root_scalar_v1",
@@ -450,6 +500,106 @@
       "file": "patch_canonical_generated_16_v1.json"
     },
     {
+      "name": "patch_canonical_generated_17_v1",
+      "scenario": "patch_canonical_encode",
+      "file": "patch_canonical_generated_17_v1.json"
+    },
+    {
+      "name": "patch_canonical_generated_18_v1",
+      "scenario": "patch_canonical_encode",
+      "file": "patch_canonical_generated_18_v1.json"
+    },
+    {
+      "name": "patch_canonical_generated_19_v1",
+      "scenario": "patch_canonical_encode",
+      "file": "patch_canonical_generated_19_v1.json"
+    },
+    {
+      "name": "patch_canonical_generated_20_v1",
+      "scenario": "patch_canonical_encode",
+      "file": "patch_canonical_generated_20_v1.json"
+    },
+    {
+      "name": "patch_canonical_generated_21_v1",
+      "scenario": "patch_canonical_encode",
+      "file": "patch_canonical_generated_21_v1.json"
+    },
+    {
+      "name": "patch_canonical_generated_22_v1",
+      "scenario": "patch_canonical_encode",
+      "file": "patch_canonical_generated_22_v1.json"
+    },
+    {
+      "name": "patch_canonical_generated_23_v1",
+      "scenario": "patch_canonical_encode",
+      "file": "patch_canonical_generated_23_v1.json"
+    },
+    {
+      "name": "patch_canonical_generated_24_v1",
+      "scenario": "patch_canonical_encode",
+      "file": "patch_canonical_generated_24_v1.json"
+    },
+    {
+      "name": "patch_canonical_generated_25_v1",
+      "scenario": "patch_canonical_encode",
+      "file": "patch_canonical_generated_25_v1.json"
+    },
+    {
+      "name": "patch_canonical_generated_26_v1",
+      "scenario": "patch_canonical_encode",
+      "file": "patch_canonical_generated_26_v1.json"
+    },
+    {
+      "name": "patch_canonical_generated_27_v1",
+      "scenario": "patch_canonical_encode",
+      "file": "patch_canonical_generated_27_v1.json"
+    },
+    {
+      "name": "patch_canonical_generated_28_v1",
+      "scenario": "patch_canonical_encode",
+      "file": "patch_canonical_generated_28_v1.json"
+    },
+    {
+      "name": "patch_canonical_generated_29_v1",
+      "scenario": "patch_canonical_encode",
+      "file": "patch_canonical_generated_29_v1.json"
+    },
+    {
+      "name": "patch_canonical_generated_30_v1",
+      "scenario": "patch_canonical_encode",
+      "file": "patch_canonical_generated_30_v1.json"
+    },
+    {
+      "name": "patch_canonical_generated_31_v1",
+      "scenario": "patch_canonical_encode",
+      "file": "patch_canonical_generated_31_v1.json"
+    },
+    {
+      "name": "patch_canonical_generated_32_v1",
+      "scenario": "patch_canonical_encode",
+      "file": "patch_canonical_generated_32_v1.json"
+    },
+    {
+      "name": "patch_canonical_generated_33_v1",
+      "scenario": "patch_canonical_encode",
+      "file": "patch_canonical_generated_33_v1.json"
+    },
+    {
+      "name": "patch_canonical_generated_34_v1",
+      "scenario": "patch_canonical_encode",
+      "file": "patch_canonical_generated_34_v1.json"
+    },
+    {
+      "name": "patch_canonical_generated_35_v1",
+      "scenario": "patch_canonical_encode",
+      "file": "patch_canonical_generated_35_v1.json"
+    },
+    {
+      "name": "patch_canonical_generated_36_v1",
+      "scenario": "patch_canonical_encode",
+      "file": "patch_canonical_generated_36_v1.json"
+    },
+    {
       "name": "patch_alt_codecs_01_v1",
       "scenario": "patch_alt_codecs",
       "file": "patch_alt_codecs_01_v1.json"
@@ -568,6 +718,106 @@
       "name": "patch_alt_codecs_24_v1",
       "scenario": "patch_alt_codecs",
       "file": "patch_alt_codecs_24_v1.json"
+    },
+    {
+      "name": "patch_alt_codecs_25_v1",
+      "scenario": "patch_alt_codecs",
+      "file": "patch_alt_codecs_25_v1.json"
+    },
+    {
+      "name": "patch_alt_codecs_26_v1",
+      "scenario": "patch_alt_codecs",
+      "file": "patch_alt_codecs_26_v1.json"
+    },
+    {
+      "name": "patch_alt_codecs_27_v1",
+      "scenario": "patch_alt_codecs",
+      "file": "patch_alt_codecs_27_v1.json"
+    },
+    {
+      "name": "patch_alt_codecs_28_v1",
+      "scenario": "patch_alt_codecs",
+      "file": "patch_alt_codecs_28_v1.json"
+    },
+    {
+      "name": "patch_alt_codecs_29_v1",
+      "scenario": "patch_alt_codecs",
+      "file": "patch_alt_codecs_29_v1.json"
+    },
+    {
+      "name": "patch_alt_codecs_30_v1",
+      "scenario": "patch_alt_codecs",
+      "file": "patch_alt_codecs_30_v1.json"
+    },
+    {
+      "name": "patch_alt_codecs_31_v1",
+      "scenario": "patch_alt_codecs",
+      "file": "patch_alt_codecs_31_v1.json"
+    },
+    {
+      "name": "patch_alt_codecs_32_v1",
+      "scenario": "patch_alt_codecs",
+      "file": "patch_alt_codecs_32_v1.json"
+    },
+    {
+      "name": "patch_alt_codecs_33_v1",
+      "scenario": "patch_alt_codecs",
+      "file": "patch_alt_codecs_33_v1.json"
+    },
+    {
+      "name": "patch_alt_codecs_34_v1",
+      "scenario": "patch_alt_codecs",
+      "file": "patch_alt_codecs_34_v1.json"
+    },
+    {
+      "name": "patch_alt_codecs_35_v1",
+      "scenario": "patch_alt_codecs",
+      "file": "patch_alt_codecs_35_v1.json"
+    },
+    {
+      "name": "patch_alt_codecs_36_v1",
+      "scenario": "patch_alt_codecs",
+      "file": "patch_alt_codecs_36_v1.json"
+    },
+    {
+      "name": "patch_alt_codecs_37_v1",
+      "scenario": "patch_alt_codecs",
+      "file": "patch_alt_codecs_37_v1.json"
+    },
+    {
+      "name": "patch_alt_codecs_38_v1",
+      "scenario": "patch_alt_codecs",
+      "file": "patch_alt_codecs_38_v1.json"
+    },
+    {
+      "name": "patch_alt_codecs_39_v1",
+      "scenario": "patch_alt_codecs",
+      "file": "patch_alt_codecs_39_v1.json"
+    },
+    {
+      "name": "patch_alt_codecs_40_v1",
+      "scenario": "patch_alt_codecs",
+      "file": "patch_alt_codecs_40_v1.json"
+    },
+    {
+      "name": "patch_alt_codecs_41_v1",
+      "scenario": "patch_alt_codecs",
+      "file": "patch_alt_codecs_41_v1.json"
+    },
+    {
+      "name": "patch_alt_codecs_42_v1",
+      "scenario": "patch_alt_codecs",
+      "file": "patch_alt_codecs_42_v1.json"
+    },
+    {
+      "name": "patch_alt_codecs_43_v1",
+      "scenario": "patch_alt_codecs",
+      "file": "patch_alt_codecs_43_v1.json"
+    },
+    {
+      "name": "patch_alt_codecs_44_v1",
+      "scenario": "patch_alt_codecs",
+      "file": "patch_alt_codecs_44_v1.json"
     },
     {
       "name": "patch_compaction_parity_01_v1",
@@ -690,9 +940,109 @@
       "file": "patch_compaction_parity_24_v1.json"
     },
     {
-      "name": "patch_compaction_parity_25_utf16_v1",
+      "name": "patch_compaction_parity_25_v1",
       "scenario": "patch_compaction_parity",
-      "file": "patch_compaction_parity_25_utf16_v1.json"
+      "file": "patch_compaction_parity_25_v1.json"
+    },
+    {
+      "name": "patch_compaction_parity_26_v1",
+      "scenario": "patch_compaction_parity",
+      "file": "patch_compaction_parity_26_v1.json"
+    },
+    {
+      "name": "patch_compaction_parity_27_v1",
+      "scenario": "patch_compaction_parity",
+      "file": "patch_compaction_parity_27_v1.json"
+    },
+    {
+      "name": "patch_compaction_parity_28_v1",
+      "scenario": "patch_compaction_parity",
+      "file": "patch_compaction_parity_28_v1.json"
+    },
+    {
+      "name": "patch_compaction_parity_29_v1",
+      "scenario": "patch_compaction_parity",
+      "file": "patch_compaction_parity_29_v1.json"
+    },
+    {
+      "name": "patch_compaction_parity_30_v1",
+      "scenario": "patch_compaction_parity",
+      "file": "patch_compaction_parity_30_v1.json"
+    },
+    {
+      "name": "patch_compaction_parity_31_v1",
+      "scenario": "patch_compaction_parity",
+      "file": "patch_compaction_parity_31_v1.json"
+    },
+    {
+      "name": "patch_compaction_parity_32_v1",
+      "scenario": "patch_compaction_parity",
+      "file": "patch_compaction_parity_32_v1.json"
+    },
+    {
+      "name": "patch_compaction_parity_33_v1",
+      "scenario": "patch_compaction_parity",
+      "file": "patch_compaction_parity_33_v1.json"
+    },
+    {
+      "name": "patch_compaction_parity_34_v1",
+      "scenario": "patch_compaction_parity",
+      "file": "patch_compaction_parity_34_v1.json"
+    },
+    {
+      "name": "patch_compaction_parity_35_v1",
+      "scenario": "patch_compaction_parity",
+      "file": "patch_compaction_parity_35_v1.json"
+    },
+    {
+      "name": "patch_compaction_parity_36_v1",
+      "scenario": "patch_compaction_parity",
+      "file": "patch_compaction_parity_36_v1.json"
+    },
+    {
+      "name": "patch_compaction_parity_37_v1",
+      "scenario": "patch_compaction_parity",
+      "file": "patch_compaction_parity_37_v1.json"
+    },
+    {
+      "name": "patch_compaction_parity_38_v1",
+      "scenario": "patch_compaction_parity",
+      "file": "patch_compaction_parity_38_v1.json"
+    },
+    {
+      "name": "patch_compaction_parity_39_v1",
+      "scenario": "patch_compaction_parity",
+      "file": "patch_compaction_parity_39_v1.json"
+    },
+    {
+      "name": "patch_compaction_parity_40_v1",
+      "scenario": "patch_compaction_parity",
+      "file": "patch_compaction_parity_40_v1.json"
+    },
+    {
+      "name": "patch_compaction_parity_41_v1",
+      "scenario": "patch_compaction_parity",
+      "file": "patch_compaction_parity_41_v1.json"
+    },
+    {
+      "name": "patch_compaction_parity_42_v1",
+      "scenario": "patch_compaction_parity",
+      "file": "patch_compaction_parity_42_v1.json"
+    },
+    {
+      "name": "patch_compaction_parity_43_v1",
+      "scenario": "patch_compaction_parity",
+      "file": "patch_compaction_parity_43_v1.json"
+    },
+    {
+      "name": "patch_compaction_parity_44_v1",
+      "scenario": "patch_compaction_parity",
+      "file": "patch_compaction_parity_44_v1.json"
+    },
+    {
+      "name": "patch_compaction_parity_45_utf16_v1",
+      "scenario": "patch_compaction_parity",
+      "file": "patch_compaction_parity_45_utf16_v1.json"
     },
     {
       "name": "patch_schema_parity_01_det_v1",
@@ -833,6 +1183,91 @@
       "name": "patch_schema_parity_28_rnd_v1",
       "scenario": "patch_schema_parity",
       "file": "patch_schema_parity_28_rnd_v1.json"
+    },
+    {
+      "name": "patch_schema_parity_29_rnd_v1",
+      "scenario": "patch_schema_parity",
+      "file": "patch_schema_parity_29_rnd_v1.json"
+    },
+    {
+      "name": "patch_schema_parity_30_rnd_v1",
+      "scenario": "patch_schema_parity",
+      "file": "patch_schema_parity_30_rnd_v1.json"
+    },
+    {
+      "name": "patch_schema_parity_31_rnd_v1",
+      "scenario": "patch_schema_parity",
+      "file": "patch_schema_parity_31_rnd_v1.json"
+    },
+    {
+      "name": "patch_schema_parity_32_rnd_v1",
+      "scenario": "patch_schema_parity",
+      "file": "patch_schema_parity_32_rnd_v1.json"
+    },
+    {
+      "name": "patch_schema_parity_33_rnd_v1",
+      "scenario": "patch_schema_parity",
+      "file": "patch_schema_parity_33_rnd_v1.json"
+    },
+    {
+      "name": "patch_schema_parity_34_rnd_v1",
+      "scenario": "patch_schema_parity",
+      "file": "patch_schema_parity_34_rnd_v1.json"
+    },
+    {
+      "name": "patch_schema_parity_35_rnd_v1",
+      "scenario": "patch_schema_parity",
+      "file": "patch_schema_parity_35_rnd_v1.json"
+    },
+    {
+      "name": "patch_schema_parity_36_rnd_v1",
+      "scenario": "patch_schema_parity",
+      "file": "patch_schema_parity_36_rnd_v1.json"
+    },
+    {
+      "name": "patch_schema_parity_37_rnd_v1",
+      "scenario": "patch_schema_parity",
+      "file": "patch_schema_parity_37_rnd_v1.json"
+    },
+    {
+      "name": "patch_schema_parity_38_rnd_v1",
+      "scenario": "patch_schema_parity",
+      "file": "patch_schema_parity_38_rnd_v1.json"
+    },
+    {
+      "name": "patch_schema_parity_39_rnd_v1",
+      "scenario": "patch_schema_parity",
+      "file": "patch_schema_parity_39_rnd_v1.json"
+    },
+    {
+      "name": "patch_schema_parity_40_rnd_v1",
+      "scenario": "patch_schema_parity",
+      "file": "patch_schema_parity_40_rnd_v1.json"
+    },
+    {
+      "name": "patch_schema_parity_41_rnd_v1",
+      "scenario": "patch_schema_parity",
+      "file": "patch_schema_parity_41_rnd_v1.json"
+    },
+    {
+      "name": "patch_schema_parity_42_rnd_v1",
+      "scenario": "patch_schema_parity",
+      "file": "patch_schema_parity_42_rnd_v1.json"
+    },
+    {
+      "name": "patch_schema_parity_43_rnd_v1",
+      "scenario": "patch_schema_parity",
+      "file": "patch_schema_parity_43_rnd_v1.json"
+    },
+    {
+      "name": "patch_schema_parity_44_rnd_v1",
+      "scenario": "patch_schema_parity",
+      "file": "patch_schema_parity_44_rnd_v1.json"
+    },
+    {
+      "name": "patch_schema_parity_45_rnd_v1",
+      "scenario": "patch_schema_parity",
+      "file": "patch_schema_parity_45_rnd_v1.json"
     },
     {
       "name": "util_diff_parity_01_str_v1",
@@ -1013,6 +1448,226 @@
       "name": "util_diff_parity_36_str_rnd_v1",
       "scenario": "util_diff_parity",
       "file": "util_diff_parity_36_str_rnd_v1.json"
+    },
+    {
+      "name": "util_diff_parity_37_line_rnd_v1",
+      "scenario": "util_diff_parity",
+      "file": "util_diff_parity_37_line_rnd_v1.json"
+    },
+    {
+      "name": "util_diff_parity_38_str_rnd_v1",
+      "scenario": "util_diff_parity",
+      "file": "util_diff_parity_38_str_rnd_v1.json"
+    },
+    {
+      "name": "util_diff_parity_39_line_rnd_v1",
+      "scenario": "util_diff_parity",
+      "file": "util_diff_parity_39_line_rnd_v1.json"
+    },
+    {
+      "name": "util_diff_parity_40_str_rnd_v1",
+      "scenario": "util_diff_parity",
+      "file": "util_diff_parity_40_str_rnd_v1.json"
+    },
+    {
+      "name": "util_diff_parity_41_line_rnd_v1",
+      "scenario": "util_diff_parity",
+      "file": "util_diff_parity_41_line_rnd_v1.json"
+    },
+    {
+      "name": "util_diff_parity_42_str_rnd_v1",
+      "scenario": "util_diff_parity",
+      "file": "util_diff_parity_42_str_rnd_v1.json"
+    },
+    {
+      "name": "util_diff_parity_43_str_rnd_v1",
+      "scenario": "util_diff_parity",
+      "file": "util_diff_parity_43_str_rnd_v1.json"
+    },
+    {
+      "name": "util_diff_parity_44_bin_rnd_v1",
+      "scenario": "util_diff_parity",
+      "file": "util_diff_parity_44_bin_rnd_v1.json"
+    },
+    {
+      "name": "util_diff_parity_45_str_rnd_v1",
+      "scenario": "util_diff_parity",
+      "file": "util_diff_parity_45_str_rnd_v1.json"
+    },
+    {
+      "name": "util_diff_parity_46_bin_rnd_v1",
+      "scenario": "util_diff_parity",
+      "file": "util_diff_parity_46_bin_rnd_v1.json"
+    },
+    {
+      "name": "util_diff_parity_47_str_rnd_v1",
+      "scenario": "util_diff_parity",
+      "file": "util_diff_parity_47_str_rnd_v1.json"
+    },
+    {
+      "name": "util_diff_parity_48_str_rnd_v1",
+      "scenario": "util_diff_parity",
+      "file": "util_diff_parity_48_str_rnd_v1.json"
+    },
+    {
+      "name": "util_diff_parity_49_line_rnd_v1",
+      "scenario": "util_diff_parity",
+      "file": "util_diff_parity_49_line_rnd_v1.json"
+    },
+    {
+      "name": "util_diff_parity_50_bin_rnd_v1",
+      "scenario": "util_diff_parity",
+      "file": "util_diff_parity_50_bin_rnd_v1.json"
+    },
+    {
+      "name": "util_diff_parity_51_str_rnd_v1",
+      "scenario": "util_diff_parity",
+      "file": "util_diff_parity_51_str_rnd_v1.json"
+    },
+    {
+      "name": "util_diff_parity_52_line_rnd_v1",
+      "scenario": "util_diff_parity",
+      "file": "util_diff_parity_52_line_rnd_v1.json"
+    },
+    {
+      "name": "util_diff_parity_53_bin_rnd_v1",
+      "scenario": "util_diff_parity",
+      "file": "util_diff_parity_53_bin_rnd_v1.json"
+    },
+    {
+      "name": "util_diff_parity_54_str_rnd_v1",
+      "scenario": "util_diff_parity",
+      "file": "util_diff_parity_54_str_rnd_v1.json"
+    },
+    {
+      "name": "util_diff_parity_55_bin_rnd_v1",
+      "scenario": "util_diff_parity",
+      "file": "util_diff_parity_55_bin_rnd_v1.json"
+    },
+    {
+      "name": "util_diff_parity_56_bin_rnd_v1",
+      "scenario": "util_diff_parity",
+      "file": "util_diff_parity_56_bin_rnd_v1.json"
+    },
+    {
+      "name": "util_diff_parity_57_bin_rnd_v1",
+      "scenario": "util_diff_parity",
+      "file": "util_diff_parity_57_bin_rnd_v1.json"
+    },
+    {
+      "name": "util_diff_parity_58_bin_rnd_v1",
+      "scenario": "util_diff_parity",
+      "file": "util_diff_parity_58_bin_rnd_v1.json"
+    },
+    {
+      "name": "util_diff_parity_59_bin_rnd_v1",
+      "scenario": "util_diff_parity",
+      "file": "util_diff_parity_59_bin_rnd_v1.json"
+    },
+    {
+      "name": "util_diff_parity_60_bin_rnd_v1",
+      "scenario": "util_diff_parity",
+      "file": "util_diff_parity_60_bin_rnd_v1.json"
+    },
+    {
+      "name": "util_diff_parity_61_bin_rnd_v1",
+      "scenario": "util_diff_parity",
+      "file": "util_diff_parity_61_bin_rnd_v1.json"
+    },
+    {
+      "name": "util_diff_parity_62_bin_rnd_v1",
+      "scenario": "util_diff_parity",
+      "file": "util_diff_parity_62_bin_rnd_v1.json"
+    },
+    {
+      "name": "util_diff_parity_63_bin_rnd_v1",
+      "scenario": "util_diff_parity",
+      "file": "util_diff_parity_63_bin_rnd_v1.json"
+    },
+    {
+      "name": "util_diff_parity_64_line_rnd_v1",
+      "scenario": "util_diff_parity",
+      "file": "util_diff_parity_64_line_rnd_v1.json"
+    },
+    {
+      "name": "util_diff_parity_65_line_rnd_v1",
+      "scenario": "util_diff_parity",
+      "file": "util_diff_parity_65_line_rnd_v1.json"
+    },
+    {
+      "name": "util_diff_parity_66_bin_rnd_v1",
+      "scenario": "util_diff_parity",
+      "file": "util_diff_parity_66_bin_rnd_v1.json"
+    },
+    {
+      "name": "util_diff_parity_67_str_rnd_v1",
+      "scenario": "util_diff_parity",
+      "file": "util_diff_parity_67_str_rnd_v1.json"
+    },
+    {
+      "name": "util_diff_parity_68_line_rnd_v1",
+      "scenario": "util_diff_parity",
+      "file": "util_diff_parity_68_line_rnd_v1.json"
+    },
+    {
+      "name": "util_diff_parity_69_str_rnd_v1",
+      "scenario": "util_diff_parity",
+      "file": "util_diff_parity_69_str_rnd_v1.json"
+    },
+    {
+      "name": "util_diff_parity_70_bin_rnd_v1",
+      "scenario": "util_diff_parity",
+      "file": "util_diff_parity_70_bin_rnd_v1.json"
+    },
+    {
+      "name": "util_diff_parity_71_str_rnd_v1",
+      "scenario": "util_diff_parity",
+      "file": "util_diff_parity_71_str_rnd_v1.json"
+    },
+    {
+      "name": "util_diff_parity_72_bin_rnd_v1",
+      "scenario": "util_diff_parity",
+      "file": "util_diff_parity_72_bin_rnd_v1.json"
+    },
+    {
+      "name": "util_diff_parity_73_bin_rnd_v1",
+      "scenario": "util_diff_parity",
+      "file": "util_diff_parity_73_bin_rnd_v1.json"
+    },
+    {
+      "name": "util_diff_parity_74_line_rnd_v1",
+      "scenario": "util_diff_parity",
+      "file": "util_diff_parity_74_line_rnd_v1.json"
+    },
+    {
+      "name": "util_diff_parity_75_bin_rnd_v1",
+      "scenario": "util_diff_parity",
+      "file": "util_diff_parity_75_bin_rnd_v1.json"
+    },
+    {
+      "name": "util_diff_parity_76_str_rnd_v1",
+      "scenario": "util_diff_parity",
+      "file": "util_diff_parity_76_str_rnd_v1.json"
+    },
+    {
+      "name": "util_diff_parity_77_line_rnd_v1",
+      "scenario": "util_diff_parity",
+      "file": "util_diff_parity_77_line_rnd_v1.json"
+    },
+    {
+      "name": "util_diff_parity_78_bin_rnd_v1",
+      "scenario": "util_diff_parity",
+      "file": "util_diff_parity_78_bin_rnd_v1.json"
+    },
+    {
+      "name": "util_diff_parity_79_bin_rnd_v1",
+      "scenario": "util_diff_parity",
+      "file": "util_diff_parity_79_bin_rnd_v1.json"
+    },
+    {
+      "name": "util_diff_parity_80_bin_rnd_v1",
+      "scenario": "util_diff_parity",
+      "file": "util_diff_parity_80_bin_rnd_v1.json"
     },
     {
       "name": "model_roundtrip_scalar_number_v1",
@@ -6263,6 +6918,81 @@
       "name": "patch_clock_codec_parity_25_rnd_v1",
       "scenario": "patch_clock_codec_parity",
       "file": "patch_clock_codec_parity_25_rnd_v1.json"
+    },
+    {
+      "name": "patch_clock_codec_parity_26_rnd_v1",
+      "scenario": "patch_clock_codec_parity",
+      "file": "patch_clock_codec_parity_26_rnd_v1.json"
+    },
+    {
+      "name": "patch_clock_codec_parity_27_rnd_v1",
+      "scenario": "patch_clock_codec_parity",
+      "file": "patch_clock_codec_parity_27_rnd_v1.json"
+    },
+    {
+      "name": "patch_clock_codec_parity_28_rnd_v1",
+      "scenario": "patch_clock_codec_parity",
+      "file": "patch_clock_codec_parity_28_rnd_v1.json"
+    },
+    {
+      "name": "patch_clock_codec_parity_29_rnd_v1",
+      "scenario": "patch_clock_codec_parity",
+      "file": "patch_clock_codec_parity_29_rnd_v1.json"
+    },
+    {
+      "name": "patch_clock_codec_parity_30_rnd_v1",
+      "scenario": "patch_clock_codec_parity",
+      "file": "patch_clock_codec_parity_30_rnd_v1.json"
+    },
+    {
+      "name": "patch_clock_codec_parity_31_rnd_v1",
+      "scenario": "patch_clock_codec_parity",
+      "file": "patch_clock_codec_parity_31_rnd_v1.json"
+    },
+    {
+      "name": "patch_clock_codec_parity_32_rnd_v1",
+      "scenario": "patch_clock_codec_parity",
+      "file": "patch_clock_codec_parity_32_rnd_v1.json"
+    },
+    {
+      "name": "patch_clock_codec_parity_33_rnd_v1",
+      "scenario": "patch_clock_codec_parity",
+      "file": "patch_clock_codec_parity_33_rnd_v1.json"
+    },
+    {
+      "name": "patch_clock_codec_parity_34_rnd_v1",
+      "scenario": "patch_clock_codec_parity",
+      "file": "patch_clock_codec_parity_34_rnd_v1.json"
+    },
+    {
+      "name": "patch_clock_codec_parity_35_rnd_v1",
+      "scenario": "patch_clock_codec_parity",
+      "file": "patch_clock_codec_parity_35_rnd_v1.json"
+    },
+    {
+      "name": "patch_clock_codec_parity_36_rnd_v1",
+      "scenario": "patch_clock_codec_parity",
+      "file": "patch_clock_codec_parity_36_rnd_v1.json"
+    },
+    {
+      "name": "patch_clock_codec_parity_37_rnd_v1",
+      "scenario": "patch_clock_codec_parity",
+      "file": "patch_clock_codec_parity_37_rnd_v1.json"
+    },
+    {
+      "name": "patch_clock_codec_parity_38_rnd_v1",
+      "scenario": "patch_clock_codec_parity",
+      "file": "patch_clock_codec_parity_38_rnd_v1.json"
+    },
+    {
+      "name": "patch_clock_codec_parity_39_rnd_v1",
+      "scenario": "patch_clock_codec_parity",
+      "file": "patch_clock_codec_parity_39_rnd_v1.json"
+    },
+    {
+      "name": "patch_clock_codec_parity_40_rnd_v1",
+      "scenario": "patch_clock_codec_parity",
+      "file": "patch_clock_codec_parity_40_rnd_v1.json"
     }
   ]
 }

@@ -1,0 +1,37 @@
+{
+  "fixture_version": 1,
+  "name": "util_diff_parity_69_str_rnd_v1",
+  "scenario": "util_diff_parity",
+  "input": {
+    "kind": "str",
+    "src": "383g",
+    "dst": "poags9r"
+  },
+  "expected": {
+    "patch": [
+      [
+        -1,
+        "383"
+      ],
+      [
+        1,
+        "poa"
+      ],
+      [
+        0,
+        "g"
+      ],
+      [
+        1,
+        "s9r"
+      ]
+    ],
+    "src_from_patch": "383g",
+    "dst_from_patch": "poags9r"
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}
