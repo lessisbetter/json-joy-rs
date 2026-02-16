@@ -67,6 +67,14 @@ This document captures a direct side-by-side review of runtime-core Rust impleme
 - Rust:
   - `/Users/nchapman/Drive/Code/json-joy-rs/crates/json-joy-core/src/less_db_compat.rs`
 
+6. Indexed/sidecar codecs:
+- Upstream:
+  - `/Users/nchapman/Code/json-joy/packages/json-joy/src/json-crdt/codec/indexed/binary/{Encoder,Decoder}.ts`
+  - `/Users/nchapman/Code/json-joy/packages/json-joy/src/json-crdt/codec/sidecar/binary/{Encoder,Decoder}.ts`
+- Rust:
+  - `/Users/nchapman/Drive/Code/json-joy-rs/crates/json-joy-core/src/codec_indexed_binary/{mod,types,encode,decode}.rs`
+  - `/Users/nchapman/Drive/Code/json-joy-rs/crates/json-joy-core/src/codec_sidecar_binary/{mod,types,encode,decode}.rs`
+
 ## Compatibility Quirks (Intentional)
 
 These are deliberate and should not be "simplified" without fixture/differential updates:
@@ -109,13 +117,33 @@ These are deliberate and should not be "simplified" without fixture/differential
   - `/Users/nchapman/Drive/Code/json-joy-rs/crates/json-joy-core/src/less_db_compat.rs`
 - Rationale: safe optimization under fixture-backed envelope; avoids accidental clock semantics drift.
 
+8. Sidecar object key ordering:
+- Sidecar encode/decode sorts object keys when traversing sidecar metadata:
+  - `/Users/nchapman/Drive/Code/json-joy-rs/crates/json-joy-core/src/codec_sidecar_binary/encode.rs`
+  - `/Users/nchapman/Drive/Code/json-joy-rs/crates/json-joy-core/src/codec_sidecar_binary/decode.rs`
+- Rationale: upstream sidecar codec uses deterministic key-order behavior; preserving sorted traversal avoids metadata/view drift.
+
+9. Sidecar vec-slot null behavior:
+- Sidecar encode writes missing vec slots as `null` in view payload while preserving slot absence in metadata:
+  - `/Users/nchapman/Drive/Code/json-joy-rs/crates/json-joy-core/src/codec_sidecar_binary/encode.rs`
+- Rationale: matches upstream transport behavior where undefined vec slots roundtrip through JSON-facing payloads as null-like values.
+
+10. Shared clock-table codec reuse:
+- Indexed/sidecar clock table serialization now delegates to shared patch clock-table codec:
+  - `/Users/nchapman/Drive/Code/json-joy-rs/crates/json-joy-core/src/patch_clock_codec.rs`
+  - `/Users/nchapman/Drive/Code/json-joy-rs/crates/json-joy-core/src/codec_indexed_binary/types.rs`
+  - `/Users/nchapman/Drive/Code/json-joy-rs/crates/json-joy-core/src/codec_sidecar_binary/{encode,decode}.rs`
+- Rationale: one canonical clock-table binary implementation reduces drift risk across patch/indexed/sidecar families.
+
 ## Organization/Documentation Notes
 
 1. Core module split is now upstream-aligned by family and should stay that way:
 - `model_runtime/*`
 - `diff_runtime/*`
 - `patch/*`
-- `model_api/*`
+- `model_api/*` (with lifecycle/apply-read separated from mutators)
+- `codec_indexed_binary/*`
+- `codec_sidecar_binary/*`
 
 2. Runtime bridge policy remains:
 - No production `node` subprocess calls in runtime paths.
