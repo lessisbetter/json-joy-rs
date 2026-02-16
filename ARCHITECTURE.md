@@ -40,3 +40,14 @@ This repository is structured as a Rust-core + bindings monorepo, following the 
 - Production bridge paths in `json-joy-core` have been removed; runtime
   diff/apply/create lifecycle paths are native.
 - Oracle tooling remains for fixture generation and differential verification.
+
+## Core module layout
+
+- Runtime-heavy modules are organized as folder modules to mirror upstream file
+  families and keep porting diffs localized:
+  - `crates/json-joy-core/src/model_api/mod.rs` (+ `events.rs`, `path.rs`)
+  - `crates/json-joy-core/src/model_runtime/mod.rs`
+  - `crates/json-joy-core/src/diff_runtime/mod.rs`
+- This layout is intentionally aligned with the upstream `json-crdt/model/api`,
+  `json-crdt/model`, and `json-crdt-diff` families for easier side-by-side
+  verification against `/Users/nchapman/Code/json-joy`.
