@@ -1,12 +1,19 @@
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::process::Command;
 
 use json_joy_core::model_runtime::RuntimeModel;
 use json_joy_core::patch::Patch;
 use serde_json::Value;
 
 #[test]
-fn property_replay_applying_same_sequence_twice_is_stable() {
+fn property_replay_second_pass_matches_oracle() {
+    // Upstream reference:
+    // `json-crdt/model/Model.ts` applies `clock.observe(op.id, op.span())` for
+    // every operation. That means some replay patterns are intentionally not
+    // globally idempotent across a full second pass when causal prerequisites
+    // were missing during the first pass. Validate against oracle behavior
+    // directly instead of assuming universal second-pass stability.
     let fixtures = load_apply_replay_fixtures();
     assert!(fixtures.len() >= 50, "expected >=50 apply replay fixtures");
 
@@ -36,29 +43,48 @@ fn property_replay_applying_same_sequence_twice_is_stable() {
             .map(|v| usize::try_from(v.as_u64().expect("index must be u64")).expect("index out of range"))
             .collect();
 
-        let mut model_once = RuntimeModel::from_model_binary(&base).expect("base decode must succeed");
-        model_once
+        let mut model = RuntimeModel::from_model_binary(&base).expect("base decode must succeed");
+        model
             .validate_invariants()
             .expect("invariants must hold for base model");
         for idx in replay.iter().copied() {
-            model_once.apply_patch(&patches[idx]).expect("apply must succeed");
-            model_once
+            model.apply_patch(&patches[idx]).expect("apply must succeed");
+            model
                 .validate_invariants()
                 .expect("invariants must hold after apply");
         }
-        let once_view = model_once.view_json();
+        let once_view = model.view_json();
 
         for idx in replay.iter().copied() {
-            model_once.apply_patch(&patches[idx]).expect("second pass apply must succeed");
-            model_once
+            model.apply_patch(&patches[idx]).expect("second pass apply must succeed");
+            model
                 .validate_invariants()
                 .expect("invariants must hold after second-pass apply");
         }
-        let twice_view = model_once.view_json();
+        let twice_view = model.view_json();
+
+        let patch_hexes: Vec<String> = fixture["input"]["patches_binary_hex"]
+            .as_array()
+            .expect("patches_binary_hex must be array")
+            .iter()
+            .map(|v| v.as_str().expect("patch hex must be string").to_string())
+            .collect();
+        let (oracle_once, oracle_twice) = oracle_replay_once_twice(
+            fixture["input"]["base_model_binary_hex"]
+                .as_str()
+                .expect("base_model_binary_hex must be string"),
+            &patch_hexes,
+            &replay,
+        );
 
         assert_eq!(
-            once_view, twice_view,
-            "re-applying same replay pattern must be idempotent for {}",
+            once_view, oracle_once,
+            "first pass replay mismatch for {}",
+            fixture["name"]
+        );
+        assert_eq!(
+            twice_view, oracle_twice,
+            "second pass replay mismatch for {}",
             fixture["name"]
         );
     }
@@ -181,4 +207,56 @@ fn decode_hex(s: &str) -> Vec<u8> {
         out.push((hi << 4) | lo);
     }
     out
+}
+
+fn oracle_cwd() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("..")
+        .join("..")
+        .join("tools")
+        .join("oracle-node")
+}
+
+fn oracle_replay_once_twice(
+    base_model_binary_hex: &str,
+    patches_binary_hex: &[String],
+    replay_pattern: &[usize],
+) -> (Value, Value) {
+    let script = r#"
+const {Model} = require('json-joy/lib/json-crdt');
+const {Patch} = require('json-joy/lib/json-crdt-patch');
+const input = JSON.parse(process.argv[1]);
+const model = Model.fromBinary(Buffer.from(input.base_model_binary_hex, 'hex'));
+const patches = input.patches_binary_hex.map((h) => Patch.fromBinary(Buffer.from(h, 'hex')));
+for (const i of input.replay_pattern) model.applyPatch(patches[i]);
+const once = model.view();
+for (const i of input.replay_pattern) model.applyPatch(patches[i]);
+const twice = model.view();
+process.stdout.write(JSON.stringify({once, twice}));
+"#;
+
+    let payload = serde_json::json!({
+        "base_model_binary_hex": base_model_binary_hex,
+        "patches_binary_hex": patches_binary_hex,
+        "replay_pattern": replay_pattern,
+    });
+
+    let output = Command::new("node")
+        .current_dir(oracle_cwd())
+        .arg("-e")
+        .arg(script)
+        .arg(payload.to_string())
+        .output()
+        .expect("failed to run oracle replay script");
+    assert!(
+        output.status.success(),
+        "oracle replay script failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let parsed: Value =
+        serde_json::from_slice(&output.stdout).expect("oracle replay output must be valid json");
+    (
+        parsed["once"].clone(),
+        parsed["twice"].clone(),
+    )
 }
