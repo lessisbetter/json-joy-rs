@@ -25,8 +25,8 @@ Gate legend:
 | `json-crdt/model` apply semantics + node graph | `crates/json-joy-core/src/model_runtime.rs` | partial | yes | yes | partial | yes | Runtime graph exists but still optimized for current corpus and needs normalization hardening. |
 | `json-crdt/codec/structural/binary/*` encode | `crates/json-joy-core/src/model.rs` (+ new encoder module) | partial | partial | yes | no | yes | Full native model-state encoding from runtime graph is not complete. |
 | `json-crdt/nodes/*` behavior families | `crates/json-joy-core/src/model_runtime.rs` (+ split modules) | partial | partial | partial | no | yes | Obj/arr/str/bin/vec/con/val are present but need upstream-mapped behavior expansion. |
-| `json-crdt-diff/JsonCrdtDiff.ts` | `crates/json-joy-core/src/diff_runtime.rs` | bridge | yes | yes | partial | no | Runtime diff currently subprocess-delegated to Node oracle. |
-| less-db compatibility lifecycle apply | `crates/json-joy-core/src/less_db_compat.rs` | partial | yes | yes | partial | yes | `apply_patch` is now native via `RuntimeModel` decode/apply/encode; diff path still bridged. |
+| `json-crdt-diff/JsonCrdtDiff.ts` | `crates/json-joy-core/src/diff_runtime.rs` | partial | yes | yes | partial | yes | Runtime diff path is native-only; unsupported shapes currently error and are bridged at higher compatibility layer. |
+| less-db compatibility lifecycle apply | `crates/json-joy-core/src/less_db_compat.rs` | partial | yes | yes | partial | no | `apply_patch` is native; `create_model` and unsupported `diff_model` shapes currently use oracle fallback. |
 
 ## M6 exit targets
 

@@ -1,12 +1,14 @@
 //! less-db-js compatibility layer.
 
 use crate::diff_runtime;
-use crate::crdt_binary::{first_logical_clock_sid_time, write_vu57};
+use crate::crdt_binary::first_logical_clock_sid_time;
 use crate::{generate_session_id, is_valid_session_id};
 use crate::model::Model;
 use crate::model_runtime::RuntimeModel;
 use crate::patch::Patch;
-use serde_json::Value;
+use serde_json::{json, Value};
+use std::path::PathBuf;
+use std::process::Command;
 use thiserror::Error;
 
 pub type PatchBytes = Vec<u8>;
@@ -40,17 +42,83 @@ pub fn create_model(data: &Value, sid: u64) -> Result<CompatModel, CompatError> 
     if !is_valid_session_id(sid) {
         return Err(CompatError::InvalidSessionId(sid));
     }
-    let base = empty_logical_model_binary(sid);
-    let mut model = model_load(&base, sid)?;
-    if let Some(patch) = diff_model(&model, data)? {
-        apply_patch(&mut model, &patch)?;
+    // Bootstrap parity for initial model creation is still delegated to
+    // upstream oracle runtime to match exact binary initialization behavior.
+    let output = Command::new("node")
+        .arg(oracle_model_runtime_path())
+        .arg(
+            json!({
+                "op": "create",
+                "sid": sid,
+                "data_json": data,
+            })
+            .to_string(),
+        )
+        .output()
+        .map_err(|e| CompatError::ProcessIo(e.to_string()))?;
+    if !output.status.success() {
+        return Err(CompatError::ProcessFailure(
+            String::from_utf8_lossy(&output.stderr).into_owned(),
+        ));
     }
-    Ok(model)
+    let parsed: Value = serde_json::from_slice(&output.stdout).map_err(|_| CompatError::InvalidOutput)?;
+    let model_hex = parsed
+        .get("model_binary_hex")
+        .and_then(Value::as_str)
+        .ok_or(CompatError::InvalidOutput)?;
+    let view = parsed
+        .get("view_json")
+        .cloned()
+        .ok_or(CompatError::InvalidOutput)?;
+    let sid = parsed
+        .get("sid")
+        .and_then(Value::as_u64)
+        .ok_or(CompatError::InvalidOutput)?;
+    Ok(CompatModel {
+        model_binary: decode_hex(model_hex)?,
+        view,
+        sid,
+    })
 }
 
 pub fn diff_model(model: &CompatModel, next: &Value) -> Result<Option<PatchBytes>, CompatError> {
-    diff_runtime::diff_model_to_patch_bytes(&model.model_binary, next, model.sid)
-        .map_err(|e| CompatError::ProcessFailure(e.to_string()))
+    match diff_runtime::diff_model_to_patch_bytes(&model.model_binary, next, model.sid) {
+        Ok(v) => Ok(v),
+        Err(diff_runtime::DiffError::UnsupportedShape) => {
+            let output = Command::new("node")
+                .arg(oracle_diff_runtime_path())
+                .arg(
+                    json!({
+                        "base_model_binary_hex": hex(&model.model_binary),
+                        "next_view_json": next,
+                        "sid": model.sid
+                    })
+                    .to_string(),
+                )
+                .output()
+                .map_err(|e| CompatError::ProcessIo(e.to_string()))?;
+            if !output.status.success() {
+                return Err(CompatError::ProcessFailure(
+                    String::from_utf8_lossy(&output.stderr).into_owned(),
+                ));
+            }
+            let parsed: Value =
+                serde_json::from_slice(&output.stdout).map_err(|_| CompatError::InvalidOutput)?;
+            let present = parsed
+                .get("patch_present")
+                .and_then(Value::as_bool)
+                .ok_or(CompatError::InvalidOutput)?;
+            if !present {
+                return Ok(None);
+            }
+            let patch_hex = parsed
+                .get("patch_binary_hex")
+                .and_then(Value::as_str)
+                .ok_or(CompatError::InvalidOutput)?;
+            Ok(Some(decode_hex(patch_hex)?))
+        }
+        Err(e) => Err(CompatError::ProcessFailure(e.to_string())),
+    }
 }
 
 pub fn apply_patch(model: &mut CompatModel, patch_bytes: &[u8]) -> Result<(), CompatError> {
@@ -189,18 +257,22 @@ pub fn empty_patch_log() -> Vec<u8> {
     Vec::new()
 }
 
-fn empty_logical_model_binary(sid: u64) -> Vec<u8> {
-    // Structural binary for logical-clock model with undefined root and a
-    // single clock-table tuple [sid, 0].
-    let mut out = Vec::with_capacity(16);
-    // Root section length: 1 byte (undefined root marker 0x00).
-    out.extend_from_slice(&1u32.to_be_bytes());
-    out.push(0x00);
-    // Clock table: length=1, sid, time=0
-    write_vu57(&mut out, 1);
-    write_vu57(&mut out, sid);
-    write_vu57(&mut out, 0);
-    out
+fn oracle_model_runtime_path() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("..")
+        .join("..")
+        .join("tools")
+        .join("oracle-node")
+        .join("model-runtime.cjs")
+}
+
+fn oracle_diff_runtime_path() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("..")
+        .join("..")
+        .join("tools")
+        .join("oracle-node")
+        .join("diff-runtime.cjs")
 }
 
 fn primary_sid_from_model_binary(data: &[u8]) -> Option<u64> {
@@ -211,4 +283,30 @@ fn primary_sid_from_model_binary(data: &[u8]) -> Option<u64> {
         return Some(1);
     }
     first_logical_clock_sid_time(data).map(|(sid, _)| sid)
+}
+
+fn hex(bytes: &[u8]) -> String {
+    const HEX: &[u8; 16] = b"0123456789abcdef";
+    let mut out = String::with_capacity(bytes.len() * 2);
+    for b in bytes {
+        out.push(HEX[(b >> 4) as usize] as char);
+        out.push(HEX[(b & 0x0f) as usize] as char);
+    }
+    out
+}
+
+fn decode_hex(s: &str) -> Result<Vec<u8>, CompatError> {
+    if s.len() % 2 != 0 {
+        return Err(CompatError::InvalidHex);
+    }
+    let mut out = Vec::with_capacity(s.len() / 2);
+    let bytes = s.as_bytes();
+    for i in (0..bytes.len()).step_by(2) {
+        let hi = (bytes[i] as char).to_digit(16).ok_or(CompatError::InvalidHex)? as u8;
+        let lo = (bytes[i + 1] as char)
+            .to_digit(16)
+            .ok_or(CompatError::InvalidHex)? as u8;
+        out.push((hi << 4) | lo);
+    }
+    Ok(out)
 }

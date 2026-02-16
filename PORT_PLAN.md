@@ -251,7 +251,9 @@ Implementation note:
 - Native status update (M6): `apply_patch` is now fully native in
   `crates/json-joy-core/src/less_db_compat.rs` via `RuntimeModel`
   decode/apply/encode.
-- Remaining bridge surface is `diff_runtime`.
+- Remaining bridge surface is in compatibility orchestration (`less_db_compat`
+  `create_model` and fallback `diff_model` for unsupported native shapes).
+- `diff_runtime` production path is now native-only.
 
 ## M6: Python Package Hardening
 
