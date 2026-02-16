@@ -585,6 +585,38 @@ fn upstream_port_diff_multi_root_vec_deltas_use_ins_vec() {
     assert_eq!(applied.view_json(), next);
 }
 
+#[test]
+fn upstream_port_diff_multi_root_nested_obj_deltas_use_ins_obj() {
+    let sid = 88011;
+    let initial = serde_json::json!({
+        "a": {"x": 1, "y": true},
+        "b": {"k": "v", "m": null}
+    });
+    let next = serde_json::json!({
+        "a": {"x": 2, "z": false},
+        "b": {"k": "vv", "m": null, "n": 9}
+    });
+    let model = create_model(&initial, sid).expect("create_model must succeed");
+    let base_model = model_to_binary(&model);
+
+    let patch = diff_model_to_patch_bytes(&base_model, &next, sid)
+        .expect("diff should succeed")
+        .expect("non-noop diff expected");
+    let decoded = Patch::from_binary(&patch).expect("generated patch must decode");
+    let obj_ops = decoded
+        .decoded_ops()
+        .iter()
+        .filter(|op| matches!(op, DecodedOp::InsObj { .. }))
+        .count();
+    assert!(obj_ops >= 2, "expected >=2 ins_obj ops for multi-root nested object delta");
+
+    let mut applied = RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
+    applied
+        .apply_patch(&decoded)
+        .expect("runtime apply must succeed");
+    assert_eq!(applied.view_json(), next);
+}
+
 fn decode_hex(s: &str) -> Vec<u8> {
     assert!(s.len() % 2 == 0, "hex string must have even length");
     let mut out = Vec::with_capacity(s.len() / 2);
