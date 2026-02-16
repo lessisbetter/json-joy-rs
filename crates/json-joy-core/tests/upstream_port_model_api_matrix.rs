@@ -631,3 +631,67 @@ fn upstream_port_model_api_operation_tuple_dispatch_matrix() {
     assert_eq!(api.view(), json!({"doc":{"x":[7],"ok":true}}));
     assert!(!api.op_ptr_tuple(ApiOperationKind::Add, "/doc/x/0", None, None));
 }
+
+#[test]
+fn upstream_port_model_api_add_replace_remove_vec_and_array_semantics_matrix() {
+    // Upstream mapping:
+    // - json-crdt/model/api/nodes.ts NodeApi.{add,replace,remove} semantics:
+    //   - array add inserts full array payload elements
+    //   - array replace at index==length appends
+    //   - vec replace/remove map to set(index, value|undefined)
+    let sid = 97012;
+    let mut api = NativeModelApi::from_patches(&[patch_from_ops(
+        sid,
+        1,
+        &[
+            DecodedOp::NewObj {
+                id: Timestamp { sid, time: 1 },
+            },
+            DecodedOp::InsVal {
+                id: Timestamp { sid, time: 2 },
+                obj: Timestamp { sid: 0, time: 0 },
+                val: Timestamp { sid, time: 1 },
+            },
+            DecodedOp::NewVec {
+                id: Timestamp { sid, time: 3 },
+            },
+            DecodedOp::NewCon {
+                id: Timestamp { sid, time: 4 },
+                value: json_joy_core::patch::ConValue::Json(json!(10)),
+            },
+            DecodedOp::NewCon {
+                id: Timestamp { sid, time: 5 },
+                value: json_joy_core::patch::ConValue::Json(json!(20)),
+            },
+            DecodedOp::InsVec {
+                id: Timestamp { sid, time: 6 },
+                obj: Timestamp { sid, time: 3 },
+                data: vec![(0, Timestamp { sid, time: 4 }), (1, Timestamp { sid, time: 5 })],
+            },
+            DecodedOp::InsObj {
+                id: Timestamp { sid, time: 7 },
+                obj: Timestamp { sid, time: 1 },
+                data: vec![("vec".into(), Timestamp { sid, time: 3 })],
+            },
+        ],
+    )])
+    .expect("from_patches must succeed");
+
+    api.obj_put(&[], "arr", json!([1, 2])).expect("seed arr");
+
+    assert!(api.try_add(
+        &[PathStep::Key("arr".into()), PathStep::Index(1)],
+        json!([7, 8])
+    ));
+    assert!(api.try_replace(
+        &[PathStep::Key("arr".into()), PathStep::Index(4)],
+        json!(9)
+    ));
+    assert!(api.try_replace(
+        &[PathStep::Key("vec".into()), PathStep::Index(3)],
+        json!(30)
+    ));
+    assert!(api.try_remove(&[PathStep::Key("vec".into()), PathStep::Index(1)]));
+
+    assert_eq!(api.view(), json!({"arr":[1,7,8,2,9],"vec":[10,null,null,30]}));
+}

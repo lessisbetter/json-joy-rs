@@ -212,16 +212,7 @@ impl<'a> BinHandle<'a> {
 
 impl<'a> VecHandle<'a> {
     pub fn set(&mut self, index: usize, value: Option<Value>) -> Result<(), ModelApiError> {
-        let mut current = self.inner.read().ok_or(ModelApiError::PathNotFound)?;
-        let arr = current.as_array_mut().ok_or(ModelApiError::NotArray)?;
-        if index >= arr.len() {
-            arr.resize(index + 1, Value::Null);
-        }
-        match value {
-            Some(v) => arr[index] = v,
-            None => arr[index] = Value::Null,
-        }
-        self.inner.api.replace(&self.inner.path, current)
+        self.inner.api.vec_set(&self.inner.path, index, value)
     }
 }
 

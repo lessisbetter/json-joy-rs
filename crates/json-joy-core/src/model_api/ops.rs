@@ -361,12 +361,203 @@ impl NativeModelApi {
         self.apply_target_view(next)
     }
 
+    pub fn vec_set(
+        &mut self,
+        path: &[PathStep],
+        index: usize,
+        value: Option<Value>,
+    ) -> Result<(), ModelApiError> {
+        if let Ok(target) = self.resolve_path_node_id(path) {
+            if let Some(vec_id) = self.runtime.resolve_vec_node(target) {
+                let start = self.next_local_time();
+                let mut emitter = LocalEmitter::new(self.sid, start);
+                let child = match value {
+                    Some(v) => emitter.emit_value(&v),
+                    None => {
+                        let undef = emitter.next_id();
+                        emitter.push(DecodedOp::NewCon {
+                            id: undef,
+                            value: ConValue::Undef,
+                        });
+                        undef
+                    }
+                };
+                let ins_id = emitter.next_id();
+                emitter.push(DecodedOp::InsVec {
+                    id: ins_id,
+                    obj: vec_id,
+                    data: vec![(index as u64, child)],
+                });
+                return self.apply_local_ops(emitter.into_ops());
+            }
+        }
+
+        let mut current = self.read(Some(path)).ok_or(ModelApiError::PathNotFound)?;
+        let arr = current.as_array_mut().ok_or(ModelApiError::NotArray)?;
+        if index >= arr.len() {
+            arr.resize(index + 1, Value::Null);
+        }
+        match value {
+            Some(v) => arr[index] = v,
+            None => arr[index] = Value::Null,
+        }
+        self.replace(path, current)
+    }
+
     pub fn add(&mut self, path: &[PathStep], value: Value) -> Result<(), ModelApiError> {
         if path.is_empty() {
             return Err(ModelApiError::InvalidPathOp);
         }
-        let mut next = self.runtime.view_json();
         let (parent, leaf) = split_parent(path)?;
+
+        if let Ok(parent_id) = self.resolve_path_node_id(parent) {
+            match leaf {
+                PathStep::Key(key) => {
+                    if let Some(obj_id) = self.runtime.resolve_object_node(parent_id) {
+                        let start = self.next_local_time();
+                        let mut emitter = LocalEmitter::new(self.sid, start);
+                        let child = emitter.emit_value(&value);
+                        let ins_id = emitter.next_id();
+                        emitter.push(DecodedOp::InsObj {
+                            id: ins_id,
+                            obj: obj_id,
+                            data: vec![(key.clone(), child)],
+                        });
+                        return self.apply_local_ops(emitter.into_ops());
+                    }
+                }
+                PathStep::Index(idx) => {
+                    if let Some(arr_id) = self.runtime.resolve_array_node(parent_id) {
+                        let slots = self.runtime.array_visible_slots(arr_id).unwrap_or_default();
+                        let clamped = (*idx).min(slots.len());
+                        let reference = if clamped == 0 {
+                            arr_id
+                        } else {
+                            slots[clamped - 1]
+                        };
+                        let start = self.next_local_time();
+                        let mut emitter = LocalEmitter::new(self.sid, start);
+                        let mut ids = Vec::new();
+                        match &value {
+                            Value::Array(items) => {
+                                ids.reserve(items.len());
+                                for item in items {
+                                    ids.push(emitter.emit_array_item(item));
+                                }
+                            }
+                            other => ids.push(emitter.emit_array_item(other)),
+                        }
+                        if ids.is_empty() {
+                            return Ok(());
+                        }
+                        let ins_id = emitter.next_id();
+                        emitter.push(DecodedOp::InsArr {
+                            id: ins_id,
+                            obj: arr_id,
+                            reference,
+                            data: ids,
+                        });
+                        return self.apply_local_ops(emitter.into_ops());
+                    }
+                    if let Some(vec_id) = self.runtime.resolve_vec_node(parent_id) {
+                        let index = *idx as u64;
+                        let start = self.next_local_time();
+                        let mut emitter = LocalEmitter::new(self.sid, start);
+                        let child = emitter.emit_value(&value);
+                        let ins_id = emitter.next_id();
+                        emitter.push(DecodedOp::InsVec {
+                            id: ins_id,
+                            obj: vec_id,
+                            data: vec![(index, child)],
+                        });
+                        return self.apply_local_ops(emitter.into_ops());
+                    }
+                    if let Some(str_id) = self.runtime.resolve_string_node(parent_id) {
+                        let text = match value {
+                            Value::String(s) => s,
+                            other => other.to_string(),
+                        };
+                        if text.is_empty() {
+                            return Ok(());
+                        }
+                        let slots = self.runtime.string_visible_slots(str_id).unwrap_or_default();
+                        let clamped = (*idx).min(slots.len());
+                        let reference = if clamped == 0 {
+                            str_id
+                        } else {
+                            slots[clamped - 1]
+                        };
+                        let start = self.next_local_time();
+                        return self.apply_local_ops(vec![DecodedOp::InsStr {
+                            id: Timestamp {
+                                sid: self.sid,
+                                time: start,
+                            },
+                            obj: str_id,
+                            reference,
+                            data: text,
+                        }]);
+                    }
+                    if let Some(bin_id) = self.runtime.resolve_bin_node(parent_id) {
+                        let bytes = parse_bin_add_bytes(&value).ok_or(ModelApiError::InvalidPathOp)?;
+                        if bytes.is_empty() {
+                            return Ok(());
+                        }
+                        let slots = self.runtime.bin_visible_slots(bin_id).unwrap_or_default();
+                        let clamped = (*idx).min(slots.len());
+                        let reference = if clamped == 0 {
+                            bin_id
+                        } else {
+                            slots[clamped - 1]
+                        };
+                        let start = self.next_local_time();
+                        return self.apply_local_ops(vec![DecodedOp::InsBin {
+                            id: Timestamp {
+                                sid: self.sid,
+                                time: start,
+                            },
+                            obj: bin_id,
+                            reference,
+                            data: bytes,
+                        }]);
+                    }
+                }
+                PathStep::Append => {
+                    if let Some(arr_id) = self.runtime.resolve_array_node(parent_id) {
+                        let reference = self
+                            .runtime
+                            .array_visible_slots(arr_id)
+                            .and_then(|slots| slots.last().copied())
+                            .unwrap_or(arr_id);
+                        let start = self.next_local_time();
+                        let mut emitter = LocalEmitter::new(self.sid, start);
+                        let mut ids = Vec::new();
+                        match &value {
+                            Value::Array(items) => {
+                                ids.reserve(items.len());
+                                for item in items {
+                                    ids.push(emitter.emit_array_item(item));
+                                }
+                            }
+                            other => ids.push(emitter.emit_array_item(other)),
+                        }
+                        if ids.is_empty() {
+                            return Ok(());
+                        }
+                        let ins_id = emitter.next_id();
+                        emitter.push(DecodedOp::InsArr {
+                            id: ins_id,
+                            obj: arr_id,
+                            reference,
+                            data: ids,
+                        });
+                        return self.apply_local_ops(emitter.into_ops());
+                    }
+                }
+            }
+        }
+
+        let mut next = self.runtime.view_json();
         let target = if parent.is_empty() {
             &mut next
         } else {
@@ -378,10 +569,18 @@ impl NativeModelApi {
             }
             (Value::Array(arr), PathStep::Index(idx)) => {
                 let i = (*idx).min(arr.len());
-                arr.insert(i, value);
+                match value {
+                    Value::Array(items) => {
+                        arr.splice(i..i, items);
+                    }
+                    other => arr.insert(i, other),
+                }
             }
             (Value::Array(arr), PathStep::Append) => {
-                arr.push(value);
+                match value {
+                    Value::Array(items) => arr.extend(items),
+                    other => arr.push(other),
+                }
             }
             _ => return Err(ModelApiError::InvalidPathOp),
         }
@@ -391,6 +590,83 @@ impl NativeModelApi {
     pub fn replace(&mut self, path: &[PathStep], value: Value) -> Result<(), ModelApiError> {
         if path.is_empty() {
             return self.apply_target_view(value);
+        }
+        let (parent, leaf) = split_parent(path)?;
+        if let Ok(parent_id) = self.resolve_path_node_id(parent) {
+            match leaf {
+                PathStep::Key(key) => {
+                    if let Some(obj_id) = self.runtime.resolve_object_node(parent_id) {
+                        if self.runtime.object_field(obj_id, key).is_none() {
+                            return Err(ModelApiError::PathNotFound);
+                        }
+                        let start = self.next_local_time();
+                        let mut emitter = LocalEmitter::new(self.sid, start);
+                        let child = emitter.emit_value(&value);
+                        let ins_id = emitter.next_id();
+                        emitter.push(DecodedOp::InsObj {
+                            id: ins_id,
+                            obj: obj_id,
+                            data: vec![(key.clone(), child)],
+                        });
+                        return self.apply_local_ops(emitter.into_ops());
+                    }
+                }
+                PathStep::Index(idx) => {
+                    if let Some(arr_id) = self.runtime.resolve_array_node(parent_id) {
+                        let values = self.runtime.array_visible_values(arr_id).unwrap_or_default();
+                        if *idx > values.len() {
+                            return Err(ModelApiError::PathNotFound);
+                        }
+                        if *idx == values.len() {
+                            let reference = self
+                                .runtime
+                                .array_visible_slots(arr_id)
+                                .and_then(|slots| slots.last().copied())
+                                .unwrap_or(arr_id);
+                            let start = self.next_local_time();
+                            let mut emitter = LocalEmitter::new(self.sid, start);
+                            let child = emitter.emit_array_item(&value);
+                            let ins_id = emitter.next_id();
+                            emitter.push(DecodedOp::InsArr {
+                                id: ins_id,
+                                obj: arr_id,
+                                reference,
+                                data: vec![child],
+                            });
+                            return self.apply_local_ops(emitter.into_ops());
+                        }
+                        let reference = self
+                            .runtime
+                            .array_find(arr_id, *idx)
+                            .ok_or(ModelApiError::PathNotFound)?;
+                        let start = self.next_local_time();
+                        let mut emitter = LocalEmitter::new(self.sid, start);
+                        let child = emitter.emit_array_item(&value);
+                        let upd_id = emitter.next_id();
+                        emitter.push(DecodedOp::UpdArr {
+                            id: upd_id,
+                            obj: arr_id,
+                            reference,
+                            val: child,
+                        });
+                        return self.apply_local_ops(emitter.into_ops());
+                    }
+                    if let Some(vec_id) = self.runtime.resolve_vec_node(parent_id) {
+                        let index = *idx as u64;
+                        let start = self.next_local_time();
+                        let mut emitter = LocalEmitter::new(self.sid, start);
+                        let child = emitter.emit_value(&value);
+                        let ins_id = emitter.next_id();
+                        emitter.push(DecodedOp::InsVec {
+                            id: ins_id,
+                            obj: vec_id,
+                            data: vec![(index, child)],
+                        });
+                        return self.apply_local_ops(emitter.into_ops());
+                    }
+                }
+                PathStep::Append => return Err(ModelApiError::InvalidPathOp),
+            }
         }
         let mut next = self.runtime.view_json();
         let target = get_path_mut(&mut next, path).ok_or(ModelApiError::PathNotFound)?;
@@ -458,6 +734,45 @@ impl NativeModelApi {
                             what: spans,
                         }]);
                     }
+                } else if let Some(vec_id) = self.runtime.resolve_vec_node(parent_id) {
+                    let index = *idx as u64;
+                    let start = self.next_local_time();
+                    let mut emitter = LocalEmitter::new(self.sid, start);
+                    let undef = emitter.next_id();
+                    emitter.push(DecodedOp::NewCon {
+                        id: undef,
+                        value: ConValue::Undef,
+                    });
+                    let ins_id = emitter.next_id();
+                    emitter.push(DecodedOp::InsVec {
+                        id: ins_id,
+                        obj: vec_id,
+                        data: vec![(index, undef)],
+                    });
+                    return self.apply_local_ops(emitter.into_ops());
+                }
+            }
+        }
+        if let PathStep::Key(key) = leaf {
+            if let Ok(parent_id) = self.resolve_path_node_id(parent) {
+                if let Some(obj_id) = self.runtime.resolve_object_node(parent_id) {
+                    if self.runtime.object_field(obj_id, key).is_none() {
+                        return Ok(());
+                    }
+                    let start = self.next_local_time();
+                    let mut emitter = LocalEmitter::new(self.sid, start);
+                    let undef = emitter.next_id();
+                    emitter.push(DecodedOp::NewCon {
+                        id: undef,
+                        value: ConValue::Undef,
+                    });
+                    let ins_id = emitter.next_id();
+                    emitter.push(DecodedOp::InsObj {
+                        id: ins_id,
+                        obj: obj_id,
+                        data: vec![(key.clone(), undef)],
+                    });
+                    return self.apply_local_ops(emitter.into_ops());
                 }
             }
         }
@@ -808,7 +1123,39 @@ impl LocalEmitter {
         }
     }
 
+    fn emit_array_item(&mut self, value: &Value) -> Timestamp {
+        if matches!(value, Value::Null | Value::Bool(_) | Value::Number(_)) {
+            let val_id = self.next_id();
+            self.push(DecodedOp::NewVal { id: val_id });
+            let con_id = self.emit_value(value);
+            let ins_id = self.next_id();
+            self.push(DecodedOp::InsVal {
+                id: ins_id,
+                obj: val_id,
+                val: con_id,
+            });
+            val_id
+        } else {
+            self.emit_value(value)
+        }
+    }
+
     fn into_ops(self) -> Vec<DecodedOp> {
         self.ops
+    }
+}
+
+fn parse_bin_add_bytes(value: &Value) -> Option<Vec<u8>> {
+    match value {
+        Value::Number(n) => n.as_u64().and_then(|v| u8::try_from(v).ok()).map(|b| vec![b]),
+        Value::Array(arr) => {
+            let mut out = Vec::with_capacity(arr.len());
+            for v in arr {
+                let b = v.as_u64().and_then(|n| u8::try_from(n).ok())?;
+                out.push(b);
+            }
+            Some(out)
+        }
+        _ => None,
     }
 }
