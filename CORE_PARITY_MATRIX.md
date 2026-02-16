@@ -22,10 +22,10 @@ Gate legend:
 | `json-crdt-patch/Patch.ts` + binary codec | `crates/json-joy-core/src/patch.rs` | partial | yes | yes | partial | yes | Decode parity is broad; encode and richer clock/operation parity still expanding. |
 | `json-crdt-patch/PatchBuilder.ts` + operations/clock | `crates/json-joy-core/src/patch_builder.rs` | partial | yes | yes | partial | yes | Native canonical builder added for runtime op families in current fixture corpus. |
 | `json-crdt/model/Model.ts` decode/view | `crates/json-joy-core/src/model.rs` | partial | yes | yes | partial | yes | Decode/view parity achieved for fixture corpus; broader model semantics pending. |
-| `json-crdt/model` apply semantics + node graph | `crates/json-joy-core/src/model_runtime.rs` | partial | yes | yes | partial | yes | Runtime graph exists but still optimized for current corpus and needs normalization hardening. |
+| `json-crdt/model` apply semantics + node graph | `crates/json-joy-core/src/model_runtime.rs` | partial | yes | yes | partial | yes | Runtime graph now has replay-matrix invariant validation and debug-build invariant enforcement during apply; further normalization work remains. |
 | `json-crdt/codec/structural/binary/*` encode | `crates/json-joy-core/src/model.rs` (+ new encoder module) | partial | partial | yes | no | yes | Full native model-state encoding from runtime graph is not complete. |
 | `json-crdt/nodes/*` behavior families | `crates/json-joy-core/src/model_runtime.rs` (+ split modules) | partial | partial | partial | no | yes | Obj/arr/str/bin/vec/con/val are present but need upstream-mapped behavior expansion. |
-| `json-crdt-diff/JsonCrdtDiff.ts` | `crates/json-joy-core/src/diff_runtime.rs` | partial | yes | yes | partial | yes | Runtime diff path is native-only; unsupported shapes return `UnsupportedShape` and are not bridged in production diff runtime. |
+| `json-crdt-diff/JsonCrdtDiff.ts` | `crates/json-joy-core/src/diff_runtime.rs` | partial | yes | yes | partial | yes | Runtime diff path is native-only; unsupported shapes return `UnsupportedShape` and are not bridged in production diff runtime. Matrix test coverage: `tests/upstream_port_diff_matrix.rs`. |
 | less-db compatibility lifecycle apply | `crates/json-joy-core/src/less_db_compat.rs` | partial | yes | yes | partial | yes | `create_model`, `diff_model`, and `apply_patch` are native in production. less-db diff fixture surface is fully native-covered (25/25 inventory in `tests/lessdb_model_manager_from_fixtures.rs`). |
 
 ## M6 exit targets

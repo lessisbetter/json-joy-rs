@@ -57,3 +57,14 @@
 - [x] Add less-db diff native-support inventory test to track fallback reduction over time.
 - [x] Ensure oracle scripts are test tooling only (no production runtime dependency).
 - [ ] Update docs (`PORT_PLAN.md`, `AGENTS.md`, `ARCHITECTURE.md`) for bridge-retired runtime.
+
+### M6 coverage notes (current)
+
+- Added broad upstream-mapped matrix suites:
+  - `crates/json-joy-core/tests/upstream_port_model_apply_matrix.rs`
+  - `crates/json-joy-core/tests/upstream_port_diff_matrix.rs`
+  - `crates/json-joy-core/tests/upstream_port_patch_builder_matrix.rs`
+- Added runtime graph invariant matrix:
+  - `crates/json-joy-core/tests/upstream_port_model_graph_invariants.rs`
+- Expanded differential seeds from single-seed to five deterministic seeds:
+  - `crates/json-joy-core/tests/differential_runtime_seeded.rs`

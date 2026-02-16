@@ -279,6 +279,15 @@ Exit criteria:
 - Existing fixture parity tests plus new upstream/differential/property suites
   all pass.
 
+Current M6 suite expansion:
+- Upstream-mapped matrix suites now include:
+  - `upstream_port_model_apply_matrix`
+  - `upstream_port_diff_matrix`
+  - `upstream_port_patch_builder_matrix`
+- Runtime graph integrity is validated across replay fixtures in:
+  - `upstream_port_model_graph_invariants`
+- Differential runtime suite uses a five-seed deterministic matrix.
+
 ## 8. CI Gates
 
 Minimum required gates before accepting “compatible”:
