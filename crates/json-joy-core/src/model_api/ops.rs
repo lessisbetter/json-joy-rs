@@ -558,32 +558,8 @@ impl NativeModelApi {
         }
 
         let mut next = self.runtime.view_json();
-        let target = if parent.is_empty() {
-            &mut next
-        } else {
-            get_path_mut(&mut next, parent).ok_or(ModelApiError::PathNotFound)?
-        };
-        match (target, leaf) {
-            (Value::Object(map), PathStep::Key(key)) => {
-                map.insert(key.clone(), value);
-            }
-            (Value::Array(arr), PathStep::Index(idx)) => {
-                let i = (*idx).min(arr.len());
-                match value {
-                    Value::Array(items) => {
-                        arr.splice(i..i, items);
-                    }
-                    other => arr.insert(i, other),
-                }
-            }
-            (Value::Array(arr), PathStep::Append) => {
-                match value {
-                    Value::Array(items) => arr.extend(items),
-                    other => arr.push(other),
-                }
-            }
-            _ => return Err(ModelApiError::InvalidPathOp),
-        }
+        let target = resolve_parent_target_mut(&mut next, parent)?;
+        apply_add_to_json_target(target, leaf, value)?;
         self.apply_target_view(next)
     }
 
@@ -688,11 +664,7 @@ impl NativeModelApi {
         }
         let mut next = self.runtime.view_json();
         let (parent, leaf) = split_parent(path)?;
-        let target = if parent.is_empty() {
-            &mut next
-        } else {
-            get_path_mut(&mut next, parent).ok_or(ModelApiError::PathNotFound)?
-        };
+        let target = resolve_parent_target_mut(&mut next, parent)?;
         if let PathStep::Index(idx) = leaf {
             if let Ok(parent_id) = self.resolve_path_node_id(parent) {
                 if let Some(arr_id) = self.runtime.resolve_array_node(parent_id) {
@@ -776,29 +748,7 @@ impl NativeModelApi {
                 }
             }
         }
-        match (target, leaf) {
-            (Value::Object(map), PathStep::Key(key)) => {
-                map.remove(key);
-            }
-            (Value::Array(arr), PathStep::Index(idx)) => {
-                if *idx < arr.len() {
-                    let end = (*idx + length.max(1)).min(arr.len());
-                    arr.drain(*idx..end);
-                }
-            }
-            (Value::Array(arr), PathStep::Append) => {
-                let _ = arr.pop();
-            }
-            (Value::String(s), PathStep::Index(idx)) => {
-                let mut chars: Vec<char> = s.chars().collect();
-                if *idx < chars.len() {
-                    let end = (*idx + length.max(1)).min(chars.len());
-                    chars.drain(*idx..end);
-                    *s = chars.into_iter().collect();
-                }
-            }
-            _ => return Err(ModelApiError::InvalidPathOp),
-        }
+        apply_remove_to_json_target(target, leaf, length)?;
         self.apply_target_view(next)
     }
 
@@ -1157,5 +1107,81 @@ fn parse_bin_add_bytes(value: &Value) -> Option<Vec<u8>> {
             Some(out)
         }
         _ => None,
+    }
+}
+
+fn resolve_parent_target_mut<'a>(
+    next: &'a mut Value,
+    parent: &[PathStep],
+) -> Result<&'a mut Value, ModelApiError> {
+    if parent.is_empty() {
+        Ok(next)
+    } else {
+        get_path_mut(next, parent).ok_or(ModelApiError::PathNotFound)
+    }
+}
+
+fn apply_add_to_json_target(
+    target: &mut Value,
+    leaf: &PathStep,
+    value: Value,
+) -> Result<(), ModelApiError> {
+    match (target, leaf) {
+        (Value::Object(map), PathStep::Key(key)) => {
+            map.insert(key.clone(), value);
+            Ok(())
+        }
+        (Value::Array(arr), PathStep::Index(idx)) => {
+            let i = (*idx).min(arr.len());
+            match value {
+                Value::Array(items) => {
+                    arr.splice(i..i, items);
+                }
+                other => arr.insert(i, other),
+            }
+            Ok(())
+        }
+        (Value::Array(arr), PathStep::Append) => {
+            match value {
+                Value::Array(items) => arr.extend(items),
+                other => arr.push(other),
+            }
+            Ok(())
+        }
+        _ => Err(ModelApiError::InvalidPathOp),
+    }
+}
+
+fn apply_remove_to_json_target(
+    target: &mut Value,
+    leaf: &PathStep,
+    length: usize,
+) -> Result<(), ModelApiError> {
+    match (target, leaf) {
+        (Value::Object(map), PathStep::Key(key)) => {
+            map.remove(key);
+            Ok(())
+        }
+        (Value::Array(arr), PathStep::Index(idx)) => {
+            if *idx < arr.len() {
+                let end = (*idx + length.max(1)).min(arr.len());
+                arr.drain(*idx..end);
+            }
+            Ok(())
+        }
+        (Value::Array(arr), PathStep::Append) => {
+            let _ = arr.pop();
+            Ok(())
+        }
+        (Value::String(s), PathStep::Index(idx)) => {
+            let mut chars: Vec<char> = s.chars().collect();
+            if *idx < chars.len() {
+                let end = (*idx + length.max(1)).min(chars.len());
+                chars.drain(*idx..end);
+                *s = chars.into_iter().collect();
+            }
+            Ok(())
+        }
+        _ => Err(ModelApiError::InvalidPathOp),
     }
 }
