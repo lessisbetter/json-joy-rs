@@ -182,6 +182,21 @@ pub fn model_load(data: &[u8], sid: u64) -> Result<CompatModel, CompatError> {
         });
     }
     let parsed = Model::from_binary(data).map_err(|e| CompatError::ProcessFailure(e.to_string()))?;
+    // Mirror upstream Model.load(..., sid) clock/session semantics by forking
+    // runtime-local session id for logical-clock models.
+    if data.first().is_some_and(|b| (b & 0x80) == 0) {
+        let runtime = RuntimeModel::from_model_binary(data)
+            .map_err(|e| CompatError::ProcessFailure(format!("model decode failed: {e}")))?;
+        let loaded = runtime.fork_with_sid(sid);
+        let model_binary = loaded
+            .to_model_binary_like()
+            .map_err(|e| CompatError::ProcessFailure(format!("model encode failed: {e}")))?;
+        return Ok(CompatModel {
+            model_binary,
+            view: loaded.view_json(),
+            sid,
+        });
+    }
     Ok(CompatModel {
         model_binary: data.to_vec(),
         view: parsed.view().clone(),
