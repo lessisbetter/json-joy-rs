@@ -68,6 +68,9 @@ pub fn diff_model_to_patch_bytes(
     if let Some(native) = try_native_root_obj_multi_array_delta_diff(base_model_binary, next_view, sid)? {
         return Ok(native);
     }
+    if let Some(native) = try_native_nested_obj_array_delta_diff(base_model_binary, next_view, sid)? {
+        return Ok(native);
+    }
     if let Some(native) = try_native_root_obj_vec_delta_diff(base_model_binary, next_view, sid)? {
         return Ok(native);
     }
@@ -699,6 +702,75 @@ fn try_native_root_obj_multi_array_delta_diff(
     if emitter.ops.is_empty() {
         return Ok(Some(None));
     }
+    let encoded = encode_patch_from_ops(patch_sid, base_time.saturating_add(1), &emitter.ops)?;
+    Ok(Some(Some(encoded)))
+}
+
+fn try_native_nested_obj_array_delta_diff(
+    base_model_binary: &[u8],
+    next_view: &Value,
+    patch_sid: u64,
+) -> Result<Option<Option<Vec<u8>>>, DiffError> {
+    let model = match Model::from_binary(base_model_binary) {
+        Ok(v) => v,
+        Err(_) => return Ok(None),
+    };
+    let base_obj = match model.view() {
+        Value::Object(map) if !map.is_empty() => map,
+        _ => return Ok(None),
+    };
+    let next_obj = match next_view {
+        Value::Object(map) => map,
+        _ => return Ok(None),
+    };
+    let (path, old, new) = match find_single_array_delta_path(base_obj, next_obj) {
+        Some(v) => v,
+        None => return Ok(None),
+    };
+    if path.is_empty() {
+        return Ok(None);
+    }
+    if old.iter().any(|v| !is_array_native_supported(v))
+        || new.iter().any(|v| !is_array_native_supported(v))
+    {
+        return Ok(None);
+    }
+
+    let runtime = match RuntimeModel::from_model_binary(base_model_binary) {
+        Ok(v) => v,
+        Err(_) => return Ok(None),
+    };
+    let mut node = match runtime.root_object_field(&path[0]) {
+        Some(id) => id,
+        None => return Ok(None),
+    };
+    for seg in path.iter().skip(1) {
+        node = match runtime.object_field(node, seg) {
+            Some(id) => id,
+            None => return Ok(None),
+        };
+    }
+    if !runtime.node_is_array(node) {
+        return Ok(None);
+    }
+    let slots = match runtime.array_visible_slots(node) {
+        Some(v) => v,
+        None => return Ok(None),
+    };
+    if slots.len() != old.len() {
+        return Ok(None);
+    }
+
+    let (_, base_time) = match first_logical_clock_sid_time(base_model_binary) {
+        Some(v) => v,
+        None => return Ok(None),
+    };
+    let mut emitter = NativeEmitter::new(patch_sid, base_time.saturating_add(1));
+    emit_array_delta_ops(&mut emitter, node, &slots, old, new);
+    if emitter.ops.is_empty() {
+        return Ok(Some(None));
+    }
+
     let encoded = encode_patch_from_ops(patch_sid, base_time.saturating_add(1), &emitter.ops)?;
     Ok(Some(Some(encoded)))
 }
