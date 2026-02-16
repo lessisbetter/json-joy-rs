@@ -1,4 +1,4 @@
-use crate::patch::Timestamp;
+use crate::patch::{Timespan, Timestamp};
 use serde_json::Value;
 
 use super::types::{ConCell, Id, RuntimeNode};
@@ -230,5 +230,320 @@ impl RuntimeModel {
         } else {
             None
         }
+    }
+
+    #[allow(dead_code)]
+    pub(crate) fn array_find(&self, id: Timestamp, index: usize) -> Option<Timestamp> {
+        let node = self.nodes.get(&Id::from(id))?;
+        let RuntimeNode::Arr(atoms) = node else {
+            return None;
+        };
+        let mut visible = 0usize;
+        for atom in atoms {
+            if atom.value.is_none() {
+                continue;
+            }
+            if visible == index {
+                return Some(atom.slot.into());
+            }
+            visible += 1;
+        }
+        None
+    }
+
+    #[allow(dead_code)]
+    pub(crate) fn array_find_interval(
+        &self,
+        id: Timestamp,
+        index: usize,
+        len: usize,
+    ) -> Vec<Timespan> {
+        let node = match self.nodes.get(&Id::from(id)) {
+            Some(RuntimeNode::Arr(atoms)) => atoms,
+            _ => return Vec::new(),
+        };
+        collect_visible_interval_spans(
+            node.iter().filter_map(|a| a.value.as_ref().map(|_| a.slot)),
+            index,
+            len,
+        )
+    }
+
+    #[allow(dead_code)]
+    pub(crate) fn bin_find(&self, id: Timestamp, index: usize) -> Option<Timestamp> {
+        let node = self.nodes.get(&Id::from(id))?;
+        let RuntimeNode::Bin(atoms) = node else {
+            return None;
+        };
+        let mut visible = 0usize;
+        for atom in atoms {
+            if atom.byte.is_none() {
+                continue;
+            }
+            if visible == index {
+                return Some(atom.slot.into());
+            }
+            visible += 1;
+        }
+        None
+    }
+
+    #[allow(dead_code)]
+    pub(crate) fn bin_find_interval(
+        &self,
+        id: Timestamp,
+        index: usize,
+        len: usize,
+    ) -> Vec<Timespan> {
+        let node = match self.nodes.get(&Id::from(id)) {
+            Some(RuntimeNode::Bin(atoms)) => atoms,
+            _ => return Vec::new(),
+        };
+        collect_visible_interval_spans(
+            node.iter().filter_map(|a| a.byte.as_ref().map(|_| a.slot)),
+            index,
+            len,
+        )
+    }
+
+    #[allow(dead_code)]
+    pub(crate) fn string_find(&self, id: Timestamp, index: usize) -> Option<Timestamp> {
+        let node = self.nodes.get(&Id::from(id))?;
+        let RuntimeNode::Str(atoms) = node else {
+            return None;
+        };
+        let mut visible = 0usize;
+        for atom in atoms {
+            if atom.ch.is_none() {
+                continue;
+            }
+            if visible == index {
+                return Some(atom.slot.into());
+            }
+            visible += 1;
+        }
+        None
+    }
+
+    #[allow(dead_code)]
+    pub(crate) fn string_find_interval(
+        &self,
+        id: Timestamp,
+        index: usize,
+        len: usize,
+    ) -> Vec<Timespan> {
+        let node = match self.nodes.get(&Id::from(id)) {
+            Some(RuntimeNode::Str(atoms)) => atoms,
+            _ => return Vec::new(),
+        };
+        collect_visible_interval_spans(
+            node.iter().filter_map(|a| a.ch.as_ref().map(|_| a.slot)),
+            index,
+            len,
+        )
+    }
+}
+
+#[allow(dead_code)]
+fn collect_visible_interval_spans(
+    slots: impl Iterator<Item = Id>,
+    index: usize,
+    len: usize,
+) -> Vec<Timespan> {
+    if len == 0 {
+        return Vec::new();
+    }
+    let mut out: Vec<Timespan> = Vec::new();
+    let mut visible = 0usize;
+    let mut remaining = len;
+    for slot in slots {
+        if visible < index {
+            visible += 1;
+            continue;
+        }
+        if remaining == 0 {
+            break;
+        }
+        if let Some(last) = out.last_mut() {
+            if last.sid == slot.sid && last.time + last.span == slot.time {
+                last.span += 1;
+            } else {
+                out.push(Timespan {
+                    sid: slot.sid,
+                    time: slot.time,
+                    span: 1,
+                });
+            }
+        } else {
+            out.push(Timespan {
+                sid: slot.sid,
+                time: slot.time,
+                span: 1,
+            });
+        }
+        visible += 1;
+        remaining -= 1;
+    }
+    out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::patch::{ConValue, DecodedOp, Patch};
+    use crate::patch_builder::encode_patch_from_ops;
+
+    fn ts(sid: u64, time: u64) -> Timestamp {
+        Timestamp { sid, time }
+    }
+
+    fn apply_ops(runtime: &mut RuntimeModel, sid: u64, time: u64, ops: &[DecodedOp]) {
+        let bytes = encode_patch_from_ops(sid, time, ops).expect("encode patch");
+        let patch = Patch::from_binary(&bytes).expect("decode patch");
+        runtime.apply_patch(&patch).expect("apply patch");
+    }
+
+    #[test]
+    fn upstream_port_arr_find_and_interval_matrix() {
+        // Upstream reference:
+        // /Users/nchapman/Code/json-joy/packages/json-joy/src/json-crdt/model/__tests__/Model.array.spec.ts
+        let sid = 99210;
+        let mut runtime = RuntimeModel::new_logical_empty(sid);
+        let arr = ts(sid, 1);
+        let t = ts(sid, 3);
+        let f = ts(sid, 4);
+        let n = ts(sid, 5);
+        apply_ops(
+            &mut runtime,
+            sid,
+            1,
+            &[
+                DecodedOp::NewArr { id: arr },
+                DecodedOp::InsVal {
+                    id: ts(sid, 2),
+                    obj: ts(0, 0),
+                    val: arr,
+                },
+                DecodedOp::NewCon {
+                    id: t,
+                    value: ConValue::Json(Value::Bool(true)),
+                },
+                DecodedOp::NewCon {
+                    id: f,
+                    value: ConValue::Json(Value::Bool(false)),
+                },
+                DecodedOp::NewCon {
+                    id: n,
+                    value: ConValue::Json(Value::Null),
+                },
+                DecodedOp::InsArr {
+                    id: ts(sid, 6),
+                    obj: arr,
+                    reference: arr,
+                    data: vec![f, t, t],
+                },
+                DecodedOp::InsArr {
+                    id: ts(sid, 9),
+                    obj: arr,
+                    reference: ts(sid, 8),
+                    data: vec![f, t, t],
+                },
+                DecodedOp::InsArr {
+                    id: ts(sid, 12),
+                    obj: arr,
+                    reference: ts(sid, 11),
+                    data: vec![f, t, n],
+                },
+            ],
+        );
+
+        assert_eq!(runtime.array_find(arr, 0), Some(ts(sid, 6)));
+        assert_eq!(runtime.array_find(arr, 5), Some(ts(sid, 11)));
+        assert_eq!(runtime.array_find(arr, 8), Some(ts(sid, 14)));
+        assert_eq!(runtime.array_find(arr, 9), None);
+
+        let spans = runtime.array_find_interval(arr, 2, 5);
+        assert_eq!(
+            spans,
+            vec![Timespan {
+                sid,
+                time: 8,
+                span: 5
+            }]
+        );
+    }
+
+    #[test]
+    fn upstream_port_bin_find_and_interval_matrix() {
+        // Upstream reference:
+        // /Users/nchapman/Code/json-joy/packages/json-joy/src/json-crdt/model/__tests__/Model.binary.spec.ts
+        let sid = 99211;
+        let mut runtime = RuntimeModel::new_logical_empty(sid);
+        let bin = ts(sid, 1);
+        apply_ops(
+            &mut runtime,
+            sid,
+            1,
+            &[
+                DecodedOp::NewBin { id: bin },
+                DecodedOp::InsVal {
+                    id: ts(sid, 2),
+                    obj: ts(0, 0),
+                    val: bin,
+                },
+                DecodedOp::InsBin {
+                    id: ts(sid, 3),
+                    obj: bin,
+                    reference: bin,
+                    data: vec![1, 2, 3],
+                },
+                DecodedOp::Nop {
+                    id: ts(sid, 6),
+                    len: 123,
+                },
+                DecodedOp::InsBin {
+                    id: ts(sid, 129),
+                    obj: bin,
+                    reference: ts(sid, 5),
+                    data: vec![4, 5, 6],
+                },
+                DecodedOp::Nop {
+                    id: ts(sid, 132),
+                    len: 10,
+                },
+                DecodedOp::InsBin {
+                    id: ts(sid, 142),
+                    obj: bin,
+                    reference: ts(sid, 131),
+                    data: vec![7, 8, 9],
+                },
+            ],
+        );
+
+        assert_eq!(runtime.bin_find(bin, 2), Some(ts(sid, 5)));
+        assert_eq!(runtime.bin_find(bin, 6), Some(ts(sid, 142)));
+        assert_eq!(runtime.bin_find(bin, 9), None);
+
+        let spans = runtime.bin_find_interval(bin, 1, 7);
+        assert_eq!(
+            spans,
+            vec![
+                Timespan {
+                    sid,
+                    time: 4,
+                    span: 2
+                },
+                Timespan {
+                    sid,
+                    time: 129,
+                    span: 3
+                },
+                Timespan {
+                    sid,
+                    time: 142,
+                    span: 2
+                }
+            ]
+        );
     }
 }
