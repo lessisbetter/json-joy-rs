@@ -1,4 +1,4 @@
-use json_joy_core::model_api::{ApiOperation, NativeModelApi, PathStep};
+use json_joy_core::model_api::{ApiOperation, ApiOperationKind, NativeModelApi, PathStep};
 use json_joy_core::patch::{DecodedOp, Patch, Timestamp};
 use json_joy_core::patch_builder::encode_patch_from_ops;
 use serde_json::json;
@@ -529,4 +529,54 @@ fn upstream_port_model_api_remove_length_matrix() {
     }));
 
     assert_eq!(api.view(), json!({"arr":[1,4],"str":"abf","bin":[1,5]}));
+}
+
+#[test]
+fn upstream_port_model_api_operation_tuple_dispatch_matrix() {
+    // Upstream mapping:
+    // - json-crdt/model/api/nodes.ts `op([type,path,value])` dispatch style.
+    let sid = 97011;
+    let mut api = NativeModelApi::from_patches(&[patch_from_ops(
+        sid,
+        1,
+        &[
+            DecodedOp::NewObj {
+                id: Timestamp { sid, time: 1 },
+            },
+            DecodedOp::InsVal {
+                id: Timestamp { sid, time: 2 },
+                obj: Timestamp { sid: 0, time: 0 },
+                val: Timestamp { sid, time: 1 },
+            },
+        ],
+    )])
+    .expect("from_patches must succeed");
+
+    assert!(api.op_tuple(
+        ApiOperationKind::Add,
+        &[PathStep::Key("doc".into())],
+        Some(json!({"x":[1,2,3]})),
+        None
+    ));
+    assert!(api.op_ptr_tuple(
+        ApiOperationKind::Replace,
+        "/doc/x/0",
+        Some(json!(7)),
+        None
+    ));
+    assert!(api.op_ptr_tuple(
+        ApiOperationKind::Remove,
+        "/doc/x/1",
+        None,
+        Some(2)
+    ));
+    assert!(api.op_ptr_tuple(
+        ApiOperationKind::Merge,
+        "/doc",
+        Some(json!({"x":[7],"ok":true})),
+        None
+    ));
+
+    assert_eq!(api.view(), json!({"doc":{"x":[7],"ok":true}}));
+    assert!(!api.op_ptr_tuple(ApiOperationKind::Add, "/doc/x/0", None, None));
 }

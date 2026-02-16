@@ -30,6 +30,14 @@ pub enum ApiOperation {
     Merge { path: Vec<PathStep>, value: Value },
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ApiOperationKind {
+    Add,
+    Replace,
+    Remove,
+    Merge,
+}
+
 #[derive(Debug, Error)]
 pub enum ModelApiError {
     #[error("no patches provided")]
@@ -439,6 +447,16 @@ impl NativeModelApi {
         self.try_remove(&steps)
     }
 
+    pub fn merge_ptr(&mut self, ptr: Option<&str>, value: Value) -> bool {
+        match ptr {
+            None => self.merge(None, value),
+            Some(p) => match parse_json_pointer(p) {
+                Ok(steps) => self.merge(Some(&steps), value),
+                Err(_) => false,
+            },
+        }
+    }
+
     pub fn op(&mut self, operation: ApiOperation) -> bool {
         match operation {
             ApiOperation::Add { path, value } => self.try_add(&path, value),
@@ -446,6 +464,34 @@ impl NativeModelApi {
             ApiOperation::Remove { path, length } => self.try_remove_with_length(&path, length),
             ApiOperation::Merge { path, value } => self.merge(Some(&path), value),
         }
+    }
+
+    pub fn op_tuple(
+        &mut self,
+        kind: ApiOperationKind,
+        path: &[PathStep],
+        value: Option<Value>,
+        length: Option<usize>,
+    ) -> bool {
+        match kind {
+            ApiOperationKind::Add => value.map(|v| self.try_add(path, v)).unwrap_or(false),
+            ApiOperationKind::Replace => value.map(|v| self.try_replace(path, v)).unwrap_or(false),
+            ApiOperationKind::Remove => self.try_remove_with_length(path, length.unwrap_or(1)),
+            ApiOperationKind::Merge => value.map(|v| self.merge(Some(path), v)).unwrap_or(false),
+        }
+    }
+
+    pub fn op_ptr_tuple(
+        &mut self,
+        kind: ApiOperationKind,
+        ptr: &str,
+        value: Option<Value>,
+        length: Option<usize>,
+    ) -> bool {
+        let Ok(path) = parse_json_pointer(ptr) else {
+            return false;
+        };
+        self.op_tuple(kind, &path, value, length)
     }
 
     pub fn diff(&self, next: &Value) -> Result<Option<Patch>, ModelApiError> {
