@@ -278,6 +278,44 @@ fn every_manifest_fixture_file_exists_and_has_required_keys() {
                     "model_api_workflow fixtures must define expected.final_model_binary_hex"
                 );
             }
+            "model_api_proxy_fanout_workflow" => {
+                assert!(
+                    fixture["input"]["sid"].is_u64(),
+                    "model_api_proxy_fanout_workflow fixtures must define input.sid"
+                );
+                assert!(
+                    fixture["input"]["base_model_binary_hex"].is_string(),
+                    "model_api_proxy_fanout_workflow fixtures must define input.base_model_binary_hex"
+                );
+                assert!(
+                    fixture["input"]["scoped_path"].is_array(),
+                    "model_api_proxy_fanout_workflow fixtures must define input.scoped_path"
+                );
+                assert!(
+                    fixture["input"]["ops"].is_array(),
+                    "model_api_proxy_fanout_workflow fixtures must define input.ops"
+                );
+                assert!(
+                    fixture["expected"]["steps"].is_array(),
+                    "model_api_proxy_fanout_workflow fixtures must define expected.steps"
+                );
+                assert!(
+                    fixture["expected"].get("final_view_json").is_some(),
+                    "model_api_proxy_fanout_workflow fixtures must define expected.final_view_json"
+                );
+                assert!(
+                    fixture["expected"]["final_model_binary_hex"].is_string(),
+                    "model_api_proxy_fanout_workflow fixtures must define expected.final_model_binary_hex"
+                );
+                assert!(
+                    fixture["expected"]["fanout"]["change_count"].is_u64(),
+                    "model_api_proxy_fanout_workflow fixtures must define expected.fanout.change_count"
+                );
+                assert!(
+                    fixture["expected"]["fanout"]["scoped_count"].is_u64(),
+                    "model_api_proxy_fanout_workflow fixtures must define expected.fanout.scoped_count"
+                );
+            }
             "model_lifecycle_workflow" => {
                 assert!(
                     fixture["input"]["workflow"].is_string(),
@@ -419,6 +457,9 @@ fn manifest_contains_required_scenarios() {
     let has_model_api_workflow = fixtures
         .iter()
         .any(|f| f["scenario"].as_str() == Some("model_api_workflow"));
+    let has_model_api_proxy_fanout_workflow = fixtures
+        .iter()
+        .any(|f| f["scenario"].as_str() == Some("model_api_proxy_fanout_workflow"));
     let has_model_lifecycle_workflow = fixtures
         .iter()
         .any(|f| f["scenario"].as_str() == Some("model_lifecycle_workflow"));
@@ -462,6 +503,10 @@ fn manifest_contains_required_scenarios() {
     let model_api_workflow_count = fixtures
         .iter()
         .filter(|f| f["scenario"].as_str() == Some("model_api_workflow"))
+        .count();
+    let model_api_proxy_fanout_workflow_count = fixtures
+        .iter()
+        .filter(|f| f["scenario"].as_str() == Some("model_api_proxy_fanout_workflow"))
         .count();
     let model_lifecycle_workflow_count = fixtures
         .iter()
@@ -527,6 +572,10 @@ fn manifest_contains_required_scenarios() {
         "fixtures must include model_api_workflow scenarios"
     );
     assert!(
+        has_model_api_proxy_fanout_workflow,
+        "fixtures must include model_api_proxy_fanout_workflow scenarios"
+    );
+    assert!(
         has_model_lifecycle_workflow,
         "fixtures must include model_lifecycle_workflow scenarios"
     );
@@ -563,28 +612,32 @@ fn manifest_contains_required_scenarios() {
         "fixtures must include at least 12 model_canonical_encode scenarios"
     );
     assert!(
-        model_apply_replay_count >= 50,
-        "fixtures must include at least 50 model_apply_replay scenarios"
+        model_apply_replay_count >= 90,
+        "fixtures must include at least 90 model_apply_replay scenarios"
     );
     assert!(
-        model_diff_parity_count >= 100,
-        "fixtures must include at least 100 model_diff_parity scenarios"
+        model_diff_parity_count >= 180,
+        "fixtures must include at least 180 model_diff_parity scenarios"
     );
     assert!(
-        model_diff_dst_keys_count >= 20,
-        "fixtures must include at least 20 model_diff_dst_keys scenarios"
+        model_diff_dst_keys_count >= 40,
+        "fixtures must include at least 40 model_diff_dst_keys scenarios"
     );
     assert!(
         lessdb_model_manager_count >= 50,
         "fixtures must include at least 50 lessdb_model_manager scenarios"
     );
     assert!(
-        model_api_workflow_count >= 20,
-        "fixtures must include at least 20 model_api_workflow scenarios"
+        model_api_workflow_count >= 60,
+        "fixtures must include at least 60 model_api_workflow scenarios"
     );
     assert!(
-        model_lifecycle_workflow_count >= 12,
-        "fixtures must include at least 12 model_lifecycle_workflow scenarios"
+        model_api_proxy_fanout_workflow_count >= 40,
+        "fixtures must include at least 40 model_api_proxy_fanout_workflow scenarios"
+    );
+    assert!(
+        model_lifecycle_workflow_count >= 30,
+        "fixtures must include at least 30 model_lifecycle_workflow scenarios"
     );
     assert!(
         codec_indexed_binary_parity_count >= 40,

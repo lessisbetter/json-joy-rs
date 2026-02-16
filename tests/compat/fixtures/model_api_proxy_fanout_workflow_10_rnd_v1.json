@@ -1,0 +1,202 @@
+{
+  "fixture_version": 1,
+  "name": "model_api_proxy_fanout_workflow_10_rnd_v1",
+  "scenario": "model_api_proxy_fanout_workflow",
+  "input": {
+    "sid": 79710,
+    "initial_json": {
+      "doc": {
+        "title": "d9",
+        "items": [
+          5,
+          1
+        ],
+        "flag": false
+      }
+    },
+    "base_model_binary_hex": "0000003281114163646f63811043657469746c651f811e626439656974656d731cc115021b201a0005182017000164666c61671300f401deee0412",
+    "scoped_path": [
+      "doc",
+      "title"
+    ],
+    "ops": [
+      {
+        "kind": "read",
+        "path": [
+          "doc",
+          "title"
+        ]
+      },
+      {
+        "kind": "node_obj_put",
+        "path": [
+          "doc"
+        ],
+        "key": "k5",
+        "value_json": "jsmr6h11lw9y"
+      },
+      {
+        "kind": "node_arr_push",
+        "path": [
+          "doc",
+          "items"
+        ],
+        "value_json": 51
+      },
+      {
+        "kind": "node_str_ins",
+        "path": [
+          "doc",
+          "title"
+        ],
+        "pos": 1,
+        "text": "x"
+      },
+      {
+        "kind": "node_add",
+        "path": [
+          "doc",
+          "items",
+          1
+        ],
+        "value_json": 10
+      },
+      {
+        "kind": "node_replace",
+        "path": [
+          "doc",
+          "title"
+        ],
+        "value_json": "3w"
+      },
+      {
+        "kind": "node_remove",
+        "path": [
+          "doc",
+          "k5"
+        ]
+      }
+    ]
+  },
+  "expected": {
+    "steps": [
+      {
+        "kind": "read",
+        "value_json": "d9"
+      },
+      {
+        "kind": "node_obj_put",
+        "view_json": {
+          "doc": {
+            "title": "d9",
+            "items": [
+              5,
+              1
+            ],
+            "flag": false,
+            "k5": "jsmr6h11lw9y"
+          }
+        }
+      },
+      {
+        "kind": "node_arr_push",
+        "view_json": {
+          "doc": {
+            "title": "d9",
+            "items": [
+              5,
+              1,
+              51
+            ],
+            "flag": false,
+            "k5": "jsmr6h11lw9y"
+          }
+        }
+      },
+      {
+        "kind": "node_str_ins",
+        "view_json": {
+          "doc": {
+            "title": "dx9",
+            "items": [
+              5,
+              1,
+              51
+            ],
+            "flag": false,
+            "k5": "jsmr6h11lw9y"
+          }
+        }
+      },
+      {
+        "kind": "node_add",
+        "view_json": {
+          "doc": {
+            "title": "dx9",
+            "items": [
+              5,
+              10,
+              1,
+              51
+            ],
+            "flag": false,
+            "k5": "jsmr6h11lw9y"
+          }
+        }
+      },
+      {
+        "kind": "node_replace",
+        "view_json": {
+          "doc": {
+            "title": "3w",
+            "items": [
+              5,
+              10,
+              1,
+              51
+            ],
+            "flag": false,
+            "k5": "jsmr6h11lw9y"
+          }
+        }
+      },
+      {
+        "kind": "node_remove",
+        "view_json": {
+          "doc": {
+            "title": "3w",
+            "items": [
+              5,
+              10,
+              1,
+              51
+            ],
+            "flag": false
+          }
+        }
+      }
+    ],
+    "final_view_json": {
+      "doc": {
+        "title": "3w",
+        "items": [
+          5,
+          10,
+          1,
+          51
+        ],
+        "flag": false
+      }
+    },
+    "final_model_binary_hex": "0000005a812d4163646f63812c44657469746c65812b84812a01190181290114623377656974656d738128c4812101812720812600051501182017000a812001812420812300011a011d201c00183364666c6167811f00f4626b351100f701deee042e",
+    "fanout": {
+      "change_count": 6,
+      "scoped_count": 2
+    }
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

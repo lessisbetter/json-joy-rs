@@ -1,0 +1,144 @@
+{
+  "fixture_version": 1,
+  "name": "model_api_proxy_fanout_workflow_03_det_v1",
+  "scenario": "model_api_proxy_fanout_workflow",
+  "input": {
+    "sid": 79703,
+    "initial_json": {
+      "doc": {
+        "title": "hello",
+        "items": [
+          3
+        ],
+        "tags": [
+          "a"
+        ]
+      }
+    },
+    "base_model_binary_hex": "0000003881134163646f63811243657469746c6581118181106568656c6c6f656974656d731bc117011a20190003647461677316c11301158114616101d7ee0414",
+    "scoped_path": [
+      "doc",
+      "title"
+    ],
+    "ops": [
+      {
+        "kind": "node_str_ins",
+        "path": [
+          "doc",
+          "title"
+        ],
+        "pos": 5,
+        "text": "!"
+      },
+      {
+        "kind": "node_arr_push",
+        "path": [
+          "doc",
+          "items"
+        ],
+        "value_json": 4
+      },
+      {
+        "kind": "node_obj_put",
+        "path": [
+          "doc"
+        ],
+        "key": "score",
+        "value_json": 1
+      },
+      {
+        "kind": "node_remove",
+        "path": [
+          "doc",
+          "score"
+        ]
+      }
+    ]
+  },
+  "expected": {
+    "steps": [
+      {
+        "kind": "node_str_ins",
+        "view_json": {
+          "doc": {
+            "title": "hello!",
+            "items": [
+              3
+            ],
+            "tags": [
+              "a"
+            ]
+          }
+        }
+      },
+      {
+        "kind": "node_arr_push",
+        "view_json": {
+          "doc": {
+            "title": "hello!",
+            "items": [
+              3,
+              4
+            ],
+            "tags": [
+              "a"
+            ]
+          }
+        }
+      },
+      {
+        "kind": "node_obj_put",
+        "view_json": {
+          "doc": {
+            "title": "hello!",
+            "items": [
+              3,
+              4
+            ],
+            "tags": [
+              "a"
+            ],
+            "score": 1
+          }
+        }
+      },
+      {
+        "kind": "node_remove",
+        "view_json": {
+          "doc": {
+            "title": "hello!",
+            "items": [
+              3,
+              4
+            ],
+            "tags": [
+              "a"
+            ]
+          }
+        }
+      }
+    ],
+    "final_view_json": {
+      "doc": {
+        "title": "hello!",
+        "items": [
+          3,
+          4
+        ],
+        "tags": [
+          "a"
+        ]
+      }
+    },
+    "final_model_binary_hex": "0000004f811c4163646f63811b44657469746c65811a8281196568656c6c6f186121656974656d738114c2811001811320811200031401172016000464746167731fc11c011e811d61616573636f72651100f701d7ee041d",
+    "fanout": {
+      "change_count": 4,
+      "scoped_count": 1
+    }
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

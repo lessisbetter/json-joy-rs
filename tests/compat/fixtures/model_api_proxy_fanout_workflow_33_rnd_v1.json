@@ -1,0 +1,202 @@
+{
+  "fixture_version": 1,
+  "name": "model_api_proxy_fanout_workflow_33_rnd_v1",
+  "scenario": "model_api_proxy_fanout_workflow",
+  "input": {
+    "sid": 79733,
+    "initial_json": {
+      "doc": {
+        "title": "o9",
+        "items": [
+          7,
+          4
+        ],
+        "flag": false
+      }
+    },
+    "base_model_binary_hex": "0000003281114163646f63811043657469746c651f811e626f39656974656d731cc115021b201a0007182017000464666c61671300f401f5ee0412",
+    "scoped_path": [
+      "doc",
+      "title"
+    ],
+    "ops": [
+      {
+        "kind": "read",
+        "path": [
+          "doc",
+          "title"
+        ]
+      },
+      {
+        "kind": "node_obj_put",
+        "path": [
+          "doc"
+        ],
+        "key": "k28",
+        "value_json": false
+      },
+      {
+        "kind": "node_arr_push",
+        "path": [
+          "doc",
+          "items"
+        ],
+        "value_json": 40
+      },
+      {
+        "kind": "node_str_ins",
+        "path": [
+          "doc",
+          "title"
+        ],
+        "pos": 0,
+        "text": "x"
+      },
+      {
+        "kind": "node_add",
+        "path": [
+          "doc",
+          "items",
+          1
+        ],
+        "value_json": 8
+      },
+      {
+        "kind": "node_replace",
+        "path": [
+          "doc",
+          "title"
+        ],
+        "value_json": "r"
+      },
+      {
+        "kind": "node_remove",
+        "path": [
+          "doc",
+          "k28"
+        ]
+      }
+    ]
+  },
+  "expected": {
+    "steps": [
+      {
+        "kind": "read",
+        "value_json": "o9"
+      },
+      {
+        "kind": "node_obj_put",
+        "view_json": {
+          "doc": {
+            "title": "o9",
+            "items": [
+              7,
+              4
+            ],
+            "flag": false,
+            "k28": false
+          }
+        }
+      },
+      {
+        "kind": "node_arr_push",
+        "view_json": {
+          "doc": {
+            "title": "o9",
+            "items": [
+              7,
+              4,
+              40
+            ],
+            "flag": false,
+            "k28": false
+          }
+        }
+      },
+      {
+        "kind": "node_str_ins",
+        "view_json": {
+          "doc": {
+            "title": "xo9",
+            "items": [
+              7,
+              4,
+              40
+            ],
+            "flag": false,
+            "k28": false
+          }
+        }
+      },
+      {
+        "kind": "node_add",
+        "view_json": {
+          "doc": {
+            "title": "xo9",
+            "items": [
+              7,
+              8,
+              4,
+              40
+            ],
+            "flag": false,
+            "k28": false
+          }
+        }
+      },
+      {
+        "kind": "node_replace",
+        "view_json": {
+          "doc": {
+            "title": "r",
+            "items": [
+              7,
+              8,
+              4,
+              40
+            ],
+            "flag": false,
+            "k28": false
+          }
+        }
+      },
+      {
+        "kind": "node_remove",
+        "view_json": {
+          "doc": {
+            "title": "r",
+            "items": [
+              7,
+              8,
+              4,
+              40
+            ],
+            "flag": false
+          }
+        }
+      }
+    ],
+    "final_view_json": {
+      "doc": {
+        "title": "r",
+        "items": [
+          7,
+          8,
+          4,
+          40
+        ],
+        "flag": false
+      }
+    },
+    "final_model_binary_hex": "0000005781204163646f63811f44657469746c65811e831801811d02136172656974656d73811bc4811401811a2081190007140117201600088113018117208116000419011c201b00182864666c6167811200f4636b32381100f701f5ee0421",
+    "fanout": {
+      "change_count": 6,
+      "scoped_count": 2
+    }
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

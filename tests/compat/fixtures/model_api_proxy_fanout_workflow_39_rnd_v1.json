@@ -1,0 +1,202 @@
+{
+  "fixture_version": 1,
+  "name": "model_api_proxy_fanout_workflow_39_rnd_v1",
+  "scenario": "model_api_proxy_fanout_workflow",
+  "input": {
+    "sid": 79739,
+    "initial_json": {
+      "doc": {
+        "title": "6fqpm",
+        "items": [
+          6,
+          0
+        ],
+        "flag": false
+      }
+    },
+    "base_model_binary_hex": "0000003781144163646f63811343657469746c65811281811165366671706d656974656d731cc115021b201a0006182017000064666c61671300f401fbee0415",
+    "scoped_path": [
+      "doc",
+      "title"
+    ],
+    "ops": [
+      {
+        "kind": "read",
+        "path": [
+          "doc",
+          "title"
+        ]
+      },
+      {
+        "kind": "node_obj_put",
+        "path": [
+          "doc"
+        ],
+        "key": "k34",
+        "value_json": "17p4l"
+      },
+      {
+        "kind": "node_arr_push",
+        "path": [
+          "doc",
+          "items"
+        ],
+        "value_json": 29
+      },
+      {
+        "kind": "node_str_ins",
+        "path": [
+          "doc",
+          "title"
+        ],
+        "pos": 0,
+        "text": "x"
+      },
+      {
+        "kind": "node_add",
+        "path": [
+          "doc",
+          "items",
+          1
+        ],
+        "value_json": 75
+      },
+      {
+        "kind": "node_replace",
+        "path": [
+          "doc",
+          "title"
+        ],
+        "value_json": "28mh8q0"
+      },
+      {
+        "kind": "node_remove",
+        "path": [
+          "doc",
+          "k34"
+        ]
+      }
+    ]
+  },
+  "expected": {
+    "steps": [
+      {
+        "kind": "read",
+        "value_json": "6fqpm"
+      },
+      {
+        "kind": "node_obj_put",
+        "view_json": {
+          "doc": {
+            "title": "6fqpm",
+            "items": [
+              6,
+              0
+            ],
+            "flag": false,
+            "k34": "17p4l"
+          }
+        }
+      },
+      {
+        "kind": "node_arr_push",
+        "view_json": {
+          "doc": {
+            "title": "6fqpm",
+            "items": [
+              6,
+              0,
+              29
+            ],
+            "flag": false,
+            "k34": "17p4l"
+          }
+        }
+      },
+      {
+        "kind": "node_str_ins",
+        "view_json": {
+          "doc": {
+            "title": "x6fqpm",
+            "items": [
+              6,
+              0,
+              29
+            ],
+            "flag": false,
+            "k34": "17p4l"
+          }
+        }
+      },
+      {
+        "kind": "node_add",
+        "view_json": {
+          "doc": {
+            "title": "x6fqpm",
+            "items": [
+              6,
+              75,
+              0,
+              29
+            ],
+            "flag": false,
+            "k34": "17p4l"
+          }
+        }
+      },
+      {
+        "kind": "node_replace",
+        "view_json": {
+          "doc": {
+            "title": "28mh8q0",
+            "items": [
+              6,
+              75,
+              0,
+              29
+            ],
+            "flag": false,
+            "k34": "17p4l"
+          }
+        }
+      },
+      {
+        "kind": "node_remove",
+        "view_json": {
+          "doc": {
+            "title": "28mh8q0",
+            "items": [
+              6,
+              75,
+              0,
+              29
+            ],
+            "flag": false
+          }
+        }
+      }
+    ],
+    "final_view_json": {
+      "doc": {
+        "title": "28mh8q0",
+        "items": [
+          6,
+          75,
+          0,
+          29
+        ],
+        "flag": false
+      }
+    },
+    "final_model_binary_hex": "00000068812e4163646f63812d44657469746c65812c861e01812b02176532386d683881296171812802196130656974656d738126c4811f01812520812400061a011d201c00184b811e01812220812100001f01811220811100181d64666c6167811d00f4636b33341100f701fbee042f",
+    "fanout": {
+      "change_count": 6,
+      "scoped_count": 2
+    }
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

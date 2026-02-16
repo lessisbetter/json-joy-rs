@@ -1,0 +1,259 @@
+{
+  "fixture_version": 1,
+  "name": "model_api_workflow_60_v1",
+  "scenario": "model_api_workflow",
+  "input": {
+    "sid": 79060,
+    "initial_json": {
+      "doc": {
+        "seed": [
+          "1u8fn2k2c2"
+        ],
+        "nested": {
+          "v": 15
+        }
+      },
+      "title": "v5s",
+      "list": [
+        4
+      ]
+    },
+    "base_model_binary_hex": "0000004f811d4363646f63811c426473656564811bc11f01811a818119780a317538666e326b32633278066e65737465641e4161761d000f657469746c651a811963763573646c69737416c11201152014000401d4e9041e",
+    "ops": [
+      {
+        "kind": "find",
+        "path": [
+          "title"
+        ]
+      },
+      {
+        "kind": "obj_put",
+        "path": [
+          "doc"
+        ],
+        "key": "k56",
+        "value_json": "kram8xk"
+      },
+      {
+        "kind": "add",
+        "path": [
+          "doc",
+          "n56"
+        ],
+        "value_json": 40.7
+      },
+      {
+        "kind": "replace",
+        "path": [
+          "list",
+          0
+        ],
+        "value_json": 57
+      },
+      {
+        "kind": "remove",
+        "path": [
+          "doc",
+          "seed"
+        ]
+      },
+      {
+        "kind": "arr_push",
+        "path": [
+          "list"
+        ],
+        "value_json": 4
+      },
+      {
+        "kind": "str_ins",
+        "path": [
+          "title"
+        ],
+        "pos": 1,
+        "text": "x"
+      },
+      {
+        "kind": "set",
+        "path": [
+          "doc"
+        ],
+        "value_json": {
+          "agxntp": [
+            null,
+            28.6,
+            ""
+          ],
+          "5ir": -37.5,
+          "dnh": [
+            null,
+            "2"
+          ]
+        }
+      }
+    ]
+  },
+  "expected": {
+    "steps": [
+      {
+        "kind": "find",
+        "path": [
+          "title"
+        ],
+        "value_json": "v5s"
+      },
+      {
+        "kind": "obj_put",
+        "view_json": {
+          "doc": {
+            "seed": [
+              "1u8fn2k2c2"
+            ],
+            "nested": {
+              "v": 15
+            },
+            "k56": "kram8xk"
+          },
+          "title": "v5s",
+          "list": [
+            4
+          ]
+        }
+      },
+      {
+        "kind": "add",
+        "view_json": {
+          "doc": {
+            "seed": [
+              "1u8fn2k2c2"
+            ],
+            "nested": {
+              "v": 15
+            },
+            "k56": "kram8xk",
+            "n56": 40.7
+          },
+          "title": "v5s",
+          "list": [
+            4
+          ]
+        }
+      },
+      {
+        "kind": "replace",
+        "view_json": {
+          "doc": {
+            "seed": [
+              "1u8fn2k2c2"
+            ],
+            "nested": {
+              "v": 15
+            },
+            "k56": "kram8xk",
+            "n56": 40.7
+          },
+          "title": "v5s",
+          "list": [
+            57
+          ]
+        }
+      },
+      {
+        "kind": "remove",
+        "view_json": {
+          "doc": {
+            "nested": {
+              "v": 15
+            },
+            "k56": "kram8xk",
+            "n56": 40.7
+          },
+          "title": "v5s",
+          "list": [
+            57
+          ]
+        }
+      },
+      {
+        "kind": "arr_push",
+        "view_json": {
+          "doc": {
+            "nested": {
+              "v": 15
+            },
+            "k56": "kram8xk",
+            "n56": 40.7
+          },
+          "title": "v5s",
+          "list": [
+            57,
+            4
+          ]
+        }
+      },
+      {
+        "kind": "str_ins",
+        "view_json": {
+          "doc": {
+            "nested": {
+              "v": 15
+            },
+            "k56": "kram8xk",
+            "n56": 40.7
+          },
+          "title": "vx5s",
+          "list": [
+            57,
+            4
+          ]
+        }
+      },
+      {
+        "kind": "set",
+        "view_json": {
+          "doc": {
+            "agxntp": [
+              null,
+              28.6,
+              ""
+            ],
+            "5ir": -37.5,
+            "dnh": [
+              null,
+              "2"
+            ]
+          },
+          "title": "vx5s",
+          "list": [
+            57,
+            4
+          ]
+        }
+      }
+    ],
+    "final_view_json": {
+      "doc": {
+        "agxntp": [
+          null,
+          28.6,
+          ""
+        ],
+        "5ir": -37.5,
+        "dnh": [
+          null,
+          "2"
+        ]
+      },
+      "title": "vx5s",
+      "list": [
+        57,
+        4
+      ]
+    },
+    "final_model_binary_hex": "000000a381494363646f638148476473656564811e00f778066e6573746564811700f7636b3536811600f7636e3536811500f778066167786e74708114c11c03811320811200f68110201f00fb403c99999999999a1d80633569721900fac216000063646e6818c1120217201600f61481136132657469746c6581368381356176811861788134623573646c6973748132c2812e018131208120001839811901811c20811b000401d4e9044a"
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

@@ -1,0 +1,164 @@
+{
+  "fixture_version": 1,
+  "name": "model_api_proxy_fanout_workflow_02_det_v1",
+  "scenario": "model_api_proxy_fanout_workflow",
+  "input": {
+    "sid": 79702,
+    "initial_json": {
+      "doc": {
+        "title": "x",
+        "items": [
+          1,
+          2
+        ],
+        "meta": {
+          "v": 1
+        }
+      }
+    },
+    "base_model_binary_hex": "0000003681124163646f63811143657469746c658110811f6178656974656d731ec117021d201c00011a20190002646d6574611541617614000101d6ee0413",
+    "scoped_path": [
+      "doc",
+      "title"
+    ],
+    "ops": [
+      {
+        "kind": "node_add",
+        "path": [
+          "doc",
+          "items",
+          1
+        ],
+        "value_json": 9
+      },
+      {
+        "kind": "node_remove",
+        "path": [
+          "doc",
+          "items",
+          0
+        ]
+      },
+      {
+        "kind": "node_obj_put",
+        "path": [
+          "doc"
+        ],
+        "key": "ok",
+        "value_json": true
+      },
+      {
+        "kind": "read",
+        "path": [
+          "doc",
+          "items"
+        ]
+      },
+      {
+        "kind": "node_replace",
+        "path": [
+          "doc",
+          "title"
+        ],
+        "value_json": "xy"
+      }
+    ]
+  },
+  "expected": {
+    "steps": [
+      {
+        "kind": "node_add",
+        "view_json": {
+          "doc": {
+            "title": "x",
+            "items": [
+              1,
+              9,
+              2
+            ],
+            "meta": {
+              "v": 1
+            }
+          }
+        }
+      },
+      {
+        "kind": "node_remove",
+        "view_json": {
+          "doc": {
+            "title": "x",
+            "items": [
+              9,
+              2
+            ],
+            "meta": {
+              "v": 1
+            }
+          }
+        }
+      },
+      {
+        "kind": "node_obj_put",
+        "view_json": {
+          "doc": {
+            "title": "x",
+            "items": [
+              9,
+              2
+            ],
+            "meta": {
+              "v": 1
+            },
+            "ok": true
+          }
+        }
+      },
+      {
+        "kind": "read",
+        "value_json": [
+          9,
+          2
+        ]
+      },
+      {
+        "kind": "node_replace",
+        "view_json": {
+          "doc": {
+            "title": "xy",
+            "items": [
+              9,
+              2
+            ],
+            "meta": {
+              "v": 1
+            },
+            "ok": true
+          }
+        }
+      }
+    ],
+    "final_view_json": {
+      "doc": {
+        "title": "xy",
+        "items": [
+          9,
+          2
+        ],
+        "meta": {
+          "v": 1
+        },
+        "ok": true
+      }
+    },
+    "final_model_binary_hex": "00000047811a4163646f63811944657469746c6581188281176178106179656974656d738116c31f81140117201600091e0181122081110002646d6574611d4161761c0001626f6b1200f501d6ee041b",
+    "fanout": {
+      "change_count": 4,
+      "scoped_count": 1
+    }
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

@@ -1,0 +1,272 @@
+{
+  "fixture_version": 1,
+  "name": "model_api_workflow_59_v1",
+  "scenario": "model_api_workflow",
+  "input": {
+    "sid": 79059,
+    "initial_json": {
+      "doc": {
+        "seed": "4r4hixwg8wbk13",
+        "nested": {
+          "v": 45
+        }
+      },
+      "title": "b5iz5",
+      "list": [
+        4
+      ]
+    },
+    "base_model_binary_hex": "0000005281214363646f638120426473656564811f81811e780e34723468697877673877626b313378066e657374656481104161761f00182d657469746c651c811b656235697a35646c69737416c11201152014000401d3e90422",
+    "ops": [
+      {
+        "kind": "find",
+        "path": [
+          "title"
+        ]
+      },
+      {
+        "kind": "obj_put",
+        "path": [
+          "doc"
+        ],
+        "key": "k55",
+        "value_json": "a"
+      },
+      {
+        "kind": "add",
+        "path": [
+          "doc",
+          "n55"
+        ],
+        "value_json": -36.5
+      },
+      {
+        "kind": "replace",
+        "path": [
+          "list",
+          0
+        ],
+        "value_json": 45
+      },
+      {
+        "kind": "remove",
+        "path": [
+          "doc",
+          "seed"
+        ]
+      },
+      {
+        "kind": "arr_push",
+        "path": [
+          "list"
+        ],
+        "value_json": 68
+      },
+      {
+        "kind": "str_ins",
+        "path": [
+          "title"
+        ],
+        "pos": 1,
+        "text": "x"
+      },
+      {
+        "kind": "set",
+        "path": [
+          "doc"
+        ],
+        "value_json": [
+          "5naq61",
+          {
+            "2bh16": -84.6,
+            "vs89ooz5": "",
+            "58p": "j3v5qqahqnsuh"
+          },
+          {
+            "l": "76qr1",
+            "g2ukveo": "iulxfbs2mtvkh",
+            "yc": null,
+            "z8wc3p": null
+          },
+          [
+            null,
+            "60go25an7mu",
+            "15mz7j114qbuha"
+          ]
+        ]
+      }
+    ]
+  },
+  "expected": {
+    "steps": [
+      {
+        "kind": "find",
+        "path": [
+          "title"
+        ],
+        "value_json": "b5iz5"
+      },
+      {
+        "kind": "obj_put",
+        "view_json": {
+          "doc": {
+            "seed": "4r4hixwg8wbk13",
+            "nested": {
+              "v": 45
+            },
+            "k55": "a"
+          },
+          "title": "b5iz5",
+          "list": [
+            4
+          ]
+        }
+      },
+      {
+        "kind": "add",
+        "view_json": {
+          "doc": {
+            "seed": "4r4hixwg8wbk13",
+            "nested": {
+              "v": 45
+            },
+            "k55": "a",
+            "n55": -36.5
+          },
+          "title": "b5iz5",
+          "list": [
+            4
+          ]
+        }
+      },
+      {
+        "kind": "replace",
+        "view_json": {
+          "doc": {
+            "seed": "4r4hixwg8wbk13",
+            "nested": {
+              "v": 45
+            },
+            "k55": "a",
+            "n55": -36.5
+          },
+          "title": "b5iz5",
+          "list": [
+            45
+          ]
+        }
+      },
+      {
+        "kind": "remove",
+        "view_json": {
+          "doc": {
+            "nested": {
+              "v": 45
+            },
+            "k55": "a",
+            "n55": -36.5
+          },
+          "title": "b5iz5",
+          "list": [
+            45
+          ]
+        }
+      },
+      {
+        "kind": "arr_push",
+        "view_json": {
+          "doc": {
+            "nested": {
+              "v": 45
+            },
+            "k55": "a",
+            "n55": -36.5
+          },
+          "title": "b5iz5",
+          "list": [
+            45,
+            68
+          ]
+        }
+      },
+      {
+        "kind": "str_ins",
+        "view_json": {
+          "doc": {
+            "nested": {
+              "v": 45
+            },
+            "k55": "a",
+            "n55": -36.5
+          },
+          "title": "bx5iz5",
+          "list": [
+            45,
+            68
+          ]
+        }
+      },
+      {
+        "kind": "set",
+        "view_json": {
+          "doc": [
+            "5naq61",
+            {
+              "2bh16": -84.6,
+              "vs89ooz5": "",
+              "58p": "j3v5qqahqnsuh"
+            },
+            {
+              "l": "76qr1",
+              "g2ukveo": "iulxfbs2mtvkh",
+              "yc": null,
+              "z8wc3p": null
+            },
+            [
+              null,
+              "60go25an7mu",
+              "15mz7j114qbuha"
+            ]
+          ],
+          "title": "bx5iz5",
+          "list": [
+            45,
+            68
+          ]
+        }
+      }
+    ],
+    "final_view_json": {
+      "doc": [
+        "5naq61",
+        {
+          "2bh16": -84.6,
+          "vs89ooz5": "",
+          "58p": "j3v5qqahqnsuh"
+        },
+        {
+          "l": "76qr1",
+          "g2ukveo": "iulxfbs2mtvkh",
+          "yc": null,
+          "z8wc3p": null
+        },
+        [
+          null,
+          "60go25an7mu",
+          "15mz7j114qbuha"
+        ]
+      ],
+      "title": "bx5iz5",
+      "list": [
+        45,
+        68
+      ]
+    },
+    "final_model_binary_hex": "000000fd8188014363646f638158c1140481578181567806356e61713631815043653262683136814f00fbc0552666666666667808767338396f6f7a35814e8063353870814d81814c780d6a33763571716168716e737568813e44616c813d81813c65373671723178076732756b76656f8137818136780d69756c78666273326d74766b68627963812900f678067a3877633370812800f68126c11703812520812400f68122818121780b3630676f3235616e376d758116818115780e31356d7a376a3131347162756861657469746c65817383817261628159617881716435697a35646c697374816dc2816901816c20816100182d815a01815d20815c00184401d3e9048901"
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

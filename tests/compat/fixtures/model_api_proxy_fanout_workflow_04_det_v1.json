@@ -1,0 +1,127 @@
+{
+  "fixture_version": 1,
+  "name": "model_api_proxy_fanout_workflow_04_det_v1",
+  "scenario": "model_api_proxy_fanout_workflow",
+  "input": {
+    "sid": 79704,
+    "initial_json": {
+      "doc": {
+        "title": "m",
+        "items": [
+          0
+        ],
+        "active": true
+      }
+    },
+    "base_model_binary_hex": "0000002d1c4163646f631b43657469746c651a8119616d656974656d7318c11401172016000078066163746976651300f501d8ee040d",
+    "scoped_path": [
+      "doc",
+      "title"
+    ],
+    "ops": [
+      {
+        "kind": "read",
+        "path": [
+          "doc"
+        ]
+      },
+      {
+        "kind": "node_obj_put",
+        "path": [
+          "doc"
+        ],
+        "key": "active",
+        "value_json": false
+      },
+      {
+        "kind": "node_add",
+        "path": [
+          "doc",
+          "items",
+          1
+        ],
+        "value_json": 7
+      },
+      {
+        "kind": "node_replace",
+        "path": [
+          "doc",
+          "title"
+        ],
+        "value_json": "mm"
+      }
+    ]
+  },
+  "expected": {
+    "steps": [
+      {
+        "kind": "read",
+        "value_json": {
+          "title": "m",
+          "items": [
+            0
+          ],
+          "active": true
+        }
+      },
+      {
+        "kind": "node_obj_put",
+        "view_json": {
+          "doc": {
+            "title": "m",
+            "items": [
+              0
+            ],
+            "active": false
+          }
+        }
+      },
+      {
+        "kind": "node_add",
+        "view_json": {
+          "doc": {
+            "title": "m",
+            "items": [
+              0,
+              7
+            ],
+            "active": false
+          }
+        }
+      },
+      {
+        "kind": "node_replace",
+        "view_json": {
+          "doc": {
+            "title": "mm",
+            "items": [
+              0,
+              7
+            ],
+            "active": false
+          }
+        }
+      }
+    ],
+    "final_view_json": {
+      "doc": {
+        "title": "mm",
+        "items": [
+          0,
+          7
+        ],
+        "active": false
+      }
+    },
+    "final_model_binary_hex": "0000003b81134163646f63811243657469746c658111828110616d10616d656974656d731fc21b011e201d00001101142013000778066163746976651600f401d8ee0414",
+    "fanout": {
+      "change_count": 3,
+      "scoped_count": 1
+    }
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

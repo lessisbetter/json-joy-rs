@@ -1,0 +1,45 @@
+{
+  "fixture_version": 1,
+  "name": "model_diff_parity_153_nonempty_v1",
+  "scenario": "model_diff_parity",
+  "input": {
+    "base_model_binary_hex": "0000001f194461611800185861621700185961741681156376383864666c61671200f501e1da040a",
+    "next_view_json": {
+      "a": 89,
+      "b": 89,
+      "t": "v88-next",
+      "flag": false,
+      "c": 176
+    },
+    "sid": 77153
+  },
+  "expected": {
+    "patch_present": true,
+    "patch_binary_hex": "e1da040bf7050018596504072d6e65787400f40018b0530161610b64666c616711616312",
+    "patch_op_count": 5,
+    "patch_opcodes": [
+      0,
+      12,
+      0,
+      0,
+      10
+    ],
+    "patch_span": 9,
+    "patch_id_sid": 77153,
+    "patch_id_time": 11,
+    "patch_next_time": 20,
+    "view_after_apply_json": {
+      "a": 89,
+      "b": 89,
+      "t": "v88-next",
+      "flag": false,
+      "c": 176
+    },
+    "model_binary_after_apply_hex": "0000002e8112456161180018596162811000185961741f821e6376383817652d6e65787464666c61671200f46163110018b001e1da0413"
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

@@ -1,0 +1,226 @@
+{
+  "fixture_version": 1,
+  "name": "model_api_workflow_26_v1",
+  "scenario": "model_api_workflow",
+  "input": {
+    "sid": 79026,
+    "initial_json": {
+      "doc": {
+        "seed": {
+          "0gnzc": {}
+        },
+        "nested": {
+          "v": 17
+        }
+      },
+      "title": "aorradp",
+      "list": [
+        3
+      ]
+    },
+    "base_model_binary_hex": "0000004c81174363646f6381164264736565648115416530676e7a6381144078066e6573746564811241617681110011657469746c651e811d7807616f7272616470646c69737416c11201152014000301b2e90418",
+    "ops": [
+      {
+        "kind": "find",
+        "path": [
+          "title"
+        ]
+      },
+      {
+        "kind": "obj_put",
+        "path": [
+          "doc"
+        ],
+        "key": "k22",
+        "value_json": false
+      },
+      {
+        "kind": "add",
+        "path": [
+          "doc",
+          "n22"
+        ],
+        "value_json": "2"
+      },
+      {
+        "kind": "replace",
+        "path": [
+          "list",
+          0
+        ],
+        "value_json": 78
+      },
+      {
+        "kind": "remove",
+        "path": [
+          "doc",
+          "seed"
+        ]
+      },
+      {
+        "kind": "arr_push",
+        "path": [
+          "list"
+        ],
+        "value_json": 75
+      },
+      {
+        "kind": "str_ins",
+        "path": [
+          "title"
+        ],
+        "pos": 1,
+        "text": "x"
+      },
+      {
+        "kind": "set",
+        "path": [
+          "doc"
+        ],
+        "value_json": true
+      }
+    ]
+  },
+  "expected": {
+    "steps": [
+      {
+        "kind": "find",
+        "path": [
+          "title"
+        ],
+        "value_json": "aorradp"
+      },
+      {
+        "kind": "obj_put",
+        "view_json": {
+          "doc": {
+            "seed": {
+              "0gnzc": {}
+            },
+            "nested": {
+              "v": 17
+            },
+            "k22": false
+          },
+          "title": "aorradp",
+          "list": [
+            3
+          ]
+        }
+      },
+      {
+        "kind": "add",
+        "view_json": {
+          "doc": {
+            "seed": {
+              "0gnzc": {}
+            },
+            "nested": {
+              "v": 17
+            },
+            "k22": false,
+            "n22": "2"
+          },
+          "title": "aorradp",
+          "list": [
+            3
+          ]
+        }
+      },
+      {
+        "kind": "replace",
+        "view_json": {
+          "doc": {
+            "seed": {
+              "0gnzc": {}
+            },
+            "nested": {
+              "v": 17
+            },
+            "k22": false,
+            "n22": "2"
+          },
+          "title": "aorradp",
+          "list": [
+            78
+          ]
+        }
+      },
+      {
+        "kind": "remove",
+        "view_json": {
+          "doc": {
+            "nested": {
+              "v": 17
+            },
+            "k22": false,
+            "n22": "2"
+          },
+          "title": "aorradp",
+          "list": [
+            78
+          ]
+        }
+      },
+      {
+        "kind": "arr_push",
+        "view_json": {
+          "doc": {
+            "nested": {
+              "v": 17
+            },
+            "k22": false,
+            "n22": "2"
+          },
+          "title": "aorradp",
+          "list": [
+            78,
+            75
+          ]
+        }
+      },
+      {
+        "kind": "str_ins",
+        "view_json": {
+          "doc": {
+            "nested": {
+              "v": 17
+            },
+            "k22": false,
+            "n22": "2"
+          },
+          "title": "axorradp",
+          "list": [
+            78,
+            75
+          ]
+        }
+      },
+      {
+        "kind": "set",
+        "view_json": {
+          "doc": true,
+          "title": "axorradp",
+          "list": [
+            78,
+            75
+          ]
+        }
+      }
+    ],
+    "final_view_json": {
+      "doc": true,
+      "title": "axorradp",
+      "list": [
+        78,
+        75
+      ]
+    },
+    "final_model_binary_hex": "0000003e81274363646f631100f5657469746c65811e83811d6161126178811c78066f7272616470646c6973748116c28112018115201a00184e130116201500184b01b2e90428"
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

@@ -1,0 +1,224 @@
+{
+  "fixture_version": 1,
+  "name": "model_api_workflow_33_v1",
+  "scenario": "model_api_workflow",
+  "input": {
+    "sid": 79033,
+    "initial_json": {
+      "doc": {
+        "seed": true,
+        "nested": {
+          "v": 25
+        }
+      },
+      "title": "yqd",
+      "list": [
+        0
+      ]
+    },
+    "base_model_binary_hex": "0000003d81114363646f6381104264736565641f00f578066e65737465641e4161761d001819657469746c651a811963797164646c69737416c11201152014000001b9e90412",
+    "ops": [
+      {
+        "kind": "find",
+        "path": [
+          "title"
+        ]
+      },
+      {
+        "kind": "obj_put",
+        "path": [
+          "doc"
+        ],
+        "key": "k29",
+        "value_json": -50.4
+      },
+      {
+        "kind": "add",
+        "path": [
+          "doc",
+          "n29"
+        ],
+        "value_json": null
+      },
+      {
+        "kind": "replace",
+        "path": [
+          "list",
+          0
+        ],
+        "value_json": 84
+      },
+      {
+        "kind": "remove",
+        "path": [
+          "doc",
+          "seed"
+        ]
+      },
+      {
+        "kind": "arr_push",
+        "path": [
+          "list"
+        ],
+        "value_json": 97
+      },
+      {
+        "kind": "str_ins",
+        "path": [
+          "title"
+        ],
+        "pos": 0,
+        "text": "x"
+      },
+      {
+        "kind": "set",
+        "path": [
+          "doc"
+        ],
+        "value_json": {
+          "7y4wtkaz3v": "i"
+        }
+      }
+    ]
+  },
+  "expected": {
+    "steps": [
+      {
+        "kind": "find",
+        "path": [
+          "title"
+        ],
+        "value_json": "yqd"
+      },
+      {
+        "kind": "obj_put",
+        "view_json": {
+          "doc": {
+            "seed": true,
+            "nested": {
+              "v": 25
+            },
+            "k29": -50.4
+          },
+          "title": "yqd",
+          "list": [
+            0
+          ]
+        }
+      },
+      {
+        "kind": "add",
+        "view_json": {
+          "doc": {
+            "seed": true,
+            "nested": {
+              "v": 25
+            },
+            "k29": -50.4,
+            "n29": null
+          },
+          "title": "yqd",
+          "list": [
+            0
+          ]
+        }
+      },
+      {
+        "kind": "replace",
+        "view_json": {
+          "doc": {
+            "seed": true,
+            "nested": {
+              "v": 25
+            },
+            "k29": -50.4,
+            "n29": null
+          },
+          "title": "yqd",
+          "list": [
+            84
+          ]
+        }
+      },
+      {
+        "kind": "remove",
+        "view_json": {
+          "doc": {
+            "nested": {
+              "v": 25
+            },
+            "k29": -50.4,
+            "n29": null
+          },
+          "title": "yqd",
+          "list": [
+            84
+          ]
+        }
+      },
+      {
+        "kind": "arr_push",
+        "view_json": {
+          "doc": {
+            "nested": {
+              "v": 25
+            },
+            "k29": -50.4,
+            "n29": null
+          },
+          "title": "yqd",
+          "list": [
+            84,
+            97
+          ]
+        }
+      },
+      {
+        "kind": "str_ins",
+        "view_json": {
+          "doc": {
+            "nested": {
+              "v": 25
+            },
+            "k29": -50.4,
+            "n29": null
+          },
+          "title": "xyqd",
+          "list": [
+            84,
+            97
+          ]
+        }
+      },
+      {
+        "kind": "set",
+        "view_json": {
+          "doc": {
+            "7y4wtkaz3v": "i"
+          },
+          "title": "xyqd",
+          "list": [
+            84,
+            97
+          ]
+        }
+      }
+    ],
+    "final_view_json": {
+      "doc": {
+        "7y4wtkaz3v": "i"
+      },
+      "title": "xyqd",
+      "list": [
+        84,
+        97
+      ]
+    },
+    "final_model_binary_hex": "0000006881244363646f6381234564736565641c00f778066e65737465641500f7636b32391400f7636e32391300f7780a37793477746b617a33761281116169657469746c65811d82166178811c63797164646c6973748119c28115018118201e00185417011a201900186101b9e90425"
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

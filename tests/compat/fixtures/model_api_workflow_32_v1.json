@@ -1,0 +1,294 @@
+{
+  "fixture_version": 1,
+  "name": "model_api_workflow_32_v1",
+  "scenario": "model_api_workflow",
+  "input": {
+    "sid": 79032,
+    "initial_json": {
+      "doc": {
+        "seed": {
+          "r0ok8ao": [
+            "6horspzasjhw5m5",
+            null,
+            "ivkuupwebeg799w"
+          ],
+          "vdr2": [
+            "qegssfa30udm5c",
+            null,
+            null,
+            null
+          ],
+          "rzg2ww": [],
+          "l32yn34": [
+            "3arfp5",
+            null,
+            -75.1,
+            -85.2
+          ]
+        },
+        "nested": {
+          "v": 26
+        }
+      },
+      "title": "8w",
+      "list": [
+        0
+      ]
+    },
+    "base_model_binary_hex": "000000ff816b4363646f63816a426473656564816944780772306f6b38616f8168c18144038167818166780f36686f7273707a61736a6877356d35815720815600f68154818153780f69766b75757077656265673739397764766472328141c1812804814081813f780e71656773736661333075646d3563813120813000f6812e20812d00f6812b20812a00f67806727a673277778124c078076c3332796e33348123c181120481228181217806336172667035811b20811a00f6811820811700fbc052c66666666666811520811400fbc0554ccccccccccd78066e65737465641d4161761c00181a657469746c65198118623877646c69737416c11201152014000001b8e9046c",
+    "ops": [
+      {
+        "kind": "find",
+        "path": [
+          "title"
+        ]
+      },
+      {
+        "kind": "obj_put",
+        "path": [
+          "doc"
+        ],
+        "key": "k28",
+        "value_json": "klme5ij7ruj"
+      },
+      {
+        "kind": "add",
+        "path": [
+          "doc",
+          "n28"
+        ],
+        "value_json": -30.4
+      },
+      {
+        "kind": "replace",
+        "path": [
+          "list",
+          0
+        ],
+        "value_json": 1
+      },
+      {
+        "kind": "remove",
+        "path": [
+          "doc",
+          "seed"
+        ]
+      },
+      {
+        "kind": "arr_push",
+        "path": [
+          "list"
+        ],
+        "value_json": 54
+      },
+      {
+        "kind": "str_ins",
+        "path": [
+          "title"
+        ],
+        "pos": 2,
+        "text": "x"
+      },
+      {
+        "kind": "set",
+        "path": [
+          "doc"
+        ],
+        "value_json": true
+      }
+    ]
+  },
+  "expected": {
+    "steps": [
+      {
+        "kind": "find",
+        "path": [
+          "title"
+        ],
+        "value_json": "8w"
+      },
+      {
+        "kind": "obj_put",
+        "view_json": {
+          "doc": {
+            "seed": {
+              "r0ok8ao": [
+                "6horspzasjhw5m5",
+                null,
+                "ivkuupwebeg799w"
+              ],
+              "vdr2": [
+                "qegssfa30udm5c",
+                null,
+                null,
+                null
+              ],
+              "rzg2ww": [],
+              "l32yn34": [
+                "3arfp5",
+                null,
+                -75.1,
+                -85.2
+              ]
+            },
+            "nested": {
+              "v": 26
+            },
+            "k28": "klme5ij7ruj"
+          },
+          "title": "8w",
+          "list": [
+            0
+          ]
+        }
+      },
+      {
+        "kind": "add",
+        "view_json": {
+          "doc": {
+            "seed": {
+              "r0ok8ao": [
+                "6horspzasjhw5m5",
+                null,
+                "ivkuupwebeg799w"
+              ],
+              "vdr2": [
+                "qegssfa30udm5c",
+                null,
+                null,
+                null
+              ],
+              "rzg2ww": [],
+              "l32yn34": [
+                "3arfp5",
+                null,
+                -75.1,
+                -85.2
+              ]
+            },
+            "nested": {
+              "v": 26
+            },
+            "k28": "klme5ij7ruj",
+            "n28": -30.4
+          },
+          "title": "8w",
+          "list": [
+            0
+          ]
+        }
+      },
+      {
+        "kind": "replace",
+        "view_json": {
+          "doc": {
+            "seed": {
+              "r0ok8ao": [
+                "6horspzasjhw5m5",
+                null,
+                "ivkuupwebeg799w"
+              ],
+              "vdr2": [
+                "qegssfa30udm5c",
+                null,
+                null,
+                null
+              ],
+              "rzg2ww": [],
+              "l32yn34": [
+                "3arfp5",
+                null,
+                -75.1,
+                -85.2
+              ]
+            },
+            "nested": {
+              "v": 26
+            },
+            "k28": "klme5ij7ruj",
+            "n28": -30.4
+          },
+          "title": "8w",
+          "list": [
+            1
+          ]
+        }
+      },
+      {
+        "kind": "remove",
+        "view_json": {
+          "doc": {
+            "nested": {
+              "v": 26
+            },
+            "k28": "klme5ij7ruj",
+            "n28": -30.4
+          },
+          "title": "8w",
+          "list": [
+            1
+          ]
+        }
+      },
+      {
+        "kind": "arr_push",
+        "view_json": {
+          "doc": {
+            "nested": {
+              "v": 26
+            },
+            "k28": "klme5ij7ruj",
+            "n28": -30.4
+          },
+          "title": "8w",
+          "list": [
+            1,
+            54
+          ]
+        }
+      },
+      {
+        "kind": "str_ins",
+        "view_json": {
+          "doc": {
+            "nested": {
+              "v": 26
+            },
+            "k28": "klme5ij7ruj",
+            "n28": -30.4
+          },
+          "title": "8wx",
+          "list": [
+            1,
+            54
+          ]
+        }
+      },
+      {
+        "kind": "set",
+        "view_json": {
+          "doc": true,
+          "title": "8wx",
+          "list": [
+            1,
+            54
+          ]
+        }
+      }
+    ],
+    "final_view_json": {
+      "doc": true,
+      "title": "8wx",
+      "list": [
+        1,
+        54
+      ]
+    },
+    "final_model_binary_hex": "000000358185014363646f631100f5657469746c658123828122623877126178646c6973748120c2811c01811f201a0001130116201500183601b8e9048601"
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

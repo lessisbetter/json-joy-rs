@@ -1,0 +1,314 @@
+{
+  "fixture_version": 1,
+  "name": "model_api_workflow_56_v1",
+  "scenario": "model_api_workflow",
+  "input": {
+    "sid": 79056,
+    "initial_json": {
+      "doc": {
+        "seed": {
+          "a2tfft": [
+            null,
+            "b7u",
+            "x6",
+            "a7"
+          ],
+          "0jq9x0": [
+            8.7,
+            "k",
+            true
+          ],
+          "p2": [
+            27.4
+          ],
+          "2mw0": {
+            "az2i4rvo": null,
+            "ajtvng": "iqg1",
+            "jy7aoevil": "",
+            "2c4kjz1": ""
+          }
+        },
+        "nested": {
+          "v": 20
+        }
+      },
+      "title": "piss",
+      "list": [
+        1
+      ]
+    },
+    "base_model_binary_hex": "000000f081404363646f63813f426473656564813e447806613274666674813dc1812f04813c20813b00f6813981813863623775813581813462783681328181316261377806306a71397830812bc1812203812a20812900fb40216666666666668127818126616b812520812400f5627032811fc1811b01811e20811d00fb403b66666666666664326d7730811a447808617a32693472766f811900f67806616a74766e678118818117646971673178096a7937616f6576696c81138078073263346b6a7a3181128078066e65737465641f4161761e0014657469746c651b811a6470697373646c69737416c11201152014000101d0e90441",
+    "ops": [
+      {
+        "kind": "find",
+        "path": [
+          "title"
+        ]
+      },
+      {
+        "kind": "obj_put",
+        "path": [
+          "doc"
+        ],
+        "key": "k52",
+        "value_json": null
+      },
+      {
+        "kind": "add",
+        "path": [
+          "doc",
+          "n52"
+        ],
+        "value_json": "hmwb9"
+      },
+      {
+        "kind": "replace",
+        "path": [
+          "list",
+          0
+        ],
+        "value_json": 83
+      },
+      {
+        "kind": "remove",
+        "path": [
+          "doc",
+          "seed"
+        ]
+      },
+      {
+        "kind": "arr_push",
+        "path": [
+          "list"
+        ],
+        "value_json": 75
+      },
+      {
+        "kind": "str_ins",
+        "path": [
+          "title"
+        ],
+        "pos": 2,
+        "text": "x"
+      },
+      {
+        "kind": "set",
+        "path": [
+          "doc"
+        ],
+        "value_json": {
+          "eh": [
+            "ca4poteq65v"
+          ]
+        }
+      }
+    ]
+  },
+  "expected": {
+    "steps": [
+      {
+        "kind": "find",
+        "path": [
+          "title"
+        ],
+        "value_json": "piss"
+      },
+      {
+        "kind": "obj_put",
+        "view_json": {
+          "doc": {
+            "seed": {
+              "a2tfft": [
+                null,
+                "b7u",
+                "x6",
+                "a7"
+              ],
+              "0jq9x0": [
+                8.7,
+                "k",
+                true
+              ],
+              "p2": [
+                27.4
+              ],
+              "2mw0": {
+                "az2i4rvo": null,
+                "ajtvng": "iqg1",
+                "jy7aoevil": "",
+                "2c4kjz1": ""
+              }
+            },
+            "nested": {
+              "v": 20
+            },
+            "k52": null
+          },
+          "title": "piss",
+          "list": [
+            1
+          ]
+        }
+      },
+      {
+        "kind": "add",
+        "view_json": {
+          "doc": {
+            "seed": {
+              "a2tfft": [
+                null,
+                "b7u",
+                "x6",
+                "a7"
+              ],
+              "0jq9x0": [
+                8.7,
+                "k",
+                true
+              ],
+              "p2": [
+                27.4
+              ],
+              "2mw0": {
+                "az2i4rvo": null,
+                "ajtvng": "iqg1",
+                "jy7aoevil": "",
+                "2c4kjz1": ""
+              }
+            },
+            "nested": {
+              "v": 20
+            },
+            "k52": null,
+            "n52": "hmwb9"
+          },
+          "title": "piss",
+          "list": [
+            1
+          ]
+        }
+      },
+      {
+        "kind": "replace",
+        "view_json": {
+          "doc": {
+            "seed": {
+              "a2tfft": [
+                null,
+                "b7u",
+                "x6",
+                "a7"
+              ],
+              "0jq9x0": [
+                8.7,
+                "k",
+                true
+              ],
+              "p2": [
+                27.4
+              ],
+              "2mw0": {
+                "az2i4rvo": null,
+                "ajtvng": "iqg1",
+                "jy7aoevil": "",
+                "2c4kjz1": ""
+              }
+            },
+            "nested": {
+              "v": 20
+            },
+            "k52": null,
+            "n52": "hmwb9"
+          },
+          "title": "piss",
+          "list": [
+            83
+          ]
+        }
+      },
+      {
+        "kind": "remove",
+        "view_json": {
+          "doc": {
+            "nested": {
+              "v": 20
+            },
+            "k52": null,
+            "n52": "hmwb9"
+          },
+          "title": "piss",
+          "list": [
+            83
+          ]
+        }
+      },
+      {
+        "kind": "arr_push",
+        "view_json": {
+          "doc": {
+            "nested": {
+              "v": 20
+            },
+            "k52": null,
+            "n52": "hmwb9"
+          },
+          "title": "piss",
+          "list": [
+            83,
+            75
+          ]
+        }
+      },
+      {
+        "kind": "str_ins",
+        "view_json": {
+          "doc": {
+            "nested": {
+              "v": 20
+            },
+            "k52": null,
+            "n52": "hmwb9"
+          },
+          "title": "pixss",
+          "list": [
+            83,
+            75
+          ]
+        }
+      },
+      {
+        "kind": "set",
+        "view_json": {
+          "doc": {
+            "eh": [
+              "ca4poteq65v"
+            ]
+          },
+          "title": "pixss",
+          "list": [
+            83,
+            75
+          ]
+        }
+      }
+    ],
+    "final_view_json": {
+      "doc": {
+        "eh": [
+          "ca4poteq65v"
+        ]
+      },
+      "title": "pixss",
+      "list": [
+        83,
+        75
+      ]
+    },
+    "final_model_binary_hex": "0000007a81644363646f638163456473656564811800f778066e6573746564811100f7636b3532811000f7636e35321f00f76265681ec111011d811c780b636134706f746571363576657469746c65812f83812e62706981126178812c627373646c697374812ac2812601812920811a001853811301811620811500184b01d0e90465"
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

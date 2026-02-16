@@ -1,0 +1,202 @@
+{
+  "fixture_version": 1,
+  "name": "model_api_proxy_fanout_workflow_06_rnd_v1",
+  "scenario": "model_api_proxy_fanout_workflow",
+  "input": {
+    "sid": 79706,
+    "initial_json": {
+      "doc": {
+        "title": "1w",
+        "items": [
+          1,
+          8
+        ],
+        "flag": true
+      }
+    },
+    "base_model_binary_hex": "0000003281114163646f63811043657469746c651f811e623177656974656d731cc115021b201a0001182017000864666c61671300f501daee0412",
+    "scoped_path": [
+      "doc",
+      "title"
+    ],
+    "ops": [
+      {
+        "kind": "read",
+        "path": [
+          "doc",
+          "title"
+        ]
+      },
+      {
+        "kind": "node_obj_put",
+        "path": [
+          "doc"
+        ],
+        "key": "k1",
+        "value_json": -17.5
+      },
+      {
+        "kind": "node_arr_push",
+        "path": [
+          "doc",
+          "items"
+        ],
+        "value_json": 49
+      },
+      {
+        "kind": "node_str_ins",
+        "path": [
+          "doc",
+          "title"
+        ],
+        "pos": 0,
+        "text": "x"
+      },
+      {
+        "kind": "node_add",
+        "path": [
+          "doc",
+          "items",
+          1
+        ],
+        "value_json": 77
+      },
+      {
+        "kind": "node_replace",
+        "path": [
+          "doc",
+          "title"
+        ],
+        "value_json": "ny48"
+      },
+      {
+        "kind": "node_remove",
+        "path": [
+          "doc",
+          "k1"
+        ]
+      }
+    ]
+  },
+  "expected": {
+    "steps": [
+      {
+        "kind": "read",
+        "value_json": "1w"
+      },
+      {
+        "kind": "node_obj_put",
+        "view_json": {
+          "doc": {
+            "title": "1w",
+            "items": [
+              1,
+              8
+            ],
+            "flag": true,
+            "k1": -17.5
+          }
+        }
+      },
+      {
+        "kind": "node_arr_push",
+        "view_json": {
+          "doc": {
+            "title": "1w",
+            "items": [
+              1,
+              8,
+              49
+            ],
+            "flag": true,
+            "k1": -17.5
+          }
+        }
+      },
+      {
+        "kind": "node_str_ins",
+        "view_json": {
+          "doc": {
+            "title": "x1w",
+            "items": [
+              1,
+              8,
+              49
+            ],
+            "flag": true,
+            "k1": -17.5
+          }
+        }
+      },
+      {
+        "kind": "node_add",
+        "view_json": {
+          "doc": {
+            "title": "x1w",
+            "items": [
+              1,
+              77,
+              8,
+              49
+            ],
+            "flag": true,
+            "k1": -17.5
+          }
+        }
+      },
+      {
+        "kind": "node_replace",
+        "view_json": {
+          "doc": {
+            "title": "ny48",
+            "items": [
+              1,
+              77,
+              8,
+              49
+            ],
+            "flag": true,
+            "k1": -17.5
+          }
+        }
+      },
+      {
+        "kind": "node_remove",
+        "view_json": {
+          "doc": {
+            "title": "ny48",
+            "items": [
+              1,
+              77,
+              8,
+              49
+            ],
+            "flag": true
+          }
+        }
+      }
+    ],
+    "final_view_json": {
+      "doc": {
+        "title": "ny48",
+        "items": [
+          1,
+          77,
+          8,
+          49
+        ],
+        "flag": true
+      }
+    },
+    "final_model_binary_hex": "0000005a81234163646f63812244657469746c658121831b0181200216646e793438656974656d73811ec4811701811d20811c000117011a201900184d811601811a20811900081c011f201e00183164666c6167811500f5626b311100f701daee0424",
+    "fanout": {
+      "change_count": 6,
+      "scoped_count": 2
+    }
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

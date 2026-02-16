@@ -1,0 +1,38 @@
+{
+  "fixture_version": 1,
+  "name": "model_diff_dst_keys_35_mirror_v1",
+  "scenario": "model_diff_dst_keys",
+  "input": {
+    "base_model_binary_hex": "0000001d1c42646c6973741bc114021a201900011720160002646b6565701200f501c3de040d",
+    "dst_keys_view_json": {
+      "list": [
+        2
+      ]
+    },
+    "sid": 77635
+  },
+  "expected": {
+    "patch_present": true,
+    "patch_binary_hex": "c3de040ef70181020901",
+    "patch_op_count": 1,
+    "patch_opcodes": [
+      16
+    ],
+    "patch_span": 1,
+    "patch_id_sid": 77635,
+    "patch_id_time": 14,
+    "patch_next_time": 15,
+    "view_after_apply_json": {
+      "list": [
+        2
+      ],
+      "keep": true
+    },
+    "model_binary_after_apply_hex": "0000001a1d42646c6973741cc2158114011820170002646b6565701300f501c3de040e"
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

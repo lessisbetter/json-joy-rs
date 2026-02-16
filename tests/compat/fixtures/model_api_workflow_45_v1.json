@@ -1,0 +1,254 @@
+{
+  "fixture_version": 1,
+  "name": "model_api_workflow_45_v1",
+  "scenario": "model_api_workflow",
+  "input": {
+    "sid": 79045,
+    "initial_json": {
+      "doc": {
+        "seed": "ncn1et8bi3",
+        "nested": {
+          "v": 45
+        }
+      },
+      "title": "tpgols3",
+      "list": [
+        0
+      ]
+    },
+    "base_model_binary_hex": "00000052811f4363646f63811e426473656564811d81811c780a6e636e3165743862693378066e65737465648112416176811100182d657469746c651e811d78077470676f6c7333646c69737416c11201152014000001c5e90420",
+    "ops": [
+      {
+        "kind": "find",
+        "path": [
+          "title"
+        ]
+      },
+      {
+        "kind": "obj_put",
+        "path": [
+          "doc"
+        ],
+        "key": "k41",
+        "value_json": "ji01n0e0gd"
+      },
+      {
+        "kind": "add",
+        "path": [
+          "doc",
+          "n41"
+        ],
+        "value_json": "un6f"
+      },
+      {
+        "kind": "replace",
+        "path": [
+          "list",
+          0
+        ],
+        "value_json": 9
+      },
+      {
+        "kind": "remove",
+        "path": [
+          "doc",
+          "seed"
+        ]
+      },
+      {
+        "kind": "arr_push",
+        "path": [
+          "list"
+        ],
+        "value_json": 68
+      },
+      {
+        "kind": "str_ins",
+        "path": [
+          "title"
+        ],
+        "pos": 0,
+        "text": "x"
+      },
+      {
+        "kind": "set",
+        "path": [
+          "doc"
+        ],
+        "value_json": [
+          [
+            57.2,
+            -41.3
+          ],
+          false,
+          {
+            "9": "kmknz696xr",
+            "oclpi2": false,
+            "03ing11evh": 22.3,
+            "r9ve": -52
+          }
+        ]
+      }
+    ]
+  },
+  "expected": {
+    "steps": [
+      {
+        "kind": "find",
+        "path": [
+          "title"
+        ],
+        "value_json": "tpgols3"
+      },
+      {
+        "kind": "obj_put",
+        "view_json": {
+          "doc": {
+            "seed": "ncn1et8bi3",
+            "nested": {
+              "v": 45
+            },
+            "k41": "ji01n0e0gd"
+          },
+          "title": "tpgols3",
+          "list": [
+            0
+          ]
+        }
+      },
+      {
+        "kind": "add",
+        "view_json": {
+          "doc": {
+            "seed": "ncn1et8bi3",
+            "nested": {
+              "v": 45
+            },
+            "k41": "ji01n0e0gd",
+            "n41": "un6f"
+          },
+          "title": "tpgols3",
+          "list": [
+            0
+          ]
+        }
+      },
+      {
+        "kind": "replace",
+        "view_json": {
+          "doc": {
+            "seed": "ncn1et8bi3",
+            "nested": {
+              "v": 45
+            },
+            "k41": "ji01n0e0gd",
+            "n41": "un6f"
+          },
+          "title": "tpgols3",
+          "list": [
+            9
+          ]
+        }
+      },
+      {
+        "kind": "remove",
+        "view_json": {
+          "doc": {
+            "nested": {
+              "v": 45
+            },
+            "k41": "ji01n0e0gd",
+            "n41": "un6f"
+          },
+          "title": "tpgols3",
+          "list": [
+            9
+          ]
+        }
+      },
+      {
+        "kind": "arr_push",
+        "view_json": {
+          "doc": {
+            "nested": {
+              "v": 45
+            },
+            "k41": "ji01n0e0gd",
+            "n41": "un6f"
+          },
+          "title": "tpgols3",
+          "list": [
+            9,
+            68
+          ]
+        }
+      },
+      {
+        "kind": "str_ins",
+        "view_json": {
+          "doc": {
+            "nested": {
+              "v": 45
+            },
+            "k41": "ji01n0e0gd",
+            "n41": "un6f"
+          },
+          "title": "xtpgols3",
+          "list": [
+            9,
+            68
+          ]
+        }
+      },
+      {
+        "kind": "set",
+        "view_json": {
+          "doc": [
+            [
+              57.2,
+              -41.3
+            ],
+            false,
+            {
+              "9": "kmknz696xr",
+              "oclpi2": false,
+              "03ing11evh": 22.3,
+              "r9ve": -52
+            }
+          ],
+          "title": "xtpgols3",
+          "list": [
+            9,
+            68
+          ]
+        }
+      }
+    ],
+    "final_view_json": {
+      "doc": [
+        [
+          57.2,
+          -41.3
+        ],
+        false,
+        {
+          "9": "kmknz696xr",
+          "oclpi2": false,
+          "03ing11evh": 22.3,
+          "r9ve": -52
+        }
+      ],
+      "title": "xtpgols3",
+      "list": [
+        9,
+        68
+      ]
+    },
+    "final_model_binary_hex": "000000ad815b4363646f638120c11303811fc1811802811e20811d00fb404c99999999999a811b20811a00fbc044a66666666666811620811500f481134461398112818111780a6b6d6b6e7a363936787278066f636c7069321700f4780a3033696e6731316576681600fb40364ccccccccccd647239766515003833657469746c65814a8281216178814978077470676f6c7333646c6973748142c2813e0181412081290009812201812520812400184401c5e9045c"
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

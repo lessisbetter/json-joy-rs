@@ -1,0 +1,286 @@
+{
+  "fixture_version": 1,
+  "name": "model_api_workflow_55_v1",
+  "scenario": "model_api_workflow",
+  "input": {
+    "sid": 79055,
+    "initial_json": {
+      "doc": {
+        "seed": [
+          {
+            "ne5": -58.8,
+            "j": "x1to"
+          },
+          [
+            null,
+            null,
+            "n50lxdjanzf3c"
+          ],
+          [],
+          [
+            null,
+            null,
+            false,
+            null
+          ]
+        ],
+        "nested": {
+          "v": 16
+        }
+      },
+      "title": "yl1m19j",
+      "list": [
+        0
+      ]
+    },
+    "base_model_binary_hex": "000000b2814b4363646f63814a4264736565648149c1811604814842636e6535814700fbc04d666666666666616a8146818145647831746f8140c1812b03813f20813e00f6813c20813b00f68139818138780d6e35306c78646a616e7a6633638128c08127c1811a04812620812500f6812320812200f6812020811f00f4811d20811c00f678066e6573746564811241617681110010657469746c651e811d7807796c316d31396a646c69737416c11201152014000001cfe9044c",
+    "ops": [
+      {
+        "kind": "find",
+        "path": [
+          "title"
+        ]
+      },
+      {
+        "kind": "obj_put",
+        "path": [
+          "doc"
+        ],
+        "key": "k51",
+        "value_json": false
+      },
+      {
+        "kind": "add",
+        "path": [
+          "doc",
+          "n51"
+        ],
+        "value_json": 54.4
+      },
+      {
+        "kind": "replace",
+        "path": [
+          "list",
+          0
+        ],
+        "value_json": 31
+      },
+      {
+        "kind": "remove",
+        "path": [
+          "doc",
+          "seed"
+        ]
+      },
+      {
+        "kind": "arr_push",
+        "path": [
+          "list"
+        ],
+        "value_json": 15
+      },
+      {
+        "kind": "str_ins",
+        "path": [
+          "title"
+        ],
+        "pos": 2,
+        "text": "x"
+      },
+      {
+        "kind": "set",
+        "path": [
+          "doc"
+        ],
+        "value_json": {}
+      }
+    ]
+  },
+  "expected": {
+    "steps": [
+      {
+        "kind": "find",
+        "path": [
+          "title"
+        ],
+        "value_json": "yl1m19j"
+      },
+      {
+        "kind": "obj_put",
+        "view_json": {
+          "doc": {
+            "seed": [
+              {
+                "ne5": -58.8,
+                "j": "x1to"
+              },
+              [
+                null,
+                null,
+                "n50lxdjanzf3c"
+              ],
+              [],
+              [
+                null,
+                null,
+                false,
+                null
+              ]
+            ],
+            "nested": {
+              "v": 16
+            },
+            "k51": false
+          },
+          "title": "yl1m19j",
+          "list": [
+            0
+          ]
+        }
+      },
+      {
+        "kind": "add",
+        "view_json": {
+          "doc": {
+            "seed": [
+              {
+                "ne5": -58.8,
+                "j": "x1to"
+              },
+              [
+                null,
+                null,
+                "n50lxdjanzf3c"
+              ],
+              [],
+              [
+                null,
+                null,
+                false,
+                null
+              ]
+            ],
+            "nested": {
+              "v": 16
+            },
+            "k51": false,
+            "n51": 54.4
+          },
+          "title": "yl1m19j",
+          "list": [
+            0
+          ]
+        }
+      },
+      {
+        "kind": "replace",
+        "view_json": {
+          "doc": {
+            "seed": [
+              {
+                "ne5": -58.8,
+                "j": "x1to"
+              },
+              [
+                null,
+                null,
+                "n50lxdjanzf3c"
+              ],
+              [],
+              [
+                null,
+                null,
+                false,
+                null
+              ]
+            ],
+            "nested": {
+              "v": 16
+            },
+            "k51": false,
+            "n51": 54.4
+          },
+          "title": "yl1m19j",
+          "list": [
+            31
+          ]
+        }
+      },
+      {
+        "kind": "remove",
+        "view_json": {
+          "doc": {
+            "nested": {
+              "v": 16
+            },
+            "k51": false,
+            "n51": 54.4
+          },
+          "title": "yl1m19j",
+          "list": [
+            31
+          ]
+        }
+      },
+      {
+        "kind": "arr_push",
+        "view_json": {
+          "doc": {
+            "nested": {
+              "v": 16
+            },
+            "k51": false,
+            "n51": 54.4
+          },
+          "title": "yl1m19j",
+          "list": [
+            31,
+            15
+          ]
+        }
+      },
+      {
+        "kind": "str_ins",
+        "view_json": {
+          "doc": {
+            "nested": {
+              "v": 16
+            },
+            "k51": false,
+            "n51": 54.4
+          },
+          "title": "ylx1m19j",
+          "list": [
+            31,
+            15
+          ]
+        }
+      },
+      {
+        "kind": "set",
+        "view_json": {
+          "doc": {},
+          "title": "ylx1m19j",
+          "list": [
+            31,
+            15
+          ]
+        }
+      }
+    ],
+    "final_view_json": {
+      "doc": {},
+      "title": "ylx1m19j",
+      "list": [
+        31,
+        15
+      ]
+    },
+    "final_model_binary_hex": "0000005d815c4363646f63815b4464736565641a00f778066e65737465641300f7636b35311200f7636e35311100f7657469746c65811f83811e62796c146178811c65316d31396a646c6973748117c28113018116201c00181f1501182017000f01cfe9045d"
+  },
+  "meta": {
+    "upstream_package": "json-joy",
+    "upstream_version": "17.67.0",
+    "generator": "tools/oracle-node/generate-fixtures.cjs"
+  }
+}

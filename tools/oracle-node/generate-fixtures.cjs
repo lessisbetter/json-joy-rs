@@ -1204,7 +1204,7 @@ function allModelDiffParityFixtures() {
   }
 
   // Expanded non-empty-base corpus to avoid overfitting empty-root transitions.
-  for (let i = 0; i < 40; i++) {
+  for (let i = 0; i < 116; i++) {
     const sid = sidBase + deterministicCases.length + 30 + i + 1;
     const baseView = {
       a: i,
@@ -1307,6 +1307,19 @@ function allModelDiffDstKeysFixtures() {
         77500 + idx,
         base,
         dst,
+      ),
+    );
+    idx++;
+  }
+  // Expanded deterministic mirror corpus to raise floor without introducing
+  // non-deterministic parity drift in dst-keys ordering behavior.
+  for (const [base, dst] of cases) {
+    fixtures.push(
+      buildModelDiffDstKeysFixture(
+        `model_diff_dst_keys_${String(idx).padStart(2, '0')}_mirror_v1`,
+        77600 + idx,
+        cloneJson(base),
+        cloneJson(dst),
       ),
     );
     idx++;
@@ -1470,6 +1483,14 @@ function allModelApplyReplayFixtures() {
     {name: 'dup_head', replay: [0, 0, 0, 1, 2]},
     {name: 'dup_middle', replay: [0, 1, 1, 1, 2]},
     {name: 'full_cycle_twice', replay: [0, 1, 2, 0, 1, 2]},
+    {name: 'late_duplicate_only', replay: [0, 1, 2, 1]},
+    {name: 'peer_first_duplicate', replay: [2, 2, 0, 1]},
+    {name: 'peer_only_duplicate', replay: [2, 2, 2]},
+    {name: 'reverse_then_forward', replay: [2, 1, 0, 0, 1, 2]},
+    {name: 'head_tail_duplicates', replay: [0, 0, 1, 2, 2]},
+    {name: 'skip_middle_then_replay', replay: [0, 2, 1, 1]},
+    {name: 'triple_cycle', replay: [0, 1, 2, 0, 1, 2, 0, 1, 2]},
+    {name: 'mixed_peer_reapply', replay: [2, 0, 2, 1, 2]},
   ];
 
   let idx = 1;
@@ -2000,7 +2021,7 @@ function allModelApiWorkflowFixtures() {
   }
 
   const rng = mulberry32(0x6d6f6465);
-  for (let i = 0; i < 17; i++) {
+  for (let i = 0; i < 57; i++) {
     const initial = {
       doc: {
         seed: randJson(rng, 2),
@@ -2083,6 +2104,15 @@ function allModelLifecycleFixtures() {
     [{meta: {a: 1}}, {meta: {a: 2}}, {meta: {a: 2, b: 3}}],
     [{flag: false, score: 1}, {flag: true, score: 1}, {flag: true, score: 2}],
     [{doc: {items: [{id: 1}]}}, {doc: {items: [{id: 1}, {id: 2}]}}, {doc: {items: [{id: 2}]}}],
+    [{doc: {a: 1, b: 2}}, {doc: {a: 2, b: 2}}, {doc: {a: 2, b: 3}}],
+    [{title: 'x', list: [1]}, {title: 'xy', list: [1]}, {title: 'xy', list: [1, 2]}],
+    [{title: 'xy', list: [1, 2]}, {title: 'x', list: [1, 2]}, {title: 'x', list: [2]}],
+    [{meta: {ok: false}}, {meta: {ok: true}}, {meta: {ok: true, n: 1}}],
+    [{arr: [1, 2, 3]}, {arr: [1, 9, 3]}, {arr: [1, 9]}],
+    [{txt: 'abc'}, {txt: 'abZc'}, {txt: 'abZc!'}],
+    [{obj: {k: 'a'}}, {obj: {k: 'b'}}, {obj: {k: 'b', z: true}}],
+    [{score: 9, done: false}, {score: 10, done: false}, {score: 10, done: true}],
+    [{doc: {items: []}}, {doc: {items: [{id: 1}]}}, {doc: {items: [{id: 1}, {id: 2}]}}],
   ];
   let idx = 1;
   for (const [initial, nextA, nextB] of cases) {
@@ -2111,6 +2141,232 @@ function allModelLifecycleFixtures() {
     );
     idx++;
   }
+  return fixtures;
+}
+
+function buildModelApiProxyFanoutFixture(name, sid, initial, ops) {
+  const model = mkModel(initial, sid);
+  const baseBinary = model.toBinary();
+  const runtime = Model.load(baseBinary, sid);
+  let currentView = cloneJson(initial);
+  const scopedPath = ['doc', 'title'];
+  let changeCount = 0;
+  let scopedCount = 0;
+  const inputOps = [];
+  const expectedSteps = [];
+
+  for (const op of ops) {
+    if (op.kind === 'read') {
+      inputOps.push({kind: 'read', path: toPathArray(op.path)});
+      expectedSteps.push({
+        kind: 'read',
+        value_json: normalizeView(findAtPath(runtime.view(), op.path)),
+      });
+      continue;
+    }
+
+    const beforeScoped = normalizeView(findAtPath(runtime.view(), scopedPath));
+    if (op.kind === 'node_obj_put') {
+      const obj = findAtPath(currentView, op.path);
+      if (!obj || typeof obj !== 'object' || Array.isArray(obj)) throw new Error('node_obj_put path is not object');
+      obj[String(op.key)] = cloneJson(op.value);
+      inputOps.push({
+        kind: 'node_obj_put',
+        path: toPathArray(op.path),
+        key: String(op.key),
+        value_json: cloneJson(op.value),
+      });
+    } else if (op.kind === 'node_arr_push') {
+      const arr = findAtPath(currentView, op.path);
+      if (!Array.isArray(arr)) throw new Error('node_arr_push path is not array');
+      arr.push(cloneJson(op.value));
+      inputOps.push({
+        kind: 'node_arr_push',
+        path: toPathArray(op.path),
+        value_json: cloneJson(op.value),
+      });
+    } else if (op.kind === 'node_str_ins') {
+      const s = findAtPath(currentView, op.path);
+      if (typeof s !== 'string') throw new Error('node_str_ins path is not string');
+      const chars = Array.from(s);
+      const pos = Math.max(0, Math.min(op.pos, chars.length));
+      chars.splice(pos, 0, ...Array.from(op.text));
+      currentView = setAtPath(currentView, op.path, chars.join(''));
+      inputOps.push({
+        kind: 'node_str_ins',
+        path: toPathArray(op.path),
+        pos: op.pos,
+        text: op.text,
+      });
+    } else if (op.kind === 'node_add') {
+      const parentPath = op.path.slice(0, -1);
+      const leaf = op.path[op.path.length - 1];
+      const parent = findAtPath(currentView, parentPath);
+      if (Array.isArray(parent)) {
+        const idx = Math.max(0, Math.min(Number(leaf), parent.length));
+        parent.splice(idx, 0, cloneJson(op.value));
+      } else if (parent && typeof parent === 'object') {
+        parent[String(leaf)] = cloneJson(op.value);
+      } else {
+        throw new Error('node_add parent is not container');
+      }
+      inputOps.push({
+        kind: 'node_add',
+        path: toPathArray(op.path),
+        value_json: cloneJson(op.value),
+      });
+    } else if (op.kind === 'node_replace') {
+      currentView = setAtPath(currentView, op.path, cloneJson(op.value));
+      inputOps.push({
+        kind: 'node_replace',
+        path: toPathArray(op.path),
+        value_json: cloneJson(op.value),
+      });
+    } else if (op.kind === 'node_remove') {
+      const parentPath = op.path.slice(0, -1);
+      const leaf = op.path[op.path.length - 1];
+      const parent = findAtPath(currentView, parentPath);
+      if (Array.isArray(parent)) {
+        const idx = Number(leaf);
+        if (Number.isInteger(idx) && idx >= 0 && idx < parent.length) parent.splice(idx, 1);
+      } else if (parent && typeof parent === 'object') {
+        delete parent[String(leaf)];
+      } else if (typeof parent === 'string') {
+        const idx = Number(leaf);
+        if (Number.isInteger(idx) && idx >= 0) {
+          const chars = Array.from(parent);
+          if (idx < chars.length) {
+            chars.splice(idx, 1);
+            currentView = setAtPath(currentView, parentPath, chars.join(''));
+          }
+        }
+      } else {
+        throw new Error('node_remove parent is not container');
+      }
+      inputOps.push({
+        kind: 'node_remove',
+        path: toPathArray(op.path),
+      });
+    } else {
+      throw new Error(`unsupported proxy/fanout op: ${op.kind}`);
+    }
+
+    const patch = runtime.api.diff(currentView);
+    if (patch) {
+      runtime.applyPatch(patch);
+      changeCount++;
+    }
+    const afterScoped = normalizeView(findAtPath(runtime.view(), scopedPath));
+    if (beforeScoped !== afterScoped) scopedCount++;
+    expectedSteps.push({
+      kind: op.kind,
+      view_json: normalizeView(runtime.view()),
+    });
+  }
+
+  return baseFixture(name, 'model_api_proxy_fanout_workflow', {
+    sid,
+    initial_json: cloneJson(initial),
+    base_model_binary_hex: hex(baseBinary),
+    scoped_path: toPathArray(scopedPath),
+    ops: inputOps,
+  }, {
+    steps: expectedSteps,
+    final_view_json: normalizeView(runtime.view()),
+    final_model_binary_hex: hex(runtime.toBinary()),
+    fanout: {
+      change_count: changeCount,
+      scoped_count: scopedCount,
+    },
+  });
+}
+
+function allModelApiProxyFanoutFixtures() {
+  const fixtures = [];
+  let idx = 1;
+  const deterministic = [
+    {
+      initial: {doc: {title: 'ab', items: [1], flag: false}},
+      ops: [
+        {kind: 'read', path: ['doc', 'title']},
+        {kind: 'node_obj_put', path: ['doc'], key: 'subtitle', value: 's'},
+        {kind: 'node_arr_push', path: ['doc', 'items'], value: 2},
+        {kind: 'node_str_ins', path: ['doc', 'title'], pos: 1, text: 'Z'},
+        {kind: 'node_replace', path: ['doc', 'title'], value: 'aZb!'},
+        {kind: 'node_remove', path: ['doc', 'subtitle']},
+      ],
+    },
+    {
+      initial: {doc: {title: 'x', items: [1, 2], meta: {v: 1}}},
+      ops: [
+        {kind: 'node_add', path: ['doc', 'items', 1], value: 9},
+        {kind: 'node_remove', path: ['doc', 'items', 0]},
+        {kind: 'node_obj_put', path: ['doc'], key: 'ok', value: true},
+        {kind: 'read', path: ['doc', 'items']},
+        {kind: 'node_replace', path: ['doc', 'title'], value: 'xy'},
+      ],
+    },
+    {
+      initial: {doc: {title: 'hello', items: [3], tags: ['a']}},
+      ops: [
+        {kind: 'node_str_ins', path: ['doc', 'title'], pos: 5, text: '!'},
+        {kind: 'node_arr_push', path: ['doc', 'items'], value: 4},
+        {kind: 'node_obj_put', path: ['doc'], key: 'score', value: 1},
+        {kind: 'node_remove', path: ['doc', 'score']},
+      ],
+    },
+    {
+      initial: {doc: {title: 'm', items: [0], active: true}},
+      ops: [
+        {kind: 'read', path: ['doc']},
+        {kind: 'node_obj_put', path: ['doc'], key: 'active', value: false},
+        {kind: 'node_add', path: ['doc', 'items', 1], value: 7},
+        {kind: 'node_replace', path: ['doc', 'title'], value: 'mm'},
+      ],
+    },
+  ];
+
+  for (const c of deterministic) {
+    fixtures.push(
+      buildModelApiProxyFanoutFixture(
+        `model_api_proxy_fanout_workflow_${String(idx).padStart(2, '0')}_det_v1`,
+        79700 + idx,
+        c.initial,
+        c.ops,
+      ),
+    );
+    idx++;
+  }
+
+  const rng = mulberry32(0x50524f58);
+  for (let i = 0; i < 36; i++) {
+    const initial = {
+      doc: {
+        title: randString(rng, 1, 8),
+        items: [randInt(rng, 9), randInt(rng, 9)],
+        flag: randInt(rng, 2) === 0,
+      },
+    };
+    const ops = [
+      {kind: 'read', path: ['doc', 'title']},
+      {kind: 'node_obj_put', path: ['doc'], key: `k${i}`, value: randScalar(rng)},
+      {kind: 'node_arr_push', path: ['doc', 'items'], value: randInt(rng, 100)},
+      {kind: 'node_str_ins', path: ['doc', 'title'], pos: randInt(rng, 3), text: 'x'},
+      {kind: 'node_add', path: ['doc', 'items', 1], value: randInt(rng, 100)},
+      {kind: 'node_replace', path: ['doc', 'title'], value: randString(rng, 1, 10)},
+      {kind: 'node_remove', path: ['doc', `k${i}`]},
+    ];
+    fixtures.push(
+      buildModelApiProxyFanoutFixture(
+        `model_api_proxy_fanout_workflow_${String(idx).padStart(2, '0')}_rnd_v1`,
+        79700 + idx,
+        initial,
+        ops,
+      ),
+    );
+    idx++;
+  }
+
   return fixtures;
 }
 
@@ -2328,6 +2584,7 @@ function main() {
     ...allModelDiffDstKeysFixtures(),
     ...allLessdbModelManagerFixtures(),
     ...allModelApiWorkflowFixtures(),
+    ...allModelApiProxyFanoutFixtures(),
     ...allModelLifecycleFixtures(),
     ...allCodecIndexedBinaryFixtures(),
     ...allCodecSidecarBinaryFixtures(),
