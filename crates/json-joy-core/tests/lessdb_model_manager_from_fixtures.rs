@@ -284,6 +284,7 @@ fn lessdb_diff_native_support_inventory() {
     let fixtures = load_lessdb_fixtures();
     let mut supported = 0u32;
     let mut fallback = 0u32;
+    let mut fallback_names: Vec<String> = Vec::new();
 
     for (_name, fixture) in fixtures {
         let workflow = fixture["input"]["workflow"]
@@ -300,7 +301,14 @@ fn lessdb_diff_native_support_inventory() {
                         let next = &op["next_view_json"];
                         match diff_model_to_patch_bytes(&model_to_binary(&model), next, sid) {
                             Ok(_) => supported += 1,
-                            Err(DiffError::UnsupportedShape) => fallback += 1,
+                            Err(DiffError::UnsupportedShape) => {
+                                fallback += 1;
+                                fallback_names.push(format!(
+                                    "{}:{}",
+                                    fixture["name"].as_str().unwrap_or("unknown"),
+                                    kind
+                                ));
+                            }
                             Err(e) => panic!("unexpected native diff error: {e}"),
                         }
                     }
@@ -316,7 +324,13 @@ fn lessdb_diff_native_support_inventory() {
                 let fork = fork_model(&base, Some(fork_sid)).expect("fork must succeed");
                 match diff_model_to_patch_bytes(&model_to_binary(&fork), next, fork_sid) {
                     Ok(_) => supported += 1,
-                    Err(DiffError::UnsupportedShape) => fallback += 1,
+                    Err(DiffError::UnsupportedShape) => {
+                        fallback += 1;
+                        fallback_names.push(format!(
+                            "{}:diff_on_fork",
+                            fixture["name"].as_str().unwrap_or("unknown")
+                        ));
+                    }
                     Err(e) => panic!("unexpected native diff error: {e}"),
                 }
             }
@@ -329,10 +343,11 @@ fn lessdb_diff_native_support_inventory() {
         "lessdb native diff inventory: supported={}, fallback={}",
         supported, fallback
     );
+    eprintln!("lessdb fallback steps: {}", fallback_names.join(", "));
 
     assert!(
-        supported >= 10,
-        "expected at least 10 lessdb diff steps to be natively supported; got {supported}"
+        supported >= 14,
+        "expected at least 14 lessdb diff steps to be natively supported; got {supported}"
     );
     assert!(fallback >= 1, "expected at least one fallback-covered diff shape");
 }
