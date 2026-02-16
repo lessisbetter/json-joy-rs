@@ -964,6 +964,87 @@ fn upstream_port_diff_inside_out_recursive_object_mutation() {
     assert_eq!(applied.view_json(), next);
 }
 
+#[test]
+fn upstream_port_diff_root_string_delta_mutates_in_place() {
+    let sid = 88018;
+    let model = create_model(&serde_json::json!("hello"), sid).expect("create_model must succeed");
+    let base_model = model_to_binary(&model);
+    let next = serde_json::json!("hullo");
+
+    let patch = diff_model_to_patch_bytes(&base_model, &next, sid)
+        .expect("diff should succeed")
+        .expect("non-noop diff expected");
+    let decoded = Patch::from_binary(&patch).expect("generated patch must decode");
+    assert!(
+        decoded
+            .decoded_ops()
+            .iter()
+            .any(|op| matches!(op, DecodedOp::InsStr { .. })),
+        "expected root ins_str"
+    );
+
+    let mut applied = RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
+    applied
+        .apply_patch(&decoded)
+        .expect("runtime apply must succeed");
+    assert_eq!(applied.view_json(), next);
+}
+
+#[test]
+fn upstream_port_diff_root_array_delta_mutates_in_place() {
+    let sid = 88019;
+    let model = create_model(&serde_json::json!([1, 2]), sid).expect("create_model must succeed");
+    let base_model = model_to_binary(&model);
+    let next = serde_json::json!([1, 9]);
+
+    let patch = diff_model_to_patch_bytes(&base_model, &next, sid)
+        .expect("diff should succeed")
+        .expect("non-noop diff expected");
+    let decoded = Patch::from_binary(&patch).expect("generated patch must decode");
+    assert!(
+        decoded
+            .decoded_ops()
+            .iter()
+            .any(|op| matches!(op, DecodedOp::InsArr { .. })),
+        "expected root ins_arr"
+    );
+
+    let mut applied = RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
+    applied
+        .apply_patch(&decoded)
+        .expect("runtime apply must succeed");
+    assert_eq!(applied.view_json(), next);
+}
+
+#[test]
+fn upstream_port_diff_root_type_replace_uses_origin_ins_val() {
+    let sid = 88020;
+    let model = create_model(&serde_json::json!({"a": 1}), sid).expect("create_model must succeed");
+    let base_model = model_to_binary(&model);
+    let next = serde_json::json!(7);
+
+    let patch = diff_model_to_patch_bytes(&base_model, &next, sid)
+        .expect("diff should succeed")
+        .expect("non-noop diff expected");
+    let decoded = Patch::from_binary(&patch).expect("generated patch must decode");
+    assert!(
+        decoded.decoded_ops().iter().any(|op| matches!(
+            op,
+            DecodedOp::InsVal {
+                obj: Timestamp { sid: 0, time: 0 },
+                ..
+            }
+        )),
+        "expected origin ins_val root replacement"
+    );
+
+    let mut applied = RuntimeModel::from_model_binary(&base_model).expect("runtime decode must succeed");
+    applied
+        .apply_patch(&decoded)
+        .expect("runtime apply must succeed");
+    assert_eq!(applied.view_json(), next);
+}
+
 fn decode_hex(s: &str) -> Vec<u8> {
     assert!(s.len() % 2 == 0, "hex string must have even length");
     let mut out = Vec::with_capacity(s.len() / 2);
