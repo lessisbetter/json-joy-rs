@@ -192,6 +192,50 @@ impl RuntimeModel {
         encode_logical(self)
     }
 
+    pub fn fork_with_sid(&self, sid: u64) -> Self {
+        let mut cloned = self.clone();
+        if cloned.server_clock_time.is_some() {
+            return cloned;
+        }
+        if cloned.clock_table.is_empty() {
+            cloned.clock_table = vec![LogicalClockBase { sid, time: 0 }];
+            cloned.clock = ClockState::default();
+            return cloned;
+        }
+
+        let old_local = cloned.clock_table[0];
+        let mut peers: HashMap<u64, u64> = HashMap::new();
+        for c in cloned.clock_table.iter().skip(1) {
+            peers
+                .entry(c.sid)
+                .and_modify(|t| *t = (*t).max(c.time))
+                .or_insert(c.time);
+        }
+        if sid != old_local.sid {
+            peers
+                .entry(old_local.sid)
+                .and_modify(|t| *t = (*t).max(old_local.time))
+                .or_insert(old_local.time);
+        }
+
+        let mut next = vec![LogicalClockBase {
+            sid,
+            time: old_local.time,
+        }];
+        for (peer_sid, peer_time) in peers {
+            if peer_sid != sid {
+                next.push(LogicalClockBase {
+                    sid: peer_sid,
+                    time: peer_time,
+                });
+            }
+        }
+        next.sort_by_key(|c| (c.sid != sid, c.sid));
+        cloned.clock_table = next;
+        cloned.clock = ClockState::default();
+        cloned
+    }
+
     pub fn validate_invariants(&self) -> Result<(), String> {
         if let Some(root) = self.root {
             if !self.nodes.contains_key(&root) {

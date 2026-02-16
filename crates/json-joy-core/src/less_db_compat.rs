@@ -124,27 +124,32 @@ pub fn view_model(model: &CompatModel) -> Value {
 }
 
 pub fn fork_model(model: &CompatModel, sid: Option<u64>) -> Result<CompatModel, CompatError> {
-    match sid {
+    let fork_sid = match sid {
         Some(s) => {
             if !is_valid_session_id(s) {
                 return Err(CompatError::InvalidSessionId(s));
             }
-            // Native fast path for explicit session-id fork used by
-            // less-db fixtures: binary/view remain the same, local sid changes.
-            let mut cloned = model.clone();
-            cloned.sid = s;
-            Ok(cloned)
+            s
         }
         None => {
-            let mut cloned = model.clone();
             let mut sid = generate_session_id();
-            while sid == cloned.sid {
+            while sid == model.sid {
                 sid = generate_session_id();
             }
-            cloned.sid = sid;
-            Ok(cloned)
+            sid
         }
-    }
+    };
+    let runtime = RuntimeModel::from_model_binary(&model.model_binary)
+        .map_err(|e| CompatError::ProcessFailure(format!("model decode failed: {e}")))?;
+    let forked = runtime.fork_with_sid(fork_sid);
+    let model_binary = forked
+        .to_model_binary_like()
+        .map_err(|e| CompatError::ProcessFailure(format!("model encode failed: {e}")))?;
+    Ok(CompatModel {
+        model_binary,
+        view: forked.view_json(),
+        sid: fork_sid,
+    })
 }
 
 pub fn model_to_binary(model: &CompatModel) -> Vec<u8> {
