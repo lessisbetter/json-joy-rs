@@ -526,16 +526,32 @@ impl RuntimeModel {
                 if obj.sid == 0 && obj.time == 0 {
                     if has_val {
                         let old = self.root;
-                        self.root = Some(val);
-                        if let Some(old) = old {
-                            if old != val {
-                                self.gc_tree(old);
+                        let can_set = match old {
+                            Some(current) => cmp_id_time_sid(val, current).is_gt(),
+                            None => true,
+                        };
+                        if can_set {
+                            self.root = Some(val);
+                            if let Some(old) = old {
+                                if old != val {
+                                    self.gc_tree(old);
+                                }
                             }
                         }
                     }
                 } else if let Some(RuntimeNode::Val(child)) = self.nodes.get_mut(&obj) {
                     if has_val {
                         let old = *child;
+                        // Port of upstream ValNode.set semantics:
+                        // - ignore if new <= current and current is non-system
+                        // - ignore if new <= register id
+                        let current_non_system = old.sid != 0;
+                        if current_non_system && !cmp_id_time_sid(val, old).is_gt() {
+                            return Ok(());
+                        }
+                        if !cmp_id_time_sid(val, obj).is_gt() {
+                            return Ok(());
+                        }
                         *child = val;
                         if old != val {
                             self.gc_tree(old);
