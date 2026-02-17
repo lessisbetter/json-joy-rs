@@ -47,15 +47,15 @@ A row is only considered complete when all four gates are `yes`.
 
 | Upstream function | Rust target | Status | upstream test mapped | fixture coverage | differential parity | perf checked | Notes |
 |---|---|---|---|---|---|---|---|
-| `hash.ts` (`hashJson/hashStr/hashBin`) | `crates/json-joy-core/src/json_hash.rs` | approx | yes | no | no | no | Ported with matrix tests; still needs fixture/differential harness integration. |
-| `structHash.ts` (`structHash`) | `crates/json-joy-core/src/json_hash.rs` (`struct_hash_json`) | approx | yes | no | no | yes | Used in diff hot path and benchmarked indirectly. |
-| `structHashCrdt.ts` | `crates/json-joy-core/src/json_hash.rs` (`struct_hash_crdt`) | approx | yes | no | no | yes | Used by array diff line matching. |
-| `structHashSchema.ts` | `crates/json-joy-core/src/json_hash.rs` (`struct_hash_schema`) | approx | yes | no | no | yes | Used by array diff line matching. |
+| `hash.ts` (`hashJson/hashStr/hashBin`) | `crates/json-joy-core/src/json_hash.rs` | approx | yes | no | yes | no | Differential parity added in `tests/differential_json_hash_seeded.rs`; fixture integration still pending. |
+| `structHash.ts` (`structHash`) | `crates/json-joy-core/src/json_hash.rs` (`struct_hash_json`) | approx | yes | no | yes | yes | Differential parity added; string/key hashing now matches upstream `hash(value)` semantics. |
+| `structHashCrdt.ts` | `crates/json-joy-core/src/json_hash.rs` (`struct_hash_crdt`) | approx | yes | no | yes | yes | Differential parity added in `tests/differential_json_hash_seeded.rs`. |
+| `structHashSchema.ts` | `crates/json-joy-core/src/json_hash.rs` (`struct_hash_schema`) | approx | yes | no | no | yes | Needs dedicated differential/fixture proof. |
 
 ## Current hot-path queue
 
 1. `JsonCrdtDiff.diffAny` exactness audit: document every error/throw-to-replace case and map to Rust branch.
 2. `JsonCrdtDiff.diffObj` exactness audit: op ordering, delete encoding, insertion value constructor parity.
 3. `JsonCrdtDiff.diffVec` exactness audit: stale/deleted slot behavior and const-vs-json replacement semantics.
-4. `json-hash` fixture+differential integration (upgrade from matrix-only proof).
-5. Server-clock diff route: remove legacy path once parity evidence is in place.
+4. `json-hash` schema hashing (`structHashSchema`) differential + fixture integration.
+5. Server-clock diff route: remove legacy path once parity evidence is in place (current direct-route experiment fails `upstream_port_diff_server_clock_matrix`).
