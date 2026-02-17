@@ -25,7 +25,7 @@ test-core:
 	mise x -- cargo test -p json-joy-core
 
 test-core-fast-diff:
-	mise x -- cargo test -p json-joy-core --test upstream_port_diff_any_matrix --test upstream_port_diff_obj_matrix --test upstream_port_diff_vec_matrix --test upstream_port_diff_dst_keys_matrix --test upstream_port_diff_smoke --test model_diff_parity_from_fixtures --offline
+	mise x -- cargo test -p json-joy-core --test upstream_port_build_con_view_matrix --test upstream_port_diff_any_matrix --test upstream_port_diff_obj_matrix --test upstream_port_diff_vec_matrix --test upstream_port_diff_dst_keys_matrix --test upstream_port_diff_smoke --test model_diff_parity_from_fixtures --offline
 
 test-core-fast-hash:
 	mise x -- cargo test -p json-joy-core --test upstream_port_json_hash_matrix --test differential_json_hash_seeded --test json_hash_from_fixtures --offline

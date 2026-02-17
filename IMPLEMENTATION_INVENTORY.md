@@ -32,7 +32,7 @@ A row is only considered complete when all four gates are `yes`.
 | `diffBin` | `crates/json-joy-core/src/diff_runtime/common.rs` + `bin.rs` | exact | yes | yes | yes | no | Mixed replace windows and multi-root/nested bin op-shape/reference behavior are covered in `tests/upstream_port_diff_smoke.rs` plus util-diff matrix tests. |
 | `diffVal` | `crates/json-joy-core/src/diff_runtime/scalar.rs` + `mod.rs` | exact | yes | yes | yes | no | Scalar replacement/timestamp wiring is covered via upstream byte-parity matrix + seeded scalar differential tests. |
 | `buildView` | `crates/json-joy-core/src/diff_runtime/common.rs` (`NativeEmitter::emit_value`/`emit_array_item`) | exact | yes | yes | yes | yes | Emitter value construction is exercised by fixture matrix + recursive/scalar differential parity (including array scalar `val->con`). |
-| `buildConView` | distributed (`scalar.rs`, `object.rs`, `common.rs`) | approx | yes | yes | yes | no | Const-vs-json selection is spread across helpers; needs explicit mapping audit. |
+| `buildConView` | distributed (`scalar.rs`, `object.rs`, `common.rs`) | exact | yes | yes | yes | no | Explicit const-vs-json emission shape is covered in `tests/upstream_port_build_con_view_matrix.rs` plus diff smoke/matrix parity suites. |
 
 ## Patch Builder: PatchBuilder.ts
 
