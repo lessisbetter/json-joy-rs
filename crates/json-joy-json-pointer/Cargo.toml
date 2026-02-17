@@ -3,7 +3,12 @@ name = "json-joy-json-pointer"
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
-description = "JSON Pointer (RFC 6901) helpers for json-joy-rs workspace"
+repository = "https://github.com/nicoth-in/json-joy-rs"
+description = "JSON Pointer (RFC 6901) utilities - parse, format, escape, find, and get values"
 
 [dependencies]
+serde_json = "1.0"
 thiserror = "2.0"
+
+[dev-dependencies]
+serde_json = { version = "1.0", features = ["preserve_order"] }

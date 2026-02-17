@@ -10,6 +10,7 @@ members = [
   "crates/json-joy-json-pack",
   "crates/json-joy-json-pointer",
   "crates/json-joy-wasm",
+  "crates/util",
   "tools/embedded-uniffi-bindgen",
 ]
 
@@ -22,6 +23,7 @@ default-members = [
   "crates/json-joy-json-pack",
   "crates/json-joy-json-pointer",
   "crates/json-joy-wasm",
+  "crates/util",
   "tools/embedded-uniffi-bindgen",
 ]
 

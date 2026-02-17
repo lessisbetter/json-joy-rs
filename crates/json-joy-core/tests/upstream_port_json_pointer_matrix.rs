@@ -5,14 +5,14 @@ use json_joy_core::json_pointer::{
 
 #[test]
 fn upstream_port_json_pointer_parse_matrix() {
-    assert_eq!(parse_json_pointer("").unwrap(), Vec::<String>::new());
-    assert_eq!(parse_json_pointer("/").unwrap(), vec![String::new()]);
+    assert_eq!(parse_json_pointer(""), Vec::<String>::new());
+    assert_eq!(parse_json_pointer("/"), vec![String::new()]);
     assert_eq!(
-        parse_json_pointer("/foo/bar").unwrap(),
+        parse_json_pointer("/foo/bar"),
         vec!["foo".to_string(), "bar".to_string()]
     );
     assert_eq!(
-        parse_json_pointer("/foo///").unwrap(),
+        parse_json_pointer("/foo///"),
         vec![
             "foo".to_string(),
             String::new(),
@@ -21,7 +21,7 @@ fn upstream_port_json_pointer_parse_matrix() {
         ]
     );
     assert_eq!(
-        parse_json_pointer("/a~0b/c~1d/1").unwrap(),
+        parse_json_pointer("/a~0b/c~1d/1"),
         vec!["a~b".to_string(), "c/d".to_string(), "1".to_string()]
     );
 }
@@ -51,11 +51,11 @@ fn upstream_port_json_pointer_format_matrix() {
 #[test]
 fn upstream_port_json_pointer_relaxed_parse_matrix() {
     assert_eq!(
-        parse_json_pointer_relaxed("foo/bar").unwrap(),
+        parse_json_pointer_relaxed("foo/bar"),
         vec!["foo".to_string(), "bar".to_string()]
     );
     assert_eq!(
-        parse_json_pointer_relaxed("/foo/bar").unwrap(),
+        parse_json_pointer_relaxed("/foo/bar"),
         vec!["foo".to_string(), "bar".to_string()]
     );
 }

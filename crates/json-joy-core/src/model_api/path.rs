@@ -49,7 +49,7 @@ pub fn split_parent(path: &[PathStep]) -> Result<(&[PathStep], &PathStep), Model
 
 pub fn parse_json_pointer(path: &str) -> Result<Vec<PathStep>, ModelApiError> {
     let mut out = Vec::new();
-    let components = parse_json_pointer_relaxed(path).map_err(|_| ModelApiError::InvalidPathOp)?;
+    let components = parse_json_pointer_relaxed(path);
     for token in components {
         if token == "-" {
             out.push(PathStep::Append);
