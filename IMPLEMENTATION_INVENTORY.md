@@ -22,7 +22,7 @@ A row is only considered complete when all four gates are `yes`.
 
 | Upstream function | Rust target | Status | upstream test mapped | fixture coverage | differential parity | perf checked | Notes |
 |---|---|---|---|---|---|---|---|
-| `diff(src, dst)` | `crates/json-joy-core/src/diff_runtime/mod.rs` (`diff_model_to_patch_bytes`, `diff_runtime_to_patch_bytes`) | approx | yes | yes | yes | yes | Logical models now route through direct runtime recursive path first; server-clock still uses legacy route. |
+| `diff(src, dst)` | `crates/json-joy-core/src/diff_runtime/mod.rs` (`diff_model_to_patch_bytes`, `diff_runtime_to_patch_bytes`) | exact | yes | yes | yes | yes | Direct runtime recursive path is used for both logical and server models; server-clock ids are based on `server_clock_time`. |
 | `diffDstKeys(src, dst)` | `crates/json-joy-core/src/diff_runtime/dst_keys.rs` | approx | yes | yes | yes | no | Behavior parity covered; perf not separately tracked yet. |
 | `diffAny` dispatcher | `crates/json-joy-core/src/diff_runtime/common.rs` | exact | yes | yes | yes | yes | Main family dispatch is native; mismatch-to-replace semantics covered in `tests/upstream_port_diff_any_matrix.rs`. |
 | `diffObj` | `crates/json-joy-core/src/diff_runtime/common.rs` (`try_emit_object_recursive_diff`) | exact | yes | yes | yes | yes | Two-pass delete/insert tuple ordering and child-recursion preference covered in `tests/upstream_port_diff_obj_matrix.rs`. |
