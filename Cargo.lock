@@ -438,6 +438,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "json-joy-json-path"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
 name = "json-joy-json-pointer"
 version = "0.1.0"
 dependencies = [
