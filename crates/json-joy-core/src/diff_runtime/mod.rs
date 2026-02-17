@@ -9,7 +9,7 @@ use crate::crdt_binary::first_model_clock_sid_time;
 use crate::model::Model;
 use crate::model_runtime::RuntimeModel;
 use crate::model_runtime::types::{ConCell, Id, RuntimeNode};
-use crate::patch::{ConValue, DecodedOp, Patch, Timestamp};
+use crate::patch::{ConValue, DecodedOp, Timestamp};
 use crate::patch_builder::{encode_patch_from_ops, PatchBuildError};
 use serde_json::Value;
 use std::collections::BTreeMap;
@@ -54,6 +54,12 @@ pub fn diff_model_to_patch_bytes(
     next_view: &Value,
     sid: u64,
 ) -> Result<Option<Vec<u8>>, DiffError> {
+    if let Ok(runtime) = RuntimeModel::from_model_binary(base_model_binary) {
+        // Keep server-clock models on the legacy path for now.
+        if !runtime.is_server_clock_model() {
+            return diff_runtime_to_patch_bytes(&runtime, next_view, sid);
+        }
+    }
     diff_model_to_patch_bytes_legacy(base_model_binary, next_view, sid)
 }
 
@@ -330,28 +336,7 @@ pub fn diff_runtime(
     };
     let base_time = runtime.clock_table.first().map(|c| c.time).unwrap_or(0);
     let patch_binary = encode_patch_from_ops(sid, base_time.saturating_add(1), &ops)?;
-    let mut probe = runtime.clone();
-    let probe_ok = Patch::from_binary(&patch_binary)
-        .ok()
-        .and_then(|p| probe.apply_patch(&p).ok())
-        .is_some()
-        && probe.to_model_binary_like().is_ok();
-    if probe_ok {
-        return Ok(Some(RuntimeDiffResult { ops, patch_binary }));
-    }
-
-    let base = runtime
-        .to_model_binary_like()
-        .map_err(|_| DiffError::UnsupportedShape)?;
-    let legacy_bytes = diff_model_to_patch_bytes_legacy(&base, next_view, sid)?;
-    let Some(patch_binary) = legacy_bytes else {
-        return Ok(None);
-    };
-    let patch = Patch::from_binary(&patch_binary).map_err(|_| DiffError::UnsupportedShape)?;
-    Ok(Some(RuntimeDiffResult {
-        ops: patch.decoded_ops().to_vec(),
-        patch_binary,
-    }))
+    Ok(Some(RuntimeDiffResult { ops, patch_binary }))
 }
 
 pub fn diff_runtime_to_patch_bytes(
