@@ -26,12 +26,12 @@ A row is only considered complete when all four gates are `yes`.
 | `diffDstKeys(src, dst)` | `crates/json-joy-core/src/diff_runtime/dst_keys.rs` | exact | yes | yes | yes | no | Upstream key-order/update-only behavior covered in `tests/upstream_port_diff_dst_keys_matrix.rs`; perf not separately tracked yet. |
 | `diffAny` dispatcher | `crates/json-joy-core/src/diff_runtime/common.rs` | exact | yes | yes | yes | yes | Main family dispatch is native; mismatch-to-replace semantics covered in `tests/upstream_port_diff_any_matrix.rs`. |
 | `diffObj` | `crates/json-joy-core/src/diff_runtime/common.rs` (`try_emit_object_recursive_diff`) | exact | yes | yes | yes | yes | Two-pass delete/insert tuple ordering and child-recursion preference covered in `tests/upstream_port_diff_obj_matrix.rs`. |
-| `diffArr` | `crates/json-joy-core/src/diff_runtime/common.rs` | approx | yes | yes | yes | yes | Uses line diff + structural hash path; scalar `InsVal` array element shape aligned with upstream. |
+| `diffArr` | `crates/json-joy-core/src/diff_runtime/common.rs` | exact | yes | yes | yes | yes | Line-diff + structural-hash array deltas are byte-parity covered by fixture and recursive differential suites. |
 | `diffVec` | `crates/json-joy-core/src/diff_runtime/vec.rs` + `common.rs` | exact | yes | yes | yes | yes | ConNode primitive replacement semantics aligned with upstream and covered in `tests/upstream_port_diff_vec_matrix.rs`; realistic perf rerun recorded (~94.6% best wasm/upstream). |
 | `diffStr` | `crates/json-joy-core/src/diff_runtime/common.rs` + `string.rs` | exact | yes | yes | yes | no | Insert/delete op shape and reference behavior are covered in `tests/upstream_port_diff_smoke.rs` (single/multi-root, nested, multi-leaf) plus util-diff matrix tests. |
 | `diffBin` | `crates/json-joy-core/src/diff_runtime/common.rs` + `bin.rs` | exact | yes | yes | yes | no | Mixed replace windows and multi-root/nested bin op-shape/reference behavior are covered in `tests/upstream_port_diff_smoke.rs` plus util-diff matrix tests. |
-| `diffVal` | `crates/json-joy-core/src/diff_runtime/scalar.rs` + `mod.rs` | approx | yes | yes | yes | no | Value replace path covered; continue exactness checks for timestamp/ref semantics. |
-| `buildView` | `crates/json-joy-core/src/diff_runtime/common.rs` (`NativeEmitter::emit_value`/`emit_array_item`) | approx | yes | yes | yes | yes | Array scalar `val->con` behavior now aligned. |
+| `diffVal` | `crates/json-joy-core/src/diff_runtime/scalar.rs` + `mod.rs` | exact | yes | yes | yes | no | Scalar replacement/timestamp wiring is covered via upstream byte-parity matrix + seeded scalar differential tests. |
+| `buildView` | `crates/json-joy-core/src/diff_runtime/common.rs` (`NativeEmitter::emit_value`/`emit_array_item`) | exact | yes | yes | yes | yes | Emitter value construction is exercised by fixture matrix + recursive/scalar differential parity (including array scalar `val->con`). |
 | `buildConView` | distributed (`scalar.rs`, `object.rs`, `common.rs`) | approx | yes | yes | yes | no | Const-vs-json selection is spread across helpers; needs explicit mapping audit. |
 
 ## Patch Builder: PatchBuilder.ts
