@@ -40,7 +40,7 @@ A row is only considered complete when all four gates are `yes`.
 |---|---|---|---|---|---|---|---|
 | operation constructors (`obj/arr/vec/str/bin/con/val`) | `crates/json-joy-core/src/patch_builder.rs` | exact | yes | yes | yes | no | Canonical timeline + op shape covered by matrix + fixture + differential suites. |
 | edit ops (`insObj/insVec/setVal/insStr/insBin/insArr/del/nop`) | `crates/json-joy-core/src/patch_builder.rs` | exact | yes | yes | yes | no | Shared native encoder path in `patch/encode.rs`. |
-| json constructors (`jsonObj/jsonArr/jsonStr/jsonBin/jsonVal/json`) | `crates/json-joy-core/src/patch_builder.rs` + diff emitter helpers | approx | yes | yes | yes | no | Some builder-like behavior exists in diff emitter; keep explicit exactness checks. |
+| json constructors (`jsonObj/jsonArr/jsonStr/jsonBin/jsonVal/json`) | `crates/json-joy-core/src/patch_builder.rs` + diff emitter helpers | exact | yes | yes | yes | no | Constructor semantics are covered through canonical patch-builder parity and diff-emitter op-shape matrices (including `buildConView`). |
 | helpers (`constOrJson/maybeConst/pad`) | `crates/json-joy-core/src/patch_builder.rs` | exact | yes | yes | yes | no | Covered by patch-builder matrix and canonical parity tests. |
 
 ## json-hash family
