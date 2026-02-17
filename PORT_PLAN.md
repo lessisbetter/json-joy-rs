@@ -1,354 +1,76 @@
-# json-joy-rs Port Plan (Test-First, Compatibility-First)
-
-Last updated: 2026-02-16  
-Project: `/Users/nchapman/Drive/Code/json-joy-rs`
-
-## 1. Goal
-
-Deliver a Rust implementation that is functionally and wire-format compatible with upstream `json-joy`, then expose it via Python bindings.
-
-Compatibility here means:
-- Equivalent CRDT behavior and convergence properties.
-- Equivalent binary interoperability for model and patch codecs.
-- Equivalent public behavior for the subset used by `less-db-js`.
-
-## 2. Compatibility Target (Pinned)
-
-Use upstream **latest stable** package version:
-- `json-joy@17.67.0` (`npm dist-tag: latest`)
-
-Verification command used:
-- `npm view json-joy version dist-tags --json`
-
-Local upstream source reference:
-- `/Users/nchapman/Code/json-joy`
-
-Version anchors:
-- `/Users/nchapman/Code/json-joy/package.json`
-- `/Users/nchapman/Code/json-joy/packages/json-joy/package.json`
-
-## 3. Upstream Source of Truth (Specific References)
-
-Core model behavior:
-- `/Users/nchapman/Code/json-joy/packages/json-joy/src/json-crdt/model/Model.ts`
-- `/Users/nchapman/Code/json-joy/packages/json-joy/src/json-crdt/model/api/nodes.ts`
-
-Diff behavior:
-- `/Users/nchapman/Code/json-joy/packages/json-joy/src/json-crdt-diff/JsonCrdtDiff.ts`
-- `/Users/nchapman/Code/json-joy/packages/json-joy/src/json-crdt-diff/index.ts`
-
-Patch behavior:
-- `/Users/nchapman/Code/json-joy/packages/json-joy/src/json-crdt-patch/Patch.ts`
-- `/Users/nchapman/Code/json-joy/packages/json-joy/src/json-crdt-patch/clock/clock.ts`
-
-Binary codecs:
-- `/Users/nchapman/Code/json-joy/packages/json-joy/src/json-crdt/codec/structural/binary/Encoder.ts`
-- `/Users/nchapman/Code/json-joy/packages/json-joy/src/json-crdt/codec/structural/binary/Decoder.ts`
-- `/Users/nchapman/Code/json-joy/packages/json-joy/src/json-crdt-patch/codec/binary/Encoder.ts`
-- `/Users/nchapman/Code/json-joy/packages/json-joy/src/json-crdt-patch/codec/binary/Decoder.ts`
-
-Upstream tests to mirror as contract inspiration:
-- `/Users/nchapman/Code/json-joy/packages/json-joy/src/json-crdt/model/__tests__/Model.binary.spec.ts`
-- `/Users/nchapman/Code/json-joy/packages/json-joy/src/json-crdt-diff/__tests__/JsonCrdtDiff.spec.ts`
-- `/Users/nchapman/Code/json-joy/packages/json-joy/src/json-crdt-patch/__tests__/Patch.spec.ts`
-
-## 4. Consumer-Driven Scope (less-db-js)
-
-Primary downstream compatibility consumer:
-- `/Users/nchapman/Code/lessisbetter/less-platform/less-db-js`
-
-High-value usage references:
-- `/Users/nchapman/Code/lessisbetter/less-platform/less-db-js/src/crdt/model-manager.ts`
-- `/Users/nchapman/Code/lessisbetter/less-platform/less-db-js/src/crdt/patch-log.ts`
-- `/Users/nchapman/Code/lessisbetter/less-platform/less-db-js/src/storage/record-manager.ts`
-- `/Users/nchapman/Code/lessisbetter/less-platform/less-db-js/tests/scenarios/conflict.test.ts`
-- `/Users/nchapman/Code/lessisbetter/less-platform/less-db-js/tests/storage/correctness.test.ts`
-
-## 5. Quality Bar
-
-“Excellent and compatible” means all of the following:
-
-1. Rust implementation passes its own unit/integration/property/fuzz tests.
-2. Differential tests against upstream Node oracle show zero mismatches in accepted scope.
-3. Golden fixtures round-trip with exact expected outputs (including binary payloads where required).
-4. Error and defensive-limit behavior matches contract (oversize/corrupt inputs).
-5. Python binding smoke tests prove usable API and cross-language correctness.
-
-## 6. Test Strategy (Build This First)
-
-## 6.1 Test layers
-
-1. **Golden fixture tests (deterministic)**
-   - Fixed fixture corpus generated from upstream Node oracle.
-   - Includes model binaries, patch binaries, expected views, expected errors.
-
-2. **Differential oracle tests (deterministic + randomized traces)**
-   - For the same operation sequence, compare Rust vs upstream Node outputs.
-   - Compare:
-     - `view()`
-     - patch presence (`None` vs `Patch`)
-     - patch/model binary bytes when available and meaningful
-
-3. **Property tests (stateful)**
-   - Convergence under peer forks and replay.
-   - Idempotence of replaying the same patch set.
-   - Serialization round-trip invariants.
-
-4. **Fuzz tests (defensive correctness)**
-   - Binary decoders (`from_binary`) against malformed input.
-   - Patch application and diff entry points.
-
-5. **Downstream scenario replay**
-   - Port key less-db-js merge/update scenarios as Rust integration tests.
-
-## 6.2 Planned test tree
-
-Create this structure in `json-joy-rs`:
-
-- `/Users/nchapman/Drive/Code/json-joy-rs/tests/compat/fixtures/`
-- `/Users/nchapman/Drive/Code/json-joy-rs/tests/compat/golden.rs`
-- `/Users/nchapman/Drive/Code/json-joy-rs/tests/compat/differential.rs`
-- `/Users/nchapman/Drive/Code/json-joy-rs/tests/scenarios/merge.rs`
-- `/Users/nchapman/Drive/Code/json-joy-rs/tests/scenarios/serialization.rs`
-- `/Users/nchapman/Drive/Code/json-joy-rs/tests/scenarios/session_clock.rs`
-- `/Users/nchapman/Drive/Code/json-joy-rs/fuzz/` (cargo-fuzz targets)
-
-Oracle generation tooling:
-
-- `/Users/nchapman/Drive/Code/json-joy-rs/tools/oracle-node/`
-  - Node scripts pinned to `json-joy@17.67.0` and used only to generate/verify fixtures.
-
-## 6.3 Fixture schema (v1)
-
-Every fixture should include:
-
-- `name`: scenario id
-- `base_json`: initial JSON value
-- `ops`: sequence of operations (set/diff/apply/fork/merge)
-- `expected`:
-  - `view_json`
-  - `patch_present` (bool)
-  - `patch_binary_hex` (optional)
-  - `model_binary_hex` (optional)
-  - `error_contains` (optional)
-- `meta`:
-  - `upstream_version`: `17.67.0`
-  - `source_script`
-  - `generated_at`
-
-## 6.4 Must-have scenario classes
-
-1. Root replacement and scalar updates.
-2. Object key insert/update/delete (LWW map behavior).
-3. String concurrent edits and deterministic convergence behavior.
-4. Array insert/delete/update with concurrent operations.
-5. Forked peers + replay merge/idempotence checks.
-6. Binary codec round-trips for model and patch.
-7. Corrupt/truncated/oversized model and patch payload handling.
-8. Session ID constraints and load/fork semantics.
-
-## 7. Milestone Plan (Implementation Against Tests)
-
-## 7.0 Function-Level Port Inventory (Execution Control)
-
-To avoid approximation drift and "whack-a-mole" fixes, all active runtime-core
-port work must be tracked at function granularity in:
-
-- `/Users/nchapman/Drive/Code/json-joy-rs/IMPLEMENTATION_INVENTORY.md`
-
-Execution rule for each row:
-1. Map upstream function -> Rust function(s).
-2. Add/expand failing tests and fixture coverage first.
-3. Port behavior exactly (or document explicit deltas).
-4. Record evidence gates (`upstream test mapped`, `fixture coverage`,
-   `differential parity`, `perf checked`) before marking complete.
-
-Row status semantics:
-- `exact`: expected upstream-equivalent semantics for covered inputs.
-- `approx`: implemented but not yet proven exact.
-- `missing`: not implemented.
-
-## M0: Harness and Contracts
-
-Deliverables:
-- Compatibility contract doc and fixture schema.
-- Node oracle generator.
-- Empty Rust differential runner wired into CI.
-
-Exit criteria:
-- `make check` runs harness skeleton.
-- At least 20 meaningful fixtures generated and consumed by tests.
-
-## M1: Patch Codec + Patch Core
-
-References:
-- `Patch.ts`
-- `json-crdt-patch/codec/binary/*`
-
-Deliverables:
-- Rust patch data model.
-- Binary decode/encode parity for patch format.
-- Patch round-trip and corruption tests passing.
-
-Exit criteria:
-- Golden patch fixtures pass with zero mismatch.
-
-## M2: Model Decode + View
-
-References:
-- `Model.ts`
-- `json-crdt/codec/structural/binary/*`
-
-Deliverables:
-- Model decode/encode and view materialization.
-- Binary round-trip and view parity tests.
-
-Exit criteria:
-- Model binary fixtures pass.
-- `model_roundtrip` fixture count >= 60.
-- `model_decode_error` fixture count >= 20.
-- `model_canonical_encode` fixture count >= 12 with exact byte parity tests.
-- Decoder malformed-input compatibility is fixture-backed and documented.
-
-## M3: Apply Patch + Clock Semantics
-
-References:
-- `Model.applyPatch`, `applyOperation`
-- `clock/clock.ts`
-
-Deliverables:
-- Operation application engine.
-- Session/vector behavior required for replay idempotence.
-
-Exit criteria:
-- `model_apply_replay` fixture count >= 50.
-- `model_apply_replay_from_fixtures` tests pass:
-  - `apply_replay_fixtures_match_oracle_view`
-  - `duplicate_patch_replay_is_idempotent`
-  - `out_of_order_replay_matches_oracle`
-- Replay/idempotence behavior is fixture-backed and documented in runtime apply code.
-
-## M4: Diff Parity
-
-References:
-- `JsonCrdtDiff.ts`
-- `json-crdt-diff/index.ts`
-
-Deliverables:
-- Diff implementation for used value types.
-- `None`/patch behavior parity.
-
-Exit criteria:
-- `model_diff_parity` fixture count >= 100.
-- Exact patch binary parity for patch-present fixtures (`patch_binary_hex` match).
-- No-op parity: Rust returns `None` exactly where oracle returns no patch.
-- `model_diff_parity_from_fixtures` tests pass:
-  - `model_diff_parity_fixtures_match_oracle_patch_binary`
-  - `model_diff_parity_apply_matches_oracle_view`
-  - `model_diff_noop_fixtures_return_none`
-
-## M5: less-db-js Compatibility Layer
-
-Deliverables:
-- Rust API mirroring current `model-manager` + `patch-log` behavior.
-- Patch-log format parity with less-db-js v1 framing.
-- Minimal FFI exposure for model lifecycle + patch-log helpers.
-
-Exit criteria:
-- `lessdb_model_manager` fixture count >= 50.
-- `lessdb_model_manager_from_fixtures` tests pass:
-  - `lessdb_create_diff_apply_matches_oracle`
-  - `lessdb_noop_diff_returns_none`
-  - `lessdb_merge_with_pending_patches_is_idempotent`
-  - `lessdb_fork_and_merge_scenarios_match_oracle`
-  - `lessdb_load_size_limit_is_enforced`
-- `lessdb_patch_log_integration` tests pass.
-- Full workspace test suite remains green.
-
-Implementation note:
-- M5 compatibility layer initially used oracle-backed lifecycle operations.
-- Native status update (M6): `create_model`, `diff_model`, and `apply_patch`
-  are now native in `crates/json-joy-core/src/less_db_compat.rs`.
-- `diff_runtime` production path is native-only.
-- Oracle scripts under `tools/oracle-node` are test tooling only
-  (fixture/differential generation), not production runtime dependencies.
-
-## M6: Python Package Hardening
-
-Deliverables:
-- Binding API smoke tests.
-- Packaging build checks for Python artifacts.
-
-Exit criteria:
-- `make bindings-python` + Python import/smoke tests pass in CI.
-
-## M6+: Core-Complete Native Runtime Port
-
-Deliverables:
-- Runtime-core parity tracking via `CORE_PARITY_MATRIX.md`.
-- Native patch construction path (`patch_builder`) used by runtime features.
-- Upstream-mapped runtime suites (`upstream_port_*` tests).
-- Seeded differential checks (`differential_runtime_*` tests).
-- Property/state-machine replay checks (`property_replay_*` tests).
-
-Exit criteria:
-- Runtime production paths for diff/apply/model lifecycle no longer use oracle
-  subprocess bridge.
-- In-scope runtime-core families in `CORE_PARITY_MATRIX.md` marked `native`.
-- Existing fixture parity tests plus new upstream/differential/property suites
-  all pass.
-
-Current M6 suite expansion:
-- Upstream-mapped matrix suites now include:
-  - `upstream_port_model_apply_matrix`
-  - `upstream_port_diff_matrix`
-  - `upstream_port_patch_builder_matrix`
-- Runtime graph integrity is validated across replay fixtures in:
-  - `upstream_port_model_graph_invariants`
-- Differential/runtime-core hardening now uses 40-seed/case deterministic
-  matrices across:
-  - `differential_runtime_seeded`
-  - `differential_codec_seeded`
-  - `differential_patch_codecs_seeded` (40 fixture samples)
-  - `differential_patch_compaction_seeded`
-  - `differential_patch_schema_seeded`
-  - `differential_util_diff_seeded`
-- Fixture contract floors are now enforced at:
-  - `patch_canonical_encode >= 40`
-  - `patch_decode_error >= 35`
-  - `patch_alt_codecs >= 40`
-  - `patch_compaction_parity >= 40`
-  - `patch_schema_parity >= 45`
-  - `patch_clock_codec_parity >= 40`
-  - `util_diff_parity >= 80`
-  - `model_roundtrip >= 110`
-  - `model_decode_error >= 35`
-  - `model_canonical_encode >= 30`
-  - `model_apply_replay >= 140`
-  - `model_diff_parity >= 300`
-  - `model_diff_dst_keys >= 80`
-  - `lessdb_model_manager >= 90`
-
-## 8. CI Gates
-
-Minimum required gates before accepting “compatible”:
-
-1. Unit tests pass.
-2. Compatibility golden tests pass.
-3. Differential tests pass (fixed corpus + randomized seeded corpus).
-4. Fuzz smoke corpus runs clean for decode/apply/diff targets.
-5. Python binding smoke tests pass.
-
-## 9. Non-Goals (Current Phase)
-
-Until compatibility baseline is complete, defer:
-- Additional `json-joy` extensions not used by `less-db-js`.
-- Performance optimization work not backed by profiler data.
-- API expansion beyond tested compatibility surface.
-
-## 10. Immediate Next Steps
-
-1. Create `tests/compat` fixture schema and loader.
-2. Add `tools/oracle-node` fixture generator pinned to `json-joy@17.67.0`.
-3. Commit first fixture set (model/patch roundtrip + merge/idempotence basics).
-4. Implement M1 patch codec against golden fixtures.
+# Exact Parity Port Plan (Upstream Layout Match)
+
+Target upstream:
+- `json-joy@17.67.0`
+- `/Users/nchapman/Code/json-joy/packages`
+
+Goal:
+- Exact functional parity and matching package/module layout.
+- Port all upstream package pieces.
+- Execute quickly using whole-file batch ports and fast test loops.
+
+## Scope
+
+Port these upstream packages with mirrored local package layout:
+- `base64`
+- `buffers`
+- `codegen`
+- `json-expression`
+- `json-joy`
+- `json-pack`
+- `json-path`
+- `json-pointer`
+- `json-random`
+- `json-type`
+- `util`
+
+## Fast test workflow
+
+Tight local loop while porting:
+1. One-command slice loop:
+   - `make port-slice PKG=<cargo_package_name> SUITE=<integration_test_name>`
+2. Optional controls for the same command:
+   - `FILTER=<test_name_substring>`
+   - `FIXTURES=0` (skip fixture regeneration)
+   - `GATES=1` (run full core gates after fast loop)
+3. Manual drill-down commands when needed:
+   - `make test-smoke`
+   - `make test-suite SUITE=<integration_test_name>`
+   - `make test-suite-filter SUITE=<integration_test_name> FILTER=<test_name_substring>`
+   - `make test-crate PKG=<cargo_package_name>`
+
+Agent runbook:
+- Follow `AGENTS.md` "Standard Slice SOP (for AI agents)" exactly per slice.
+- Always drive slice selection from unchecked rows in `PARITY_FILE_CHECKLIST.md`.
+
+Checkpoint gates before marking a slice complete:
+1. `make test-gates`
+2. `make test`
+
+## Batch order
+
+1. `util`, `buffers`, `base64` (foundation dependencies)
+2. `json-pointer`, `json-path`, `json-type`, `json-random`, `json-expression`
+3. `json-pack`
+4. `json-joy` (all module families)
+5. `codegen` and remaining support files
+
+## Working model
+
+1. Work in package batches, then file-family batches.
+2. Port whole files in one shot (avoid piecemeal rewrites).
+3. Keep directory/module shape aligned with upstream paths.
+4. Use Node oracle fixtures + differential checks.
+
+## Definition of done
+
+A file is done only when:
+- It is ported in mirrored path layout.
+- Upstream-mapped tests pass.
+- Fixture and differential checks pass.
+- Required perf check is green.
+- Its row is checked in `PARITY_FILE_CHECKLIST.md`.
+
+## Tracking
+
+`PARITY_FILE_CHECKLIST.md` is the single file-level execution checklist.

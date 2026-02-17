@@ -1,80 +1,82 @@
 # AGENTS.md
 
-## Project workflow: compatibility-first TDD
+## Mission
 
-This repository follows a strict compatibility-first, test-driven process for porting `json-joy`.
+Achieve exact parity with upstream `json-joy@17.67.0` by porting all upstream packages and source files into this repository with matching package/module layout.
 
-### Core rule
+Upstream source of truth:
+- `/Users/nchapman/Code/json-joy/packages`
 
-For each milestone/section:
+## Non-negotiable rules
 
-1. Expand the oracle fixture surface first.
-2. Write or update failing tests against those fixtures.
-3. Implement only enough code to pass.
-4. Stabilize and freeze that section before moving to the next.
+1. Layout parity first: mirror upstream package and module layout.
+2. Compatibility-first TDD: add fixtures/tests first, then implementation.
+3. Whole-file porting: port complete file families in one shot.
+4. No behavior deltas without explicit written approval.
+5. Do not mark a file complete unless all gates pass.
 
-Do not start implementation for a section until its fixture/test surface is in place.
+## Required local layout
 
-## Oracle and compatibility source
+Mirror upstream package structure under `crates/`:
+- `crates/base64`
+- `crates/buffers`
+- `crates/codegen`
+- `crates/json-expression`
+- `crates/json-joy`
+- `crates/json-pack`
+- `crates/json-path`
+- `crates/json-pointer`
+- `crates/json-random`
+- `crates/json-type`
+- `crates/util`
 
-- Upstream compatibility target is pinned to `json-joy@17.67.0` unless explicitly changed.
-- Node oracle lives in `tools/oracle-node`.
-- Fixtures live in `tests/compat/fixtures`.
-- Local upstream source for direct behavior cross-checks:
-  - `/Users/nchapman/Code/json-joy`
-  - Replay/clock semantics reference:
-    - `/Users/nchapman/Code/json-joy/packages/json-joy/src/json-crdt/model/Model.ts`
-  - Diff semantics reference:
-    - `/Users/nchapman/Code/json-joy/packages/json-joy/src/json-crdt-diff/JsonCrdtDiff.ts`
-  - less-db manager semantics references:
-    - `/Users/nchapman/Code/lessisbetter/less-platform/less-db-js/src/crdt/model-manager.ts`
-    - `/Users/nchapman/Code/lessisbetter/less-platform/less-db-js/src/crdt/patch-log.ts`
+For each package, mirror `src/**` folder structure exactly.
 
-## Temporary bridge policy (M5)
+## Fast execution loop
 
-- M5 allowed oracle-backed behavior for compatibility-layer lifecycle operations.
-- That bridge has now been removed from production runtime paths in `json-joy-core`.
-- Keep oracle tooling in `tools/oracle-node` for fixture generation and differential tests only.
+For each file-family slice:
+1. Add/update fixture(s) and upstream-mapped test(s).
+2. Run one-command loop:
+   - `make port-slice PKG=<cargo_package_name> SUITE=<integration_test_name>`
+   - Optional: `FILTER=<test_name_substring> FIXTURES=0 GATES=1`
+3. Port whole files.
+4. Re-run focused suite if needed (`make test-suite SUITE=<suite>` and optional filtered case).
+5. At slice checkpoint, run all gates (`make test-gates`).
 
-## Required execution flow per section
+## Standard Slice SOP (for AI agents)
 
-1. Generate/update fixtures (`make compat-fixtures` or equivalent section-specific generator).
-2. Ensure tests fail for unimplemented behavior.
-3. Implement section code in Rust.
-4. Run full tests (`make test`) before commit.
+Use this exact procedure for every slice:
 
-## Scope discipline
+1. Pick next unchecked row(s) from `PARITY_FILE_CHECKLIST.md` for one package family.
+2. Mirror missing file paths under `crates/<package>/src/**`.
+3. Add/update fixtures and tests for the same family before implementation.
+4. Run:
+   - `make port-slice PKG=<cargo_package_name> SUITE=<integration_test_name>`
+5. Port whole upstream files for that family.
+6. Re-run:
+   - `make port-slice PKG=<cargo_package_name> SUITE=<integration_test_name> FILTER=<optional_test_name_substring> FIXTURES=0`
+7. Run completion gates:
+   - `make test-gates`
+   - `make test`
+8. Check completed rows in `PARITY_FILE_CHECKLIST.md`.
+9. Move to the next unchecked family.
 
-- Work section-by-section (M1, M2, M3...).
-- Keep changes narrowly scoped to the active section.
-- Avoid cross-section implementation unless required by failing tests in the active section.
+Required inputs per run:
+- `PKG`: local cargo package name.
+- `SUITE`: integration test file name (without `.rs`).
+- `FILTER` (optional): single test/case focus.
 
-## Quality gates
+## Gates required before marking complete
 
-A section is considered complete only when:
+- Upstream behavior mapped in tests.
+- Fixture coverage exists.
+- Differential parity passes.
+- Perf check passes on targeted hot paths.
 
-- Fixture schema/integrity tests pass.
-- Section compatibility tests pass.
-- No regressions in existing tests.
+## Tracking documents
 
-## Documentation discipline
+Only these planning docs are authoritative:
+- `PORT_PLAN.md`
+- `PARITY_FILE_CHECKLIST.md`
 
-When workflow changes, update this file and relevant plan docs (`PORT_PLAN.md`) in the same change.
-
-## M6 coverage discipline
-
-- Keep `/Users/nchapman/Drive/Code/json-joy-rs/CORE_PARITY_MATRIX.md` current as the
-  single source of truth for runtime-core parity status.
-- Before starting a new core-port slice, update the matrix row status and gates
-  (`test-port mapped`, `fixture coverage`, `differential parity`, `no bridge`).
-- Do not mark a family `native` unless production code has no oracle subprocess
-  dependency for that family.
-
-## Runtime bridge boundaries
-
-- Production runtime bridge boundaries are now empty:
-  - `crates/json-joy-core/src/diff_runtime/mod.rs` is native-only.
-  - `crates/json-joy-core/src/less_db_compat.rs` lifecycle paths are native-only.
-- Node oracle usage is restricted to:
-  - fixture generation under `tools/oracle-node`
-  - differential tests.
+If workflow changes, update both files in the same change.
