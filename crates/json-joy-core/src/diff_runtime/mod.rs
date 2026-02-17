@@ -210,9 +210,19 @@ fn is_visible_child(runtime: &RuntimeModel, id: Timestamp) -> bool {
 }
 
 fn runtime_base_time(runtime: &RuntimeModel) -> u64 {
-    runtime
-        .server_clock_time
-        .unwrap_or_else(|| runtime.clock_table.first().map(|c| c.time).unwrap_or(0))
+    if let Some(server_time) = runtime.server_clock_time {
+        return server_time;
+    }
+
+    let mut base = runtime.clock_table.first().map(|c| c.time).unwrap_or(0);
+    if let Some(local_sid) = runtime.clock_table.first().map(|c| c.sid) {
+        if let Some(ranges) = runtime.clock.observed.get(&local_sid) {
+            if let Some((_, end)) = ranges.last() {
+                base = base.max(*end);
+            }
+        }
+    }
+    base
 }
 
 fn object_visible_fields(runtime: &RuntimeModel, obj: Timestamp) -> Option<BTreeMap<String, Timestamp>> {
