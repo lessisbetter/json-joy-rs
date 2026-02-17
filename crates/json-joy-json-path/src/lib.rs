@@ -123,4 +123,44 @@ mod tests {
         assert_eq!(results[0], &json!(2));
         assert_eq!(results[1], &json!(3));
     }
+
+    #[test]
+    fn test_eval_negative_index() {
+        let doc = json!([1, 2, 3, 4, 5]);
+        let path = JsonPathParser::parse("$[-1]").unwrap();
+        let results = JsonPathEval::eval(&path, &doc);
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0], &json!(5));
+    }
+
+    #[test]
+    fn test_eval_empty_result() {
+        let doc = json!({"a": 1});
+        let path = JsonPathParser::parse("$.missing").unwrap();
+        let results = JsonPathEval::eval(&path, &doc);
+        assert_eq!(results.len(), 0);
+    }
+
+    #[test]
+    fn test_eval_array_wildcard() {
+        let doc = json!([1, 2, 3]);
+        let path = JsonPathParser::parse("$[*]").unwrap();
+        let results = JsonPathEval::eval(&path, &doc);
+        assert_eq!(results.len(), 3);
+    }
+
+    #[test]
+    fn test_eval_nested_path() {
+        let doc = json!({"store": {"books": [{"title": "Book 1"}, {"title": "Book 2"}]}});
+        let path = JsonPathParser::parse("$.store.books").unwrap();
+        let results = JsonPathEval::eval(&path, &doc);
+        assert_eq!(results.len(), 1);
+        assert!(results[0].is_array());
+    }
+
+    #[test]
+    fn test_parse_quoted_string() {
+        let path = JsonPathParser::parse("$['store name']").unwrap();
+        assert_eq!(path.segments.len(), 1);
+    }
 }
