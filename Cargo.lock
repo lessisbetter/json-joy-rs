@@ -366,6 +366,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "json-joy-codegen"
+version = "0.1.0"
+
+[[package]]
 name = "json-joy-core"
 version = "0.1.0"
 dependencies = [

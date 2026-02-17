@@ -3,6 +3,7 @@ resolver = "2"
 
 members = [
   "crates/base64",
+  "crates/codegen",
   "crates/json-joy-core",
   "crates/json-joy-ffi",
   "crates/json-joy-json-pack",
@@ -13,6 +14,7 @@ members = [
 
 default-members = [
   "crates/base64",
+  "crates/codegen",
   "crates/json-joy-core",
   "crates/json-joy-ffi",
   "crates/json-joy-json-pack",
