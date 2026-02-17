@@ -1,0 +1,17 @@
+[package]
+name = "json-expression"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/nicoth-in/json-joy-rs"
+description = "High-performance JSON expression evaluator - port of @jsonjoy.com/json-expression"
+
+[dependencies]
+serde_json = "1.0"
+thiserror = "2.0"
+regex = "1"
+json-joy-json-pointer = { path = "../json-joy-json-pointer" }
+json-joy-util = { path = "../util" }
+
+[dev-dependencies]
+serde_json = "1.0"

@@ -98,39 +98,39 @@ Rules:
 
 ## Package: json-expression
 
-- [ ] `packages/json-expression/package.json` -> `crates/json-expression/Cargo.toml`
-- [ ] `Create mirrored package root: crates/json-expression/src`
-- [ ] `Complete all 29 file ports below`
+- [x] `packages/json-expression/package.json` -> `crates/json-expression/Cargo.toml` (COMPLETE)
+- [x] `Create mirrored package root: crates/json-expression/src` (COMPLETE)
+- [x] `Complete all 29 file ports below` (core files ported; bench/test files as integration tests; createEvaluate merged into evaluate.rs)
 
-- [ ] `packages/json-expression/src/Vars.ts` -> `crates/json-expression/src/Vars.rs`
-- [ ] `packages/json-expression/src/__bench__/main.ts` -> `crates/json-expression/src/__bench__/main.rs`
-- [ ] `packages/json-expression/src/__tests__/codegen.spec.ts` -> `crates/json-expression/src/__tests__/codegen.spec.rs`
-- [ ] `packages/json-expression/src/__tests__/evaluate.spec.ts` -> `crates/json-expression/src/__tests__/evaluate.spec.rs`
-- [ ] `packages/json-expression/src/__tests__/impure.spec.ts` -> `crates/json-expression/src/__tests__/impure.spec.rs`
-- [ ] `packages/json-expression/src/__tests__/jsonExpressionCodegenTests.ts` -> `crates/json-expression/src/__tests__/jsonExpressionCodegenTests.rs`
-- [ ] `packages/json-expression/src/__tests__/jsonExpressionEvaluateTests.ts` -> `crates/json-expression/src/__tests__/jsonExpressionEvaluateTests.rs`
-- [ ] `packages/json-expression/src/__tests__/jsonExpressionUnitTests.ts` -> `crates/json-expression/src/__tests__/jsonExpressionUnitTests.rs`
-- [ ] `packages/json-expression/src/codegen-steps.ts` -> `crates/json-expression/src/codegen-steps.rs`
-- [ ] `packages/json-expression/src/codegen.ts` -> `crates/json-expression/src/codegen.rs`
-- [ ] `packages/json-expression/src/createEvaluate.ts` -> `crates/json-expression/src/createEvaluate.rs`
-- [ ] `packages/json-expression/src/evaluate.ts` -> `crates/json-expression/src/evaluate.rs`
-- [ ] `packages/json-expression/src/index.ts` -> `crates/json-expression/src/mod.rs`
-- [ ] `packages/json-expression/src/operators/arithmetic.ts` -> `crates/json-expression/src/operators/arithmetic.rs`
-- [ ] `packages/json-expression/src/operators/array.ts` -> `crates/json-expression/src/operators/array.rs`
-- [ ] `packages/json-expression/src/operators/binary.ts` -> `crates/json-expression/src/operators/binary.rs`
-- [ ] `packages/json-expression/src/operators/bitwise.ts` -> `crates/json-expression/src/operators/bitwise.rs`
-- [ ] `packages/json-expression/src/operators/branching.ts` -> `crates/json-expression/src/operators/branching.rs`
-- [ ] `packages/json-expression/src/operators/comparison.ts` -> `crates/json-expression/src/operators/comparison.rs`
-- [ ] `packages/json-expression/src/operators/container.ts` -> `crates/json-expression/src/operators/container.rs`
-- [ ] `packages/json-expression/src/operators/index.ts` -> `crates/json-expression/src/operators/mod.rs`
-- [ ] `packages/json-expression/src/operators/input.ts` -> `crates/json-expression/src/operators/input.rs`
-- [ ] `packages/json-expression/src/operators/logical.ts` -> `crates/json-expression/src/operators/logical.rs`
-- [ ] `packages/json-expression/src/operators/object.ts` -> `crates/json-expression/src/operators/object.rs`
-- [ ] `packages/json-expression/src/operators/patch.ts` -> `crates/json-expression/src/operators/patch.rs`
-- [ ] `packages/json-expression/src/operators/string.ts` -> `crates/json-expression/src/operators/string.rs`
-- [ ] `packages/json-expression/src/operators/type.ts` -> `crates/json-expression/src/operators/type.rs`
-- [ ] `packages/json-expression/src/types.ts` -> `crates/json-expression/src/types.rs`
-- [ ] `packages/json-expression/src/util.ts` -> `crates/json-expression/src/util.rs`
+- [x] `packages/json-expression/src/Vars.ts` -> `crates/json-expression/src/vars.rs` (COMPLETE)
+- [x] `packages/json-expression/src/__bench__/main.ts` -> (SKIPPED: JS benchmark, use criterion)
+- [x] `packages/json-expression/src/__tests__/codegen.spec.ts` -> `crates/json-expression/tests/evaluate.rs` (COMPLETE: codegen tests covered via evaluate)
+- [x] `packages/json-expression/src/__tests__/evaluate.spec.ts` -> `crates/json-expression/tests/evaluate.rs` (COMPLETE)
+- [x] `packages/json-expression/src/__tests__/impure.spec.ts` -> `crates/json-expression/tests/evaluate.rs` (COMPLETE: impure ops tested)
+- [x] `packages/json-expression/src/__tests__/jsonExpressionCodegenTests.ts` -> `crates/json-expression/tests/evaluate.rs` (COMPLETE)
+- [x] `packages/json-expression/src/__tests__/jsonExpressionEvaluateTests.ts` -> `crates/json-expression/tests/evaluate.rs` (COMPLETE)
+- [x] `packages/json-expression/src/__tests__/jsonExpressionUnitTests.ts` -> `crates/json-expression/tests/evaluate.rs` (COMPLETE)
+- [x] `packages/json-expression/src/codegen-steps.ts` -> `crates/json-expression/src/codegen_steps.rs` (COMPLETE)
+- [x] `packages/json-expression/src/codegen.ts` -> `crates/json-expression/src/codegen.rs` (COMPLETE: closure-based instead of JS JIT)
+- [x] `packages/json-expression/src/createEvaluate.ts` -> `crates/json-expression/src/evaluate.rs` (COMPLETE: merged)
+- [x] `packages/json-expression/src/evaluate.ts` -> `crates/json-expression/src/evaluate.rs` (COMPLETE)
+- [x] `packages/json-expression/src/index.ts` -> `crates/json-expression/src/lib.rs` (COMPLETE)
+- [x] `packages/json-expression/src/operators/arithmetic.ts` -> `crates/json-expression/src/operators/arithmetic.rs` (COMPLETE)
+- [x] `packages/json-expression/src/operators/array.ts` -> `crates/json-expression/src/operators/array.rs` (COMPLETE)
+- [x] `packages/json-expression/src/operators/binary.ts` -> `crates/json-expression/src/operators/binary.rs` (COMPLETE)
+- [x] `packages/json-expression/src/operators/bitwise.ts` -> `crates/json-expression/src/operators/bitwise.rs` (COMPLETE)
+- [x] `packages/json-expression/src/operators/branching.ts` -> `crates/json-expression/src/operators/branching.rs` (COMPLETE)
+- [x] `packages/json-expression/src/operators/comparison.ts` -> `crates/json-expression/src/operators/comparison.rs` (COMPLETE)
+- [x] `packages/json-expression/src/operators/container.ts` -> `crates/json-expression/src/operators/container.rs` (COMPLETE)
+- [x] `packages/json-expression/src/operators/index.ts` -> `crates/json-expression/src/operators/mod.rs` (COMPLETE)
+- [x] `packages/json-expression/src/operators/input.ts` -> `crates/json-expression/src/operators/input.rs` (COMPLETE)
+- [x] `packages/json-expression/src/operators/logical.ts` -> `crates/json-expression/src/operators/logical.rs` (COMPLETE)
+- [x] `packages/json-expression/src/operators/object.ts` -> `crates/json-expression/src/operators/object.rs` (COMPLETE)
+- [x] `packages/json-expression/src/operators/patch.ts` -> `crates/json-expression/src/operators/patch.rs` (COMPLETE)
+- [x] `packages/json-expression/src/operators/string.ts` -> `crates/json-expression/src/operators/string.rs` (COMPLETE)
+- [x] `packages/json-expression/src/operators/type.ts` -> `crates/json-expression/src/operators/type_ops.rs` (COMPLETE)
+- [x] `packages/json-expression/src/types.ts` -> `crates/json-expression/src/types.rs` (COMPLETE)
+- [x] `packages/json-expression/src/util.ts` -> `crates/json-expression/src/util.rs` (COMPLETE)
 
 
 ## Package: json-joy
