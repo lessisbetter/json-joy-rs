@@ -23,6 +23,6 @@ pub mod json_patch_ot;         // Slice 4
 pub mod json_hash;             // Slice 5
 pub mod json_crdt;             // Slice 5
 pub mod json_crdt_diff;        // Slice 6
-// pub mod json_crdt_extensions; // Slice 7
+pub mod json_crdt_extensions;  // Slice 7
 // pub mod json_crdt_peritext_ui; // Slice 8
 // pub mod json_cli;          // Slice 9

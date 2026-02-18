@@ -69,7 +69,7 @@ All 17 upstream sub-modules (`packages/json-joy/src/`) map to a single
 | 4 | json-patch, json-patch-ot, json-ot, json-patch-diff | DONE |
 | 5 | json-hash (12 files) + json-crdt (263 files — largest!) | DONE |
 | 6 | json-crdt-diff (4 files) | DONE |
-| 7 | json-crdt-extensions (225 files) | TODO |
+| 7 | json-crdt-extensions (225 files) | PARTIAL — mval, cnt, peritext core (rga, slice); overlay/block/editor deferred |
 | 8 | json-crdt-peritext-ui (model/controller only, no React) | TODO |
 | 9 | json-cli (35 files) | TODO |
 
