@@ -1741,4 +1741,353 @@ mod tests {
         let decoded = dec.decode_str(&encoded).unwrap();
         assert_eq!(decoded, EjsonValue::Timestamp(ts));
     }
+
+    // ---------------------------------------------------------------- Boundary / error-path tests
+
+    // --- CBOR truncated input ---
+
+    #[test]
+    fn cbor_empty_input_returns_error() {
+        let result = decode_json_from_cbor_bytes(&[]);
+        assert!(result.is_err(), "empty CBOR must return Err");
+    }
+
+    #[test]
+    fn cbor_truncated_uint16_returns_error() {
+        // 0x19 = major 0, additional 25 → expects 2 more bytes, we give 1
+        let result = decode_json_from_cbor_bytes(&[0x19, 0x00]);
+        assert!(result.is_err(), "truncated uint16 must return Err");
+    }
+
+    #[test]
+    fn cbor_truncated_uint32_returns_error() {
+        // 0x1a = major 0, additional 26 → expects 4 bytes, we give 2
+        let result = decode_json_from_cbor_bytes(&[0x1a, 0x00, 0x00]);
+        assert!(result.is_err(), "truncated uint32 must return Err");
+    }
+
+    #[test]
+    fn cbor_truncated_uint64_returns_error() {
+        // 0x1b = major 0, additional 27 → expects 8 bytes, we give 4
+        let result = decode_json_from_cbor_bytes(&[0x1b, 0x00, 0x00, 0x00, 0x00]);
+        assert!(result.is_err(), "truncated uint64 must return Err");
+    }
+
+    #[test]
+    fn cbor_truncated_text_string_returns_error() {
+        // 0x63 = major 3 (text), length 3 → expects 3 bytes, we give 2
+        let result = decode_json_from_cbor_bytes(&[0x63, b'h', b'i']);
+        assert!(result.is_err(), "truncated text string must return Err");
+    }
+
+    #[test]
+    fn cbor_truncated_byte_string_returns_error() {
+        // 0x42 = major 2 (bytes), length 2 → expects 2 bytes, we give 1
+        let result = decode_json_from_cbor_bytes(&[0x42, 0xDE]);
+        assert!(result.is_err(), "truncated byte string must return Err");
+    }
+
+    #[test]
+    fn cbor_truncated_array_returns_error() {
+        // 0x82 = major 4 (array), length 2 → expects 2 items, we give header only
+        let result = decode_json_from_cbor_bytes(&[0x82]);
+        assert!(result.is_err(), "truncated array must return Err");
+    }
+
+    #[test]
+    fn cbor_truncated_map_returns_error() {
+        // 0xa1 = major 5 (map), length 1 → expects 1 pair, we give the key but not value
+        let result = decode_json_from_cbor_bytes(&[0xa1, 0x61, b'k']);
+        assert!(result.is_err(), "truncated map must return Err");
+    }
+
+    #[test]
+    fn cbor_validate_size_rejects_wrong_size() {
+        let bytes = encode_json_to_cbor_bytes(&serde_json::json!(42)).expect("encode");
+        // validate_cbor_exact_size with wrong size must fail
+        let result = validate_cbor_exact_size(&bytes, bytes.len() + 1);
+        assert!(result.is_err(), "wrong size must return Err");
+    }
+
+    // --- MsgPack boundary / error-path tests ---
+
+    #[test]
+    fn msgpack_empty_input_returns_error() {
+        use super::msgpack::MsgPackDecoderFast;
+        let mut dec = MsgPackDecoderFast::new();
+        assert!(dec.decode(&[]).is_err(), "empty MsgPack must return Err");
+    }
+
+    #[test]
+    fn msgpack_truncated_str8_returns_error() {
+        use super::msgpack::MsgPackDecoderFast;
+        let mut dec = MsgPackDecoderFast::new();
+        // 0xd9 = str 8, length byte = 5, then only 2 bytes of payload
+        assert!(dec.decode(&[0xd9, 0x05, b'h', b'i']).is_err());
+    }
+
+    #[test]
+    fn msgpack_truncated_bin8_returns_error() {
+        use super::msgpack::MsgPackDecoderFast;
+        let mut dec = MsgPackDecoderFast::new();
+        // 0xc4 = bin8, length=3, only 1 byte given
+        assert!(dec.decode(&[0xc4, 0x03, 0xDE]).is_err());
+    }
+
+    #[test]
+    fn msgpack_fixarray_boundary_correct() {
+        use super::msgpack::{MsgPackDecoderFast, MsgPackEncoderFast};
+        let mut enc = MsgPackEncoderFast::new();
+        let mut dec = MsgPackDecoderFast::new();
+        // fixarray holds 0..=15 items; 15 items → 0x9f header
+        let items: Vec<PackValue> = (0..15).map(|i| PackValue::Integer(i)).collect();
+        let arr = PackValue::Array(items.clone());
+        let bytes = enc.encode(&arr);
+        assert_eq!(bytes[0], 0x9f, "fixarray(15) header");
+        let decoded = dec.decode(&bytes).unwrap();
+        assert_eq!(decoded, PackValue::Array(items));
+    }
+
+    #[test]
+    fn msgpack_array16_boundary_correct() {
+        use super::msgpack::{MsgPackDecoderFast, MsgPackEncoderFast};
+        let mut enc = MsgPackEncoderFast::new();
+        let mut dec = MsgPackDecoderFast::new();
+        // 16 items → array16 (0xdc) header
+        let items: Vec<PackValue> = (0..16).map(|i| PackValue::Integer(i)).collect();
+        let arr = PackValue::Array(items.clone());
+        let bytes = enc.encode(&arr);
+        assert_eq!(bytes[0], 0xdc, "array16 header");
+        // bytes[1..2] = length as u16 BE
+        let len = u16::from_be_bytes([bytes[1], bytes[2]]) as usize;
+        assert_eq!(len, 16);
+        let decoded = dec.decode(&bytes).unwrap();
+        assert_eq!(decoded, PackValue::Array(items));
+    }
+
+    #[test]
+    fn msgpack_fixmap_boundary_correct() {
+        use super::msgpack::{MsgPackDecoderFast, MsgPackEncoderFast};
+        let mut enc = MsgPackEncoderFast::new();
+        let mut dec = MsgPackDecoderFast::new();
+        // fixmap holds 0..=15 pairs; 15 pairs → 0x8f header
+        let pairs: Vec<(String, PackValue)> =
+            (0..15).map(|i| (format!("k{i}"), PackValue::Integer(i))).collect();
+        let obj = PackValue::Object(pairs.clone());
+        let bytes = enc.encode(&obj);
+        assert_eq!(bytes[0], 0x8f, "fixmap(15) header");
+        // Decode and check we get 15 pairs back
+        if let PackValue::Object(decoded_pairs) = dec.decode(&bytes).unwrap() {
+            assert_eq!(decoded_pairs.len(), 15);
+        } else {
+            panic!("expected Object");
+        }
+    }
+
+    #[test]
+    fn msgpack_uint_128_to_255_uses_uint16_format() {
+        use super::msgpack::{MsgPackDecoderFast, MsgPackEncoderFast};
+        let mut enc = MsgPackEncoderFast::new();
+        let mut dec = MsgPackDecoderFast::new();
+        // Upstream encoder skips uint8 (0xcc); values 128..=65535 use uint16 (0xcd).
+        // Decoder maps uint16 back to Integer (not UInteger).
+        let bytes = enc.encode(&PackValue::UInteger(200));
+        assert_eq!(bytes[0], 0xcd, "values 128-65535 use uint16 format");
+        let v = u16::from_be_bytes([bytes[1], bytes[2]]);
+        assert_eq!(v, 200);
+        assert_eq!(dec.decode(&bytes).unwrap(), PackValue::Integer(200));
+    }
+
+    #[test]
+    fn msgpack_uint16_range_roundtrips_as_integer() {
+        use super::msgpack::{MsgPackDecoderFast, MsgPackEncoderFast};
+        let mut enc = MsgPackEncoderFast::new();
+        let mut dec = MsgPackDecoderFast::new();
+        // uint16 (0xcd); decoder returns Integer (signed), not UInteger
+        let bytes = enc.encode(&PackValue::UInteger(1000));
+        assert_eq!(bytes[0], 0xcd, "uint16 format");
+        let v = u16::from_be_bytes([bytes[1], bytes[2]]);
+        assert_eq!(v, 1000);
+        assert_eq!(dec.decode(&bytes).unwrap(), PackValue::Integer(1000));
+    }
+
+    #[test]
+    fn msgpack_negative_mid_range_uses_int16_format() {
+        use super::msgpack::{MsgPackDecoderFast, MsgPackEncoderFast};
+        let mut enc = MsgPackEncoderFast::new();
+        let mut dec = MsgPackDecoderFast::new();
+        // Upstream encoder skips int8 (0xd0); values -33..-32768 use int16 (0xd1).
+        let bytes = enc.encode(&PackValue::Integer(-100));
+        assert_eq!(bytes[0], 0xd1, "values -33..-32768 use int16 format");
+        let v = i16::from_be_bytes([bytes[1], bytes[2]]);
+        assert_eq!(v, -100);
+        assert_eq!(dec.decode(&bytes).unwrap(), PackValue::Integer(-100));
+    }
+
+    #[test]
+    fn msgpack_truncated_array_returns_error() {
+        use super::msgpack::MsgPackDecoderFast;
+        let mut dec = MsgPackDecoderFast::new();
+        // fixarray with 3 elements, but no element data follows
+        assert!(dec.decode(&[0x93]).is_err());
+    }
+
+    // --- RESP3 boundary / error-path tests ---
+
+    #[test]
+    fn resp_empty_input_returns_error() {
+        use super::resp::RespDecoder;
+        let mut dec = RespDecoder::new();
+        assert!(dec.decode(&[]).is_err(), "empty RESP must return Err");
+    }
+
+    #[test]
+    fn resp_unknown_type_byte_returns_error() {
+        use super::resp::RespDecoder;
+        let mut dec = RespDecoder::new();
+        // 0x00 is not a valid RESP3 type prefix
+        assert!(dec.decode(&[0x00]).is_err(), "unknown type must return Err");
+    }
+
+    #[test]
+    fn resp_decode_float() {
+        use super::resp::RespDecoder;
+        let mut dec = RespDecoder::new();
+        assert_eq!(dec.decode(b",3.14\r\n").unwrap(), PackValue::Float(3.14));
+    }
+
+    #[test]
+    fn resp_decode_float_inf_neginf_nan() {
+        use super::resp::RespDecoder;
+        let mut dec = RespDecoder::new();
+        let v = dec.decode(b",inf\r\n").unwrap();
+        assert!(matches!(v, PackValue::Float(f) if f.is_infinite() && f > 0.0));
+        let v = dec.decode(b",-inf\r\n").unwrap();
+        assert!(matches!(v, PackValue::Float(f) if f.is_infinite() && f < 0.0));
+        let v = dec.decode(b",nan\r\n").unwrap();
+        assert!(matches!(v, PackValue::Float(f) if f.is_nan()));
+    }
+
+    #[test]
+    fn resp_decode_bigint() {
+        use super::resp::RespDecoder;
+        let mut dec = RespDecoder::new();
+        let v = dec.decode(b"(1234567890123456789\r\n").unwrap();
+        assert_eq!(v, PackValue::BigInt(1234567890123456789_i128));
+        let neg = dec.decode(b"(-42\r\n").unwrap();
+        assert_eq!(neg, PackValue::BigInt(-42));
+    }
+
+    #[test]
+    fn resp_decode_set_as_array() {
+        use super::resp::RespDecoder;
+        let mut dec = RespDecoder::new();
+        // ~2\r\n:1\r\n:2\r\n — set with 2 integer elements
+        let v = dec.decode(b"~2\r\n:1\r\n:2\r\n").unwrap();
+        assert_eq!(v, PackValue::Array(vec![PackValue::Integer(1), PackValue::Integer(2)]));
+    }
+
+    #[test]
+    fn resp_decode_object() {
+        use super::resp::RespDecoder;
+        let mut dec = RespDecoder::new();
+        // %1\r\n+key\r\n:42\r\n — map with 1 pair
+        let v = dec.decode(b"%1\r\n+key\r\n:42\r\n").unwrap();
+        assert_eq!(v, PackValue::Object(vec![("key".to_string(), PackValue::Integer(42))]));
+    }
+
+    #[test]
+    fn resp_decode_push_as_extension() {
+        use super::resp::RespDecoder;
+        use super::{JsonPackExtension, PackValue};
+        let mut dec = RespDecoder::new();
+        // >2\r\n+foo\r\n:1\r\n — push with 2 elements
+        let v = dec.decode(b">2\r\n+foo\r\n:1\r\n").unwrap();
+        if let PackValue::Extension(ext) = v {
+            assert_eq!(ext.tag, 1); // RESP_EXTENSION_PUSH
+            assert!(matches!(*ext.val, PackValue::Array(_)));
+        } else {
+            panic!("expected Extension for push, got {v:?}");
+        }
+    }
+
+    #[test]
+    fn resp_decode_attributes_as_extension() {
+        use super::resp::RespDecoder;
+        let mut dec = RespDecoder::new();
+        // |1\r\n+ttl\r\n:3600\r\n
+        let v = dec.decode(b"|1\r\n+ttl\r\n:3600\r\n").unwrap();
+        if let PackValue::Extension(ext) = v {
+            assert_eq!(ext.tag, 2); // RESP_EXTENSION_ATTRIBUTES
+            assert!(matches!(*ext.val, PackValue::Object(_)));
+        } else {
+            panic!("expected Extension for attributes, got {v:?}");
+        }
+    }
+
+    #[test]
+    fn resp_decode_verbatim_txt_string() {
+        use super::resp::RespDecoder;
+        let mut dec = RespDecoder::new();
+        // =7\r\ntxt:abc\r\n — verbatim text string
+        let v = dec.decode(b"=7\r\ntxt:abc\r\n").unwrap();
+        assert_eq!(v, PackValue::Str("abc".to_string()));
+    }
+
+    #[test]
+    fn resp_decode_verbatim_non_txt_as_bytes() {
+        use super::resp::RespDecoder;
+        let mut dec = RespDecoder::new();
+        // =8\r\nraw:data\r\n — verbatim with non-txt prefix → Bytes
+        let v = dec.decode(b"=8\r\nraw:data\r\n").unwrap();
+        assert_eq!(v, PackValue::Bytes(b"data".to_vec()));
+    }
+
+    #[test]
+    fn resp_decode_simple_error_as_str() {
+        use super::resp::RespDecoder;
+        let mut dec = RespDecoder::new();
+        // Simple error (-) decoded as Str
+        let v = dec.decode(b"-ERR some error\r\n").unwrap();
+        assert_eq!(v, PackValue::Str("ERR some error".to_string()));
+    }
+
+    #[test]
+    fn resp_decode_bulk_error_as_str() {
+        use super::resp::RespDecoder;
+        let mut dec = RespDecoder::new();
+        // Bulk error (!) decoded as Str. "ERR bulk error" = 14 bytes.
+        let v = dec.decode(b"!14\r\nERR bulk error\r\n").unwrap();
+        assert_eq!(v, PackValue::Str("ERR bulk error".to_string()));
+    }
+
+    #[test]
+    fn resp_decode_null_bulk_string() {
+        use super::resp::RespDecoder;
+        let mut dec = RespDecoder::new();
+        // $-1\r\n → Null bulk string
+        let v = dec.decode(b"$-1\r\n").unwrap();
+        assert_eq!(v, PackValue::Null);
+    }
+
+    #[test]
+    fn resp_decode_null_array() {
+        use super::resp::RespDecoder;
+        let mut dec = RespDecoder::new();
+        // *-1\r\n → Null array
+        let v = dec.decode(b"*-1\r\n").unwrap();
+        assert_eq!(v, PackValue::Null);
+    }
+
+    #[test]
+    fn resp_decode_nested_array() {
+        use super::resp::RespDecoder;
+        let mut dec = RespDecoder::new();
+        // *2\r\n*2\r\n:1\r\n:2\r\n:3\r\n — nested arrays
+        let v = dec.decode(b"*2\r\n*2\r\n:1\r\n:2\r\n:3\r\n").unwrap();
+        assert_eq!(v, PackValue::Array(vec![
+            PackValue::Array(vec![PackValue::Integer(1), PackValue::Integer(2)]),
+            PackValue::Integer(3),
+        ]));
+    }
 }
