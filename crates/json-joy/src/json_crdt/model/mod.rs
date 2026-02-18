@@ -456,4 +456,44 @@ mod tests {
         // ts(s,2) > ts(s,1), so val 2 should win regardless of apply order
         assert_eq!(model.view(), json!(2));
     }
+
+    #[test]
+    fn upd_arr_replaces_element() {
+        let s = sid();
+        let mut model = Model::new(s);
+
+        // Create arr node containing [con(42)]
+        model.apply_operation(&Op::NewArr { id: ts(s, 1) });
+        model.apply_operation(&Op::NewCon {
+            id: ts(s, 2),
+            val: ConValue::Val(PackValue::Integer(42)),
+        });
+        // InsArr slot ts(s,3) → points to ts(s,2)
+        model.apply_operation(&Op::InsArr {
+            id: ts(s, 3),
+            obj: ts(s, 1),
+            after: ORIGIN,
+            data: vec![ts(s, 2)],
+        });
+        model.apply_operation(&Op::InsVal {
+            id: ts(s, 4),
+            obj: ORIGIN,
+            val: ts(s, 1),
+        });
+        assert_eq!(model.view(), json!([42]));
+
+        // Create a new con node with value 99 and update the slot
+        model.apply_operation(&Op::NewCon {
+            id: ts(s, 5),
+            val: ConValue::Val(PackValue::Integer(99)),
+        });
+        // UpdArr: update slot ts(s,3) to point to ts(s,5)
+        model.apply_operation(&Op::UpdArr {
+            id: ts(s, 6),
+            obj: ts(s, 1),
+            after: ts(s, 3),
+            val: ts(s, 5),
+        });
+        assert_eq!(model.view(), json!([99]));
+    }
 }

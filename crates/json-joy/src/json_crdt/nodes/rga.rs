@@ -309,4 +309,70 @@ mod tests {
         let s: String = rga.iter_live().filter_map(|c| c.data.as_deref()).collect();
         assert_eq!(s, "hlo");
     }
+
+    /// Convergence test: two peers apply the same concurrent inserts at the same
+    /// position in different orders and must produce identical final views.
+    ///
+    /// Tie-breaking rule: higher-priority (higher timestamp) chunks are placed
+    /// first (lower index) in the sequence.  The current implementation skips
+    /// past existing chunks with HIGHER priority (compare > 0), which correctly
+    /// places the incoming chunk AFTER all higher-priority existing chunks.
+    #[test]
+    fn concurrent_inserts_converge_regardless_of_application_order() {
+        // Anchor: "A" at ts(1,1)
+        // Concurrent inserts after ts(1,1):
+        //   ts(2,1) — sid=2 (lower priority than sid=3)
+        //   ts(3,1) — sid=3 (higher priority than sid=2)
+        // Expected: higher-priority (sid=3) chunk appears before lower-priority (sid=2)
+
+        let build = |order: &[(u64, u64)]| -> String {
+            let mut rga: Rga<String> = Rga::new();
+            rga.insert(origin(), ts(1, 1), 1, "A".to_string());
+            for &(sid, time) in order {
+                rga.insert(ts(1, 1), ts(sid, time), 1, sid.to_string());
+            }
+            rga.iter_live().filter_map(|c| c.data.as_deref()).collect()
+        };
+
+        let view_a = build(&[(2, 1), (3, 1)]);
+        let view_b = build(&[(3, 1), (2, 1)]);
+        assert_eq!(view_a, view_b, "concurrent inserts must converge");
+        // sid=3 (higher priority) appears before sid=2
+        assert!(view_a.contains("3"), "higher-sid chunk must appear");
+        let pos3 = view_a.find('3').unwrap();
+        let pos2 = view_a.find('2').unwrap();
+        assert!(pos3 < pos2, "higher-priority (sid=3) chunk should precede sid=2 chunk");
+    }
+
+    /// Verify that `split_at_offset` handles multi-byte characters (emoji, CJK)
+    /// correctly — splits at char boundaries, not byte boundaries.
+    #[test]
+    fn split_at_offset_multibyte_chars() {
+        let mut rga: Rga<String> = Rga::new();
+        // Insert "A😀B" — 'A'=1 byte, '😀'=4 bytes, 'B'=1 byte; 3 chars total.
+        rga.insert(origin(), ts(1, 1), 3, "A😀B".to_string());
+        // Delete '😀' (middle char) = tss(1, 2, 1)
+        rga.delete(&[tss(1, 2, 1)]);
+        let s: String = rga.iter_live().filter_map(|c| c.data.as_deref()).collect();
+        assert_eq!(s, "AB");
+    }
+
+    /// Mid-chunk insertion: inserting after a character in the middle of a chunk
+    /// must split the chunk at the correct position.
+    ///
+    /// The new chunk's timestamp must have HIGHER priority (newer time) than the
+    /// continuation of the original chunk; this matches the invariant that
+    /// PatchBuilder always assigns timestamps newer than existing document content.
+    #[test]
+    fn insert_after_mid_chunk_character_with_higher_priority() {
+        let mut rga: Rga<String> = Rga::new();
+        // "hello" as one chunk ts(1,1)..ts(1,5)
+        rga.insert(origin(), ts(1, 1), 5, "hello".to_string());
+        // Insert "X" (ts(2, 1000), time=1000 >> 5) after the 3rd char ('l' at ts(1,3)).
+        // Since 1000 > 4 (time of the continuation chunk), X has higher priority
+        // than "lo" and is placed between "hel" and "lo".
+        rga.insert(ts(1, 3), ts(2, 1000), 1, "X".to_string());
+        let s: String = rga.iter_live().filter_map(|c| c.data.as_deref()).collect();
+        assert_eq!(s, "helXlo");
+    }
 }
