@@ -371,6 +371,7 @@ dependencies = [
 name = "json-joy"
 version = "0.1.0"
 dependencies = [
+ "base64",
  "json-joy-buffers",
  "json-joy-json-pack",
  "json-joy-json-type",
