@@ -27,7 +27,7 @@ use thiserror::Error;
 
 // Re-export types
 pub mod types;
-pub use types::{Path, PathStep, Reference};
+pub use types::{Path, PathStep, Reference, ReferenceKey};
 
 // Re-export validation
 pub mod validate;
@@ -254,20 +254,28 @@ pub fn is_integer(s: &str) -> bool {
 ///
 /// Returns a [`Reference`] containing the value, its container object, and key.
 ///
+/// Key semantics (mirrors upstream TypeScript):
+/// - `ref.key` is `ReferenceKey::Index(n)` when the container is an array.
+/// - `ref.key` is `ReferenceKey::String(s)` when the container is an object.
+/// - `ref.val` is `None` when the location does not exist (missing key or
+///   out-of-bounds index).  An explicit JSON `null` is returned as
+///   `Some(Value::Null)`, so callers can distinguish null from missing.
+///
 /// # Errors
 ///
-/// - `JsonPointerError::NotFound` - if a parent path doesn't exist
+/// - `JsonPointerError::NotFound` - if a *parent* path step doesn't exist
 /// - `JsonPointerError::InvalidIndex` - if an invalid array index is used
 ///
 /// # Example
 ///
 /// ```
-/// use json_joy_json_pointer::find;
+/// use json_joy_json_pointer::{find, ReferenceKey};
 /// use serde_json::json;
 ///
 /// let doc = json!({"foo": {"bar": 42}});
 /// let ref_val = find(&doc, &["foo".to_string(), "bar".to_string()]).unwrap();
 /// assert_eq!(ref_val.val, Some(json!(42)));
+/// assert_eq!(ref_val.key, Some(ReferenceKey::String("bar".to_string())));
 /// ```
 pub fn find(val: &Value, path: &[String]) -> Result<Reference, JsonPointerError> {
     if path.is_empty() {
@@ -278,21 +286,21 @@ pub fn find(val: &Value, path: &[String]) -> Result<Reference, JsonPointerError>
         });
     }
 
+    let path_len = path.len();
     let mut current: &Value = val;
     let mut obj: Option<Value> = None;
-    let mut key: Option<String> = None;
+    let mut key: Option<ReferenceKey> = None;
 
-    for path_step in path {
+    for (step_idx, path_step) in path.iter().enumerate() {
+        let is_last = step_idx == path_len - 1;
         obj = Some(current.clone());
-        key = Some(path_step.clone());
 
         match current {
             Value::Array(arr) => {
-                // Handle "-" as end of array
+                // Handle "-" as end-of-array sentinel (one past last).
                 let idx: usize = if path_step == "-" {
                     arr.len()
                 } else {
-                    // Validate index
                     if !is_valid_index(path_step) {
                         return Err(JsonPointerError::InvalidIndex);
                     }
@@ -300,21 +308,50 @@ pub fn find(val: &Value, path: &[String]) -> Result<Reference, JsonPointerError>
                         .parse()
                         .map_err(|_| JsonPointerError::InvalidIndex)?
                 };
-                current = arr.get(idx).unwrap_or(&Value::Null);
+                key = Some(ReferenceKey::Index(idx));
+                match arr.get(idx) {
+                    Some(v) => current = v,
+                    None => {
+                        // Out-of-bounds. Only valid as the last step; a
+                        // mid-path out-of-bounds means we cannot continue
+                        // traversal → NotFound.
+                        if !is_last {
+                            return Err(JsonPointerError::NotFound);
+                        }
+                        return Ok(Reference {
+                            val: None,
+                            obj,
+                            key,
+                        });
+                    }
+                }
             }
             Value::Object(map) => {
-                current = map.get(path_step).unwrap_or(&Value::Null);
+                let step_key = path_step.clone();
+                key = Some(ReferenceKey::String(step_key.clone()));
+                match map.get(&step_key) {
+                    Some(v) => current = v,
+                    None => {
+                        // Missing key. Only valid as the last step; a
+                        // mid-path missing key means we cannot continue
+                        // traversal → NotFound.
+                        if !is_last {
+                            return Err(JsonPointerError::NotFound);
+                        }
+                        return Ok(Reference {
+                            val: None,
+                            obj,
+                            key,
+                        });
+                    }
+                }
             }
             _ => return Err(JsonPointerError::NotFound),
         }
     }
 
     Ok(Reference {
-        val: if current.is_null() {
-            None
-        } else {
-            Some(current.clone())
-        },
+        val: Some(current.clone()),
         obj,
         key,
     })
@@ -397,7 +434,9 @@ pub fn get_mut<'a>(val: &'a mut Value, path: &[String]) -> Option<&'a mut Value>
 
 /// Find by pointer string directly.
 ///
-/// This is a convenience function that parses the pointer and finds the value.
+/// Returns `(container_object, key_string)` where `key_string` is the last
+/// path component (for callers that only need a string key).  For full
+/// parity — including a numeric key for array targets — use [`find`] instead.
 ///
 /// # Example
 ///
@@ -451,8 +490,9 @@ pub fn find_by_pointer(
         }
     }
 
-    // Handle last component
-    if start < pointer.len() {
+    // Handle last component (including empty-string key when pointer ends with '/').
+    // RFC 6901: "/" (single slash) addresses the key "" in the root object.
+    if start <= pointer.len() {
         let component = &pointer[start..];
         key = unescape_component(component);
         obj = Some(current.clone());
@@ -693,6 +733,7 @@ mod tests {
         let ref_val = find(&json!(123), &[]).unwrap();
         assert_eq!(ref_val.val, Some(json!(123)));
         assert!(ref_val.obj.is_none());
+        assert!(ref_val.key.is_none());
     }
 
     #[test]
@@ -701,28 +742,62 @@ mod tests {
         let ref_val = find(&doc, &["foo".to_string()]).unwrap();
         assert_eq!(ref_val.val, Some(json!("bar")));
         assert_eq!(ref_val.obj, Some(doc.clone()));
-        assert_eq!(ref_val.key, Some("foo".to_string()));
+        assert_eq!(ref_val.key, Some(ReferenceKey::String("foo".to_string())));
     }
 
+    // Bug 1: missing key must be None; explicit null must be Some(Null).
+
     #[test]
-    fn test_find_missing_key() {
+    fn test_find_missing_key_returns_none() {
         let doc = json!({"foo": 123});
         let ref_val = find(&doc, &["bar".to_string()]).unwrap();
-        assert_eq!(ref_val.val, None); // Missing key returns None (null becomes None)
-    }
-
-    #[test]
-    fn test_find_array_element() {
-        let doc = json!({"a": {"b": [1, 2, 3]}});
-        let ref_val = find(&doc, &["a".to_string(), "b".to_string(), "1".to_string()]).unwrap();
-        assert_eq!(ref_val.val, Some(json!(2)));
-    }
-
-    #[test]
-    fn test_find_array_dash() {
-        let doc = json!({"a": {"b": [1, 2, 3]}});
-        let ref_val = find(&doc, &["a".to_string(), "b".to_string(), "-".to_string()]).unwrap();
+        // Missing key → val is None
         assert_eq!(ref_val.val, None);
+        assert_eq!(ref_val.obj, Some(doc.clone()));
+        assert_eq!(ref_val.key, Some(ReferenceKey::String("bar".to_string())));
+    }
+
+    #[test]
+    fn test_find_explicit_null_returns_some_null() {
+        // Bug 1 fix: a key that exists with a null value returns Some(Null),
+        // not None. This is distinct from a missing key.
+        let doc = json!({"foo": null});
+        let ref_val = find(&doc, &["foo".to_string()]).unwrap();
+        assert_eq!(ref_val.val, Some(Value::Null));
+        assert_eq!(ref_val.obj, Some(doc.clone()));
+        assert_eq!(ref_val.key, Some(ReferenceKey::String("foo".to_string())));
+    }
+
+    // Bug 2: array access yields ReferenceKey::Index, not ReferenceKey::String.
+
+    #[test]
+    fn test_find_array_element_key_is_index() {
+        // Bug 2 fix: key for array element is ReferenceKey::Index(n).
+        let doc = json!({"a": {"b": [1, 2, 3]}});
+        let ref_val = find(
+            &doc,
+            &["a".to_string(), "b".to_string(), "1".to_string()],
+        )
+        .unwrap();
+        assert_eq!(ref_val.val, Some(json!(2)));
+        assert_eq!(ref_val.key, Some(ReferenceKey::Index(1)));
+        assert_eq!(ref_val.index(), Some(1));
+    }
+
+    #[test]
+    fn test_find_array_dash_key_is_length() {
+        // "-" resolves to arr.len() as a numeric index.
+        let doc = json!({"a": {"b": [1, 2, 3]}});
+        let ref_val = find(
+            &doc,
+            &["a".to_string(), "b".to_string(), "-".to_string()],
+        )
+        .unwrap();
+        // val is None (one past the end)
+        assert_eq!(ref_val.val, None);
+        // key is the array length (3) as a numeric index
+        assert_eq!(ref_val.key, Some(ReferenceKey::Index(3)));
+        assert!(ref_val.is_array_end());
     }
 
     #[test]
@@ -736,7 +811,24 @@ mod tests {
     fn test_find_not_found() {
         let doc = json!({"a": 123});
         let result = find(&doc, &["b".to_string(), "c".to_string()]);
+        // "b" is missing → returns Reference with val=None, not an error,
+        // because it is the *last* step.  But "c" needs to traverse through
+        // the result of "b", which is missing — that is a mid-path miss →
+        // NotFound.
         assert!(matches!(result, Err(JsonPointerError::NotFound)));
+    }
+
+    #[test]
+    fn test_find_array_past_end_key_is_index() {
+        let doc = json!({"a": {"b": [1, 2, 3]}});
+        let ref_val = find(
+            &doc,
+            &["a".to_string(), "b".to_string(), "3".to_string()],
+        )
+        .unwrap();
+        assert_eq!(ref_val.val, None);
+        assert_eq!(ref_val.key, Some(ReferenceKey::Index(3)));
+        assert!(ref_val.is_array_end());
     }
 
     #[test]
@@ -754,35 +846,11 @@ mod tests {
     }
 
     #[test]
-    fn test_find_explicit_null() {
-        // Explicit null in the document
-        let doc = json!({"foo": null});
-        let ref_val = find(&doc, &["foo".to_string()]).unwrap();
-        // Note: We treat explicit null as None (same as missing key)
-        // This matches the upstream behavior where undefined is used for missing
-        // and null values are still returned as undefined in the val field
-        assert_eq!(ref_val.val, None);
-        // But we still have the container and key
-        assert_eq!(ref_val.obj, Some(doc.clone()));
-        assert_eq!(ref_val.key, Some("foo".to_string()));
-    }
-
-    #[test]
     fn test_get_explicit_null() {
-        // get() returns None for missing, but also returns the null reference
-        // Actually in our implementation, get returns the reference to null
+        // get() borrows and returns the null reference directly.
         let doc = json!({"foo": null});
         let val = get(&doc, &["foo".to_string()]);
-        // We should be able to retrieve explicit null
         assert_eq!(val, Some(&Value::Null));
-    }
-
-    #[test]
-    fn test_find_array_past_end() {
-        let doc = json!({"a": {"b": [1, 2, 3]}});
-        let ref_val = find(&doc, &["a".to_string(), "b".to_string(), "3".to_string()]).unwrap();
-        assert_eq!(ref_val.val, None);
-        assert_eq!(ref_val.key, Some("3".to_string()));
     }
 
     #[test]
@@ -803,5 +871,113 @@ mod tests {
             let formatted = format_json_pointer(&path);
             assert_eq!(formatted, pointer, "Failed roundtrip for: {:?}", pointer);
         }
+    }
+
+    // --- Upstream parity: findByPointer spec scenarios ---
+
+    #[test]
+    fn test_upstream_find_key_in_object() {
+        let doc = json!({"foo": "bar"});
+        let r = find(&doc, &["foo".to_string()]).unwrap();
+        assert_eq!(r.val, Some(json!("bar")));
+        assert_eq!(r.key, Some(ReferenceKey::String("foo".to_string())));
+    }
+
+    #[test]
+    fn test_upstream_find_returns_container_and_key() {
+        let doc = json!({"foo": {"bar": {"baz": "qux", "a": 1}}});
+        let r = find(
+            &doc,
+            &["foo".to_string(), "bar".to_string(), "baz".to_string()],
+        )
+        .unwrap();
+        assert_eq!(r.val, Some(json!("qux")));
+        assert_eq!(r.obj, Some(json!({"baz": "qux", "a": 1})));
+        assert_eq!(r.key, Some(ReferenceKey::String("baz".to_string())));
+    }
+
+    #[test]
+    fn test_upstream_find_array_element_numeric_key() {
+        // Upstream: { val: 2, obj: [1,2,3], key: 1 }
+        let doc = json!({"a": {"b": [1, 2, 3]}});
+        let r = find(
+            &doc,
+            &["a".to_string(), "b".to_string(), "1".to_string()],
+        )
+        .unwrap();
+        assert_eq!(r.val, Some(json!(2)));
+        assert_eq!(r.obj, Some(json!([1, 2, 3])));
+        assert_eq!(r.key, Some(ReferenceKey::Index(1)));
+    }
+
+    #[test]
+    fn test_upstream_find_end_of_array() {
+        // Upstream: { val: undefined, obj: [1,2,3], key: 3 }
+        let doc = json!({"a": {"b": [1, 2, 3]}});
+        let r = find(
+            &doc,
+            &["a".to_string(), "b".to_string(), "-".to_string()],
+        )
+        .unwrap();
+        assert_eq!(r.val, None);
+        assert_eq!(r.obj, Some(json!([1, 2, 3])));
+        assert_eq!(r.key, Some(ReferenceKey::Index(3)));
+        assert!(r.is_array_reference());
+        assert!(r.is_array_end());
+    }
+
+    #[test]
+    fn test_upstream_find_one_past_array_boundary() {
+        // Upstream: { val: undefined, obj: [1,2,3], key: 3 }
+        let doc = json!({"a": {"b": [1, 2, 3]}});
+        let r = find(
+            &doc,
+            &["a".to_string(), "b".to_string(), "3".to_string()],
+        )
+        .unwrap();
+        assert_eq!(r.val, None);
+        assert_eq!(r.obj, Some(json!([1, 2, 3])));
+        assert_eq!(r.key, Some(ReferenceKey::Index(3)));
+        assert!(r.is_array_reference());
+        assert!(r.is_array_end());
+    }
+
+    #[test]
+    fn test_upstream_find_missing_object_key() {
+        // Upstream: { val: undefined, obj: {foo:123}, key: 'bar' }
+        let doc = json!({"foo": 123});
+        let r = find(&doc, &["bar".to_string()]).unwrap();
+        assert_eq!(r.val, None);
+        assert_eq!(r.obj, Some(json!({"foo": 123})));
+        assert_eq!(r.key, Some(ReferenceKey::String("bar".to_string())));
+    }
+
+    #[test]
+    fn test_upstream_find_missing_array_key_within_bounds_numeric() {
+        // Upstream: { val: undefined, obj: [1,2,3], key: 3 }
+        let doc = json!({"foo": 123, "bar": [1, 2, 3]});
+        let r = find(&doc, &["bar".to_string(), "3".to_string()]).unwrap();
+        assert_eq!(r.val, None);
+        assert_eq!(r.obj, Some(json!([1, 2, 3])));
+        assert_eq!(r.key, Some(ReferenceKey::Index(3)));
+    }
+
+    #[test]
+    fn test_upstream_throws_missing_key_mid_path() {
+        // Upstream: findByPointer('/b/c', {a:123}) throws
+        let doc = json!({"a": 123});
+        let result = find(&doc, &["b".to_string(), "c".to_string()]);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_upstream_throws_invalid_index() {
+        // Upstream: findByPointer('/a/b/-1', doc) throws
+        let doc = json!({"a": {"b": [1, 2, 3]}});
+        let result = find(
+            &doc,
+            &["a".to_string(), "b".to_string(), "-1".to_string()],
+        );
+        assert!(matches!(result, Err(JsonPointerError::InvalidIndex)));
     }
 }

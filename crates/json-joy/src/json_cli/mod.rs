@@ -274,4 +274,127 @@ mod tests {
         let out = lookup_pointer(doc, "/arr/1").unwrap();
         assert_eq!(out.trim(), "20");
     }
+
+    // ── RFC 6901 compliance matrix ─────────────────────────────────────────
+    // Based on https://www.rfc-editor.org/rfc/rfc6901#section-5
+
+    #[test]
+    fn pointer_rfc_example_root() {
+        // The RFC specifies that "" (empty string) returns the entire document.
+        let doc = r#"{"foo":["bar","baz"],"":0,"a/b":1,"c%d":2,"e^f":3,"g|h":4,"i\\j":5,"k\"l":6," ":7,"m~n":8}"#;
+        let out = lookup_pointer(doc, "").unwrap();
+        let v: serde_json::Value = serde_json::from_str(&out).unwrap();
+        assert_eq!(v["foo"], serde_json::json!(["bar", "baz"]));
+    }
+
+    #[test]
+    fn pointer_rfc_example_foo() {
+        let doc = r#"{"foo":["bar","baz"],"":0}"#;
+        let out = lookup_pointer(doc, "/foo").unwrap();
+        let v: serde_json::Value = serde_json::from_str(&out).unwrap();
+        assert_eq!(v, serde_json::json!(["bar", "baz"]));
+    }
+
+    #[test]
+    fn pointer_rfc_example_foo_0() {
+        let doc = r#"{"foo":["bar","baz"]}"#;
+        let out = lookup_pointer(doc, "/foo/0").unwrap();
+        assert_eq!(out.trim(), "\"bar\"");
+    }
+
+    #[test]
+    fn pointer_rfc_example_empty_key() {
+        // Key "" (the empty string) is a valid object key.
+        let doc = r#"{"":0,"foo":1}"#;
+        let out = lookup_pointer(doc, "/").unwrap();
+        assert_eq!(out.trim(), "0");
+    }
+
+    #[test]
+    fn pointer_rfc_example_tilde_escape() {
+        // "~0" in a pointer refers to a key containing a literal "~".
+        let doc = r#"{"m~n":8}"#;
+        let out = lookup_pointer(doc, "/m~0n").unwrap();
+        assert_eq!(out.trim(), "8");
+    }
+
+    #[test]
+    fn pointer_rfc_example_slash_escape() {
+        // "~1" in a pointer refers to a key containing a literal "/".
+        let doc = r#"{"a/b":1}"#;
+        let out = lookup_pointer(doc, "/a~1b").unwrap();
+        assert_eq!(out.trim(), "1");
+    }
+
+    #[test]
+    fn pointer_rfc_combined_escape() {
+        // Key that contains both ~ and /: "~/"
+        let doc = r#"{"~/":42}"#;
+        let out = lookup_pointer(doc, "/~0~1").unwrap();
+        assert_eq!(out.trim(), "42");
+    }
+
+    #[test]
+    fn pointer_nested_object_key() {
+        let doc = r#"{"a":{"b":{"c":99}}}"#;
+        let out = lookup_pointer(doc, "/a/b/c").unwrap();
+        assert_eq!(out.trim(), "99");
+    }
+
+    #[test]
+    fn pointer_array_last_element() {
+        let doc = r#"[10,20,30]"#;
+        let out = lookup_pointer(doc, "/2").unwrap();
+        assert_eq!(out.trim(), "30");
+    }
+
+    #[test]
+    fn pointer_array_out_of_bounds_is_error() {
+        let doc = r#"[10,20,30]"#;
+        let err = lookup_pointer(doc, "/5").unwrap_err();
+        assert!(matches!(err, CliError::Pointer(_)));
+    }
+
+    #[test]
+    fn pointer_null_value_found() {
+        // A key whose value is JSON null should be found, not treated as missing.
+        let doc = r#"{"key":null}"#;
+        let out = lookup_pointer(doc, "/key").unwrap();
+        assert_eq!(out.trim(), "null");
+    }
+
+    #[test]
+    fn pointer_false_value_found() {
+        let doc = r#"{"flag":false}"#;
+        let out = lookup_pointer(doc, "/flag").unwrap();
+        assert_eq!(out.trim(), "false");
+    }
+
+    #[test]
+    fn pointer_zero_value_found() {
+        let doc = r#"{"n":0}"#;
+        let out = lookup_pointer(doc, "/n").unwrap();
+        assert_eq!(out.trim(), "0");
+    }
+
+    #[test]
+    fn pointer_missing_key_is_not_found() {
+        let doc = r#"{"a":1}"#;
+        let err = lookup_pointer(doc, "/b").unwrap_err();
+        assert!(err.to_string().contains("NOT_FOUND"));
+    }
+
+    #[test]
+    fn pointer_array_in_object() {
+        let doc = r#"{"list":[{"x":1},{"x":2},{"x":3}]}"#;
+        let out = lookup_pointer(doc, "/list/1/x").unwrap();
+        assert_eq!(out.trim(), "2");
+    }
+
+    #[test]
+    fn pointer_non_numeric_array_index_is_not_found() {
+        // An alphabetical key on an array should fail, not panic.
+        let doc = r#"[1,2,3]"#;
+        let _ = lookup_pointer(doc, "/abc"); // must not panic
+    }
 }

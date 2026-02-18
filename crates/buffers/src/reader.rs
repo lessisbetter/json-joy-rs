@@ -2,6 +2,8 @@
 
 use std::str;
 
+use crate::BufferError;
+
 /// A binary buffer reader that reads data from a byte slice.
 ///
 /// The reader maintains a cursor position and provides methods for reading
@@ -239,6 +241,187 @@ impl<'a> Reader<'a> {
         // ASCII is a subset of UTF-8, so this is safe
         str::from_utf8(&self.uint8[start..self.x]).unwrap_or("")
     }
+
+    // -----------------------------------------------------------------------
+    // Bounds-checked variants – return Result<T, BufferError::EndOfBuffer>
+    // instead of panicking when reading past the end of the buffer.
+    // -----------------------------------------------------------------------
+
+    /// Checks that `n` more bytes are available from the current cursor.
+    #[inline]
+    fn check(&self, n: usize) -> Result<(), BufferError> {
+        if self.x + n > self.uint8.len() {
+            Err(BufferError::EndOfBuffer)
+        } else {
+            Ok(())
+        }
+    }
+
+    /// Peeks at the current byte without advancing — returns an error when at
+    /// or past the end of the buffer.
+    pub fn try_peek(&self) -> Result<u8, BufferError> {
+        self.check(1)?;
+        Ok(self.uint8[self.x])
+    }
+
+    /// Reads an unsigned 8-bit integer, returning `Err` on out-of-bounds.
+    #[inline]
+    pub fn try_u8(&mut self) -> Result<u8, BufferError> {
+        self.check(1)?;
+        let val = self.uint8[self.x];
+        self.x += 1;
+        Ok(val)
+    }
+
+    /// Reads a signed 8-bit integer, returning `Err` on out-of-bounds.
+    #[inline]
+    pub fn try_i8(&mut self) -> Result<i8, BufferError> {
+        self.check(1)?;
+        let val = self.uint8[self.x] as i8;
+        self.x += 1;
+        Ok(val)
+    }
+
+    /// Reads an unsigned 16-bit big-endian integer, returning `Err` on
+    /// out-of-bounds.
+    #[inline]
+    pub fn try_u16(&mut self) -> Result<u16, BufferError> {
+        self.check(2)?;
+        let x = self.x;
+        let val = ((self.uint8[x] as u16) << 8) | (self.uint8[x + 1] as u16);
+        self.x += 2;
+        Ok(val)
+    }
+
+    /// Reads a signed 16-bit big-endian integer, returning `Err` on
+    /// out-of-bounds.
+    #[inline]
+    pub fn try_i16(&mut self) -> Result<i16, BufferError> {
+        self.check(2)?;
+        let val = i16::from_be_bytes([self.uint8[self.x], self.uint8[self.x + 1]]);
+        self.x += 2;
+        Ok(val)
+    }
+
+    /// Reads an unsigned 32-bit big-endian integer, returning `Err` on
+    /// out-of-bounds.
+    #[inline]
+    pub fn try_u32(&mut self) -> Result<u32, BufferError> {
+        self.check(4)?;
+        let val = u32::from_be_bytes([
+            self.uint8[self.x],
+            self.uint8[self.x + 1],
+            self.uint8[self.x + 2],
+            self.uint8[self.x + 3],
+        ]);
+        self.x += 4;
+        Ok(val)
+    }
+
+    /// Reads a signed 32-bit big-endian integer, returning `Err` on
+    /// out-of-bounds.
+    #[inline]
+    pub fn try_i32(&mut self) -> Result<i32, BufferError> {
+        self.check(4)?;
+        let val = i32::from_be_bytes([
+            self.uint8[self.x],
+            self.uint8[self.x + 1],
+            self.uint8[self.x + 2],
+            self.uint8[self.x + 3],
+        ]);
+        self.x += 4;
+        Ok(val)
+    }
+
+    /// Reads an unsigned 64-bit big-endian integer, returning `Err` on
+    /// out-of-bounds.
+    #[inline]
+    pub fn try_u64(&mut self) -> Result<u64, BufferError> {
+        self.check(8)?;
+        let val = u64::from_be_bytes([
+            self.uint8[self.x],
+            self.uint8[self.x + 1],
+            self.uint8[self.x + 2],
+            self.uint8[self.x + 3],
+            self.uint8[self.x + 4],
+            self.uint8[self.x + 5],
+            self.uint8[self.x + 6],
+            self.uint8[self.x + 7],
+        ]);
+        self.x += 8;
+        Ok(val)
+    }
+
+    /// Reads a signed 64-bit big-endian integer, returning `Err` on
+    /// out-of-bounds.
+    #[inline]
+    pub fn try_i64(&mut self) -> Result<i64, BufferError> {
+        self.check(8)?;
+        let val = i64::from_be_bytes([
+            self.uint8[self.x],
+            self.uint8[self.x + 1],
+            self.uint8[self.x + 2],
+            self.uint8[self.x + 3],
+            self.uint8[self.x + 4],
+            self.uint8[self.x + 5],
+            self.uint8[self.x + 6],
+            self.uint8[self.x + 7],
+        ]);
+        self.x += 8;
+        Ok(val)
+    }
+
+    /// Reads a 32-bit big-endian float, returning `Err` on out-of-bounds.
+    #[inline]
+    pub fn try_f32(&mut self) -> Result<f32, BufferError> {
+        self.check(4)?;
+        let val = f32::from_be_bytes([
+            self.uint8[self.x],
+            self.uint8[self.x + 1],
+            self.uint8[self.x + 2],
+            self.uint8[self.x + 3],
+        ]);
+        self.x += 4;
+        Ok(val)
+    }
+
+    /// Reads a 64-bit big-endian float, returning `Err` on out-of-bounds.
+    #[inline]
+    pub fn try_f64(&mut self) -> Result<f64, BufferError> {
+        self.check(8)?;
+        let val = f64::from_be_bytes([
+            self.uint8[self.x],
+            self.uint8[self.x + 1],
+            self.uint8[self.x + 2],
+            self.uint8[self.x + 3],
+            self.uint8[self.x + 4],
+            self.uint8[self.x + 5],
+            self.uint8[self.x + 6],
+            self.uint8[self.x + 7],
+        ]);
+        self.x += 8;
+        Ok(val)
+    }
+
+    /// Reads `size` raw bytes and advances the cursor, returning `Err` on
+    /// out-of-bounds.
+    pub fn try_buf(&mut self, size: usize) -> Result<&'a [u8], BufferError> {
+        self.check(size)?;
+        let x = self.x;
+        let end = x + size;
+        let bin = &self.uint8[x..end];
+        self.x = end;
+        Ok(bin)
+    }
+
+    /// Reads a UTF-8 string of `size` bytes, returning `Err` on out-of-bounds
+    /// or invalid UTF-8.
+    pub fn try_utf8(&mut self, size: usize) -> Result<&'a str, BufferError> {
+        self.check(size)?;
+        let start = self.x;
+        self.x += size;
+        str::from_utf8(&self.uint8[start..self.x]).map_err(|_| BufferError::InvalidUtf8)
+    }
 }
 
 #[cfg(test)]
@@ -291,5 +474,204 @@ mod tests {
         let mut reader = Reader::new(data);
         assert_eq!(reader.utf8(5), "hello");
         assert_eq!(reader.utf8(6), " world");
+    }
+
+    // ------------------------------------------------------------------
+    // Bounds-checked try_* variants
+    // ------------------------------------------------------------------
+
+    #[test]
+    fn test_try_u8_success() {
+        let data = [0x42u8];
+        let mut reader = Reader::new(&data);
+        assert_eq!(reader.try_u8(), Ok(0x42));
+        assert_eq!(reader.x, 1);
+    }
+
+    #[test]
+    fn test_try_u8_end_of_buffer() {
+        let data: [u8; 0] = [];
+        let mut reader = Reader::new(&data);
+        assert_eq!(reader.try_u8(), Err(BufferError::EndOfBuffer));
+        // Cursor must not advance on error
+        assert_eq!(reader.x, 0);
+    }
+
+    #[test]
+    fn test_try_i8_negative() {
+        let data = [0xfeu8]; // -2 in two's complement
+        let mut reader = Reader::new(&data);
+        assert_eq!(reader.try_i8(), Ok(-2i8));
+    }
+
+    #[test]
+    fn test_try_i8_end_of_buffer() {
+        let data: [u8; 0] = [];
+        let mut reader = Reader::new(&data);
+        assert_eq!(reader.try_i8(), Err(BufferError::EndOfBuffer));
+    }
+
+    #[test]
+    fn test_try_u16_success() {
+        let data = [0x01u8, 0x02];
+        let mut reader = Reader::new(&data);
+        assert_eq!(reader.try_u16(), Ok(0x0102u16));
+        assert_eq!(reader.x, 2);
+    }
+
+    #[test]
+    fn test_try_u16_partial() {
+        let data = [0x01u8]; // only 1 byte — not enough for u16
+        let mut reader = Reader::new(&data);
+        assert_eq!(reader.try_u16(), Err(BufferError::EndOfBuffer));
+        assert_eq!(reader.x, 0);
+    }
+
+    #[test]
+    fn test_try_i16_negative() {
+        // -1000 big-endian: 0xfc18
+        let mut writer = crate::Writer::new();
+        writer.i16(-1000i16);
+        let data = writer.flush();
+        let mut reader = Reader::new(&data);
+        assert_eq!(reader.try_i16(), Ok(-1000i16));
+    }
+
+    #[test]
+    fn test_try_u32_success() {
+        let data = [0x01u8, 0x02, 0x03, 0x04];
+        let mut reader = Reader::new(&data);
+        assert_eq!(reader.try_u32(), Ok(0x01020304u32));
+    }
+
+    #[test]
+    fn test_try_u32_end_of_buffer() {
+        let data = [0x01u8, 0x02, 0x03]; // 3 bytes — not enough for u32
+        let mut reader = Reader::new(&data);
+        assert_eq!(reader.try_u32(), Err(BufferError::EndOfBuffer));
+        assert_eq!(reader.x, 0);
+    }
+
+    #[test]
+    fn test_try_i32_negative() {
+        let mut writer = crate::Writer::new();
+        writer.i32(-123456);
+        let data = writer.flush();
+        let mut reader = Reader::new(&data);
+        assert_eq!(reader.try_i32(), Ok(-123456i32));
+    }
+
+    #[test]
+    fn test_try_u64_success() {
+        let mut writer = crate::Writer::new();
+        writer.u64(0x0102030405060708u64);
+        let data = writer.flush();
+        let mut reader = Reader::new(&data);
+        assert_eq!(reader.try_u64(), Ok(0x0102030405060708u64));
+    }
+
+    #[test]
+    fn test_try_u64_end_of_buffer() {
+        let data = [0u8; 7]; // 7 bytes — not enough for u64
+        let mut reader = Reader::new(&data);
+        assert_eq!(reader.try_u64(), Err(BufferError::EndOfBuffer));
+        assert_eq!(reader.x, 0);
+    }
+
+    #[test]
+    fn test_try_i64_negative() {
+        let mut writer = crate::Writer::new();
+        writer.i64(-9_999_999_999i64);
+        let data = writer.flush();
+        let mut reader = Reader::new(&data);
+        assert_eq!(reader.try_i64(), Ok(-9_999_999_999i64));
+    }
+
+    #[test]
+    fn test_try_f32_success() {
+        let mut writer = crate::Writer::new();
+        writer.f32(1.5f32);
+        let data = writer.flush();
+        let mut reader = Reader::new(&data);
+        assert!((reader.try_f32().unwrap() - 1.5f32).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_try_f32_end_of_buffer() {
+        let data = [0u8; 3]; // 3 bytes — not enough for f32
+        let mut reader = Reader::new(&data);
+        assert_eq!(reader.try_f32(), Err(BufferError::EndOfBuffer));
+    }
+
+    #[test]
+    fn test_try_f64_success() {
+        let mut writer = crate::Writer::new();
+        writer.f64(std::f64::consts::PI);
+        let data = writer.flush();
+        let mut reader = Reader::new(&data);
+        let got = reader.try_f64().unwrap();
+        assert!((got - std::f64::consts::PI).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_try_f64_end_of_buffer() {
+        let data = [0u8; 7]; // 7 bytes — not enough for f64
+        let mut reader = Reader::new(&data);
+        assert_eq!(reader.try_f64(), Err(BufferError::EndOfBuffer));
+    }
+
+    #[test]
+    fn test_try_buf_success() {
+        let data = [1u8, 2, 3, 4, 5];
+        let mut reader = Reader::new(&data);
+        assert_eq!(reader.try_buf(3), Ok([1u8, 2, 3].as_ref()));
+        assert_eq!(reader.x, 3);
+    }
+
+    #[test]
+    fn test_try_buf_end_of_buffer() {
+        let data = [1u8, 2];
+        let mut reader = Reader::new(&data);
+        assert_eq!(reader.try_buf(5), Err(BufferError::EndOfBuffer));
+        assert_eq!(reader.x, 0);
+    }
+
+    #[test]
+    fn test_try_utf8_success() {
+        let data = b"hello";
+        let mut reader = Reader::new(data);
+        assert_eq!(reader.try_utf8(5), Ok("hello"));
+    }
+
+    #[test]
+    fn test_try_utf8_end_of_buffer() {
+        let data = b"hi";
+        let mut reader = Reader::new(data);
+        assert_eq!(reader.try_utf8(10), Err(BufferError::EndOfBuffer));
+        assert_eq!(reader.x, 0);
+    }
+
+    #[test]
+    fn test_try_utf8_invalid() {
+        // 0xff is not valid UTF-8
+        let data = [0xffu8, 0xfe];
+        let mut reader = Reader::new(&data);
+        assert_eq!(reader.try_utf8(2), Err(BufferError::InvalidUtf8));
+    }
+
+    #[test]
+    fn test_try_peek_success() {
+        let data = [0x55u8];
+        let reader = Reader::new(&data);
+        assert_eq!(reader.try_peek(), Ok(0x55));
+        // cursor unchanged
+        assert_eq!(reader.x, 0);
+    }
+
+    #[test]
+    fn test_try_peek_end_of_buffer() {
+        let data: [u8; 0] = [];
+        let reader = Reader::new(&data);
+        assert_eq!(reader.try_peek(), Err(BufferError::EndOfBuffer));
     }
 }

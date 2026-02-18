@@ -128,20 +128,20 @@ impl RandomJson {
     /// Produces a mix of small integers, medium integers, and floating point numbers.
     pub fn gen_number() -> f64 {
         let mut rng = rand::thread_rng();
-        let choice: f64 = rng.gen();
 
-        let num = if choice > 0.2 {
-            // Large float
-            rng.gen::<f64>() * 1e9
-        } else if choice < 0.2 {
-            // Small integer (-255 to 255)
+        // Draw a fresh value for each branch so all four paths are reachable.
+        let num = if rng.gen_bool(0.2) {
+            // Small integer (-128 to 127)
             (rng.gen::<u8>() as i32 - 128) as f64
-        } else if choice < 0.4 {
-            // Medium integer
+        } else if rng.gen_bool(0.2) {
+            // Medium integer (-32768 to 32767)
             (rng.gen::<u16>() as i32 - 32768) as f64
-        } else {
+        } else if rng.gen_bool(0.2) {
             // Very large integer
             rng.gen::<i64>() as f64
+        } else {
+            // Large float
+            rng.gen::<f64>() * 1e9
         };
 
         if num == 0.0 { 0.0 } else { num }
@@ -271,8 +271,10 @@ impl RandomJson {
         let node_type = self.pick_node_type();
         let node = self.generate_value(node_type);
 
-        // If we created a new container, add it to the pool
-        if matches!(node, Value::Object(_) | Value::Array(_)) {
+        // If we created a new real container (not binary-as-array), add it to the pool.
+        // Binary values are represented as Value::Array but are leaf nodes; only
+        // containers created for NodeType::Array or NodeType::Object should be added.
+        if matches!(node_type, NodeType::Array | NodeType::Object) {
             self.containers.push_back(node.clone());
         }
 
@@ -369,11 +371,13 @@ mod tests {
 
     #[test]
     fn test_gen_string() {
+        // Use char count, not byte count: multi-byte Unicode chars make .len() > char count.
         let s = RandomJson::gen_string(Some(10));
-        assert_eq!(s.len(), 10);
+        assert_eq!(s.chars().count(), 10);
 
         let s = RandomJson::gen_string(None);
-        assert!(s.len() >= 1 && s.len() <= 16);
+        let char_count = s.chars().count();
+        assert!(char_count >= 1 && char_count <= 16);
     }
 
     #[test]

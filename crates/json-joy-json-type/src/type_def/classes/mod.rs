@@ -449,11 +449,12 @@ pub struct AliasType {
     pub id: String,
     pub type_: Box<super::TypeNode>,
     pub system: Arc<ModuleType>,
+    pub base: BaseInfo,
 }
 
 impl AliasType {
     pub fn new(system: Arc<ModuleType>, id: impl Into<String>, type_: super::TypeNode) -> Self {
-        Self { id: id.into(), type_: Box::new(type_), system }
+        Self { id: id.into(), type_: Box::new(type_), system, base: BaseInfo::default() }
     }
     pub fn get_type(&self) -> &super::TypeNode { &self.type_ }
     pub fn get_schema(&self) -> Schema { self.type_.get_schema() }

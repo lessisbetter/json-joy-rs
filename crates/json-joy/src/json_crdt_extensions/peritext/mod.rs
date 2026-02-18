@@ -451,4 +451,206 @@ mod tests {
         assert!(slice.is_marker());
         assert!(slice.range().is_collapsed());
     }
+
+    // ── All 4 anchor combinations ──────────────────────────────────────────
+
+    #[test]
+    fn anchor_before_before() {
+        // start=Before, end=Before — both endpoints are exclusive
+        let (mut model, pt) = setup();
+        pt.ins_at(&mut model, 0, "hello");
+        let str_node = match model.index.get(&TsKey::from(pt.str_id)) {
+            Some(CrdtNode::Str(s)) => s.clone(),
+            _ => panic!(),
+        };
+        let start_id = str_node.find(1).unwrap();
+        let end_id   = str_node.find(3).unwrap();
+        let range = Range::new(
+            Point::new(start_id, Anchor::Before),
+            Point::new(end_id,   Anchor::Before),
+        );
+        let slice_id = pt.ins_slice(&mut model, &range, SliceStacking::Many, "x", None);
+        let slice = pt.saved_slices.get(&model, slice_id).unwrap();
+        assert_eq!(slice.start.anchor, Anchor::Before);
+        assert_eq!(slice.end.anchor,   Anchor::Before);
+    }
+
+    #[test]
+    fn anchor_before_after() {
+        // start=Before, end=After — standard inclusive range
+        let (mut model, pt) = setup();
+        pt.ins_at(&mut model, 0, "hello");
+        let range = pt.range_at(&model, 1, 3).unwrap();
+        let slice_id = pt.ins_slice(&mut model, &range, SliceStacking::Many, "bold", None);
+        let slice = pt.saved_slices.get(&model, slice_id).unwrap();
+        assert_eq!(slice.start.anchor, Anchor::Before);
+        assert_eq!(slice.end.anchor,   Anchor::After);
+    }
+
+    #[test]
+    fn anchor_after_before() {
+        // start=After, end=Before — slice shrinks inward from both sides
+        let (mut model, pt) = setup();
+        pt.ins_at(&mut model, 0, "hello");
+        let str_node = match model.index.get(&TsKey::from(pt.str_id)) {
+            Some(CrdtNode::Str(s)) => s.clone(),
+            _ => panic!(),
+        };
+        let start_id = str_node.find(1).unwrap();
+        let end_id   = str_node.find(3).unwrap();
+        let range = Range::new(
+            Point::new(start_id, Anchor::After),
+            Point::new(end_id,   Anchor::Before),
+        );
+        let slice_id = pt.ins_slice(&mut model, &range, SliceStacking::Many, "x", None);
+        let slice = pt.saved_slices.get(&model, slice_id).unwrap();
+        assert_eq!(slice.start.anchor, Anchor::After);
+        assert_eq!(slice.end.anchor,   Anchor::Before);
+    }
+
+    #[test]
+    fn anchor_after_after() {
+        // start=After, end=After — start is exclusive, end is inclusive
+        let (mut model, pt) = setup();
+        pt.ins_at(&mut model, 0, "hello");
+        let str_node = match model.index.get(&TsKey::from(pt.str_id)) {
+            Some(CrdtNode::Str(s)) => s.clone(),
+            _ => panic!(),
+        };
+        let start_id = str_node.find(1).unwrap();
+        let end_id   = str_node.find(3).unwrap();
+        let range = Range::new(
+            Point::new(start_id, Anchor::After),
+            Point::new(end_id,   Anchor::After),
+        );
+        let slice_id = pt.ins_slice(&mut model, &range, SliceStacking::Many, "x", None);
+        let slice = pt.saved_slices.get(&model, slice_id).unwrap();
+        assert_eq!(slice.start.anchor, Anchor::After);
+        assert_eq!(slice.end.anchor,   Anchor::After);
+    }
+
+    // ── SliceType::Steps roundtrip ────────────────────────────────────────
+
+    #[test]
+    fn steps_slice_type_int_roundtrip() {
+        use crate::json_crdt_extensions::peritext::slice::types::{SliceType, TypeTag};
+        // Steps([TYPE_UL, TYPE_LI]) — a list item inside an unordered list.
+        let st = SliceType::Steps(vec![TypeTag::Int(6), TypeTag::Int(9)]);
+        let packed = st.to_pack();
+        let rt = SliceType::from_pack(&packed).unwrap();
+        assert_eq!(rt, st);
+    }
+
+    #[test]
+    fn steps_slice_type_str_roundtrip() {
+        use crate::json_crdt_extensions::peritext::slice::types::{SliceType, TypeTag};
+        let st = SliceType::Steps(vec![TypeTag::Str("ul".to_string()), TypeTag::Str("li".to_string())]);
+        let packed = st.to_pack();
+        let rt = SliceType::from_pack(&packed).unwrap();
+        assert_eq!(rt, st);
+    }
+
+    #[test]
+    fn steps_inserted_into_model_and_retrieved() {
+        use crate::json_crdt_extensions::peritext::slice::types::{SliceType, TypeTag};
+        let (mut model, pt) = setup();
+        pt.ins_at(&mut model, 0, "hello world");
+        let range = pt.range_at(&model, 0, 5).unwrap();
+        let steps = SliceType::Steps(vec![TypeTag::Int(TYPE_UL), TypeTag::Int(TYPE_LI)]);
+        let slice_id = pt.ins_slice(&mut model, &range, SliceStacking::Marker, steps.clone(), None);
+        let slice = pt.saved_slices.get(&model, slice_id).unwrap();
+        assert_eq!(slice.slice_type, steps);
+    }
+
+    // ── Point::view_pos with deleted characters ───────────────────────────
+
+    #[test]
+    fn view_pos_before_deleted_char() {
+        // When a character is deleted, a Before-anchor point on it returns
+        // the position of the surrounding live chars.
+        let (mut model, pt) = setup();
+        pt.ins_at(&mut model, 0, "abc");
+        // Delete 'b' (index 1).
+        pt.del_at(&mut model, 1, 1);
+        // "ac" is now the visible string.
+        let str_node = match model.index.get(&TsKey::from(pt.str_id)) {
+            Some(CrdtNode::Str(s)) => s.clone(),
+            _ => panic!(),
+        };
+        // A point on the deleted char should land at position 1 (between a and c).
+        // The chunk for 'b' is deleted; view_pos returns the live count before it.
+        assert_eq!(str_node.view_str(), "ac");
+        // Point at 'b' (still addressable by ID) — deleted chunk returns live count.
+        // We verify indirectly: a point on 'a' (After) is position 1.
+        let a_id = str_node.find(0).unwrap(); // 'a' is now at index 0
+        let after_a = Point::new(a_id, Anchor::After);
+        assert_eq!(after_a.view_pos(&str_node), 1);
+    }
+
+    #[test]
+    fn view_pos_unicode_multibyte() {
+        // view_pos counts Unicode scalar values, not bytes.
+        let (mut model, pt) = setup();
+        pt.ins_at(&mut model, 0, "héllo");  // 'é' is 2 bytes (U+00E9)
+        let str_node = match model.index.get(&TsKey::from(pt.str_id)) {
+            Some(CrdtNode::Str(s)) => s.clone(),
+            _ => panic!(),
+        };
+        assert_eq!(str_node.view_str(), "héllo");
+        assert_eq!(str_node.size(), 5); // 5 chars, not 6 bytes
+        // The point After the 'é' (index 1) should be at view position 2.
+        let e_id = str_node.find(1).unwrap();
+        let after_e = Point::new(e_id, Anchor::After);
+        assert_eq!(after_e.view_pos(&str_node), 2);
+    }
+
+    #[test]
+    fn view_pos_emoji_unicode() {
+        // Emoji are single scalar values.
+        let (mut model, pt) = setup();
+        pt.ins_at(&mut model, 0, "a😀b");  // emoji is 4 bytes
+        let str_node = match model.index.get(&TsKey::from(pt.str_id)) {
+            Some(CrdtNode::Str(s)) => s.clone(),
+            _ => panic!(),
+        };
+        assert_eq!(str_node.size(), 3); // 3 chars: 'a', '😀', 'b'
+        let emoji_id = str_node.find(1).unwrap();
+        let before_emoji = Point::new(emoji_id, Anchor::Before);
+        assert_eq!(before_emoji.view_pos(&str_node), 1);
+        let after_emoji = Point::new(emoji_id, Anchor::After);
+        assert_eq!(after_emoji.view_pos(&str_node), 2);
+    }
+
+    // ── Stacking variants ─────────────────────────────────────────────────
+
+    #[test]
+    fn stacking_one_roundtrip() {
+        let (mut model, pt) = setup();
+        pt.ins_at(&mut model, 0, "hello");
+        let range = pt.range_at(&model, 0, 5).unwrap();
+        let sid = pt.ins_slice(&mut model, &range, SliceStacking::One, "link", None);
+        let slice = pt.saved_slices.get(&model, sid).unwrap();
+        assert_eq!(slice.stacking, SliceStacking::One);
+    }
+
+    #[test]
+    fn stacking_erase_roundtrip() {
+        let (mut model, pt) = setup();
+        pt.ins_at(&mut model, 0, "hello");
+        let range = pt.range_at(&model, 0, 5).unwrap();
+        let sid = pt.ins_slice(&mut model, &range, SliceStacking::Erase, "bold", None);
+        let slice = pt.saved_slices.get(&model, sid).unwrap();
+        assert_eq!(slice.stacking, SliceStacking::Erase);
+    }
+
+    #[test]
+    fn stacking_cursor_roundtrip() {
+        let (mut model, pt) = setup();
+        pt.ins_at(&mut model, 0, "hello");
+        let range = pt.range_at(&model, 2, 1).unwrap();
+        let sid = pt.ins_slice(&mut model, &range, SliceStacking::Cursor, TYPE_CURSOR, None);
+        let slice = pt.saved_slices.get(&model, sid).unwrap();
+        assert_eq!(slice.stacking, SliceStacking::Cursor);
+        assert!(slice.is_inline());
+    }
 }

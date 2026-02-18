@@ -15,6 +15,7 @@ json-joy-json-pointer = { path = "../json-joy-json-pointer" }
 serde_json = { version = "1.0", features = ["preserve_order"] }
 thiserror = "2.0"
 base64 = "0.22"
+regex = "1"
 
 [[bin]]
 name = "json-pack"

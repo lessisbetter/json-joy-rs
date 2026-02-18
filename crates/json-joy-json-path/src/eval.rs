@@ -260,13 +260,31 @@ impl JsonPathEval {
                 _ => false,
             },
             (Some(l), Some(r)) => {
+                // Use compare_values for all operators. This handles the case where
+                // a numeric literal parsed as f64 (e.g. 1.0) must compare equal to an
+                // integer JSON value (e.g. json!(1)), since serde_json's PartialEq
+                // distinguishes integer and float representations.
+                let ord = Self::compare_values(l, r);
                 match operator {
-                    ComparisonOperator::Equal => l == r,
-                    ComparisonOperator::NotEqual => l != r,
-                    ComparisonOperator::Less => Self::compare_values(l, r) == Some(std::cmp::Ordering::Less),
-                    ComparisonOperator::LessEqual => matches!(Self::compare_values(l, r), Some(std::cmp::Ordering::Less | std::cmp::Ordering::Equal)),
-                    ComparisonOperator::Greater => Self::compare_values(l, r) == Some(std::cmp::Ordering::Greater),
-                    ComparisonOperator::GreaterEqual => matches!(Self::compare_values(l, r), Some(std::cmp::Ordering::Greater | std::cmp::Ordering::Equal)),
+                    ComparisonOperator::Equal => {
+                        // For numbers use ordering-based equality; for other types use PartialEq
+                        if let (Value::Number(_), Value::Number(_)) = (l, r) {
+                            ord == Some(std::cmp::Ordering::Equal)
+                        } else {
+                            l == r
+                        }
+                    }
+                    ComparisonOperator::NotEqual => {
+                        if let (Value::Number(_), Value::Number(_)) = (l, r) {
+                            ord != Some(std::cmp::Ordering::Equal)
+                        } else {
+                            l != r
+                        }
+                    }
+                    ComparisonOperator::Less => ord == Some(std::cmp::Ordering::Less),
+                    ComparisonOperator::LessEqual => matches!(ord, Some(std::cmp::Ordering::Less | std::cmp::Ordering::Equal)),
+                    ComparisonOperator::Greater => ord == Some(std::cmp::Ordering::Greater),
+                    ComparisonOperator::GreaterEqual => matches!(ord, Some(std::cmp::Ordering::Greater | std::cmp::Ordering::Equal)),
                 }
             }
             _ => false,

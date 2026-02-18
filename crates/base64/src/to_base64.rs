@@ -1,7 +1,6 @@
 //! Standard base64 encoding function.
 
-/// Standard base64 alphabet.
-const ALPHABET: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+use crate::constants::ALPHABET_BYTES;
 
 /// Pre-computed two-character lookup table for base64 encoding.
 /// Each entry is two bytes (big-endian) representing two base64 characters.
@@ -12,8 +11,8 @@ static TABLE2: [[u8; 2]; 4096] = {
         let mut j = 0;
         while j < 64 {
             let idx = i * 64 + j;
-            table[idx][0] = ALPHABET[i];
-            table[idx][1] = ALPHABET[j];
+            table[idx][0] = ALPHABET_BYTES[i];
+            table[idx][1] = ALPHABET_BYTES[j];
             j += 1;
         }
         i += 1;
@@ -81,7 +80,7 @@ pub fn to_base64(uint8: &[u8]) -> String {
 
         out.push(TABLE2[v1][0] as char);
         out.push(TABLE2[v1][1] as char);
-        out.push(ALPHABET[v2] as char);
+        out.push(ALPHABET_BYTES[v2] as char);
         out.push('=');
     }
 

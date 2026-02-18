@@ -100,11 +100,7 @@ impl TypeNode {
             Self::Fn(t) => &t.base,
             Self::FnRx(t) => &t.base,
             Self::Key(t) => &t.base,
-            Self::Alias(_) => {
-                // AliasType has no BaseInfo — return a static default
-                static DEFAULT: std::sync::OnceLock<BaseInfo> = std::sync::OnceLock::new();
-                DEFAULT.get_or_init(BaseInfo::default)
-            }
+            Self::Alias(t) => &t.base,
         }
     }
 }

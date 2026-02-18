@@ -12,7 +12,7 @@
 use serde_json::Value;
 
 use crate::json_crdt::constants::ORIGIN;
-use crate::json_crdt::nodes::{ArrNode, BinNode, CrdtNode, NodeIndex, ObjNode, StrNode, TsKey, ValNode};
+use crate::json_crdt::nodes::{ArrNode, BinNode, CrdtNode, NodeIndex, ObjNode, StrNode, TsKey, ValNode, VecNode};
 use crate::json_crdt_patch::clock::{Ts, Tss};
 use crate::json_crdt_patch::operations::ConValue;
 use crate::json_crdt_patch::patch::Patch;
@@ -196,6 +196,43 @@ impl<'a> JsonCrdtDiff<'a> {
         Ok(())
     }
 
+    // ── Vec ──────────────────────────────────────────────────────────────
+
+    fn diff_vec(&mut self, src: &VecNode, dst: &[Value]) -> Result<(), DiffError> {
+        let mut updates: Vec<(u8, Ts)> = Vec::new();
+        for (i, dst_val) in dst.iter().enumerate() {
+            if i > u8::MAX as usize {
+                break; // VecNode slots are u8 indexed
+            }
+            let slot = i as u8;
+            let existing = src.elements.get(i).and_then(|e| *e);
+            let should_update = match existing {
+                None => true,
+                Some(cur_id) => {
+                    match self.index.get(&TsKey::from(cur_id)) {
+                        Some(node) => {
+                            let node = node.clone();
+                            // If recursive diff fails (type mismatch or no change needed), replace
+                            match self.diff_any(&node, dst_val) {
+                                Ok(()) => false, // handled recursively
+                                Err(_) => true,  // type mismatch, replace
+                            }
+                        }
+                        None => true, // missing node, replace
+                    }
+                }
+            };
+            if should_update {
+                let new_id = self.build_con_view(dst_val);
+                updates.push((slot, new_id));
+            }
+        }
+        if !updates.is_empty() {
+            self.builder.ins_vec(src.id, updates);
+        }
+        Ok(())
+    }
+
     // ── Any ──────────────────────────────────────────────────────────────
 
     fn diff_any(&mut self, src: &CrdtNode, dst: &Value) -> Result<(), DiffError> {
@@ -245,7 +282,13 @@ impl<'a> JsonCrdtDiff<'a> {
                     _ => Err(DiffError("ARR_TYPE_MISMATCH")),
                 }
             }
-            CrdtNode::Vec(_) => Err(DiffError("VEC_NOT_SUPPORTED")),
+            CrdtNode::Vec(node) => {
+                let node = node.clone();
+                match dst {
+                    Value::Array(arr) => self.diff_vec(&node, arr),
+                    _ => Err(DiffError("VEC_TYPE_MISMATCH")),
+                }
+            }
         }
     }
 

@@ -2,6 +2,7 @@
 //!
 //! Mirrors `packages/json-joy/src/json-patch/applyPatch/`.
 
+use regex::RegexBuilder;
 use serde_json::{Map, Value};
 
 use super::types::{JsonPatchType, Op, OpResult, PatchError, PatchResult};
@@ -313,11 +314,14 @@ fn test_predicate(doc: &Value, op: &Op) -> bool {
         }
         Op::Matches { path, value, ignore_case } => {
             let actual = match get_at(doc, path).and_then(|v| v.as_str()) { Some(s) => s, None => return false };
-            // Simple contains-based matching (no full regex support without extra dep)
-            if *ignore_case {
-                actual.to_lowercase().contains(&value.to_lowercase())
-            } else {
-                actual.contains(value.as_str())
+            match RegexBuilder::new(value).case_insensitive(*ignore_case).build() {
+                Ok(re) => re.is_match(actual),
+                // If the pattern is invalid, fall back to contains-based matching
+                Err(_) => if *ignore_case {
+                    actual.to_lowercase().contains(&value.to_lowercase())
+                } else {
+                    actual.contains(value.as_str())
+                },
             }
         }
         Op::TestType { path, type_vals } => {
@@ -358,13 +362,12 @@ fn test_predicate(doc: &Value, op: &Op) -> bool {
     }
 }
 
-/// Test a predicate op where paths are relative to `base_path`.
-fn test_predicate_relative(sub: &Value, doc: &Value, op: &Op, _base_path: &[String]) -> bool {
-    // For second-order predicates, paths in child ops are relative.
-    // We evaluate them on the sub-document (the value at the parent path).
-    // This is a simplified approach: treat paths as absolute on the full doc.
-    let _ = sub; // sub is the value at base_path, used for context
-    test_predicate(doc, op)
+/// Test a predicate op where paths are relative to the parent path.
+///
+/// Child ops inside `And`/`Or`/`Not` use paths relative to the parent's value
+/// (`sub`), not the full document root.
+fn test_predicate_relative(sub: &Value, _doc: &Value, op: &Op, _base_path: &[String]) -> bool {
+    test_predicate(sub, op)
 }
 
 // ── Main apply function ───────────────────────────────────────────────────
@@ -438,9 +441,20 @@ pub fn apply_ops(mut doc: Value, ops: &[Op]) -> Result<PatchResult, PatchError> 
 }
 
 /// Apply a sequence of operations with options (mutate vs. clone).
+///
+/// When `mutate: true`, ops are applied without capturing per-op intermediate
+/// snapshots (efficient in-place semantics). When `mutate: false`, the full
+/// `apply_ops` path is used, which captures the doc state after each op.
 pub fn apply_patch(doc: Value, ops: &[Op], options: &super::types::ApplyPatchOptions) -> Result<PatchResult, PatchError> {
-    let working_doc = if options.mutate { doc } else { doc };
-    apply_ops(working_doc, ops)
+    if options.mutate {
+        let mut working = doc;
+        for op in ops {
+            apply_op(&mut working, op)?;
+        }
+        Ok(PatchResult { doc: working, res: vec![] })
+    } else {
+        apply_ops(doc, ops)
+    }
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────

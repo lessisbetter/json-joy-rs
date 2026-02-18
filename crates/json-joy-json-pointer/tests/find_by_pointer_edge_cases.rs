@@ -5,13 +5,14 @@ use serde_json::json;
 fn test_find_by_pointer_empty_component() {
     let doc = json!({"": "value", "foo": "bar"});
 
-    // Pointer to empty key
+    // RFC 6901: "/" addresses the key "" in the root object.
     let result = find_by_pointer("/", &doc);
-    assert!(result.is_ok(), "Should find empty key");
+    assert!(result.is_ok(), "Should find empty key at root");
 
-    // Pointer to nested empty key
+    // "/foo/" means key "" inside the value of "foo" ("bar" is a string, not an object).
+    // RFC 6901: traversing into a scalar is an error.
     let result = find_by_pointer("/foo/", &doc);
-    assert!(result.is_ok(), "Should handle trailing slash");
+    assert!(result.is_err(), "Trailing slash into a string should return an error");
 }
 
 #[test]
@@ -24,7 +25,14 @@ fn test_find_by_pointer_unicode() {
 
 #[test]
 fn test_find_by_pointer_multiple_slashes() {
+    // RFC 6901: "/foo//" means key "" inside doc["foo"][""].
+    // doc["foo"] = {"": "value"}, doc["foo"][""] = "value" (a string),
+    // so doc["foo"][""][""] cannot exist → should be an error.
     let doc = json!({"foo": {"": "value"}});
     let result = find_by_pointer("/foo//", &doc);
-    assert!(result.is_ok(), "Should handle multiple consecutive slashes");
+    assert!(result.is_err(), "Double slash traversing into a string should return an error");
+
+    // But "/foo/" → doc["foo"][""] = "value" → should succeed.
+    let result = find_by_pointer("/foo/", &doc);
+    assert!(result.is_ok(), "Single trailing slash into nested empty key should succeed");
 }

@@ -45,6 +45,10 @@ impl Decoder {
 
     /// Decodes a binary blob into a [`Patch`].
     pub fn decode<'a>(&self, data: &'a [u8]) -> Result<Patch, DecodeError> {
+        // Minimum encoding: at least 1 byte for SID + 1 for time + 1 for meta.
+        if data.len() < 3 {
+            return Err(DecodeError::UnexpectedEof);
+        }
         let mut r = CrdtReader::new(data);
         self.read_patch(&mut r)
     }

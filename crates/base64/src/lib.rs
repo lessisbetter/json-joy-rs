@@ -29,7 +29,7 @@ mod to_base64;
 mod to_base64_bin;
 mod to_base64_url;
 
-pub use constants::{ALPHABET, ALPHABET_URL, PAD};
+pub use constants::{ALPHABET, ALPHABET_BYTES, ALPHABET_URL, PAD};
 pub use create_from_base64::create_from_base64;
 pub use create_from_base64_bin::create_from_base64_bin;
 pub use create_to_base64::create_to_base64;

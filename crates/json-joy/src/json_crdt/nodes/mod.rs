@@ -23,7 +23,7 @@ use json_joy_json_pack::PackValue;
 
 use crate::json_crdt_patch::clock::{Ts, Tss, compare};
 use crate::json_crdt_patch::operations::ConValue;
-use super::constants::UNDEFINED_TS;
+use super::constants::{ORIGIN, UNDEFINED_TS};
 use rga::Rga;
 
 // ── ConNode ───────────────────────────────────────────────────────────────
@@ -63,7 +63,9 @@ pub struct ValNode {
 
 impl ValNode {
     pub fn new(id: Ts) -> Self {
-        Self { id, val: UNDEFINED_TS }
+        // Use ORIGIN (sid=0, time=0) so any user timestamp wins LWW comparison.
+        // Upstream TypeScript uses ORIGIN (not UNDEFINED) as ValNode's initial value.
+        Self { id, val: ORIGIN }
     }
 
     /// Set `new_val` if it has a higher timestamp than the current.

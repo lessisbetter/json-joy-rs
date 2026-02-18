@@ -377,6 +377,7 @@ dependencies = [
  "json-joy-json-pointer",
  "json-joy-json-type",
  "json-joy-util",
+ "regex",
  "serde_json",
  "thiserror",
 ]

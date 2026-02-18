@@ -36,6 +36,24 @@ pub struct BsonJavascriptCodeWithScope {
     pub scope: Vec<(String, BsonValue)>,
 }
 
+/// EJSON wrapper: BSON int32 typed number.
+#[derive(Debug, Clone, PartialEq)]
+pub struct BsonInt32 {
+    pub value: i32,
+}
+
+/// EJSON wrapper: BSON int64 typed number.
+#[derive(Debug, Clone, PartialEq)]
+pub struct BsonInt64 {
+    pub value: i64,
+}
+
+/// EJSON wrapper: BSON double typed number.
+#[derive(Debug, Clone, PartialEq)]
+pub struct BsonFloat {
+    pub value: f64,
+}
+
 /// BSON Timestamp (MongoDB internal replication timestamp).
 #[derive(Debug, Clone, PartialEq)]
 pub struct BsonTimestamp {

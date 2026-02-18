@@ -4,6 +4,8 @@
 
 mod decoder;
 mod encoder;
+pub mod error;
 
 pub use decoder::SshDecoder;
 pub use encoder::SshEncoder;
+pub use error::SshError;

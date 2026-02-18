@@ -12,6 +12,7 @@ mod pack_value;
 pub mod avro;
 pub mod bencode;
 pub mod bson;
+pub mod ejson;
 pub mod cbor;
 pub mod ion;
 pub mod json;
@@ -576,7 +577,7 @@ mod tests {
             enc.write_boolean(b);
             let bytes = enc.writer.flush();
             dec.reset(&bytes);
-            assert_eq!(dec.read_boolean(), b);
+            assert_eq!(dec.read_boolean().unwrap(), b);
         }
     }
 
@@ -589,7 +590,7 @@ mod tests {
             enc.write_uint32(val);
             let bytes = enc.writer.flush();
             dec.reset(&bytes);
-            assert_eq!(dec.read_uint32(), val);
+            assert_eq!(dec.read_uint32().unwrap(), val);
         }
     }
 
@@ -601,7 +602,7 @@ mod tests {
         enc.write_str("hello, world!");
         let bytes = enc.writer.flush();
         dec.reset(&bytes);
-        assert_eq!(dec.read_str(), "hello, world!");
+        assert_eq!(dec.read_str().unwrap(), "hello, world!");
     }
 
     #[test]
@@ -617,7 +618,7 @@ mod tests {
         enc.write_name_list(&names);
         let bytes = enc.writer.flush();
         dec.reset(&bytes);
-        let decoded = dec.read_name_list();
+        let decoded = dec.read_name_list().unwrap();
         assert_eq!(decoded, vec!["aes128-ctr", "aes256-ctr"]);
     }
 
@@ -696,7 +697,7 @@ mod tests {
             ("active".to_string(), BsonValue::Boolean(true)),
         ];
         let bytes = enc.encode(&fields);
-        let decoded = dec.decode(&bytes);
+        let decoded = dec.decode(&bytes).unwrap();
         assert_eq!(decoded.len(), 3);
         assert_eq!(decoded[0].0, "name");
         assert!(matches!(decoded[0].1, BsonValue::Str(ref s) if s == "Alice"));
@@ -716,7 +717,7 @@ mod tests {
             ("f".to_string(), BsonValue::Float(3.14)),
         ];
         let bytes = enc.encode(&fields);
-        let decoded = dec.decode(&bytes);
+        let decoded = dec.decode(&bytes).unwrap();
         assert!(matches!(decoded[0].1, BsonValue::Null));
         if let BsonValue::Float(f) = decoded[1].1 {
             assert!((f - 3.14).abs() < 1e-10);
@@ -733,7 +734,7 @@ mod tests {
         let inner = vec![("x".to_string(), BsonValue::Int32(1))];
         let fields = vec![("obj".to_string(), BsonValue::Document(inner))];
         let bytes = enc.encode(&fields);
-        let decoded = dec.decode(&bytes);
+        let decoded = dec.decode(&bytes).unwrap();
         if let BsonValue::Document(inner_dec) = &decoded[0].1 {
             assert_eq!(inner_dec[0].0, "x");
             assert!(matches!(inner_dec[0].1, BsonValue::Int32(1)));
@@ -1200,5 +1201,544 @@ mod tests {
         let bytes = enc.encode(&val);
         let decoded = dec.decode(&bytes).expect("ion decode array");
         assert_eq!(decoded, val);
+    }
+
+    // ---------------------------------------------------------------- EJSON
+
+    #[test]
+    fn ejson_encoder_null_and_primitives() {
+        use super::ejson::{EjsonEncoder, EjsonValue};
+        let mut enc = EjsonEncoder::new();
+        let s = enc.encode_to_string(&EjsonValue::Null).unwrap();
+        assert_eq!(s, "null");
+        let s = enc.encode_to_string(&EjsonValue::Bool(true)).unwrap();
+        assert_eq!(s, "true");
+        let s = enc.encode_to_string(&EjsonValue::Bool(false)).unwrap();
+        assert_eq!(s, "false");
+        let s = enc.encode_to_string(&EjsonValue::Str("hello".to_string())).unwrap();
+        assert_eq!(s, "\"hello\"");
+    }
+
+    #[test]
+    fn ejson_encoder_undefined_wrapper() {
+        use super::ejson::{EjsonEncoder, EjsonValue};
+        let mut enc = EjsonEncoder::new();
+        let s = enc.encode_to_string(&EjsonValue::Undefined).unwrap();
+        assert_eq!(s, r#"{"$undefined":true}"#);
+    }
+
+    #[test]
+    fn ejson_encoder_canonical_numbers() {
+        use super::ejson::{EjsonEncoder, EjsonEncoderOptions, EjsonValue};
+        let mut enc = EjsonEncoder::with_options(EjsonEncoderOptions { canonical: true });
+        // Integer in Int32 range
+        let s = enc.encode_to_string(&EjsonValue::Number(42.0)).unwrap();
+        assert_eq!(s, r#"{"$numberInt":"42"}"#);
+        // Integer outside Int32 range
+        let s = enc.encode_to_string(&EjsonValue::Number(2147483648.0)).unwrap();
+        assert_eq!(s, r#"{"$numberLong":"2147483648"}"#);
+        // Float
+        let s = enc.encode_to_string(&EjsonValue::Number(3.14)).unwrap();
+        assert_eq!(s, r#"{"$numberDouble":"3.14"}"#);
+    }
+
+    #[test]
+    fn ejson_encoder_relaxed_numbers() {
+        use super::ejson::{EjsonEncoder, EjsonValue};
+        // Relaxed mode (default) — native JSON numbers for finite values
+        let mut enc = EjsonEncoder::new();
+        let s = enc.encode_to_string(&EjsonValue::Number(42.0)).unwrap();
+        assert_eq!(s, "42");
+        let s = enc.encode_to_string(&EjsonValue::Number(3.14)).unwrap();
+        assert_eq!(s, "3.14");
+        // Non-finite still get wrapped
+        let s = enc.encode_to_string(&EjsonValue::Number(f64::INFINITY)).unwrap();
+        assert_eq!(s, r#"{"$numberDouble":"Infinity"}"#);
+        let s = enc.encode_to_string(&EjsonValue::Number(f64::NEG_INFINITY)).unwrap();
+        assert_eq!(s, r#"{"$numberDouble":"-Infinity"}"#);
+        let s = enc.encode_to_string(&EjsonValue::Number(f64::NAN)).unwrap();
+        assert_eq!(s, r#"{"$numberDouble":"NaN"}"#);
+    }
+
+    #[test]
+    fn ejson_encoder_bson_int32_canonical() {
+        use super::bson::BsonInt32;
+        use super::ejson::{EjsonEncoder, EjsonEncoderOptions, EjsonValue};
+        let mut enc = EjsonEncoder::with_options(EjsonEncoderOptions { canonical: true });
+        let v = BsonInt32 { value: 42 };
+        let s = enc.encode_to_string(&EjsonValue::Int32(v)).unwrap();
+        assert_eq!(s, r#"{"$numberInt":"42"}"#);
+    }
+
+    #[test]
+    fn ejson_encoder_bson_int32_relaxed() {
+        use super::bson::BsonInt32;
+        use super::ejson::{EjsonEncoder, EjsonValue};
+        let mut enc = EjsonEncoder::new();
+        let v = BsonInt32 { value: 42 };
+        let s = enc.encode_to_string(&EjsonValue::Int32(v)).unwrap();
+        assert_eq!(s, "42");
+    }
+
+    #[test]
+    fn ejson_encoder_bson_int64_canonical() {
+        use super::bson::BsonInt64;
+        use super::ejson::{EjsonEncoder, EjsonEncoderOptions, EjsonValue};
+        let mut enc = EjsonEncoder::with_options(EjsonEncoderOptions { canonical: true });
+        let v = BsonInt64 { value: 1234567890123 };
+        let s = enc.encode_to_string(&EjsonValue::Int64(v)).unwrap();
+        assert_eq!(s, r#"{"$numberLong":"1234567890123"}"#);
+    }
+
+    #[test]
+    fn ejson_encoder_bson_float_canonical() {
+        use super::bson::BsonFloat;
+        use super::ejson::{EjsonEncoder, EjsonEncoderOptions, EjsonValue};
+        let mut enc = EjsonEncoder::with_options(EjsonEncoderOptions { canonical: true });
+        let v = BsonFloat { value: 3.14 };
+        let s = enc.encode_to_string(&EjsonValue::BsonFloat(v)).unwrap();
+        assert_eq!(s, r#"{"$numberDouble":"3.14"}"#);
+    }
+
+    #[test]
+    fn ejson_encoder_object_id() {
+        use super::bson::BsonObjectId;
+        use super::ejson::{EjsonEncoder, EjsonValue};
+        let mut enc = EjsonEncoder::new();
+        let id = BsonObjectId { timestamp: 0x507f1f77, process: 0xbcf86cd799, counter: 0x439011 };
+        let s = enc.encode_to_string(&EjsonValue::ObjectId(id)).unwrap();
+        assert_eq!(s, r#"{"$oid":"507f1f77bcf86cd799439011"}"#);
+    }
+
+    #[test]
+    fn ejson_encoder_binary() {
+        use super::bson::BsonBinary;
+        use super::ejson::{EjsonEncoder, EjsonValue};
+        let mut enc = EjsonEncoder::new();
+        let bin = BsonBinary { subtype: 0, data: vec![1, 2, 3, 4] };
+        let s = enc.encode_to_string(&EjsonValue::Binary(bin)).unwrap();
+        assert_eq!(s, r#"{"$binary":{"base64":"AQIDBA==","subType":"00"}}"#);
+    }
+
+    #[test]
+    fn ejson_encoder_code() {
+        use super::bson::BsonJavascriptCode;
+        use super::ejson::{EjsonEncoder, EjsonValue};
+        let mut enc = EjsonEncoder::new();
+        let code = BsonJavascriptCode { code: "function() { return 42; }".to_string() };
+        let s = enc.encode_to_string(&EjsonValue::Code(code)).unwrap();
+        assert_eq!(s, r#"{"$code":"function() { return 42; }"}"#);
+    }
+
+    #[test]
+    fn ejson_encoder_symbol() {
+        use super::bson::BsonSymbol;
+        use super::ejson::{EjsonEncoder, EjsonValue};
+        let mut enc = EjsonEncoder::new();
+        let sym = BsonSymbol { symbol: "mySymbol".to_string() };
+        let s = enc.encode_to_string(&EjsonValue::Symbol(sym)).unwrap();
+        assert_eq!(s, r#"{"$symbol":"mySymbol"}"#);
+    }
+
+    #[test]
+    fn ejson_encoder_timestamp() {
+        use super::bson::BsonTimestamp;
+        use super::ejson::{EjsonEncoder, EjsonValue};
+        let mut enc = EjsonEncoder::new();
+        let ts = BsonTimestamp { timestamp: 1234567890, increment: 12345 };
+        let s = enc.encode_to_string(&EjsonValue::Timestamp(ts)).unwrap();
+        assert_eq!(s, r#"{"$timestamp":{"t":1234567890,"i":12345}}"#);
+    }
+
+    #[test]
+    fn ejson_encoder_minkey_maxkey() {
+        use super::bson::{BsonMaxKey, BsonMinKey};
+        use super::ejson::{EjsonEncoder, EjsonValue};
+        let mut enc = EjsonEncoder::new();
+        assert_eq!(enc.encode_to_string(&EjsonValue::MinKey(BsonMinKey)).unwrap(), r#"{"$minKey":1}"#);
+        assert_eq!(enc.encode_to_string(&EjsonValue::MaxKey(BsonMaxKey)).unwrap(), r#"{"$maxKey":1}"#);
+    }
+
+    #[test]
+    fn ejson_encoder_regexp() {
+        use super::ejson::{EjsonEncoder, EjsonValue};
+        let mut enc = EjsonEncoder::new();
+        let s = enc.encode_to_string(&EjsonValue::RegExp(
+            "pattern".to_string(),
+            "gi".to_string(),
+        )).unwrap();
+        assert_eq!(s, r#"{"$regularExpression":{"pattern":"pattern","options":"gi"}}"#);
+    }
+
+    #[test]
+    fn ejson_encoder_date_relaxed_iso() {
+        use super::ejson::{EjsonEncoder, EjsonValue};
+        // 2023-01-01T00:00:00.000Z = 1672531200000 ms
+        let mut enc = EjsonEncoder::new();
+        let s = enc.encode_to_string(&EjsonValue::Date {
+            timestamp_ms: 1672531200000,
+            iso: Some("2023-01-01T00:00:00.000Z".to_string()),
+        }).unwrap();
+        assert_eq!(s, r#"{"$date":"2023-01-01T00:00:00.000Z"}"#);
+    }
+
+    #[test]
+    fn ejson_encoder_date_canonical() {
+        use super::ejson::{EjsonEncoder, EjsonEncoderOptions, EjsonValue};
+        let mut enc = EjsonEncoder::with_options(EjsonEncoderOptions { canonical: true });
+        let s = enc.encode_to_string(&EjsonValue::Date {
+            timestamp_ms: 1672531200000,
+            iso: Some("2023-01-01T00:00:00.000Z".to_string()),
+        }).unwrap();
+        assert_eq!(s, r#"{"$date":{"$numberLong":"1672531200000"}}"#);
+    }
+
+    #[test]
+    fn ejson_encoder_db_pointer() {
+        use super::bson::{BsonDbPointer, BsonObjectId};
+        use super::ejson::{EjsonEncoder, EjsonValue};
+        let mut enc = EjsonEncoder::new();
+        let id = BsonObjectId { timestamp: 0x507f1f77, process: 0xbcf86cd799, counter: 0x439011 };
+        let ptr = BsonDbPointer { name: "collection".to_string(), id };
+        let s = enc.encode_to_string(&EjsonValue::DbPointer(ptr)).unwrap();
+        assert_eq!(s, r#"{"$dbPointer":{"$ref":"collection","$id":{"$oid":"507f1f77bcf86cd799439011"}}}"#);
+    }
+
+    #[test]
+    fn ejson_encoder_array_canonical() {
+        use super::ejson::{EjsonEncoder, EjsonEncoderOptions, EjsonValue};
+        let mut enc = EjsonEncoder::with_options(EjsonEncoderOptions { canonical: true });
+        let arr = EjsonValue::Array(vec![
+            EjsonValue::Number(1.0),
+            EjsonValue::Number(2.0),
+            EjsonValue::Number(3.0),
+        ]);
+        let s = enc.encode_to_string(&arr).unwrap();
+        assert_eq!(s, r#"[{"$numberInt":"1"},{"$numberInt":"2"},{"$numberInt":"3"}]"#);
+    }
+
+    // ---------------------------------------------------------------- EJSON decoder
+
+    #[test]
+    fn ejson_decoder_primitives() {
+        use super::ejson::{EjsonDecoder, EjsonValue};
+        let mut dec = EjsonDecoder::new();
+        assert_eq!(dec.decode_str("null").unwrap(), EjsonValue::Null);
+        assert_eq!(dec.decode_str("true").unwrap(), EjsonValue::Bool(true));
+        assert_eq!(dec.decode_str("false").unwrap(), EjsonValue::Bool(false));
+        assert_eq!(dec.decode_str("42").unwrap(), EjsonValue::Integer(42));
+        assert_eq!(dec.decode_str("3.14").unwrap(), EjsonValue::Float(3.14));
+        assert_eq!(dec.decode_str("\"hello\"").unwrap(), EjsonValue::Str("hello".to_string()));
+    }
+
+    #[test]
+    fn ejson_decoder_object_id() {
+        use super::bson::BsonObjectId;
+        use super::ejson::{EjsonDecoder, EjsonValue};
+        let mut dec = EjsonDecoder::new();
+        let v = dec.decode_str(r#"{"$oid":"507f1f77bcf86cd799439011"}"#).unwrap();
+        let expected = BsonObjectId { timestamp: 0x507f1f77, process: 0xbcf86cd799, counter: 0x439011 };
+        assert_eq!(v, EjsonValue::ObjectId(expected));
+    }
+
+    #[test]
+    fn ejson_decoder_invalid_object_id() {
+        use super::ejson::{EjsonDecodeError, EjsonDecoder};
+        let mut dec = EjsonDecoder::new();
+        assert!(matches!(
+            dec.decode_str(r#"{"$oid":"invalid"}"#),
+            Err(EjsonDecodeError::InvalidObjectId)
+        ));
+    }
+
+    #[test]
+    fn ejson_decoder_int32() {
+        use super::bson::BsonInt32;
+        use super::ejson::{EjsonDecoder, EjsonValue};
+        let mut dec = EjsonDecoder::new();
+        let v = dec.decode_str(r#"{"$numberInt":"42"}"#).unwrap();
+        assert_eq!(v, EjsonValue::Int32(BsonInt32 { value: 42 }));
+        let v2 = dec.decode_str(r#"{"$numberInt":"-42"}"#).unwrap();
+        assert_eq!(v2, EjsonValue::Int32(BsonInt32 { value: -42 }));
+    }
+
+    #[test]
+    fn ejson_decoder_invalid_int32() {
+        use super::ejson::{EjsonDecodeError, EjsonDecoder};
+        let mut dec = EjsonDecoder::new();
+        // Out of range
+        assert!(matches!(
+            dec.decode_str(r#"{"$numberInt":"2147483648"}"#),
+            Err(EjsonDecodeError::InvalidInt32)
+        ));
+        // Not a string
+        assert!(matches!(
+            dec.decode_str(r#"{"$numberInt":42}"#),
+            Err(EjsonDecodeError::InvalidInt32)
+        ));
+    }
+
+    #[test]
+    fn ejson_decoder_int64() {
+        use super::bson::BsonInt64;
+        use super::ejson::{EjsonDecoder, EjsonValue};
+        let mut dec = EjsonDecoder::new();
+        let v = dec.decode_str(r#"{"$numberLong":"1234567890123"}"#).unwrap();
+        assert_eq!(v, EjsonValue::Int64(BsonInt64 { value: 1234567890123 }));
+    }
+
+    #[test]
+    fn ejson_decoder_double() {
+        use super::bson::BsonFloat;
+        use super::ejson::{EjsonDecoder, EjsonValue};
+        let mut dec = EjsonDecoder::new();
+        let v = dec.decode_str(r#"{"$numberDouble":"3.14"}"#).unwrap();
+        assert_eq!(v, EjsonValue::BsonFloat(BsonFloat { value: 3.14 }));
+        // Special values
+        let v_inf = dec.decode_str(r#"{"$numberDouble":"Infinity"}"#).unwrap();
+        assert_eq!(v_inf, EjsonValue::BsonFloat(BsonFloat { value: f64::INFINITY }));
+        let v_neginf = dec.decode_str(r#"{"$numberDouble":"-Infinity"}"#).unwrap();
+        assert_eq!(v_neginf, EjsonValue::BsonFloat(BsonFloat { value: f64::NEG_INFINITY }));
+        let v_nan = dec.decode_str(r#"{"$numberDouble":"NaN"}"#).unwrap();
+        if let EjsonValue::BsonFloat(bf) = v_nan {
+            assert!(bf.value.is_nan());
+        } else {
+            panic!("expected BsonFloat");
+        }
+    }
+
+    #[test]
+    fn ejson_decoder_decimal128() {
+        use super::bson::BsonDecimal128;
+        use super::ejson::{EjsonDecoder, EjsonValue};
+        let mut dec = EjsonDecoder::new();
+        let v = dec.decode_str(r#"{"$numberDecimal":"123.456"}"#).unwrap();
+        assert_eq!(v, EjsonValue::Decimal128(BsonDecimal128 { data: vec![0u8; 16] }));
+    }
+
+    #[test]
+    fn ejson_decoder_binary() {
+        use super::bson::BsonBinary;
+        use super::ejson::{EjsonDecoder, EjsonValue};
+        let mut dec = EjsonDecoder::new();
+        let v = dec.decode_str(r#"{"$binary":{"base64":"AQIDBA==","subType":"00"}}"#).unwrap();
+        assert_eq!(v, EjsonValue::Binary(BsonBinary { subtype: 0, data: vec![1, 2, 3, 4] }));
+    }
+
+    #[test]
+    fn ejson_decoder_uuid() {
+        use super::ejson::{EjsonDecoder, EjsonValue};
+        let mut dec = EjsonDecoder::new();
+        let v = dec.decode_str(r#"{"$uuid":"c8edabc3-f738-4ca3-b68d-ab92a91478a3"}"#).unwrap();
+        if let EjsonValue::Binary(bin) = v {
+            assert_eq!(bin.subtype, 4);
+            assert_eq!(bin.data.len(), 16);
+        } else {
+            panic!("expected Binary");
+        }
+    }
+
+    #[test]
+    fn ejson_decoder_invalid_uuid() {
+        use super::ejson::{EjsonDecodeError, EjsonDecoder};
+        let mut dec = EjsonDecoder::new();
+        assert!(matches!(
+            dec.decode_str(r#"{"$uuid":"invalid-uuid"}"#),
+            Err(EjsonDecodeError::InvalidUuid)
+        ));
+    }
+
+    #[test]
+    fn ejson_decoder_code() {
+        use super::bson::BsonJavascriptCode;
+        use super::ejson::{EjsonDecoder, EjsonValue};
+        let mut dec = EjsonDecoder::new();
+        let v = dec.decode_str(r#"{"$code":"function() { return 42; }"}"#).unwrap();
+        assert_eq!(v, EjsonValue::Code(BsonJavascriptCode { code: "function() { return 42; }".to_string() }));
+    }
+
+    #[test]
+    fn ejson_decoder_symbol() {
+        use super::bson::BsonSymbol;
+        use super::ejson::{EjsonDecoder, EjsonValue};
+        let mut dec = EjsonDecoder::new();
+        let v = dec.decode_str(r#"{"$symbol":"mySymbol"}"#).unwrap();
+        assert_eq!(v, EjsonValue::Symbol(BsonSymbol { symbol: "mySymbol".to_string() }));
+    }
+
+    #[test]
+    fn ejson_decoder_timestamp() {
+        use super::bson::BsonTimestamp;
+        use super::ejson::{EjsonDecoder, EjsonValue};
+        let mut dec = EjsonDecoder::new();
+        let v = dec.decode_str(r#"{"$timestamp":{"t":1234567890,"i":12345}}"#).unwrap();
+        assert_eq!(v, EjsonValue::Timestamp(BsonTimestamp { timestamp: 1234567890, increment: 12345 }));
+    }
+
+    #[test]
+    fn ejson_decoder_invalid_timestamp() {
+        use super::ejson::{EjsonDecodeError, EjsonDecoder};
+        let mut dec = EjsonDecoder::new();
+        // Negative t
+        assert!(matches!(
+            dec.decode_str(r#"{"$timestamp":{"t":-1,"i":12345}}"#),
+            Err(EjsonDecodeError::InvalidTimestamp)
+        ));
+        // Negative i
+        assert!(matches!(
+            dec.decode_str(r#"{"$timestamp":{"t":123,"i":-1}}"#),
+            Err(EjsonDecodeError::InvalidTimestamp)
+        ));
+    }
+
+    #[test]
+    fn ejson_decoder_regexp() {
+        use super::ejson::{EjsonDecoder, EjsonValue};
+        let mut dec = EjsonDecoder::new();
+        let v = dec.decode_str(r#"{"$regularExpression":{"pattern":"test","options":"gi"}}"#).unwrap();
+        assert_eq!(v, EjsonValue::RegExp("test".to_string(), "gi".to_string()));
+    }
+
+    #[test]
+    fn ejson_decoder_db_pointer() {
+        use super::bson::{BsonDbPointer, BsonObjectId};
+        use super::ejson::{EjsonDecoder, EjsonValue};
+        let mut dec = EjsonDecoder::new();
+        let v = dec.decode_str(
+            r#"{"$dbPointer":{"$ref":"collection","$id":{"$oid":"507f1f77bcf86cd799439011"}}}"#
+        ).unwrap();
+        let expected = BsonDbPointer {
+            name: "collection".to_string(),
+            id: BsonObjectId { timestamp: 0x507f1f77, process: 0xbcf86cd799, counter: 0x439011 },
+        };
+        assert_eq!(v, EjsonValue::DbPointer(expected));
+    }
+
+    #[test]
+    fn ejson_decoder_date_iso() {
+        use super::ejson::{EjsonDecoder, EjsonValue};
+        let mut dec = EjsonDecoder::new();
+        let v = dec.decode_str(r#"{"$date":"2023-01-01T00:00:00.000Z"}"#).unwrap();
+        assert_eq!(v, EjsonValue::Date { timestamp_ms: 1672531200000, iso: None });
+    }
+
+    #[test]
+    fn ejson_decoder_date_canonical() {
+        use super::ejson::{EjsonDecoder, EjsonValue};
+        let mut dec = EjsonDecoder::new();
+        let v = dec.decode_str(r#"{"$date":{"$numberLong":"1672531200000"}}"#).unwrap();
+        assert_eq!(v, EjsonValue::Date { timestamp_ms: 1672531200000, iso: None });
+    }
+
+    #[test]
+    fn ejson_decoder_invalid_date() {
+        use super::ejson::{EjsonDecodeError, EjsonDecoder};
+        let mut dec = EjsonDecoder::new();
+        assert!(matches!(
+            dec.decode_str(r#"{"$date":"not-a-date"}"#),
+            Err(EjsonDecodeError::InvalidDate)
+        ));
+    }
+
+    #[test]
+    fn ejson_decoder_minkey_maxkey() {
+        use super::bson::{BsonMaxKey, BsonMinKey};
+        use super::ejson::{EjsonDecoder, EjsonValue};
+        let mut dec = EjsonDecoder::new();
+        assert_eq!(dec.decode_str(r#"{"$minKey":1}"#).unwrap(), EjsonValue::MinKey(BsonMinKey));
+        assert_eq!(dec.decode_str(r#"{"$maxKey":1}"#).unwrap(), EjsonValue::MaxKey(BsonMaxKey));
+    }
+
+    #[test]
+    fn ejson_decoder_undefined() {
+        use super::ejson::{EjsonDecoder, EjsonValue};
+        let mut dec = EjsonDecoder::new();
+        assert_eq!(dec.decode_str(r#"{"$undefined":true}"#).unwrap(), EjsonValue::Undefined);
+    }
+
+    #[test]
+    fn ejson_decoder_plain_object() {
+        use super::ejson::{EjsonDecoder, EjsonValue};
+        let mut dec = EjsonDecoder::new();
+        let v = dec.decode_str(r#"{"name":"John","age":30}"#).unwrap();
+        if let EjsonValue::Object(pairs) = v {
+            assert_eq!(pairs.len(), 2);
+            assert_eq!(pairs[0], ("name".to_string(), EjsonValue::Str("John".to_string())));
+            assert_eq!(pairs[1], ("age".to_string(), EjsonValue::Integer(30)));
+        } else {
+            panic!("expected Object");
+        }
+    }
+
+    #[test]
+    fn ejson_decoder_nested_ejson_in_object() {
+        use super::bson::BsonInt32;
+        use super::ejson::{EjsonDecoder, EjsonValue};
+        let mut dec = EjsonDecoder::new();
+        let v = dec.decode_str(r#"{"count":{"$numberInt":"42"}}"#).unwrap();
+        if let EjsonValue::Object(pairs) = v {
+            assert_eq!(pairs.len(), 1);
+            assert_eq!(pairs[0].0, "count");
+            assert_eq!(pairs[0].1, EjsonValue::Int32(BsonInt32 { value: 42 }));
+        } else {
+            panic!("expected Object");
+        }
+    }
+
+    #[test]
+    fn ejson_decoder_extra_keys_error() {
+        use super::ejson::{EjsonDecodeError, EjsonDecoder};
+        let mut dec = EjsonDecoder::new();
+        // Extra key alongside $numberInt should error
+        let res = dec.decode_str(r#"{"$numberInt":"42","extra":"field"}"#);
+        assert!(matches!(res, Err(EjsonDecodeError::ExtraKeys(_))));
+    }
+
+    #[test]
+    fn ejson_decoder_array() {
+        use super::ejson::{EjsonDecoder, EjsonValue};
+        let mut dec = EjsonDecoder::new();
+        let v = dec.decode_str(r#"[1,2,3]"#).unwrap();
+        assert_eq!(v, EjsonValue::Array(vec![
+            EjsonValue::Integer(1),
+            EjsonValue::Integer(2),
+            EjsonValue::Integer(3),
+        ]));
+    }
+
+    #[test]
+    fn ejson_roundtrip_object_id() {
+        use super::bson::BsonObjectId;
+        use super::ejson::{EjsonDecoder, EjsonEncoder, EjsonValue};
+        let mut enc = EjsonEncoder::new();
+        let mut dec = EjsonDecoder::new();
+        let id = BsonObjectId { timestamp: 0x507f1f77, process: 0xbcf86cd799, counter: 0x439011 };
+        let encoded = enc.encode_to_string(&EjsonValue::ObjectId(id.clone())).unwrap();
+        let decoded = dec.decode_str(&encoded).unwrap();
+        assert_eq!(decoded, EjsonValue::ObjectId(id));
+    }
+
+    #[test]
+    fn ejson_roundtrip_binary() {
+        use super::bson::BsonBinary;
+        use super::ejson::{EjsonDecoder, EjsonEncoder, EjsonValue};
+        let mut enc = EjsonEncoder::new();
+        let mut dec = EjsonDecoder::new();
+        let bin = BsonBinary { subtype: 0, data: vec![1, 2, 3, 4] };
+        let encoded = enc.encode_to_string(&EjsonValue::Binary(bin.clone())).unwrap();
+        let decoded = dec.decode_str(&encoded).unwrap();
+        assert_eq!(decoded, EjsonValue::Binary(bin));
+    }
+
+    #[test]
+    fn ejson_roundtrip_timestamp() {
+        use super::bson::BsonTimestamp;
+        use super::ejson::{EjsonDecoder, EjsonEncoder, EjsonValue};
+        let mut enc = EjsonEncoder::new();
+        let mut dec = EjsonDecoder::new();
+        let ts = BsonTimestamp { timestamp: 1234567890, increment: 12345 };
+        let encoded = enc.encode_to_string(&EjsonValue::Timestamp(ts.clone())).unwrap();
+        let decoded = dec.decode_str(&encoded).unwrap();
+        assert_eq!(decoded, EjsonValue::Timestamp(ts));
     }
 }

@@ -196,9 +196,8 @@ impl ClockVector {
     pub fn fork(&self, new_sid: u64) -> ClockVector {
         let mut clock = ClockVector::new(new_sid, self.time);
         if new_sid != self.sid {
-            // observe the current clock under the old sid
-            clock.observe(tick(self.ts(), 0), 0);
-            // more precisely: observe(tick(self, -1), 1)
+            // Record the last timestamp issued by the old session so the new
+            // session knows not to use timestamps before self.time.
             if self.time > 0 {
                 clock.observe(Ts::new(self.sid, self.time - 1), 1);
             }

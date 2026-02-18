@@ -21,6 +21,12 @@ pub enum ParseError {
     InvalidSelector,
 }
 
+/// Helper struct returned by `peek_comparison_operator`.
+struct ComparisonToken {
+    operator: ComparisonOperator,
+    len: usize,
+}
+
 /// JSONPath parser.
 pub struct JsonPathParser<'a> {
     input: &'a str,
@@ -258,32 +264,317 @@ impl<'a> JsonPathParser<'a> {
     }
 
     fn parse_filter_expression(&mut self) -> Result<FilterExpression, ParseError> {
-        // Simplified filter expression parsing
-        // For now, just handle existence checks like @.name
+        self.parse_logical_or_expression()
+    }
+
+    fn parse_logical_or_expression(&mut self) -> Result<FilterExpression, ParseError> {
+        let mut left = self.parse_logical_and_expression()?;
         self.skip_whitespace();
 
-        if self.peek() != Some('@') {
+        while self.peek_str("||") {
+            self.advance();
+            self.advance();
+            self.skip_whitespace();
+            let right = self.parse_logical_and_expression()?;
+            left = FilterExpression::Logical {
+                operator: LogicalOperator::Or,
+                left: Box::new(left),
+                right: Box::new(right),
+            };
+            self.skip_whitespace();
+        }
+
+        Ok(left)
+    }
+
+    fn parse_logical_and_expression(&mut self) -> Result<FilterExpression, ParseError> {
+        let mut left = self.parse_unary_expression()?;
+        self.skip_whitespace();
+
+        while self.peek_str("&&") {
+            self.advance();
+            self.advance();
+            self.skip_whitespace();
+            let right = self.parse_unary_expression()?;
+            left = FilterExpression::Logical {
+                operator: LogicalOperator::And,
+                left: Box::new(left),
+                right: Box::new(right),
+            };
+            self.skip_whitespace();
+        }
+
+        Ok(left)
+    }
+
+    fn parse_unary_expression(&mut self) -> Result<FilterExpression, ParseError> {
+        self.skip_whitespace();
+
+        if self.peek() == Some('!') {
+            self.advance();
+            self.skip_whitespace();
+            let expr = self.parse_unary_expression()?;
+            return Ok(FilterExpression::Negation(Box::new(expr)));
+        }
+
+        if self.peek() == Some('(') {
+            self.advance();
+            self.skip_whitespace();
+            let expr = self.parse_filter_expression()?;
+            self.skip_whitespace();
+            self.expect(')')?;
+            return Ok(FilterExpression::Paren(Box::new(expr)));
+        }
+
+        self.parse_primary_expression()
+    }
+
+    fn parse_primary_expression(&mut self) -> Result<FilterExpression, ParseError> {
+        let left = self.parse_value_expression()?;
+        self.skip_whitespace();
+
+        if let Some(op) = self.peek_comparison_operator() {
+            self.advance_by(op.len);
+            self.skip_whitespace();
+            let right = self.parse_value_expression()?;
+            return Ok(FilterExpression::Comparison {
+                operator: op.operator,
+                left,
+                right,
+            });
+        }
+
+        // No comparison operator — treat as existence test
+        match &left {
+            ValueExpression::Path(path) => {
+                Ok(FilterExpression::Existence { path: path.clone() })
+            }
+            ValueExpression::Current => {
+                Ok(FilterExpression::Existence { path: JSONPath::new(vec![]) })
+            }
+            ValueExpression::Function { name, args } => {
+                Ok(FilterExpression::Function { name: name.clone(), args: args.clone() })
+            }
+            _ => Err(ParseError::InvalidSelector),
+        }
+    }
+
+    fn parse_value_expression(&mut self) -> Result<ValueExpression, ParseError> {
+        self.skip_whitespace();
+
+        if self.peek() == Some('@') {
+            self.advance();
+            if self.peek() == Some('.') || self.peek() == Some('[') {
+                let segments = self.parse_filter_path_segments()?;
+                return Ok(ValueExpression::Path(JSONPath::new(segments)));
+            }
+            return Ok(ValueExpression::Current);
+        }
+
+        if self.peek() == Some('$') {
+            self.advance();
+            let segments = self.parse_filter_path_segments()?;
+            return Ok(ValueExpression::Path(JSONPath::new(segments)));
+        }
+
+        if self.peek() == Some('\'') || self.peek() == Some('"') {
+            let s = self.parse_string()?;
+            return Ok(ValueExpression::Literal(serde_json::Value::String(s)));
+        }
+
+        if matches!(self.peek(), Some('0'..='9') | Some('-')) {
+            let n = self.parse_float_number()?;
+            return Ok(ValueExpression::Literal(
+                serde_json::Number::from_f64(n)
+                    .map(serde_json::Value::Number)
+                    .unwrap_or(serde_json::Value::Null),
+            ));
+        }
+
+        if self.peek_str("true") {
+            self.advance_by(4);
+            return Ok(ValueExpression::Literal(serde_json::Value::Bool(true)));
+        }
+
+        if self.peek_str("false") {
+            self.advance_by(5);
+            return Ok(ValueExpression::Literal(serde_json::Value::Bool(false)));
+        }
+
+        if self.peek_str("null") {
+            self.advance_by(4);
+            return Ok(ValueExpression::Literal(serde_json::Value::Null));
+        }
+
+        // Function call: starts with a lowercase letter
+        if matches!(self.peek(), Some('a'..='z')) {
+            let name = self.parse_function_name()?;
+            self.skip_whitespace();
+            if self.peek() == Some('(') {
+                self.advance();
+                self.skip_whitespace();
+                let mut args = Vec::new();
+                if self.peek() != Some(')') {
+                    loop {
+                        self.skip_whitespace();
+                        let arg_val = self.parse_value_expression()?;
+                        args.push(FunctionArg::Value(arg_val));
+                        self.skip_whitespace();
+                        if self.peek() == Some(',') {
+                            self.advance();
+                        } else {
+                            break;
+                        }
+                    }
+                }
+                self.skip_whitespace();
+                self.expect(')')?;
+                return Ok(ValueExpression::Function { name, args });
+            }
             return Err(ParseError::InvalidSelector);
         }
-        self.advance();
 
-        // Parse the path from current node
+        Err(ParseError::InvalidSelector)
+    }
+
+    /// Parse path segments in a filter context.
+    /// Stops when it encounters `)`, `,`, `&&`, `||`, a comparison operator, or `]`.
+    fn parse_filter_path_segments(&mut self) -> Result<Vec<PathSegment>, ParseError> {
         let mut segments = Vec::new();
-        while self.peek() == Some('.') || self.peek() == Some('[') {
+
+        loop {
+            self.skip_whitespace();
+            if self.is_filter_path_terminator() {
+                break;
+            }
             if self.peek() == Some('.') {
                 self.advance();
-                let name = self.parse_identifier()?;
-                segments.push(PathSegment::new(vec![Selector::Name(name)], false));
+                // Check for recursive descent (..)
+                if self.peek() == Some('.') {
+                    self.advance();
+                    let selector = self.parse_recursive_selector()?;
+                    segments.push(PathSegment::new(vec![selector], true));
+                } else if self.peek() == Some('*') {
+                    self.advance();
+                    segments.push(PathSegment::new(vec![Selector::Wildcard], false));
+                } else {
+                    let name = self.parse_identifier()?;
+                    segments.push(PathSegment::new(vec![Selector::Name(name)], false));
+                }
             } else if self.peek() == Some('[') {
                 let selectors = self.parse_bracket_selectors()?;
                 segments.push(PathSegment::new(selectors, false));
+            } else {
+                break;
             }
         }
 
-        // For now, just return an existence expression
-        Ok(FilterExpression::Existence {
-            path: JSONPath::new(segments),
-        })
+        Ok(segments)
+    }
+
+    fn is_filter_path_terminator(&self) -> bool {
+        match self.peek() {
+            None => true,
+            Some(')') | Some(',') | Some(']') => true,
+            Some('&') => self.peek_str("&&"),
+            Some('|') => self.peek_str("||"),
+            Some('=') => self.peek_str("=="),
+            Some('!') => self.peek_str("!="),
+            Some('<') | Some('>') => true,
+            _ => false,
+        }
+    }
+
+    fn peek_str(&self, s: &str) -> bool {
+        self.input[self.pos..].starts_with(s)
+    }
+
+    fn advance_by(&mut self, n: usize) {
+        for _ in 0..n {
+            self.advance();
+        }
+    }
+
+    fn parse_function_name(&mut self) -> Result<String, ParseError> {
+        let start = self.pos;
+        // First char must be lowercase letter
+        match self.peek() {
+            Some(c) if c.is_ascii_lowercase() => self.advance(),
+            _ => return Err(ParseError::InvalidSelector),
+        }
+        while let Some(c) = self.peek() {
+            if c.is_alphanumeric() || c == '_' {
+                self.advance();
+            } else {
+                break;
+            }
+        }
+        Ok(self.input[start..self.pos].to_string())
+    }
+
+    fn parse_float_number(&mut self) -> Result<f64, ParseError> {
+        let start = self.pos;
+
+        // Optional minus
+        if self.peek() == Some('-') {
+            self.advance();
+        }
+
+        // Integer part
+        if !matches!(self.peek(), Some('0'..='9')) {
+            return Err(ParseError::InvalidNumber);
+        }
+        while matches!(self.peek(), Some('0'..='9')) {
+            self.advance();
+        }
+
+        // Optional decimal
+        if self.peek() == Some('.') {
+            self.advance();
+            if !matches!(self.peek(), Some('0'..='9')) {
+                return Err(ParseError::InvalidNumber);
+            }
+            while matches!(self.peek(), Some('0'..='9')) {
+                self.advance();
+            }
+        }
+
+        // Optional exponent
+        if matches!(self.peek(), Some('e') | Some('E')) {
+            self.advance();
+            if matches!(self.peek(), Some('+') | Some('-')) {
+                self.advance();
+            }
+            if !matches!(self.peek(), Some('0'..='9')) {
+                return Err(ParseError::InvalidNumber);
+            }
+            while matches!(self.peek(), Some('0'..='9')) {
+                self.advance();
+            }
+        }
+
+        let num_str = &self.input[start..self.pos];
+        num_str.parse::<f64>().map_err(|_| ParseError::InvalidNumber)
+    }
+
+    /// Peek at the next comparison operator without consuming input.
+    /// Returns the operator token length and enum value, or None.
+    fn peek_comparison_operator(&self) -> Option<ComparisonToken> {
+        if self.peek_str("==") {
+            Some(ComparisonToken { operator: ComparisonOperator::Equal, len: 2 })
+        } else if self.peek_str("!=") {
+            Some(ComparisonToken { operator: ComparisonOperator::NotEqual, len: 2 })
+        } else if self.peek_str("<=") {
+            Some(ComparisonToken { operator: ComparisonOperator::LessEqual, len: 2 })
+        } else if self.peek_str(">=") {
+            Some(ComparisonToken { operator: ComparisonOperator::GreaterEqual, len: 2 })
+        } else if self.peek_str("<") {
+            Some(ComparisonToken { operator: ComparisonOperator::Less, len: 1 })
+        } else if self.peek_str(">") {
+            Some(ComparisonToken { operator: ComparisonOperator::Greater, len: 1 })
+        } else {
+            None
+        }
     }
 
     fn peek(&self) -> Option<char> {

@@ -26,7 +26,7 @@ impl CborDecoderDag {
     }
 
     fn read_any(&self, base: &CborDecoderBase, c: &mut Cur) -> Result<PackValue, CborError> {
-        let octet = c.u8();
+        let octet = c.u8()?;
         let major = octet >> 5;
         let minor = octet & super::constants::MINOR_MASK;
         if major == super::constants::MAJOR_TAG {

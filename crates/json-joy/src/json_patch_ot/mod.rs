@@ -171,6 +171,17 @@ fn x_remove(rem_path: &Path, op: &Op) -> Vec<Op> {
         return vec![];
     }
 
+    // Op targets a descendant of what was removed — discard it.
+    // Also applies to the `from` path for Move/Copy.
+    if is_child(rem_path, &op.path()) {
+        return vec![];
+    }
+    if let Some(from) = op_from(op) {
+        if is_child(rem_path, from) {
+            return vec![];
+        }
+    }
+
     if last_is_index {
         let new_path = lower_array_path(rem_path, &op.path());
         let new_from = op_from(op).and_then(|f| lower_array_path(rem_path, f));
@@ -421,5 +432,211 @@ mod tests {
         if let Op::StrIns { pos, .. } = &result[0] {
             assert_eq!(*pos, 5); // 8 - 3
         }
+    }
+
+    // ── Comprehensive OT scenarios ─────────────────────────────────────────
+
+    #[test]
+    fn x_remove_discards_child_op() {
+        // Accepted removes /a; proposed tries to replace /a/b.
+        // Since /a no longer exists, the proposed op must be discarded.
+        let accepted = Op::Remove { path: vec!["a".to_string()], old_value: None };
+        let proposed = Op::Replace {
+            path: vec!["a".to_string(), "b".to_string()],
+            value: json!(99),
+            old_value: None,
+        };
+        let result = transform(&[accepted], &[proposed]);
+        assert!(result.is_empty(), "proposed targeting removed subtree must be discarded");
+    }
+
+    #[test]
+    fn x_remove_discards_grandchild_op() {
+        // Accepted removes /a; proposed targets /a/b/c (deeply nested).
+        let accepted = Op::Remove { path: vec!["a".to_string()], old_value: None };
+        let proposed = Op::Add {
+            path: vec!["a".to_string(), "b".to_string(), "c".to_string()],
+            value: json!(1),
+        };
+        let result = transform(&[accepted], &[proposed]);
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn x_remove_preserves_sibling_op() {
+        // Accepted removes /a/1; proposed replaces /a/3 (later sibling).
+        let accepted = Op::Remove { path: vec!["a".to_string(), "1".to_string()], old_value: None };
+        let proposed = Op::Replace {
+            path: vec!["a".to_string(), "3".to_string()],
+            value: json!("new"),
+            old_value: None,
+        };
+        let result = transform(&[accepted], &[proposed]);
+        assert_eq!(result.len(), 1);
+        // Index 3 is now index 2 after removing index 1.
+        assert_eq!(result[0].path().as_slice(), ["a", "2"]);
+    }
+
+    #[test]
+    fn x_add_at_root_discards_proposed() {
+        // Accepted add at root (/) replaces the whole document.
+        // Proposed is invalidated since the entire document was replaced.
+        let accepted = Op::Add { path: vec![], value: json!({"x": 1}) };
+        let proposed = Op::Replace { path: vec!["foo".to_string()], value: json!(99), old_value: None };
+        let result = transform(&[accepted], &[proposed]);
+        assert!(result.is_empty(), "proposed after root-replace must be discarded");
+    }
+
+    #[test]
+    fn x_add_at_object_key_preserves_unrelated_op() {
+        // Accepted adds /foo (a non-array key); proposed modifies /bar — unrelated.
+        let accepted = Op::Add { path: vec!["foo".to_string()], value: json!(1) };
+        let proposed = Op::Replace { path: vec!["bar".to_string()], value: json!(2), old_value: None };
+        let result = transform(&[accepted], &[proposed]);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].path().as_slice(), ["bar"]);
+    }
+
+    #[test]
+    fn x_add_same_array_shifts_proposed_add() {
+        // Accepted adds at /arr/0; proposed adds at /arr/0 too.
+        // After accepted, the proposed element should be pushed to /arr/1.
+        let accepted = Op::Add { path: vec!["arr".to_string(), "0".to_string()], value: json!("A") };
+        let proposed = Op::Add { path: vec!["arr".to_string(), "0".to_string()], value: json!("B") };
+        let result = transform(&[accepted], &[proposed]);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].path().as_slice(), ["arr", "1"]);
+    }
+
+    #[test]
+    fn x_move_child_path_redirected_to_destination() {
+        // Accepted moves /src → /dst; proposed removes /src/child.
+        // After the move, /src/child is now at /dst/child — the proposed op
+        // should be redirected to the new location.
+        let accepted = Op::Move {
+            path: vec!["dst".to_string()],
+            from: vec!["src".to_string()],
+        };
+        let proposed = Op::Remove {
+            path: vec!["src".to_string(), "child".to_string()],
+            old_value: None,
+        };
+        let result = transform(&[accepted], &[proposed]);
+        assert_eq!(result.len(), 1);
+        // /src/child should be redirected to /dst/child.
+        assert_eq!(result[0].path().as_slice(), ["dst", "child"]);
+    }
+
+    #[test]
+    fn x_str_ins_does_not_shift_earlier_pos() {
+        // Accepted inserts at pos 5; proposed inserts at pos 3 (before the insert).
+        // Earlier position is unaffected.
+        let path = vec!["text".to_string()];
+        let accepted = Op::StrIns { path: path.clone(), pos: 5, str_val: "XY".to_string() };
+        let proposed = Op::StrIns { path: path.clone(), pos: 3, str_val: "Z".to_string() };
+        let result = transform(&[accepted], &[proposed]);
+        assert_eq!(result.len(), 1);
+        if let Op::StrIns { pos, .. } = &result[0] {
+            assert_eq!(*pos, 3, "pos before insertion point must not change");
+        }
+    }
+
+    #[test]
+    fn x_str_ins_concurrent_at_same_pos_shifts_right() {
+        // Both insert at pos 5. The proposed one should be shifted to pos 6
+        // (or greater) to preserve ordering.
+        let path = vec!["text".to_string()];
+        let accepted = Op::StrIns { path: path.clone(), pos: 5, str_val: "X".to_string() };
+        let proposed = Op::StrIns { path: path.clone(), pos: 5, str_val: "Y".to_string() };
+        let result = transform(&[accepted], &[proposed]);
+        assert_eq!(result.len(), 1);
+        if let Op::StrIns { pos, .. } = &result[0] {
+            assert!(*pos >= 6, "concurrent insert at same pos must shift: got {pos}");
+        }
+    }
+
+    #[test]
+    fn x_str_del_removes_overlapping_del_prefix() {
+        // Accepted: del pos=2, len=3 (removes chars 2..5).
+        // Proposed: del pos=0, len=4 (overlaps: chars 0..4).
+        // After accepted, chars 2..5 are gone. Proposed should only remove 0..2 (2 chars).
+        let path = vec!["text".to_string()];
+        let accepted = Op::StrDel { path: path.clone(), pos: 2, str_val: None, len: Some(3) };
+        let proposed = Op::StrDel { path: path.clone(), pos: 0, str_val: None, len: Some(4) };
+        let result = transform(&[accepted], &[proposed]);
+        assert_eq!(result.len(), 1, "should produce exactly one adjusted op");
+        if let Op::StrDel { pos, len, .. } = &result[0] {
+            // Accepted removed 3 chars from [2..5]. Proposed wanted [0..4].
+            // The surviving chars in proposed are [0..2] = 2 chars.
+            assert_eq!(*pos, 0);
+            assert_eq!(len.unwrap_or(0), 2);
+        }
+    }
+
+    #[test]
+    fn x_str_del_completely_consumed_by_accepted() {
+        // Accepted: del pos=0, len=10.
+        // Proposed: del pos=2, len=3 — fully within accepted's range.
+        // After accepted, those chars are already gone → proposed should be discarded.
+        let path = vec!["text".to_string()];
+        let accepted = Op::StrDel { path: path.clone(), pos: 0, str_val: None, len: Some(10) };
+        let proposed = Op::StrDel { path: path.clone(), pos: 2, str_val: None, len: Some(3) };
+        let result = transform(&[accepted], &[proposed]);
+        assert!(result.is_empty(), "fully consumed del must be discarded");
+    }
+
+    #[test]
+    fn test_op_passes_through_unchanged() {
+        // Test ops are not transformed — they always pass through.
+        let accepted = Op::Remove { path: vec!["a".to_string(), "0".to_string()], old_value: None };
+        let proposed = Op::Test { path: vec!["b".to_string()], value: json!(42), not: false };
+        let result = transform(&[accepted], &[proposed]);
+        assert_eq!(result.len(), 1);
+        assert!(matches!(result[0], Op::Test { .. }));
+    }
+
+    #[test]
+    fn inc_passes_through_unchanged() {
+        // Inc ops are not structurally transformed.
+        let accepted = Op::Add { path: vec!["x".to_string()], value: json!(1) };
+        let proposed = Op::Inc { path: vec!["y".to_string()], inc: 5.0 };
+        let result = transform(&[accepted], &[proposed]);
+        assert_eq!(result.len(), 1);
+        if let Op::Inc { inc, .. } = &result[0] {
+            assert_eq!(*inc, 5.0);
+        }
+    }
+
+    #[test]
+    fn multi_op_chain_all_updated() {
+        // Accepted adds two array items; proposed has three ops — all should be shifted.
+        let accepted = vec![
+            Op::Add { path: vec!["a".to_string(), "0".to_string()], value: json!("x") },
+            Op::Add { path: vec!["a".to_string(), "1".to_string()], value: json!("y") },
+        ];
+        let proposed = vec![
+            Op::Remove { path: vec!["a".to_string(), "0".to_string()], old_value: None },
+            Op::Remove { path: vec!["a".to_string(), "1".to_string()], old_value: None },
+            Op::Remove { path: vec!["a".to_string(), "2".to_string()], old_value: None },
+        ];
+        let result = transform(&accepted, &proposed);
+        assert_eq!(result.len(), 3);
+        assert_eq!(result[0].path().as_slice(), ["a", "2"]);
+        assert_eq!(result[1].path().as_slice(), ["a", "3"]);
+        assert_eq!(result[2].path().as_slice(), ["a", "4"]);
+    }
+
+    #[test]
+    fn transform_on_different_paths_is_identity() {
+        // Accepted modifies /foo; proposed modifies /bar — completely unrelated.
+        let accepted = Op::Add { path: vec!["foo".to_string()], value: json!(1) };
+        let proposed_ops = vec![
+            Op::Remove { path: vec!["bar".to_string()], old_value: None },
+            Op::Replace { path: vec!["baz".to_string()], value: json!(99), old_value: None },
+        ];
+        let result = transform(&[accepted], &proposed_ops);
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0].path().as_slice(), ["bar"]);
+        assert_eq!(result[1].path().as_slice(), ["baz"]);
     }
 }
