@@ -64,11 +64,11 @@ All 17 upstream sub-modules (`packages/json-joy/src/`) map to a single
 |---|---|---|
 | 0 | Crate scaffold (Cargo.toml, lib.rs) | DONE |
 | 1 | json-walk, json-pretty, json-stable, json-size, json-ml | DONE |
-| 2 | json-crdt-patch (41 files — foundational patch protocol) | TODO |
-| 3 | util (15 files — wraps crdt-patch clock) | TODO |
-| 4 | json-patch, json-patch-ot, json-ot, json-patch-diff | TODO |
-| 5 | json-hash (12 files) + json-crdt (263 files — largest!) | TODO |
-| 6 | json-crdt-diff (4 files) | TODO |
+| 2 | json-crdt-patch (41 files — foundational patch protocol) | DONE |
+| 3 | util (15 files — wraps crdt-patch clock) | DONE |
+| 4 | json-patch, json-patch-ot, json-ot, json-patch-diff | DONE |
+| 5 | json-hash (12 files) + json-crdt (263 files — largest!) | DONE |
+| 6 | json-crdt-diff (4 files) | DONE |
 | 7 | json-crdt-extensions (225 files) | TODO |
 | 8 | json-crdt-peritext-ui (model/controller only, no React) | TODO |
 | 9 | json-cli (35 files) | TODO |
