@@ -374,6 +374,7 @@ dependencies = [
  "base64",
  "json-joy-buffers",
  "json-joy-json-pack",
+ "json-joy-json-pointer",
  "json-joy-json-type",
  "json-joy-util",
  "serde_json",

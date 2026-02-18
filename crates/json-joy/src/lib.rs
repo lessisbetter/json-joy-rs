@@ -15,13 +15,12 @@ pub mod json_ml;
 
 pub mod json_crdt_patch;       // Slice 2
 pub mod util_inner;            // Slice 3
+pub mod json_patch;            // Slice 4
+pub mod json_patch_diff;       // Slice 4
+pub mod json_ot;               // Slice 4
+pub mod json_patch_ot;         // Slice 4
 
 // Remaining slices — declared as stubs, to be filled in subsequent slices
-// pub mod util_inner;        // Slice 3
-// pub mod json_patch;        // Slice 4
-// pub mod json_patch_ot;     // Slice 4
-// pub mod json_ot;           // Slice 4
-// pub mod json_patch_diff;   // Slice 4
 // pub mod json_hash;         // Slice 5
 // pub mod json_crdt;         // Slice 5
 // pub mod json_crdt_diff;    // Slice 6

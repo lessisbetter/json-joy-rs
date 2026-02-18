@@ -11,6 +11,7 @@ json-joy-buffers = { path = "../buffers" }
 json-joy-json-pack = { path = "../json-joy-json-pack" }
 json-joy-util = { path = "../util" }
 json-joy-json-type = { path = "../json-joy-json-type" }
+json-joy-json-pointer = { path = "../json-joy-json-pointer" }
 serde_json = { version = "1.0", features = ["preserve_order"] }
 thiserror = "2.0"
 base64 = "0.22"
