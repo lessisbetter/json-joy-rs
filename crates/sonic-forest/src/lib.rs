@@ -35,6 +35,8 @@ pub mod radix;
 #[path = "red-black/mod.rs"]
 pub mod red_black;
 pub mod splay;
+#[path = "trie/mod.rs"]
+pub mod trie;
 pub mod types;
 pub mod util;
 pub mod util2;
@@ -42,10 +44,11 @@ pub mod util2;
 pub use avl::{AvlBstNumNumMap, AvlMap, AvlMapOld, AvlSet};
 pub use llrb_tree::{LlrbNode, LlrbTree};
 pub use print::{printBinary, printTree, print_binary, print_tree, PrintChild, Printable};
-pub use radix::Slice as RadixSlice;
+pub use radix::{BinaryRadixTree, BinaryTrieNode, RadixTree, Slice as RadixSlice};
 pub use red_black::RbMap;
 pub use splay::util2::splay2;
 pub use splay::{l_splay, ll_splay, lr_splay, r_splay, rl_splay, rr_splay, splay};
+pub use trie::TrieNode;
 pub use types::{Node, Node2};
 pub use util::{
     find, find_or_next_lower, first, insert, insert_left, insert_right, last, next, prev, remove,
