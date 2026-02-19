@@ -5,8 +5,8 @@ use core::ptr::NonNull;
 /// Rust divergence:
 /// - Uses raw links (`NonNull`) to support upstream-style node-local rotation
 ///   methods (`rRotate`, `lRotate`) that mutate parent/child links directly.
-/// - `SortedMap` itself may use a different backend; this type is kept as an
-///   implementation-faithful node primitive for parity with upstream layout.
+/// - The rest of the crate may use arena-indexed links for map implementations;
+///   this type stays pointer-based to mirror upstream `TreeNode` behavior.
 #[repr(C)]
 #[derive(Clone, Debug)]
 pub struct SortedMapNode<K, V> {

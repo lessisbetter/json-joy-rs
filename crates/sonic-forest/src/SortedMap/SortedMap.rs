@@ -1,6 +1,8 @@
 use super::constants::IteratorType;
 use super::sorted_map_iterator::OrderedMapIterator;
 use super::util::throw_iterator_access_error;
+use crate::red_black::{insert, insert_left, insert_right, remove, RbNode};
+use crate::util::{first, last, next, prev};
 
 fn default_comparator<K: PartialOrd>(a: &K, b: &K) -> i32 {
     if a == b {
@@ -14,19 +16,19 @@ fn default_comparator<K: PartialOrd>(a: &K, b: &K) -> i32 {
 
 /// Mirrors upstream `SortedMap/SortedMap.ts` public API shape.
 ///
-/// Rust divergence: uses an ordered-vector backend instead of mutable
-/// node-pointer red-black internals. API behavior for supported operations
-/// is preserved for parity tests.
+/// Rust divergence:
+/// - Uses arena indices (`u32`) instead of object references for root/min/max.
+/// - Keeps iterator API shape, but iterator state is position-based.
 pub struct SortedMap<K, V, C = fn(&K, &K) -> i32>
 where
     C: Fn(&K, &K) -> i32,
 {
     pub enable_index: bool,
-    pub min: Option<usize>,
-    pub root: Option<usize>,
-    pub max: Option<usize>,
+    pub min: Option<u32>,
+    pub root: Option<u32>,
+    pub max: Option<u32>,
     pub comparator: C,
-    entries: Vec<(K, V)>,
+    arena: Vec<RbNode<K, V>>,
     _length: usize,
 }
 
@@ -59,61 +61,144 @@ where
             root: None,
             max: None,
             comparator,
-            entries: Vec::new(),
+            arena: Vec::new(),
             _length: 0,
         }
     }
 
-    fn update_markers(&mut self) {
-        if self._length == 0 {
-            self.min = None;
-            self.root = None;
-            self.max = None;
-            return;
-        }
-        self.min = Some(0);
-        self.max = Some(self._length - 1);
-        self.root = Some(self._length / 2);
-    }
-
+    #[inline]
     fn compare(&self, a: &K, b: &K) -> i32 {
         (self.comparator)(a, b)
     }
 
-    fn lower_bound_idx(&self, key: &K) -> usize {
-        let mut lo = 0usize;
-        let mut hi = self._length;
-        while lo < hi {
-            let mid = (lo + hi) / 2;
-            if self.compare(&self.entries[mid].0, key) < 0 {
-                lo = mid + 1;
-            } else {
-                hi = mid;
+    fn find_node(&self, key: &K) -> Option<u32> {
+        let mut curr = self.root;
+        while let Some(i) = curr {
+            let cmp = self.compare(key, &self.arena[i as usize].k);
+            if cmp == 0 {
+                return Some(i);
             }
+            curr = if cmp < 0 {
+                self.arena[i as usize].l
+            } else {
+                self.arena[i as usize].r
+            };
         }
-        lo
+        None
     }
 
-    fn upper_bound_idx(&self, key: &K) -> usize {
-        let mut lo = 0usize;
-        let mut hi = self._length;
-        while lo < hi {
-            let mid = (lo + hi) / 2;
-            if self.compare(&self.entries[mid].0, key) <= 0 {
-                lo = mid + 1;
-            } else {
-                hi = mid;
-            }
+    fn nth_index(&self, pos: usize) -> Option<u32> {
+        if pos >= self._length {
+            return None;
         }
-        lo
+        let mut curr = self.min?;
+        for _ in 0..pos {
+            curr = next(&self.arena, curr)?;
+        }
+        Some(curr)
     }
 
-    fn find_idx(&self, key: &K) -> Option<usize> {
-        let idx = self.lower_bound_idx(key);
-        if idx < self._length && self.compare(&self.entries[idx].0, key) == 0 {
-            Some(idx)
+    fn index_of(&self, node: u32) -> usize {
+        let mut pos = 0usize;
+        let mut curr = self.min;
+        while let Some(i) = curr {
+            if i == node {
+                return pos;
+            }
+            pos += 1;
+            curr = next(&self.arena, i);
+        }
+        self._length
+    }
+
+    fn lower_bound_node(&self, key: &K) -> Option<u32> {
+        let mut curr = self.root;
+        let mut res = None;
+        while let Some(i) = curr {
+            let cmp = self.compare(&self.arena[i as usize].k, key);
+            if cmp < 0 {
+                curr = self.arena[i as usize].r;
+            } else if cmp > 0 {
+                res = Some(i);
+                curr = self.arena[i as usize].l;
+            } else {
+                return Some(i);
+            }
+        }
+        res
+    }
+
+    fn upper_bound_node(&self, key: &K) -> Option<u32> {
+        let mut curr = self.root;
+        let mut res = None;
+        while let Some(i) = curr {
+            let cmp = self.compare(&self.arena[i as usize].k, key);
+            if cmp <= 0 {
+                curr = self.arena[i as usize].r;
+            } else {
+                res = Some(i);
+                curr = self.arena[i as usize].l;
+            }
+        }
+        res
+    }
+
+    fn reverse_lower_bound_node(&self, key: &K) -> Option<u32> {
+        let mut curr = self.root;
+        let mut res = None;
+        while let Some(i) = curr {
+            let cmp = self.compare(&self.arena[i as usize].k, key);
+            if cmp < 0 {
+                res = Some(i);
+                curr = self.arena[i as usize].r;
+            } else if cmp > 0 {
+                curr = self.arena[i as usize].l;
+            } else {
+                return Some(i);
+            }
+        }
+        res
+    }
+
+    fn reverse_upper_bound_node(&self, key: &K) -> Option<u32> {
+        let mut curr = self.root;
+        let mut res = None;
+        while let Some(i) = curr {
+            let cmp = self.compare(&self.arena[i as usize].k, key);
+            if cmp < 0 {
+                res = Some(i);
+                curr = self.arena[i as usize].r;
+            } else {
+                curr = self.arena[i as usize].l;
+            }
+        }
+        res
+    }
+
+    fn remove_node(&mut self, node: u32) {
+        if self.max == Some(node) {
+            self.max = prev(&self.arena, node);
+        }
+        if self.min == Some(node) {
+            self.min = next(&self.arena, node);
+        }
+
+        self.root = remove(&mut self.arena, self.root, node);
+        if self._length > 0 {
+            self._length -= 1;
+        }
+
+        if self.root.is_none() {
+            self.min = None;
+            self.max = None;
+            self._length = 0;
         } else {
-            None
+            if self.min.is_none() {
+                self.min = first(&self.arena, self.root);
+            }
+            if self.max.is_none() {
+                self.max = last(&self.arena, self.root);
+            }
         }
     }
 
@@ -126,15 +211,79 @@ where
     }
 
     pub fn set_element(&mut self, key: K, value: V, _hint: Option<&OrderedMapIterator>) -> usize {
-        if let Some(idx) = self.find_idx(&key) {
-            self.entries[idx].1 = value;
+        if self.root.is_none() {
+            self.arena.push(RbNode::new(key, value));
+            let idx = (self.arena.len() - 1) as u32;
+            self.root = insert(&mut self.arena, None, idx, &self.comparator);
+            self.min = self.root;
+            self.max = self.root;
+            self._length = 1;
             return self._length;
         }
-        let idx = self.lower_bound_idx(&key);
-        self.entries.insert(idx, (key, value));
-        self._length += 1;
-        self.update_markers();
-        self._length
+
+        let root = self.root.expect("root exists");
+
+        let max = self.max.expect("max exists");
+        let max_cmp = self.compare(&key, &self.arena[max as usize].k);
+        if max_cmp == 0 {
+            self.arena[max as usize].v = value;
+            return self._length;
+        }
+        if max_cmp > 0 {
+            self.arena.push(RbNode::new(key, value));
+            let idx = (self.arena.len() - 1) as u32;
+            self.root = insert_right(&mut self.arena, Some(root), idx, max);
+            self.max = Some(idx);
+            self._length += 1;
+            return self._length;
+        }
+
+        let min = self.min.expect("min exists");
+        let min_cmp = self.compare(&key, &self.arena[min as usize].k);
+        if min_cmp == 0 {
+            self.arena[min as usize].v = value;
+            return self._length;
+        }
+        if min_cmp < 0 {
+            self.arena.push(RbNode::new(key, value));
+            let idx = (self.arena.len() - 1) as u32;
+            self.root = insert_left(&mut self.arena, Some(root), idx, min);
+            self.min = Some(idx);
+            self._length += 1;
+            return self._length;
+        }
+
+        let mut curr = root;
+        loop {
+            let cmp = self.compare(&key, &self.arena[curr as usize].k);
+            if cmp == 0 {
+                self.arena[curr as usize].v = value;
+                return self._length;
+            }
+            if cmp > 0 {
+                match self.arena[curr as usize].r {
+                    Some(next) => curr = next,
+                    None => {
+                        self.arena.push(RbNode::new(key, value));
+                        let idx = (self.arena.len() - 1) as u32;
+                        self.root = insert_right(&mut self.arena, self.root, idx, curr);
+                        self._length += 1;
+                        return self._length;
+                    }
+                }
+            } else {
+                match self.arena[curr as usize].l {
+                    Some(next) => curr = next,
+                    None => {
+                        self.arena.push(RbNode::new(key, value));
+                        let idx = (self.arena.len() - 1) as u32;
+                        self.root = insert_left(&mut self.arena, self.root, idx, curr);
+                        self._length += 1;
+                        return self._length;
+                    }
+                }
+            }
+        }
     }
 
     #[allow(non_snake_case)]
@@ -143,12 +292,10 @@ where
     }
 
     pub fn erase_element_by_key(&mut self, key: &K) -> bool {
-        let Some(idx) = self.find_idx(key) else {
+        let Some(node) = self.find_node(key) else {
             return false;
         };
-        self.entries.remove(idx);
-        self._length -= 1;
-        self.update_markers();
+        self.remove_node(node);
         true
     }
 
@@ -158,7 +305,7 @@ where
     }
 
     pub fn get_element_by_key(&self, key: &K) -> Option<&V> {
-        self.find_idx(key).map(|idx| &self.entries[idx].1)
+        self.find_node(key).map(|idx| &self.arena[idx as usize].v)
     }
 
     #[allow(non_snake_case)]
@@ -174,31 +321,39 @@ where
             throw_iterator_access_error();
         }
 
+        let Some(idx) = self.nth_index(pos) else {
+            throw_iterator_access_error();
+        };
+
         if self._length == 1 {
-            self.entries[0].0 = key;
+            self.arena[idx as usize].k = key;
             return true;
         }
 
         if pos == 0 {
-            if self.compare(&self.entries[1].0, &key) > 0 {
-                self.entries[0].0 = key;
+            let next_idx = next(&self.arena, idx).expect("next exists for first node");
+            if self.compare(&self.arena[next_idx as usize].k, &key) > 0 {
+                self.arena[idx as usize].k = key;
                 return true;
             }
             return false;
         }
 
         if pos == self._length - 1 {
-            if self.compare(&self.entries[self._length - 2].0, &key) < 0 {
-                self.entries[pos].0 = key;
+            let prev_idx = prev(&self.arena, idx).expect("prev exists for last node");
+            if self.compare(&self.arena[prev_idx as usize].k, &key) < 0 {
+                self.arena[idx as usize].k = key;
                 return true;
             }
             return false;
         }
 
-        let pre_ok = self.compare(&self.entries[pos - 1].0, &key) < 0;
-        let next_ok = self.compare(&self.entries[pos + 1].0, &key) > 0;
+        let prev_idx = prev(&self.arena, idx).expect("prev exists");
+        let next_idx = next(&self.arena, idx).expect("next exists");
+        let pre_ok = self.compare(&self.arena[prev_idx as usize].k, &key) < 0;
+        let next_ok = self.compare(&self.arena[next_idx as usize].k, &key) > 0;
         if pre_ok && next_ok {
-            self.entries[pos].0 = key;
+            self.arena[idx as usize].k = key;
             true
         } else {
             false
@@ -217,6 +372,10 @@ where
         if pos >= self._length {
             throw_iterator_access_error();
         }
+
+        let Some(node) = self.nth_index(pos) else {
+            throw_iterator_access_error();
+        };
 
         let mut out = iter.copy();
         let old_len = self._length;
@@ -238,9 +397,7 @@ where
             }
         }
 
-        self.entries.remove(pos);
-        self._length -= 1;
-        self.update_markers();
+        self.remove_node(node);
         out.sync_len(self._length);
         out
     }
@@ -260,11 +417,14 @@ where
     }
 
     pub fn get_height(&self) -> usize {
-        if self._length == 0 {
-            0
-        } else {
-            ((self._length as f64 + 1.0).log2().ceil()) as usize
+        fn height<K, V>(arena: &[RbNode<K, V>], root: Option<u32>) -> usize {
+            let Some(i) = root else {
+                return 0;
+            };
+            let n = &arena[i as usize];
+            1 + height(arena, n.l).max(height(arena, n.r))
         }
+        height(&self.arena, self.root)
     }
 
     #[allow(non_snake_case)]
@@ -305,16 +465,24 @@ where
     }
 
     pub fn front(&self) -> Option<(&K, &V)> {
-        self.entries.first().map(|(k, v)| (k, v))
+        self.min.map(|i| {
+            let n = &self.arena[i as usize];
+            (&n.k, &n.v)
+        })
     }
 
     pub fn back(&self) -> Option<(&K, &V)> {
-        self.entries.last().map(|(k, v)| (k, v))
+        self.max.map(|i| {
+            let n = &self.arena[i as usize];
+            (&n.k, &n.v)
+        })
     }
 
     pub fn lower_bound(&self, key: &K) -> OrderedMapIterator {
-        let idx = self.lower_bound_idx(key);
-        OrderedMapIterator::new(idx, self._length, IteratorType::NORMAL)
+        let pos = self
+            .lower_bound_node(key)
+            .map_or(self._length, |i| self.index_of(i));
+        OrderedMapIterator::new(pos, self._length, IteratorType::NORMAL)
     }
 
     #[allow(non_snake_case)]
@@ -323,8 +491,10 @@ where
     }
 
     pub fn upper_bound(&self, key: &K) -> OrderedMapIterator {
-        let idx = self.upper_bound_idx(key);
-        OrderedMapIterator::new(idx, self._length, IteratorType::NORMAL)
+        let pos = self
+            .upper_bound_node(key)
+            .map_or(self._length, |i| self.index_of(i));
+        OrderedMapIterator::new(pos, self._length, IteratorType::NORMAL)
     }
 
     #[allow(non_snake_case)]
@@ -333,8 +503,9 @@ where
     }
 
     pub fn reverse_lower_bound(&self, key: &K) -> OrderedMapIterator {
-        let idx = self.upper_bound_idx(key);
-        let pos = if idx == 0 { self._length } else { idx - 1 };
+        let pos = self
+            .reverse_lower_bound_node(key)
+            .map_or(self._length, |i| self.index_of(i));
         OrderedMapIterator::new(pos, self._length, IteratorType::NORMAL)
     }
 
@@ -344,8 +515,9 @@ where
     }
 
     pub fn reverse_upper_bound(&self, key: &K) -> OrderedMapIterator {
-        let idx = self.lower_bound_idx(key);
-        let pos = if idx == 0 { self._length } else { idx - 1 };
+        let pos = self
+            .reverse_upper_bound_node(key)
+            .map_or(self._length, |i| self.index_of(i));
         OrderedMapIterator::new(pos, self._length, IteratorType::NORMAL)
     }
 
@@ -364,9 +536,11 @@ where
     }
 
     pub fn clear(&mut self) {
-        self.entries.clear();
+        self.arena.clear();
         self._length = 0;
-        self.update_markers();
+        self.min = None;
+        self.root = None;
+        self.max = None;
     }
 
     pub fn size(&self) -> usize {

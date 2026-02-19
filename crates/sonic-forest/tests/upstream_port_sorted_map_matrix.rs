@@ -57,3 +57,66 @@ fn sorted_map_random_numbers_from_0_to_100_matrix() {
     let size2 = map.size();
     assert!(size2 < size1);
 }
+
+#[test]
+fn sorted_map_bounds_and_iterators_matrix() {
+    let mut map = SortedMap::<i32, i32>::new();
+    map.set_element(1, 10, None);
+    map.set_element(3, 30, None);
+    map.set_element(5, 50, None);
+
+    let lb0 = map.lower_bound(&0);
+    assert_eq!(lb0.index(), 0);
+    assert!(lb0.is_accessible());
+
+    let lb2 = map.lower_bound(&2);
+    assert_eq!(lb2.index(), 1);
+    assert!(lb2.is_accessible());
+
+    let lb6 = map.lower_bound(&6);
+    assert!(!lb6.is_accessible());
+
+    let ub3 = map.upper_bound(&3);
+    assert_eq!(ub3.index(), 2);
+    assert!(ub3.is_accessible());
+
+    let rlb4 = map.reverse_lower_bound(&4);
+    assert_eq!(rlb4.index(), 1);
+    assert!(rlb4.is_accessible());
+
+    let rub3 = map.reverse_upper_bound(&3);
+    assert_eq!(rub3.index(), 0);
+    assert!(rub3.is_accessible());
+}
+
+#[test]
+fn sorted_map_update_key_by_iterator_matrix() {
+    let mut map = SortedMap::<i32, i32>::new();
+    map.set_element(1, 10, None);
+    map.set_element(3, 30, None);
+    map.set_element(5, 50, None);
+
+    let mid = map.lower_bound(&3);
+    assert!(map.update_key_by_iterator(&mid, 4));
+    assert_eq!(map.get_element_by_key(&3), None);
+    assert_eq!(map.get_element_by_key(&4), Some(&30));
+
+    let mid2 = map.lower_bound(&4);
+    assert!(!map.update_key_by_iterator(&mid2, 6));
+    assert_eq!(map.get_element_by_key(&4), Some(&30));
+}
+
+#[test]
+fn sorted_map_erase_element_by_iterator_matrix() {
+    let mut map = SortedMap::<i32, i32>::new();
+    map.set_element(1, 1, None);
+    map.set_element(2, 2, None);
+    map.set_element(3, 3, None);
+
+    let it = map.lower_bound(&2);
+    let next_it = map.erase_element_by_iterator(it);
+    assert_eq!(map.size(), 2);
+    assert_eq!(map.get_element_by_key(&2), None);
+    assert!(next_it.is_accessible());
+    assert_eq!(next_it.index(), 1);
+}
