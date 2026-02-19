@@ -59,68 +59,79 @@ pub fn create_to_base64_bin(
 
     let do_add_padding = pad.len() == 1;
     let e: u8 = if do_add_padding { pad.as_bytes()[0] } else { 0 };
-    let ee: u16 = if do_add_padding { ((e as u16) << 8) | (e as u16) } else { 0 };
+    let ee: u16 = if do_add_padding {
+        ((e as u16) << 8) | (e as u16)
+    } else {
+        0
+    };
 
-    Ok(move |uint8: &[u8], mut start: usize, length: usize, dest: &mut [u8], mut offset: usize| -> usize {
-        let extra_length = length % 3;
-        let base_length = length - extra_length;
+    Ok(
+        move |uint8: &[u8],
+              mut start: usize,
+              length: usize,
+              dest: &mut [u8],
+              mut offset: usize|
+              -> usize {
+            let extra_length = length % 3;
+            let base_length = length - extra_length;
 
-        while start < base_length {
-            let o1 = uint8[start];
-            let o2 = uint8[start + 1];
-            let o3 = uint8[start + 2];
-            let v1 = ((o1 as u16) << 4) | ((o2 as u16) >> 4);
-            let v2 = (((o2 & 0b1111) as u16) << 8) | (o3 as u16);
+            while start < base_length {
+                let o1 = uint8[start];
+                let o2 = uint8[start + 1];
+                let o3 = uint8[start + 2];
+                let v1 = ((o1 as u16) << 4) | ((o2 as u16) >> 4);
+                let v2 = (((o2 & 0b1111) as u16) << 8) | (o3 as u16);
 
-            // Write table2[v1] as big-endian u16 (equivalent to setInt32 big-endian)
-            let pair1 = table2[v1 as usize];
-            let pair2 = table2[v2 as usize];
-            // Write all 4 bytes at once (pair1 << 16 | pair2 as big-endian i32)
-            dest[offset] = (pair1 >> 8) as u8;
-            dest[offset + 1] = pair1 as u8;
-            dest[offset + 2] = (pair2 >> 8) as u8;
-            dest[offset + 3] = pair2 as u8;
-            offset += 4;
-            start += 3;
-        }
-
-        if extra_length == 1 {
-            let o1 = uint8[base_length];
-            if do_add_padding {
-                let pair = table2[(o1 as usize) << 4];
-                dest[offset] = (pair >> 8) as u8;
-                dest[offset + 1] = pair as u8;
-                dest[offset + 2] = (ee >> 8) as u8;
-                dest[offset + 3] = ee as u8;
+                // Write table2[v1] as big-endian u16 (equivalent to setInt32 big-endian)
+                let pair1 = table2[v1 as usize];
+                let pair2 = table2[v2 as usize];
+                // Write all 4 bytes at once (pair1 << 16 | pair2 as big-endian i32)
+                dest[offset] = (pair1 >> 8) as u8;
+                dest[offset + 1] = pair1 as u8;
+                dest[offset + 2] = (pair2 >> 8) as u8;
+                dest[offset + 3] = pair2 as u8;
                 offset += 4;
-            } else {
-                let pair = table2[(o1 as usize) << 4];
-                dest[offset] = (pair >> 8) as u8;
-                dest[offset + 1] = pair as u8;
-                offset += 2;
+                start += 3;
             }
-        } else if extra_length == 2 {
-            let o1 = uint8[base_length];
-            let o2 = uint8[base_length + 1];
-            let v1 = ((o1 as u16) << 4) | ((o2 as u16) >> 4);
-            let v2 = ((o2 & 0b1111) as u16) << 2;
 
-            if do_add_padding {
-                let pair = table2[v1 as usize];
-                dest[offset] = (pair >> 8) as u8;
-                dest[offset + 1] = pair as u8;
-                dest[offset + 2] = table[v2 as usize];
-                dest[offset + 3] = e;
-                offset += 4;
-            } else {
-                let pair = table2[v1 as usize];
-                dest[offset] = (pair >> 8) as u8;
-                dest[offset + 1] = pair as u8;
-                dest[offset + 2] = table[v2 as usize];
-                offset += 3;
+            if extra_length == 1 {
+                let o1 = uint8[base_length];
+                if do_add_padding {
+                    let pair = table2[(o1 as usize) << 4];
+                    dest[offset] = (pair >> 8) as u8;
+                    dest[offset + 1] = pair as u8;
+                    dest[offset + 2] = (ee >> 8) as u8;
+                    dest[offset + 3] = ee as u8;
+                    offset += 4;
+                } else {
+                    let pair = table2[(o1 as usize) << 4];
+                    dest[offset] = (pair >> 8) as u8;
+                    dest[offset + 1] = pair as u8;
+                    offset += 2;
+                }
+            } else if extra_length == 2 {
+                let o1 = uint8[base_length];
+                let o2 = uint8[base_length + 1];
+                let v1 = ((o1 as u16) << 4) | ((o2 as u16) >> 4);
+                let v2 = ((o2 & 0b1111) as u16) << 2;
+
+                if do_add_padding {
+                    let pair = table2[v1 as usize];
+                    dest[offset] = (pair >> 8) as u8;
+                    dest[offset + 1] = pair as u8;
+                    dest[offset + 2] = table[v2 as usize];
+                    dest[offset + 3] = e;
+                    offset += 4;
+                } else {
+                    let pair = table2[v1 as usize];
+                    dest[offset] = (pair >> 8) as u8;
+                    dest[offset + 1] = pair as u8;
+                    dest[offset + 2] = table[v2 as usize];
+                    offset += 3;
+                }
             }
-        }
 
-        offset
-    })
+            offset
+        },
+    )
 }

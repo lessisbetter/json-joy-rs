@@ -2,11 +2,11 @@
 //!
 //! Mirrors `packages/json-joy/src/json-crdt-patch/codec/verbose/encode.ts`.
 
-use serde_json::{json, Value};
-use crate::json_crdt_patch::clock::{Ts};
+use crate::json_crdt_patch::clock::Ts;
 use crate::json_crdt_patch::enums::SESSION;
 use crate::json_crdt_patch::operations::{ConValue, Op};
 use crate::json_crdt_patch::patch::Patch;
+use serde_json::{json, Value};
 
 fn encode_ts(id: Ts) -> Value {
     if id.sid == SESSION::SERVER {
@@ -39,7 +39,8 @@ fn pack_to_json(v: &json_joy_json_pack::PackValue) -> Value {
         }
         PackValue::Array(arr) => Value::Array(arr.iter().map(pack_to_json).collect()),
         PackValue::Object(obj) => {
-            let map: serde_json::Map<_, _> = obj.iter()
+            let map: serde_json::Map<_, _> = obj
+                .iter()
                 .map(|(k, v)| (k.clone(), pack_to_json(v)))
                 .collect();
             Value::Object(map)
@@ -78,33 +79,43 @@ pub fn encode(patch: &Patch) -> Value {
                 "value": encode_ts(*val),
             }),
             Op::InsObj { obj, data, .. } => {
-                let vals: Vec<Value> = data.iter()
+                let vals: Vec<Value> = data
+                    .iter()
                     .map(|(k, v)| json!([k, encode_ts(*v)]))
                     .collect();
                 json!({"op": "ins_obj", "obj": encode_ts(*obj), "value": vals})
             }
             Op::InsVec { obj, data, .. } => {
-                let vals: Vec<Value> = data.iter()
+                let vals: Vec<Value> = data
+                    .iter()
                     .map(|(k, v)| json!([k, encode_ts(*v)]))
                     .collect();
                 json!({"op": "ins_vec", "obj": encode_ts(*obj), "value": vals})
             }
-            Op::InsStr { obj, after, data, .. } => json!({
+            Op::InsStr {
+                obj, after, data, ..
+            } => json!({
                 "op": "ins_str",
                 "obj": encode_ts(*obj),
                 "after": encode_ts(*after),
                 "value": data,
             }),
-            Op::InsBin { obj, after, data, .. } => {
+            Op::InsBin {
+                obj, after, data, ..
+            } => {
                 use base64::Engine;
                 let b64 = base64::engine::general_purpose::STANDARD.encode(data);
                 json!({"op": "ins_bin", "obj": encode_ts(*obj), "after": encode_ts(*after), "value": b64})
             }
-            Op::InsArr { obj, after, data, .. } => {
+            Op::InsArr {
+                obj, after, data, ..
+            } => {
                 let vals: Vec<Value> = data.iter().map(|v| encode_ts(*v)).collect();
                 json!({"op": "ins_arr", "obj": encode_ts(*obj), "after": encode_ts(*after), "values": vals})
             }
-            Op::UpdArr { obj, after, val, .. } => json!({
+            Op::UpdArr {
+                obj, after, val, ..
+            } => json!({
                 "op": "upd_arr",
                 "obj": encode_ts(*obj),
                 "ref": encode_ts(*after),

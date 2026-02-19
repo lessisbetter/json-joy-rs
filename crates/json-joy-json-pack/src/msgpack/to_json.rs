@@ -21,7 +21,10 @@ impl Default for MsgPackToJsonConverter {
 
 impl MsgPackToJsonConverter {
     pub fn new() -> Self {
-        Self { data: Vec::new(), x: 0 }
+        Self {
+            data: Vec::new(),
+            x: 0,
+        }
     }
 
     /// Convert a MessagePack blob to a JSON string.
@@ -131,12 +134,30 @@ impl MsgPackToJsonConverter {
             0xc1 => "null".to_string(), // undefined → null in JSON
             0xc2 => "false".to_string(),
             0xc3 => "true".to_string(),
-            0xc4 => { let n = self.u8() as usize; self.bin(n) }
-            0xc5 => { let n = self.u16() as usize; self.bin(n) }
-            0xc6 => { let n = self.u32() as usize; self.bin(n) }
-            0xc7 => { let n = self.u8() as usize; self.ext_val(n) }
-            0xc8 => { let n = self.u16() as usize; self.ext_val(n) }
-            0xc9 => { let n = self.u32() as usize; self.ext_val(n) }
+            0xc4 => {
+                let n = self.u8() as usize;
+                self.bin(n)
+            }
+            0xc5 => {
+                let n = self.u16() as usize;
+                self.bin(n)
+            }
+            0xc6 => {
+                let n = self.u32() as usize;
+                self.bin(n)
+            }
+            0xc7 => {
+                let n = self.u8() as usize;
+                self.ext_val(n)
+            }
+            0xc8 => {
+                let n = self.u16() as usize;
+                self.ext_val(n)
+            }
+            0xc9 => {
+                let n = self.u32() as usize;
+                self.ext_val(n)
+            }
             0xca => self.f32().to_string(),
             0xcb => self.f64().to_string(),
             0xcc => self.u8().to_string(),
@@ -160,13 +181,34 @@ impl MsgPackToJsonConverter {
             0xd6 => self.ext_val(4),
             0xd7 => self.ext_val(8),
             0xd8 => self.ext_val(16),
-            0xd9 => { let n = self.u8() as usize; self.str(n) }
-            0xda => { let n = self.u16() as usize; self.str(n) }
-            0xdb => { let n = self.u32() as usize; self.str(n) }
-            0xdc => { let n = self.u16() as usize; self.arr(n) }
-            0xdd => { let n = self.u32() as usize; self.arr(n) }
-            0xde => { let n = self.u16() as usize; self.obj(n) }
-            0xdf => { let n = self.u32() as usize; self.obj(n) }
+            0xd9 => {
+                let n = self.u8() as usize;
+                self.str(n)
+            }
+            0xda => {
+                let n = self.u16() as usize;
+                self.str(n)
+            }
+            0xdb => {
+                let n = self.u32() as usize;
+                self.str(n)
+            }
+            0xdc => {
+                let n = self.u16() as usize;
+                self.arr(n)
+            }
+            0xdd => {
+                let n = self.u32() as usize;
+                self.arr(n)
+            }
+            0xde => {
+                let n = self.u16() as usize;
+                self.obj(n)
+            }
+            0xdf => {
+                let n = self.u32() as usize;
+                self.obj(n)
+            }
             _ => "null".to_string(),
         }
     }

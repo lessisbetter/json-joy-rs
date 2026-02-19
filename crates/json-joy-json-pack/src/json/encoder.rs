@@ -30,7 +30,9 @@ impl Default for JsonEncoder {
 
 impl JsonEncoder {
     pub fn new() -> Self {
-        Self { writer: Writer::new() }
+        Self {
+            writer: Writer::new(),
+        }
     }
 
     pub fn encode(&mut self, value: &PackValue) -> Vec<u8> {
@@ -235,20 +237,38 @@ impl JsonEncoder {
 
     // ---- Streaming ----
 
-    pub fn write_start_arr(&mut self) { self.writer.u8(b'['); }
-    pub fn write_end_arr(&mut self) { self.writer.u8(b']'); }
-    pub fn write_start_obj(&mut self) { self.writer.u8(b'{'); }
-    pub fn write_end_obj(&mut self) { self.writer.u8(b'}'); }
-    pub fn write_arr_separator(&mut self) { self.writer.u8(b','); }
-    pub fn write_obj_separator(&mut self) { self.writer.u8(b','); }
-    pub fn write_obj_key_separator(&mut self) { self.writer.u8(b':'); }
+    pub fn write_start_arr(&mut self) {
+        self.writer.u8(b'[');
+    }
+    pub fn write_end_arr(&mut self) {
+        self.writer.u8(b']');
+    }
+    pub fn write_start_obj(&mut self) {
+        self.writer.u8(b'{');
+    }
+    pub fn write_end_obj(&mut self) {
+        self.writer.u8(b'}');
+    }
+    pub fn write_arr_separator(&mut self) {
+        self.writer.u8(b',');
+    }
+    pub fn write_obj_separator(&mut self) {
+        self.writer.u8(b',');
+    }
+    pub fn write_obj_key_separator(&mut self) {
+        self.writer.u8(b':');
+    }
 }
 
 fn format_float(f: f64) -> String {
     if f.is_nan() {
         "null".to_string()
     } else if f.is_infinite() {
-        if f > 0.0 { "1e308".to_string() } else { "-1e308".to_string() }
+        if f > 0.0 {
+            "1e308".to_string()
+        } else {
+            "-1e308".to_string()
+        }
     } else if f.fract() == 0.0 && f.abs() < 1e15 {
         format!("{}", f as i64)
     } else {

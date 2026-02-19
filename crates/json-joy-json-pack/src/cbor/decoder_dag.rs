@@ -21,7 +21,10 @@ impl CborDecoderDag {
 
     pub fn decode(&self, input: &[u8]) -> Result<PackValue, CborError> {
         let base = CborDecoderBase::new();
-        let mut c = Cur { data: input, pos: 0 };
+        let mut c = Cur {
+            data: input,
+            pos: 0,
+        };
         self.read_any(&base, &mut c)
     }
 
@@ -36,10 +39,17 @@ impl CborDecoderDag {
         base.read_any_raw(c, octet)
     }
 
-    fn read_tag_raw(&self, base: &CborDecoderBase, c: &mut Cur, tag: u64) -> Result<PackValue, CborError> {
+    fn read_tag_raw(
+        &self,
+        base: &CborDecoderBase,
+        c: &mut Cur,
+        tag: u64,
+    ) -> Result<PackValue, CborError> {
         let val = self.read_any(base, c)?;
         if tag == 42 {
-            Ok(PackValue::Extension(Box::new(JsonPackExtension::new(tag, val))))
+            Ok(PackValue::Extension(Box::new(JsonPackExtension::new(
+                tag, val,
+            ))))
         } else {
             Ok(val) // unwrap non-42 tags
         }

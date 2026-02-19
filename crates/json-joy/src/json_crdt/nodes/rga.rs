@@ -12,7 +12,7 @@
 //! Chunks also carry a `s` (split-link) pointer that threads together
 //! consecutive pieces of the same original insertion operation.
 
-use crate::json_crdt_patch::clock::{Ts, Tss, compare};
+use crate::json_crdt_patch::clock::{compare, Ts, Tss};
 use sonic_forest::{Node, Node2};
 
 // ── ChunkData ─────────────────────────────────────────────────────────────
@@ -29,24 +29,34 @@ pub trait ChunkData: Clone {
 
 impl ChunkData for String {
     fn split_at_offset(&mut self, at: usize) -> Self {
-        let byte_pos = self.char_indices().nth(at).map(|(i, _)| i).unwrap_or(self.len());
+        let byte_pos = self
+            .char_indices()
+            .nth(at)
+            .map(|(i, _)| i)
+            .unwrap_or(self.len());
         self.split_off(byte_pos)
     }
-    fn merge(&mut self, other: Self) { self.push_str(&other); }
+    fn merge(&mut self, other: Self) {
+        self.push_str(&other);
+    }
 }
 
 impl ChunkData for Vec<u8> {
     fn split_at_offset(&mut self, at: usize) -> Self {
         self.split_off(at)
     }
-    fn merge(&mut self, other: Self) { self.extend(other); }
+    fn merge(&mut self, other: Self) {
+        self.extend(other);
+    }
 }
 
 impl ChunkData for Vec<Ts> {
     fn split_at_offset(&mut self, at: usize) -> Self {
         self.split_off(at)
     }
-    fn merge(&mut self, other: Self) { self.extend(other); }
+    fn merge(&mut self, other: Self) {
+        self.extend(other);
+    }
 }
 
 // ── Chunk ─────────────────────────────────────────────────────────────────
@@ -65,56 +75,102 @@ pub struct Chunk<T: Clone> {
     /// Aggregated live (non-deleted) content length in this subtree.
     pub len: u64,
     // Position tree links
-    pub p:  Option<u32>,
-    pub l:  Option<u32>,
-    pub r:  Option<u32>,
+    pub p: Option<u32>,
+    pub l: Option<u32>,
+    pub r: Option<u32>,
     // ID tree links
     pub p2: Option<u32>,
     pub l2: Option<u32>,
     pub r2: Option<u32>,
     /// Split link — next chunk split from this one.
-    pub s:  Option<u32>,
+    pub s: Option<u32>,
 }
 
 impl<T: Clone> Chunk<T> {
     pub fn new(id: Ts, span: u64, data: T) -> Self {
         Self {
-            id, span, deleted: false, data: Some(data),
-            len: span, p: None, l: None, r: None,
-            p2: None, l2: None, r2: None, s: None,
+            id,
+            span,
+            deleted: false,
+            data: Some(data),
+            len: span,
+            p: None,
+            l: None,
+            r: None,
+            p2: None,
+            l2: None,
+            r2: None,
+            s: None,
         }
     }
 
     pub fn new_deleted(id: Ts, span: u64) -> Self {
         Self {
-            id, span, deleted: true, data: None,
-            len: 0, p: None, l: None, r: None,
-            p2: None, l2: None, r2: None, s: None,
+            id,
+            span,
+            deleted: true,
+            data: None,
+            len: 0,
+            p: None,
+            l: None,
+            r: None,
+            p2: None,
+            l2: None,
+            r2: None,
+            s: None,
         }
     }
 
     /// Live length of this chunk (0 if deleted, else span).
     pub fn len(&self) -> u64 {
-        if self.deleted { 0 } else { self.span }
+        if self.deleted {
+            0
+        } else {
+            self.span
+        }
     }
 }
 
 impl<T: Clone> Node for Chunk<T> {
-    fn p(&self)  -> Option<u32> { self.p }
-    fn l(&self)  -> Option<u32> { self.l }
-    fn r(&self)  -> Option<u32> { self.r }
-    fn set_p(&mut self, v: Option<u32>) { self.p = v; }
-    fn set_l(&mut self, v: Option<u32>) { self.l = v; }
-    fn set_r(&mut self, v: Option<u32>) { self.r = v; }
+    fn p(&self) -> Option<u32> {
+        self.p
+    }
+    fn l(&self) -> Option<u32> {
+        self.l
+    }
+    fn r(&self) -> Option<u32> {
+        self.r
+    }
+    fn set_p(&mut self, v: Option<u32>) {
+        self.p = v;
+    }
+    fn set_l(&mut self, v: Option<u32>) {
+        self.l = v;
+    }
+    fn set_r(&mut self, v: Option<u32>) {
+        self.r = v;
+    }
 }
 
 impl<T: Clone> Node2 for Chunk<T> {
-    fn p2(&self)  -> Option<u32> { self.p2 }
-    fn l2(&self)  -> Option<u32> { self.l2 }
-    fn r2(&self)  -> Option<u32> { self.r2 }
-    fn set_p2(&mut self, v: Option<u32>) { self.p2 = v; }
-    fn set_l2(&mut self, v: Option<u32>) { self.l2 = v; }
-    fn set_r2(&mut self, v: Option<u32>) { self.r2 = v; }
+    fn p2(&self) -> Option<u32> {
+        self.p2
+    }
+    fn l2(&self) -> Option<u32> {
+        self.l2
+    }
+    fn r2(&self) -> Option<u32> {
+        self.r2
+    }
+    fn set_p2(&mut self, v: Option<u32>) {
+        self.p2 = v;
+    }
+    fn set_l2(&mut self, v: Option<u32>) {
+        self.l2 = v;
+    }
+    fn set_r2(&mut self, v: Option<u32>) {
+        self.r2 = v;
+    }
 }
 
 // ── Rga ───────────────────────────────────────────────────────────────────
@@ -139,7 +195,7 @@ fn update_len_one<T: Clone>(chunks: &mut Vec<Chunk<T>>, idx: u32) {
     let c = &chunks[idx as usize];
     let l_len = c.l.map(|l| chunks[l as usize].len).unwrap_or(0);
     let r_len = c.r.map(|r| chunks[r as usize].len).unwrap_or(0);
-    let span  = if c.deleted { 0 } else { c.span };
+    let span = if c.deleted { 0 } else { c.span };
     chunks[idx as usize].len = span + l_len + r_len;
 }
 
@@ -167,23 +223,28 @@ fn d_len<T: Clone>(chunks: &mut Vec<Chunk<T>>, mut idx: Option<u32>, delta: i64)
 fn splay_pos<T: Clone>(chunks: &mut Vec<Chunk<T>>, root: &mut Option<u32>, idx: u32) {
     loop {
         let p = chunks[idx as usize].p;
-        let Some(p) = p else { break; };
+        let Some(p) = p else {
+            break;
+        };
         let pp = chunks[p as usize].p;
         let l2 = chunks[p as usize].l == Some(idx);
         if let Some(pp) = pp {
             let l1 = chunks[pp as usize].l == Some(p);
             *root = match (l1, l2) {
-                (true,  true)  => sonic_forest::ll_splay(chunks, *root, idx, p, pp),
-                (true,  false) => sonic_forest::lr_splay(chunks, *root, idx, p, pp),
-                (false, true)  => sonic_forest::rl_splay(chunks, *root, idx, p, pp),
+                (true, true) => sonic_forest::ll_splay(chunks, *root, idx, p, pp),
+                (true, false) => sonic_forest::lr_splay(chunks, *root, idx, p, pp),
+                (false, true) => sonic_forest::rl_splay(chunks, *root, idx, p, pp),
                 (false, false) => sonic_forest::rr_splay(chunks, *root, idx, p, pp),
             };
             update_len_one(chunks, pp);
             update_len_one(chunks, p);
             update_len_one_live(chunks, idx);
         } else {
-            if l2 { sonic_forest::r_splay(chunks, idx, p); }
-            else  { sonic_forest::l_splay(chunks, idx, p); }
+            if l2 {
+                sonic_forest::r_splay(chunks, idx, p);
+            } else {
+                sonic_forest::l_splay(chunks, idx, p);
+            }
             *root = Some(idx);
             update_len_one(chunks, p);
             update_len_one_live(chunks, idx);
@@ -197,7 +258,9 @@ fn splay_pos<T: Clone>(chunks: &mut Vec<Chunk<T>>, root: &mut Option<u32>, idx: 
 fn pos_next<T: Clone>(chunks: &[Chunk<T>], idx: u32) -> Option<u32> {
     if let Some(r) = chunks[idx as usize].r {
         let mut curr = r;
-        while let Some(l) = chunks[curr as usize].l { curr = l; }
+        while let Some(l) = chunks[curr as usize].l {
+            curr = l;
+        }
         return Some(curr);
     }
     let mut curr = idx;
@@ -216,7 +279,9 @@ fn pos_next<T: Clone>(chunks: &[Chunk<T>], idx: u32) -> Option<u32> {
 fn pos_prev<T: Clone>(chunks: &[Chunk<T>], idx: u32) -> Option<u32> {
     if let Some(l) = chunks[idx as usize].l {
         let mut curr = l;
-        while let Some(r) = chunks[curr as usize].r { curr = r; }
+        while let Some(r) = chunks[curr as usize].r {
+            curr = r;
+        }
         return Some(curr);
     }
     let mut curr = idx;
@@ -237,7 +302,7 @@ fn pos_first<T: Clone>(chunks: &[Chunk<T>], root: Option<u32>) -> Option<u32> {
     while let Some(idx) = curr {
         match chunks[idx as usize].l {
             Some(l) => curr = Some(l),
-            None    => return Some(idx),
+            None => return Some(idx),
         }
     }
     None
@@ -318,7 +383,7 @@ fn set_root<T: Clone>(rga: &mut Rga<T>, idx: u32) {
 /// Extend `left`'s data and span with `idx`'s data, then pop `idx` from the
 /// arena.  Mirrors `AbstractRga.mergeContent()`.
 fn merge_content<T: Clone + ChunkData>(rga: &mut Rga<T>, left: u32, idx: u32) {
-    let span1    = rga.chunks[left as usize].span;
+    let span1 = rga.chunks[left as usize].span;
     let new_data = rga.chunks[idx as usize].data.take();
     let new_span = rga.chunks[idx as usize].span;
     if let (Some(ld), Some(nd)) = (rga.chunks[left as usize].data.as_mut(), new_data) {
@@ -339,30 +404,31 @@ fn merge_content<T: Clone + ChunkData>(rga: &mut Rga<T>, left: u32, idx: u32) {
 /// Insert `idx` after reference `ref_id`, scanning forward from `left`.
 /// Mirrors `AbstractRga.insertAfterRef()`.
 fn insert_after_ref<T: Clone + ChunkData>(rga: &mut Rga<T>, idx: u32, ref_id: Ts, mut left: u32) {
-    let id   = rga.chunks[idx as usize].id;
-    let sid  = id.sid;
+    let id = rga.chunks[idx as usize].id;
+    let sid = id.sid;
     let time = id.time;
     let mut is_split = false;
 
     loop {
-        let left_id        = rga.chunks[left as usize].id;
+        let left_id = rga.chunks[left as usize].id;
         let left_next_tick = left_id.time + rga.chunks[left as usize].span;
 
         if rga.chunks[left as usize].s.is_none() {
-            is_split = left_id.sid == sid
-                && left_next_tick == time
-                && left_next_tick - 1 == ref_id.time;
+            is_split =
+                left_id.sid == sid && left_next_tick == time && left_next_tick - 1 == ref_id.time;
             if is_split {
                 rga.chunks[left as usize].s = Some(idx);
             }
         }
 
         let right = pos_next(&rga.chunks, left);
-        let Some(right) = right else { break; };
+        let Some(right) = right else {
+            break;
+        };
 
-        let right_id     = rga.chunks[right as usize].id;
+        let right_id = rga.chunks[right as usize].id;
         let right_id_time = right_id.time;
-        let right_id_sid  = right_id.sid;
+        let right_id_sid = right_id.sid;
 
         if right_id_time < time {
             break;
@@ -399,14 +465,17 @@ fn insert_after_ref<T: Clone + ChunkData>(rga: &mut Rga<T>, idx: u32, ref_id: Ts
 /// Adds the right-half chunk to the arena but does NOT wire it into any tree.
 /// Returns the arena index of the right-half chunk.
 fn alloc_split_chunk<T: Clone + ChunkData>(rga: &mut Rga<T>, idx: u32, ticks: usize) -> u32 {
-    let id  = rga.chunks[idx as usize].id;
+    let id = rga.chunks[idx as usize].id;
     let span = rga.chunks[idx as usize].span;
-    let del  = rga.chunks[idx as usize].deleted;
+    let del = rga.chunks[idx as usize].deleted;
 
-    let right_data = rga.chunks[idx as usize].data.as_mut().map(|d| d.split_at_offset(ticks));
+    let right_data = rga.chunks[idx as usize]
+        .data
+        .as_mut()
+        .map(|d| d.split_at_offset(ticks));
     rga.chunks[idx as usize].span = ticks as u64;
 
-    let right_id   = Ts::new(id.sid, id.time + ticks as u64);
+    let right_id = Ts::new(id.sid, id.time + ticks as u64);
     let right_span = span - ticks as u64;
 
     let new_chunk = if del {
@@ -414,7 +483,7 @@ fn alloc_split_chunk<T: Clone + ChunkData>(rga: &mut Rga<T>, idx: u32, ticks: us
     } else {
         match right_data {
             Some(d) => Chunk::new(right_id, right_span, d),
-            None    => Chunk::new_deleted(right_id, right_span),
+            None => Chunk::new_deleted(right_id, right_span),
         }
     };
 
@@ -429,15 +498,15 @@ fn alloc_split_chunk<T: Clone + ChunkData>(rga: &mut Rga<T>, idx: u32, ticks: us
 /// tree as the immediate right child of `idx`.  Also inserts the right-half
 /// into the ID tree.  Mirrors `AbstractRga.split()`.
 fn split_for_delete<T: Clone + ChunkData>(rga: &mut Rga<T>, idx: u32, ticks: usize) -> u32 {
-    let s   = rga.chunks[idx as usize].s;
+    let s = rga.chunks[idx as usize].s;
     let at2 = alloc_split_chunk(rga, idx, ticks);
-    let r   = rga.chunks[idx as usize].r;
+    let r = rga.chunks[idx as usize].r;
 
-    rga.chunks[idx as usize].s  = Some(at2);
-    rga.chunks[at2 as usize].s  = s;
-    rga.chunks[at2 as usize].r  = r;
-    rga.chunks[idx as usize].r  = Some(at2);
-    rga.chunks[at2 as usize].p  = Some(idx);
+    rga.chunks[idx as usize].s = Some(at2);
+    rga.chunks[at2 as usize].s = s;
+    rga.chunks[at2 as usize].r = r;
+    rga.chunks[idx as usize].r = Some(at2);
+    rga.chunks[at2 as usize].p = Some(idx);
     if let Some(r) = r {
         rga.chunks[r as usize].p = Some(at2);
     }
@@ -454,22 +523,22 @@ fn split_for_delete<T: Clone + ChunkData>(rga: &mut Rga<T>, idx: u32, ticks: usi
 /// Mirrors `AbstractRga.insertInside()`.
 fn insert_inside<T: Clone + ChunkData>(rga: &mut Rga<T>, idx: u32, at: u32, offset: usize) {
     // Snapshot pointers before we mutate anything.
-    let p   = rga.chunks[at as usize].p;
-    let l   = rga.chunks[at as usize].l;
-    let r   = rga.chunks[at as usize].r;
-    let s   = rga.chunks[at as usize].s;
+    let p = rga.chunks[at as usize].p;
+    let l = rga.chunks[at as usize].l;
+    let r = rga.chunks[at as usize].r;
+    let s = rga.chunks[at as usize].s;
     let len = rga.chunks[at as usize].len;
 
     // Split `at` into at (left) and at2 (right) — no tree wiring yet.
     let at2 = alloc_split_chunk(rga, at, offset);
 
     // Update split links.
-    rga.chunks[at as usize].s  = Some(at2);
+    rga.chunks[at as usize].s = Some(at2);
     rga.chunks[at2 as usize].s = s;
 
     // Detach `at` and `at2` from any existing children (we re-wire below).
-    rga.chunks[at as usize].l  = None;
-    rga.chunks[at as usize].r  = None;
+    rga.chunks[at as usize].l = None;
+    rga.chunks[at as usize].r = None;
     rga.chunks[at2 as usize].l = None;
     rga.chunks[at2 as usize].r = None;
 
@@ -479,14 +548,14 @@ fn insert_inside<T: Clone + ChunkData>(rga: &mut Rga<T>, idx: u32, at: u32, offs
     // Left side: l → [... → at]
     if l.is_none() {
         rga.chunks[idx as usize].l = Some(at);
-        rga.chunks[at as usize].p  = Some(idx);
+        rga.chunks[at as usize].p = Some(idx);
     } else {
         let l = l.unwrap();
         rga.chunks[idx as usize].l = Some(l);
-        rga.chunks[l as usize].p   = Some(idx);
+        rga.chunks[l as usize].p = Some(idx);
         // Attach `at` as right child of `l`, preserving l's right sub-tree.
         let a = rga.chunks[l as usize].r;
-        rga.chunks[l as usize].r  = Some(at);
+        rga.chunks[l as usize].r = Some(at);
         rga.chunks[at as usize].p = Some(l);
         rga.chunks[at as usize].l = a;
         if let Some(a) = a {
@@ -496,15 +565,15 @@ fn insert_inside<T: Clone + ChunkData>(rga: &mut Rga<T>, idx: u32, at: u32, offs
 
     // Right side: [at2 → ...] → r
     if r.is_none() {
-        rga.chunks[idx as usize].r  = Some(at2);
-        rga.chunks[at2 as usize].p  = Some(idx);
+        rga.chunks[idx as usize].r = Some(at2);
+        rga.chunks[at2 as usize].p = Some(idx);
     } else {
         let r = r.unwrap();
-        rga.chunks[idx as usize].r  = Some(r);
-        rga.chunks[r as usize].p    = Some(idx);
+        rga.chunks[idx as usize].r = Some(r);
+        rga.chunks[r as usize].p = Some(idx);
         // Attach `at2` as left child of `r`, preserving r's left sub-tree.
         let b = rga.chunks[r as usize].l;
-        rga.chunks[r as usize].l   = Some(at2);
+        rga.chunks[r as usize].l = Some(at2);
         rga.chunks[at2 as usize].p = Some(r);
         rga.chunks[at2 as usize].r = b;
         if let Some(b) = b {
@@ -530,15 +599,29 @@ fn insert_inside<T: Clone + ChunkData>(rga: &mut Rga<T>, idx: u32, at: u32, offs
 
     // Recalculate l and r's len (they each gained one extra child).
     if let Some(l) = l {
-        let l_l_len = rga.chunks[l as usize].l.map(|ll| rga.chunks[ll as usize].len).unwrap_or(0);
-        let at_len  = rga.chunks[at as usize].len;
-        let l_span  = if rga.chunks[l as usize].deleted { 0 } else { rga.chunks[l as usize].span };
+        let l_l_len = rga.chunks[l as usize]
+            .l
+            .map(|ll| rga.chunks[ll as usize].len)
+            .unwrap_or(0);
+        let at_len = rga.chunks[at as usize].len;
+        let l_span = if rga.chunks[l as usize].deleted {
+            0
+        } else {
+            rga.chunks[l as usize].span
+        };
         rga.chunks[l as usize].len = l_l_len + at_len + l_span;
     }
     if let Some(r) = r {
-        let r_r_len  = rga.chunks[r as usize].r.map(|rr| rga.chunks[rr as usize].len).unwrap_or(0);
-        let at2_len  = rga.chunks[at2 as usize].len;
-        let r_span   = if rga.chunks[r as usize].deleted { 0 } else { rga.chunks[r as usize].span };
+        let r_r_len = rga.chunks[r as usize]
+            .r
+            .map(|rr| rga.chunks[rr as usize].len)
+            .unwrap_or(0);
+        let at2_len = rga.chunks[at2 as usize].len;
+        let r_span = if rga.chunks[r as usize].deleted {
+            0
+        } else {
+            rga.chunks[r as usize].span
+        };
         rga.chunks[r as usize].len = r_r_len + at2_len + r_span;
     }
 
@@ -593,9 +676,9 @@ fn ins_after_chunk<T: Clone + ChunkData>(
     chunk_offset: usize,
     idx: u32,
 ) {
-    let at_id   = rga.chunks[chunk_idx as usize].id;
+    let at_id = rga.chunks[chunk_idx as usize].id;
     let at_span = rga.chunks[chunk_idx as usize].span;
-    let new_id  = rga.chunks[idx as usize].id;
+    let new_id = rga.chunks[idx as usize].id;
 
     let needs_split = chunk_offset + 1 < at_span as usize;
     if needs_split {
@@ -650,7 +733,7 @@ fn delete_chunk<T: Clone>(rga: &mut Rga<T>, idx: u32) {
                 most_right = mr;
             }
             rga.chunks[most_right as usize].r = Some(r);
-            rga.chunks[r as usize].p          = Some(most_right);
+            rga.chunks[r as usize].p = Some(most_right);
 
             if let Some(p) = p {
                 if rga.chunks[p as usize].l == Some(idx) {
@@ -660,7 +743,7 @@ fn delete_chunk<T: Clone>(rga: &mut Rga<T>, idx: u32) {
                 }
                 rga.chunks[l as usize].p = Some(p);
             } else {
-                rga.root              = Some(l);
+                rga.root = Some(l);
                 rga.chunks[l as usize].p = None;
             }
 
@@ -668,11 +751,15 @@ fn delete_chunk<T: Clone>(rga: &mut Rga<T>, idx: u32) {
             let mut curr = Some(most_right);
             while curr != p {
                 let ci = curr.unwrap();
-                let cl  = rga.chunks[ci as usize].l;
-                let cr  = rga.chunks[ci as usize].r;
-                let cs  = if rga.chunks[ci as usize].deleted { 0 } else { rga.chunks[ci as usize].span };
-                let ll  = cl.map(|l| rga.chunks[l as usize].len).unwrap_or(0);
-                let rl  = cr.map(|r| rga.chunks[r as usize].len).unwrap_or(0);
+                let cl = rga.chunks[ci as usize].l;
+                let cr = rga.chunks[ci as usize].r;
+                let cs = if rga.chunks[ci as usize].deleted {
+                    0
+                } else {
+                    rga.chunks[ci as usize].span
+                };
+                let ll = cl.map(|l| rga.chunks[l as usize].len).unwrap_or(0);
+                let rl = cr.map(|r| rga.chunks[r as usize].len).unwrap_or(0);
                 rga.chunks[ci as usize].len = cs + ll + rl;
                 curr = rga.chunks[ci as usize].p;
             }
@@ -712,9 +799,9 @@ fn merge_tombstones<T: Clone>(rga: &mut Rga<T>, ch1: u32, ch2: u32) -> bool {
     if id1.time + ch1_span != id2.time {
         return false;
     }
-    let s2          = rga.chunks[ch2 as usize].s;
-    let ch2_span    = rga.chunks[ch2 as usize].span;
-    rga.chunks[ch1 as usize].s    = s2;
+    let s2 = rga.chunks[ch2 as usize].s;
+    let ch2_span = rga.chunks[ch2 as usize].span;
+    rga.chunks[ch1 as usize].s = s2;
     rga.chunks[ch1 as usize].span += ch2_span;
     delete_chunk(rga, ch2);
     true
@@ -726,7 +813,9 @@ fn merge_tombstones2<T: Clone>(rga: &mut Rga<T>, start: u32, end: u32) {
     let mut curr = Some(start);
     while let Some(ci) = curr {
         let next_ci = pos_next(&rga.chunks, ci);
-        let Some(next_ci) = next_ci else { break; };
+        let Some(next_ci) = next_ci else {
+            break;
+        };
         let merged = merge_tombstones(rga, ci, next_ci);
         if !merged {
             if next_ci == end {
@@ -754,25 +843,29 @@ fn delete_span<T: Clone + ChunkData>(rga: &mut Rga<T>, tss: Tss) {
 
     // Find the first chunk covering t1.
     let start_opt = rga.find_by_id(Ts::new(tss.sid, t1));
-    let Some(start) = start_opt else { return; };
+    let Some(start) = start_opt else {
+        return;
+    };
 
     let mut chunk_opt = Some(start);
-    let mut last      = start;
+    let mut last = start;
 
     while let Some(ci) = chunk_opt {
         last = ci;
-        let c_id   = rga.chunks[ci as usize].id;
+        let c_id = rga.chunks[ci as usize].id;
         let c_span = rga.chunks[ci as usize].span;
-        let c1     = c_id.time;
-        let c2     = c1 + c_span - 1;
+        let c1 = c_id.time;
+        let c2 = c1 + c_span - 1;
 
         if rga.chunks[ci as usize].deleted {
-            if c2 >= t2 { break; }
+            if c2 >= t2 {
+                break;
+            }
             chunk_opt = rga.chunks[ci as usize].s;
             continue;
         }
 
-        let delete_from_left   = t1 <= c1;
+        let delete_from_left = t1 <= c1;
         let delete_from_middle = t1 <= c2;
 
         if delete_from_left {
@@ -780,9 +873,11 @@ fn delete_span<T: Clone + ChunkData>(rga: &mut Rga<T>, tss: Tss) {
             if fully_contains {
                 // Delete the whole chunk.
                 rga.chunks[ci as usize].deleted = true;
-                rga.chunks[ci as usize].data    = None;
+                rga.chunks[ci as usize].data = None;
                 d_len(&mut rga.chunks, Some(ci), -(c_span as i64));
-                if t2 <= c2 { break; }
+                if t2 <= c2 {
+                    break;
+                }
             } else {
                 // Delete a prefix [c1, t2], keep suffix [t2+1, c2].
                 let range = (t2 - c1 + 1) as usize;
@@ -790,7 +885,7 @@ fn delete_span<T: Clone + ChunkData>(rga: &mut Rga<T>, tss: Tss) {
                 // After split: ci.span = range (the part to delete).
                 let del_span = rga.chunks[ci as usize].span;
                 rga.chunks[ci as usize].deleted = true;
-                rga.chunks[ci as usize].data    = None;
+                rga.chunks[ci as usize].data = None;
                 update_len_one(&mut rga.chunks, _new_ci);
                 d_len(&mut rga.chunks, Some(ci), -(del_span as i64));
                 break;
@@ -799,24 +894,26 @@ fn delete_span<T: Clone + ChunkData>(rga: &mut Rga<T>, tss: Tss) {
             let delete_right_side = t2 >= c2;
             if delete_right_side {
                 // Delete suffix [t1, c2], keep prefix [c1, t1-1].
-                let offset  = (t1 - c1) as usize;
-                let new_ci  = split_for_delete(rga, ci, offset);
+                let offset = (t1 - c1) as usize;
+                let new_ci = split_for_delete(rga, ci, offset);
                 let new_span = rga.chunks[new_ci as usize].span;
                 rga.chunks[new_ci as usize].deleted = true;
-                rga.chunks[new_ci as usize].data    = None;
-                rga.chunks[new_ci as usize].len =
-                    rga.chunks[new_ci as usize].r
-                        .map(|r| rga.chunks[r as usize].len)
-                        .unwrap_or(0);
+                rga.chunks[new_ci as usize].data = None;
+                rga.chunks[new_ci as usize].len = rga.chunks[new_ci as usize]
+                    .r
+                    .map(|r| rga.chunks[r as usize].len)
+                    .unwrap_or(0);
                 d_len(&mut rga.chunks, Some(ci), -(new_span as i64));
-                if t2 <= c2 { break; }
+                if t2 <= c2 {
+                    break;
+                }
             } else {
                 // Delete middle [t1, t2], keep left [c1, t1-1] and right [t2+1, c2].
                 let right = split_for_delete(rga, ci, (t2 - c1 + 1) as usize);
-                let mid   = split_for_delete(rga, ci, (t1 - c1) as usize);
+                let mid = split_for_delete(rga, ci, (t1 - c1) as usize);
                 let mid_span = rga.chunks[mid as usize].span;
                 rga.chunks[mid as usize].deleted = true;
-                rga.chunks[mid as usize].data    = None;
+                rga.chunks[mid as usize].data = None;
                 update_len_one(&mut rga.chunks, right);
                 update_len_one(&mut rga.chunks, mid);
                 d_len(&mut rga.chunks, Some(ci), -(mid_span as i64));
@@ -836,22 +933,28 @@ impl<T: Clone + ChunkData> Rga<T> {
     pub fn new() -> Self {
         Self {
             chunks: Vec::new(),
-            root:   None,
-            ids:    None,
-            count:  0,
+            root: None,
+            ids: None,
+            count: 0,
         }
     }
 
     // ── Public accessors ──────────────────────────────────────────────────
 
     /// Total chunk count (including deleted tombstones).
-    pub fn chunk_count(&self) -> usize { self.count }
+    pub fn chunk_count(&self) -> usize {
+        self.count
+    }
 
     /// Reference to the chunk at arena index `idx`.
-    pub fn slot(&self, idx: u32) -> &Chunk<T> { &self.chunks[idx as usize] }
+    pub fn slot(&self, idx: u32) -> &Chunk<T> {
+        &self.chunks[idx as usize]
+    }
 
     /// Mutable reference to the chunk at arena index `idx`.
-    pub fn slot_mut(&mut self, idx: u32) -> &mut Chunk<T> { &mut self.chunks[idx as usize] }
+    pub fn slot_mut(&mut self, idx: u32) -> &mut Chunk<T> {
+        &mut self.chunks[idx as usize]
+    }
 
     /// Last chunk in document order (rightmost in position tree).
     pub fn last_chunk(&self) -> Option<&Chunk<T>> {
@@ -859,7 +962,7 @@ impl<T: Clone + ChunkData> Rga<T> {
         while let Some(idx) = curr {
             match self.chunks[idx as usize].r {
                 Some(r) => curr = Some(r),
-                None    => return Some(&self.chunks[idx as usize]),
+                None => return Some(&self.chunks[idx as usize]),
             }
         }
         None
@@ -871,26 +974,26 @@ impl<T: Clone + ChunkData> Rga<T> {
     ///
     /// Uses a BST walk on the ID tree.  Mirrors `AbstractRga.findById()`.
     pub fn find_by_id(&self, ts: Ts) -> Option<u32> {
-        let after_sid  = ts.sid;
+        let after_sid = ts.sid;
         let after_time = ts.time;
-        let mut curr   = self.ids;
+        let mut curr = self.ids;
         let mut chunk: Option<u32> = None;
 
         while let Some(ci) = curr {
-            let c_id  = self.chunks[ci as usize].id;
+            let c_id = self.chunks[ci as usize].id;
             let c_sid = c_id.sid;
             if c_sid > after_sid {
                 curr = self.chunks[ci as usize].l2;
             } else if c_sid < after_sid {
                 chunk = Some(ci);
-                curr  = self.chunks[ci as usize].r2;
+                curr = self.chunks[ci as usize].r2;
             } else {
                 let c_time = c_id.time;
                 if c_time > after_time {
                     curr = self.chunks[ci as usize].l2;
                 } else if c_time < after_time {
                     chunk = Some(ci);
-                    curr  = self.chunks[ci as usize].r2;
+                    curr = self.chunks[ci as usize].r2;
                 } else {
                     chunk = Some(ci);
                     break;
@@ -899,11 +1002,17 @@ impl<T: Clone + ChunkData> Rga<T> {
         }
 
         let chunk = chunk?;
-        let c  = &self.chunks[chunk as usize];
-        if c.id.sid != after_sid { return None; }
-        if after_time < c.id.time { return None; }
+        let c = &self.chunks[chunk as usize];
+        if c.id.sid != after_sid {
+            return None;
+        }
+        if after_time < c.id.time {
+            return None;
+        }
         let offset = after_time - c.id.time;
-        if offset >= c.span { return None; }
+        if offset >= c.span {
+            return None;
+        }
         Some(chunk)
     }
 
@@ -924,25 +1033,25 @@ impl<T: Clone + ChunkData> Rga<T> {
 
         // Find the chunk containing `after` via the ID tree.
         let after_chunk = {
-            let after_sid  = after.sid;
+            let after_sid = after.sid;
             let after_time = after.time;
-            let mut curr   = self.ids;
+            let mut curr = self.ids;
             let mut chunk: Option<u32> = None;
             while let Some(ci) = curr {
-                let c_id  = self.chunks[ci as usize].id;
+                let c_id = self.chunks[ci as usize].id;
                 let c_sid = c_id.sid;
                 if c_sid > after_sid {
                     curr = self.chunks[ci as usize].l2;
                 } else if c_sid < after_sid {
                     chunk = Some(ci);
-                    curr  = self.chunks[ci as usize].r2;
+                    curr = self.chunks[ci as usize].r2;
                 } else {
                     let c_time = c_id.time;
                     if c_time > after_time {
                         curr = self.chunks[ci as usize].l2;
                     } else if c_time < after_time {
                         chunk = Some(ci);
-                        curr  = self.chunks[ci as usize].r2;
+                        curr = self.chunks[ci as usize].r2;
                     } else {
                         chunk = Some(ci);
                         break;
@@ -951,9 +1060,13 @@ impl<T: Clone + ChunkData> Rga<T> {
             }
             chunk.and_then(|ci| {
                 let c = &self.chunks[ci as usize];
-                if c.id.sid != after_sid { return None; }
+                if c.id.sid != after_sid {
+                    return None;
+                }
                 let offset = after_time - c.id.time;
-                if offset >= c.span { return None; }
+                if offset >= c.span {
+                    return None;
+                }
                 Some((ci, offset as usize))
             })
         };
@@ -997,11 +1110,15 @@ impl<T: Clone + ChunkData> Rga<T> {
                 }
                 // Attach as right child of rightmost.
                 let r_len = 0u64; // no right subtree
-                let span  = self.chunks[idx as usize].span;
+                let span = self.chunks[idx as usize].span;
                 self.chunks[rightmost as usize].r = Some(idx);
-                self.chunks[idx as usize].p       = Some(rightmost);
+                self.chunks[idx as usize].p = Some(rightmost);
                 // idx has no children yet, so len = span (or 0 if deleted).
-                let idx_len = if self.chunks[idx as usize].deleted { 0 } else { span };
+                let idx_len = if self.chunks[idx as usize].deleted {
+                    0
+                } else {
+                    span
+                };
                 self.chunks[idx as usize].len = idx_len + r_len;
                 // Propagate up.
                 d_len(&mut self.chunks, Some(rightmost), idx_len as i64);
@@ -1026,7 +1143,7 @@ impl<T: Clone + ChunkData> Rga<T> {
     pub fn iter(&self) -> RgaIter<'_, T> {
         RgaIter {
             chunks: &self.chunks,
-            curr:   pos_first(&self.chunks, self.root),
+            curr: pos_first(&self.chunks, self.root),
         }
     }
 
@@ -1040,7 +1157,7 @@ impl<T: Clone + ChunkData> Rga<T> {
 
 pub struct RgaIter<'a, T: Clone> {
     chunks: &'a [Chunk<T>],
-    curr:   Option<u32>,
+    curr: Option<u32>,
 }
 
 impl<'a, T: Clone> Iterator for RgaIter<'a, T> {
@@ -1057,7 +1174,9 @@ impl<'a, T: Clone> Iterator for RgaIter<'a, T> {
 // ── Default ───────────────────────────────────────────────────────────────
 
 impl<T: Clone + ChunkData> Default for Rga<T> {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 // ── Tests ──────────────────────────────────────────────────────────────────
@@ -1067,8 +1186,12 @@ mod tests {
     use super::*;
     use crate::json_crdt_patch::clock::{ts, tss};
 
-    fn origin() -> Ts { ts(0, 0) }
-    fn sid() -> u64 { 1 }
+    fn origin() -> Ts {
+        ts(0, 0)
+    }
+    fn sid() -> u64 {
+        1
+    }
 
     #[test]
     fn insert_single_chunk() {
@@ -1131,8 +1254,8 @@ mod tests {
     fn two_chunk_delete_spanning_boundary() {
         let mut rga: Rga<String> = Rga::new();
         // "he" at ts(1,1), "llo" at ts(1,3) inserted after chunk 1
-        rga.insert(origin(),   ts(1, 1), 2, "he".to_string());
-        rga.insert(ts(1, 2),   ts(1, 3), 3, "llo".to_string());
+        rga.insert(origin(), ts(1, 1), 2, "he".to_string());
+        rga.insert(ts(1, 2), ts(1, 3), 3, "llo".to_string());
         // Delete 'e','l' spanning both chunks = tss(1, 2, 2)
         rga.delete(&[tss(1, 2, 2)]);
         let s: String = rga.iter_live().filter_map(|c| c.data.as_deref()).collect();
@@ -1157,7 +1280,10 @@ mod tests {
         assert_eq!(view_a, view_b, "concurrent inserts must converge");
         let pos3 = view_a.find('3').unwrap();
         let pos2 = view_a.find('2').unwrap();
-        assert!(pos3 < pos2, "higher-priority (sid=3) chunk should precede sid=2 chunk");
+        assert!(
+            pos3 < pos2,
+            "higher-priority (sid=3) chunk should precede sid=2 chunk"
+        );
     }
 
     #[test]

@@ -6,8 +6,8 @@ use serde_json::Value;
 
 use crate::constants::ValidationError;
 use crate::schema::NumFormat;
-use crate::type_def::TypeNode;
 use crate::type_def::classes::*;
+use crate::type_def::TypeNode;
 
 use super::types::{ErrorMode, ValidationResult, ValidatorOptions};
 
@@ -22,17 +22,15 @@ pub fn validate(
     result
 }
 
-fn make_error(
-    code: ValidationError,
-    path: &[Value],
-    opts: &ValidatorOptions,
-) -> ValidationResult {
+fn make_error(code: ValidationError, path: &[Value], opts: &ValidatorOptions) -> ValidationResult {
     match opts.errors {
         ErrorMode::Boolean => ValidationResult::BoolError,
         ErrorMode::String => {
             let mut parts: Vec<serde_json::Value> = vec![Value::String(code.name().to_string())];
             parts.extend_from_slice(path);
-            ValidationResult::StringError(serde_json::to_string(&Value::Array(parts)).unwrap_or_default())
+            ValidationResult::StringError(
+                serde_json::to_string(&Value::Array(parts)).unwrap_or_default(),
+            )
         }
         ErrorMode::Object => ValidationResult::ObjectError {
             code: code.name().to_string(),
@@ -113,7 +111,12 @@ fn validate_inner(
     }
 }
 
-fn validate_num(value: &Value, t: &NumType, opts: &ValidatorOptions, path: &[Value]) -> ValidationResult {
+fn validate_num(
+    value: &Value,
+    t: &NumType,
+    opts: &ValidatorOptions,
+    path: &[Value],
+) -> ValidationResult {
     let schema = &t.schema;
 
     let num = match value.as_f64() {
@@ -130,12 +133,36 @@ fn validate_num(value: &Value, t: &NumType, opts: &ValidatorOptions, path: &[Val
                 return make_error(ValidationError::Uint, path, opts);
             }
             match format {
-                NumFormat::U8 => { if num > 0xFF as f64 { return make_error(ValidationError::Uint, path, opts); } }
-                NumFormat::U16 => { if num > 0xFFFF as f64 { return make_error(ValidationError::Uint, path, opts); } }
-                NumFormat::U32 => { if num > 0xFFFF_FFFFu64 as f64 { return make_error(ValidationError::Uint, path, opts); } }
-                NumFormat::I8 => { if num > 127.0 || num < -128.0 { return make_error(ValidationError::Int, path, opts); } }
-                NumFormat::I16 => { if num > 32767.0 || num < -32768.0 { return make_error(ValidationError::Int, path, opts); } }
-                NumFormat::I32 => { if num > 2147483647.0 || num < -2147483648.0 { return make_error(ValidationError::Int, path, opts); } }
+                NumFormat::U8 => {
+                    if num > 0xFF as f64 {
+                        return make_error(ValidationError::Uint, path, opts);
+                    }
+                }
+                NumFormat::U16 => {
+                    if num > 0xFFFF as f64 {
+                        return make_error(ValidationError::Uint, path, opts);
+                    }
+                }
+                NumFormat::U32 => {
+                    if num > 0xFFFF_FFFFu64 as f64 {
+                        return make_error(ValidationError::Uint, path, opts);
+                    }
+                }
+                NumFormat::I8 => {
+                    if num > 127.0 || num < -128.0 {
+                        return make_error(ValidationError::Int, path, opts);
+                    }
+                }
+                NumFormat::I16 => {
+                    if num > 32767.0 || num < -32768.0 {
+                        return make_error(ValidationError::Int, path, opts);
+                    }
+                }
+                NumFormat::I32 => {
+                    if num > 2147483647.0 || num < -2147483648.0 {
+                        return make_error(ValidationError::Int, path, opts);
+                    }
+                }
                 // I64/U64: f64 cannot represent all i64/u64 values exactly (max safe integer
                 // is 2^53-1), so boundary checks at the i64/u64 limit would be imprecise.
                 // We accept any integer-valued f64 for these formats (same as upstream behavior).
@@ -148,10 +175,26 @@ fn validate_num(value: &Value, t: &NumType, opts: &ValidatorOptions, path: &[Val
         }
     }
 
-    if let Some(gt) = schema.gt { if num <= gt { return make_error(ValidationError::Gt, path, opts); } }
-    if let Some(gte) = schema.gte { if num < gte { return make_error(ValidationError::Gte, path, opts); } }
-    if let Some(lt) = schema.lt { if num >= lt { return make_error(ValidationError::Lt, path, opts); } }
-    if let Some(lte) = schema.lte { if num > lte { return make_error(ValidationError::Lte, path, opts); } }
+    if let Some(gt) = schema.gt {
+        if num <= gt {
+            return make_error(ValidationError::Gt, path, opts);
+        }
+    }
+    if let Some(gte) = schema.gte {
+        if num < gte {
+            return make_error(ValidationError::Gte, path, opts);
+        }
+    }
+    if let Some(lt) = schema.lt {
+        if num >= lt {
+            return make_error(ValidationError::Lt, path, opts);
+        }
+    }
+    if let Some(lte) = schema.lte {
+        if num > lte {
+            return make_error(ValidationError::Lte, path, opts);
+        }
+    }
 
     for (validator, _) in &t.base.validators {
         if validator(value).is_some() {
@@ -161,7 +204,12 @@ fn validate_num(value: &Value, t: &NumType, opts: &ValidatorOptions, path: &[Val
     ValidationResult::Ok
 }
 
-fn validate_str(value: &Value, t: &StrType, opts: &ValidatorOptions, path: &[Value]) -> ValidationResult {
+fn validate_str(
+    value: &Value,
+    t: &StrType,
+    opts: &ValidatorOptions,
+    path: &[Value],
+) -> ValidationResult {
     let s = match value.as_str() {
         Some(s) => s,
         None => return make_error(ValidationError::Str, path, opts),
@@ -169,16 +217,22 @@ fn validate_str(value: &Value, t: &StrType, opts: &ValidatorOptions, path: &[Val
     let schema = &t.schema;
     let len = s.chars().count() as u64;
     if let Some(min) = schema.min {
-        if len < min { return make_error(ValidationError::StrLen, path, opts); }
+        if len < min {
+            return make_error(ValidationError::StrLen, path, opts);
+        }
     }
     if let Some(max) = schema.max {
-        if len > max { return make_error(ValidationError::StrLen, path, opts); }
+        if len > max {
+            return make_error(ValidationError::StrLen, path, opts);
+        }
     }
     // Format checks
     if let Some(fmt) = schema.format {
         match fmt {
             crate::schema::StrFormat::Ascii => {
-                if !s.is_ascii() { return make_error(ValidationError::Str, path, opts); }
+                if !s.is_ascii() {
+                    return make_error(ValidationError::Str, path, opts);
+                }
             }
             crate::schema::StrFormat::Utf8 => {} // All Rust strings are valid UTF-8
         }
@@ -193,27 +247,44 @@ fn validate_str(value: &Value, t: &StrType, opts: &ValidatorOptions, path: &[Val
     ValidationResult::Ok
 }
 
-fn validate_bin(value: &Value, t: &BinType, opts: &ValidatorOptions, path: &[Value]) -> ValidationResult {
+fn validate_bin(
+    value: &Value,
+    t: &BinType,
+    opts: &ValidatorOptions,
+    path: &[Value],
+) -> ValidationResult {
     // Binary is represented as a JSON array of numbers (bytes)
     let arr = match value.as_array() {
         Some(a) => a,
         None => return make_error(ValidationError::Bin, path, opts),
     };
-    if !arr.iter().all(|v| v.as_u64().map(|n| n <= 255).unwrap_or(false)) {
+    if !arr
+        .iter()
+        .all(|v| v.as_u64().map(|n| n <= 255).unwrap_or(false))
+    {
         return make_error(ValidationError::Bin, path, opts);
     }
     let schema = &t.schema;
     let len = arr.len() as u64;
     if let Some(min) = schema.min {
-        if len < min { return make_error(ValidationError::BinLen, path, opts); }
+        if len < min {
+            return make_error(ValidationError::BinLen, path, opts);
+        }
     }
     if let Some(max) = schema.max {
-        if len > max { return make_error(ValidationError::BinLen, path, opts); }
+        if len > max {
+            return make_error(ValidationError::BinLen, path, opts);
+        }
     }
     ValidationResult::Ok
 }
 
-fn validate_arr(value: &Value, t: &ArrType, opts: &ValidatorOptions, path: &[Value]) -> ValidationResult {
+fn validate_arr(
+    value: &Value,
+    t: &ArrType,
+    opts: &ValidatorOptions,
+    path: &[Value],
+) -> ValidationResult {
     let arr = match value.as_array() {
         Some(a) => a,
         None => return make_error(ValidationError::Arr, path, opts),
@@ -230,7 +301,9 @@ fn validate_arr(value: &Value, t: &ArrType, opts: &ValidatorOptions, path: &[Val
         let mut p = path.to_vec();
         p.push(Value::Number(i.into()));
         let r = validate_inner(&arr[i], head_type, opts, &p);
-        if r.is_err() { return r; }
+        if r.is_err() {
+            return r;
+        }
     }
 
     // Validate body elements
@@ -238,16 +311,22 @@ fn validate_arr(value: &Value, t: &ArrType, opts: &ValidatorOptions, path: &[Val
         let schema = &t.schema;
         let body_len = arr.len().saturating_sub(head_len + tail_len);
         if let Some(min) = schema.min {
-            if (body_len as u64) < min { return make_error(ValidationError::ArrLen, path, opts); }
+            if (body_len as u64) < min {
+                return make_error(ValidationError::ArrLen, path, opts);
+            }
         }
         if let Some(max) = schema.max {
-            if (body_len as u64) > max { return make_error(ValidationError::ArrLen, path, opts); }
+            if (body_len as u64) > max {
+                return make_error(ValidationError::ArrLen, path, opts);
+            }
         }
         for i in head_len..(arr.len().saturating_sub(tail_len)) {
             let mut p = path.to_vec();
             p.push(Value::Number(i.into()));
             let r = validate_inner(&arr[i], body_type, opts, &p);
-            if r.is_err() { return r; }
+            if r.is_err() {
+                return r;
+            }
         }
     }
 
@@ -261,7 +340,9 @@ fn validate_arr(value: &Value, t: &ArrType, opts: &ValidatorOptions, path: &[Val
         let mut p = path.to_vec();
         p.push(Value::Number(idx.into()));
         let r = validate_inner(&arr[idx], tail_type, opts, &p);
-        if r.is_err() { return r; }
+        if r.is_err() {
+            return r;
+        }
     }
 
     for (validator, _) in &t.base.validators {
@@ -272,7 +353,12 @@ fn validate_arr(value: &Value, t: &ArrType, opts: &ValidatorOptions, path: &[Val
     ValidationResult::Ok
 }
 
-fn validate_obj(value: &Value, t: &ObjType, opts: &ValidatorOptions, path: &[Value]) -> ValidationResult {
+fn validate_obj(
+    value: &Value,
+    t: &ObjType,
+    opts: &ValidatorOptions,
+    path: &[Value],
+) -> ValidationResult {
     let obj = match value.as_object() {
         Some(o) => o,
         None => return make_error(ValidationError::Obj, path, opts),
@@ -299,7 +385,9 @@ fn validate_obj(value: &Value, t: &ObjType, opts: &ValidatorOptions, path: &[Val
                 let mut p = path.to_vec();
                 p.push(Value::String(field.key.clone()));
                 let r = validate_inner(v, &field.val, opts, &p);
-                if r.is_err() { return r; }
+                if r.is_err() {
+                    return r;
+                }
             }
         } else {
             let v = match obj.get(&field.key) {
@@ -313,7 +401,9 @@ fn validate_obj(value: &Value, t: &ObjType, opts: &ValidatorOptions, path: &[Val
             let mut p = path.to_vec();
             p.push(Value::String(field.key.clone()));
             let r = validate_inner(v, &field.val, opts, &p);
-            if r.is_err() { return r; }
+            if r.is_err() {
+                return r;
+            }
         }
     }
 
@@ -325,7 +415,12 @@ fn validate_obj(value: &Value, t: &ObjType, opts: &ValidatorOptions, path: &[Val
     ValidationResult::Ok
 }
 
-fn validate_map(value: &Value, t: &MapType, opts: &ValidatorOptions, path: &[Value]) -> ValidationResult {
+fn validate_map(
+    value: &Value,
+    t: &MapType,
+    opts: &ValidatorOptions,
+    path: &[Value],
+) -> ValidationResult {
     let obj = match value.as_object() {
         Some(o) => o,
         None => return make_error(ValidationError::Map, path, opts),
@@ -335,7 +430,9 @@ fn validate_map(value: &Value, t: &MapType, opts: &ValidatorOptions, path: &[Val
         let mut p = path.to_vec();
         p.push(Value::String(key.clone()));
         let r = validate_inner(val, &t.value, opts, &p);
-        if r.is_err() { return r; }
+        if r.is_err() {
+            return r;
+        }
     }
 
     for (validator, _) in &t.base.validators {
@@ -346,7 +443,12 @@ fn validate_map(value: &Value, t: &MapType, opts: &ValidatorOptions, path: &[Val
     ValidationResult::Ok
 }
 
-fn validate_or(value: &Value, t: &OrType, opts: &ValidatorOptions, path: &[Value]) -> ValidationResult {
+fn validate_or(
+    value: &Value,
+    t: &OrType,
+    opts: &ValidatorOptions,
+    path: &[Value],
+) -> ValidationResult {
     if t.types.is_empty() {
         return make_error(ValidationError::Or, path, opts);
     }
@@ -367,16 +469,19 @@ pub fn json_equal(a: &Value, b: &Value) -> bool {
     match (a, b) {
         (Value::Null, Value::Null) => true,
         (Value::Bool(a), Value::Bool(b)) => a == b,
-        (Value::Number(a), Value::Number(b)) => {
-            a.as_f64().zip(b.as_f64()).map(|(a, b)| a == b).unwrap_or(false)
-        }
+        (Value::Number(a), Value::Number(b)) => a
+            .as_f64()
+            .zip(b.as_f64())
+            .map(|(a, b)| a == b)
+            .unwrap_or(false),
         (Value::String(a), Value::String(b)) => a == b,
         (Value::Array(a), Value::Array(b)) => {
             a.len() == b.len() && a.iter().zip(b.iter()).all(|(a, b)| json_equal(a, b))
         }
         (Value::Object(a), Value::Object(b)) => {
             a.len() == b.len()
-                && a.iter().all(|(k, v)| b.get(k).map(|bv| json_equal(v, bv)).unwrap_or(false))
+                && a.iter()
+                    .all(|(k, v)| b.get(k).map(|bv| json_equal(v, bv)).unwrap_or(false))
         }
         _ => false,
     }

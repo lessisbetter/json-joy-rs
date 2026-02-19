@@ -125,27 +125,25 @@ impl JsonPathEval {
                     }
                 }
             }
-            Selector::Wildcard => {
-                match value {
-                    Value::Object(map) => {
-                        for (key, child) in map {
-                            let mut new_path = current_path.to_vec();
-                            new_path.push(PathComponent::Key(key.clone()));
-                            results.push(child);
-                            paths.push(new_path);
-                        }
+            Selector::Wildcard => match value {
+                Value::Object(map) => {
+                    for (key, child) in map {
+                        let mut new_path = current_path.to_vec();
+                        new_path.push(PathComponent::Key(key.clone()));
+                        results.push(child);
+                        paths.push(new_path);
                     }
-                    Value::Array(arr) => {
-                        for (idx, child) in arr.iter().enumerate() {
-                            let mut new_path = current_path.to_vec();
-                            new_path.push(PathComponent::Index(idx));
-                            results.push(child);
-                            paths.push(new_path);
-                        }
-                    }
-                    _ => {}
                 }
-            }
+                Value::Array(arr) => {
+                    for (idx, child) in arr.iter().enumerate() {
+                        let mut new_path = current_path.to_vec();
+                        new_path.push(PathComponent::Index(idx));
+                        results.push(child);
+                        paths.push(new_path);
+                    }
+                }
+                _ => {}
+            },
             Selector::Slice { start, end, step } => {
                 if let Value::Array(arr) = value {
                     let len = arr.len();
@@ -213,12 +211,20 @@ impl JsonPathEval {
                 let results = Self::eval(path, current);
                 !results.is_empty()
             }
-            FilterExpression::Comparison { operator, left, right } => {
+            FilterExpression::Comparison {
+                operator,
+                left,
+                right,
+            } => {
                 let left_val = Self::eval_value_expr(left, current);
                 let right_val = Self::eval_value_expr(right, current);
                 Self::compare(operator, &left_val, &right_val)
             }
-            FilterExpression::Logical { operator, left, right } => {
+            FilterExpression::Logical {
+                operator,
+                left,
+                right,
+            } => {
                 let left_result = Self::eval_filter(left, current, _parent);
                 let right_result = Self::eval_filter(right, current, _parent);
                 match operator {
@@ -226,12 +232,8 @@ impl JsonPathEval {
                     LogicalOperator::Or => left_result || right_result,
                 }
             }
-            FilterExpression::Negation(expr) => {
-                !Self::eval_filter(expr, current, _parent)
-            }
-            FilterExpression::Paren(expr) => {
-                Self::eval_filter(expr, current, _parent)
-            }
+            FilterExpression::Negation(expr) => !Self::eval_filter(expr, current, _parent),
+            FilterExpression::Paren(expr) => Self::eval_filter(expr, current, _parent),
             FilterExpression::Function { .. } => {
                 // Function evaluation not yet implemented
                 false
@@ -282,9 +284,15 @@ impl JsonPathEval {
                         }
                     }
                     ComparisonOperator::Less => ord == Some(std::cmp::Ordering::Less),
-                    ComparisonOperator::LessEqual => matches!(ord, Some(std::cmp::Ordering::Less | std::cmp::Ordering::Equal)),
+                    ComparisonOperator::LessEqual => matches!(
+                        ord,
+                        Some(std::cmp::Ordering::Less | std::cmp::Ordering::Equal)
+                    ),
                     ComparisonOperator::Greater => ord == Some(std::cmp::Ordering::Greater),
-                    ComparisonOperator::GreaterEqual => matches!(ord, Some(std::cmp::Ordering::Greater | std::cmp::Ordering::Equal)),
+                    ComparisonOperator::GreaterEqual => matches!(
+                        ord,
+                        Some(std::cmp::Ordering::Greater | std::cmp::Ordering::Equal)
+                    ),
                 }
             }
             _ => false,

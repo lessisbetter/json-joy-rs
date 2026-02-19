@@ -8,13 +8,13 @@
 //! representation (a [`NodeBuilder`] box), which can then be used to
 //! reproduce the structure in another document.
 
+use super::nodes::{CrdtNode, NodeIndex, TsKey};
+use crate::json_crdt_patch::clock::Ts;
+use crate::json_crdt_patch::operations::ConValue;
 use crate::json_crdt_patch::schema::{
     ArrNode as ArrSchema, BinNode as BinSchema, ConNode as ConSchema, NodeBuilder,
     ObjNode as ObjSchema, StrNode as StrSchema, ValNode as ValSchema, VecNode as VecSchema,
 };
-use crate::json_crdt_patch::clock::Ts;
-use crate::json_crdt_patch::operations::ConValue;
-use super::nodes::{CrdtNode, NodeIndex, TsKey};
 
 /// Resolve a node from the index by `Ts`.
 #[inline]
@@ -42,16 +42,16 @@ pub fn to_schema(node: &CrdtNode, index: &NodeIndex) -> Box<dyn NodeBuilder> {
             let inner_node = get_node(index, &n.val);
             let inner_schema: Box<dyn NodeBuilder> = match inner_node {
                 Some(child) => to_schema(child, index),
-                None => Box::new(ConSchema { raw: json_joy_json_pack::PackValue::Null }),
+                None => Box::new(ConSchema {
+                    raw: json_joy_json_pack::PackValue::Null,
+                }),
             };
-            Box::new(ValSchema { value: inner_schema })
+            Box::new(ValSchema {
+                value: inner_schema,
+            })
         }
-        CrdtNode::Str(n) => {
-            Box::new(StrSchema { raw: n.view_str() })
-        }
-        CrdtNode::Bin(n) => {
-            Box::new(BinSchema { raw: n.view() })
-        }
+        CrdtNode::Str(n) => Box::new(StrSchema { raw: n.view_str() }),
+        CrdtNode::Bin(n) => Box::new(BinSchema { raw: n.view() }),
         CrdtNode::Obj(n) => {
             let mut entries: Vec<(String, Box<dyn NodeBuilder>)> = Vec::new();
             let mut sorted_keys: Vec<&String> = n.keys.keys().collect();
@@ -60,7 +60,9 @@ pub fn to_schema(node: &CrdtNode, index: &NodeIndex) -> Box<dyn NodeBuilder> {
                 let id = n.keys[key.as_str()];
                 let child_schema = match get_node(index, &id) {
                     Some(child) => to_schema(child, index),
-                    None => Box::new(ConSchema { raw: json_joy_json_pack::PackValue::Null }),
+                    None => Box::new(ConSchema {
+                        raw: json_joy_json_pack::PackValue::Null,
+                    }),
                 };
                 entries.push(((*key).clone(), child_schema));
             }
@@ -88,7 +90,9 @@ pub fn to_schema(node: &CrdtNode, index: &NodeIndex) -> Box<dyn NodeBuilder> {
                     for id in ids {
                         let child_schema = match get_node(index, id) {
                             Some(child) => to_schema(child, index),
-                            None => Box::new(ConSchema { raw: json_joy_json_pack::PackValue::Null }),
+                            None => Box::new(ConSchema {
+                                raw: json_joy_json_pack::PackValue::Null,
+                            }),
                         };
                         items.push(child_schema);
                     }
@@ -104,15 +108,17 @@ pub fn to_schema(node: &CrdtNode, index: &NodeIndex) -> Box<dyn NodeBuilder> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::json_crdt::constants::ORIGIN;
+    use crate::json_crdt::model::Model;
     use crate::json_crdt_patch::clock::ts;
     use crate::json_crdt_patch::operations::{ConValue, Op};
     use crate::json_crdt_patch::patch_builder::PatchBuilder;
-    use crate::json_crdt::model::Model;
-    use crate::json_crdt::constants::ORIGIN;
     use json_joy_json_pack::PackValue;
     use serde_json::json;
 
-    fn sid() -> u64 { 77777 }
+    fn sid() -> u64 {
+        77777
+    }
 
     /// Build a schema from a model's root node, apply it to a new model,
     /// and compare their views.

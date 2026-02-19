@@ -67,7 +67,9 @@ impl Vars {
         match &data {
             JsValue::Json(val) => {
                 let result = get(val, &path);
-                Ok(result.map(|v| JsValue::Json(v.clone())).unwrap_or(JsValue::Undefined))
+                Ok(result
+                    .map(|v| JsValue::Json(v.clone()))
+                    .unwrap_or(JsValue::Undefined))
             }
             _ => Ok(JsValue::Undefined),
         }

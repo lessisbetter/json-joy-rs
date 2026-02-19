@@ -47,62 +47,69 @@ pub fn create_to_base64_bin_uint8(
 
     let pad_char: u8 = if pad.len() == 1 { pad.as_bytes()[0] } else { 0 };
 
-    Ok(move |uint8: &[u8], mut start: usize, length: usize, dest: &mut [u8], mut offset: usize| -> usize {
-        let extra_length = length % 3;
-        let base_length = length - extra_length;
+    Ok(
+        move |uint8: &[u8],
+              mut start: usize,
+              length: usize,
+              dest: &mut [u8],
+              mut offset: usize|
+              -> usize {
+            let extra_length = length % 3;
+            let base_length = length - extra_length;
 
-        while start < base_length {
-            let o1 = uint8[start];
-            let o2 = uint8[start + 1];
-            let o3 = uint8[start + 2];
-            let v1 = ((o1 as u16) << 4) | ((o2 as u16) >> 4);
-            let v2 = (((o2 & 0b1111) as u16) << 8) | (o3 as u16);
+            while start < base_length {
+                let o1 = uint8[start];
+                let o2 = uint8[start + 1];
+                let o3 = uint8[start + 2];
+                let v1 = ((o1 as u16) << 4) | ((o2 as u16) >> 4);
+                let v2 = (((o2 & 0b1111) as u16) << 8) | (o3 as u16);
 
-            let u16 = table2[v1 as usize];
-            dest[offset] = (u16 >> 8) as u8;
-            dest[offset + 1] = u16 as u8;
-            offset += 2;
-
-            let u16 = table2[v2 as usize];
-            dest[offset] = (u16 >> 8) as u8;
-            dest[offset + 1] = u16 as u8;
-            offset += 2;
-
-            start += 3;
-        }
-
-        if extra_length == 1 {
-            let o1 = uint8[base_length];
-            let u16 = table2[(o1 as usize) << 4];
-            dest[offset] = (u16 >> 8) as u8;
-            dest[offset + 1] = u16 as u8;
-            offset += 2;
-
-            if pad_char != 0 {
-                dest[offset] = pad_char;
-                dest[offset + 1] = pad_char;
+                let u16 = table2[v1 as usize];
+                dest[offset] = (u16 >> 8) as u8;
+                dest[offset + 1] = u16 as u8;
                 offset += 2;
+
+                let u16 = table2[v2 as usize];
+                dest[offset] = (u16 >> 8) as u8;
+                dest[offset + 1] = u16 as u8;
+                offset += 2;
+
+                start += 3;
             }
-        } else if extra_length == 2 {
-            let o1 = uint8[base_length];
-            let o2 = uint8[base_length + 1];
-            let v1 = ((o1 as u16) << 4) | ((o2 as u16) >> 4);
-            let v2 = ((o2 & 0b1111) as u16) << 2;
 
-            let u16 = table2[v1 as usize];
-            dest[offset] = (u16 >> 8) as u8;
-            dest[offset + 1] = u16 as u8;
-            offset += 2;
+            if extra_length == 1 {
+                let o1 = uint8[base_length];
+                let u16 = table2[(o1 as usize) << 4];
+                dest[offset] = (u16 >> 8) as u8;
+                dest[offset + 1] = u16 as u8;
+                offset += 2;
 
-            dest[offset] = table[v2 as usize];
-            offset += 1;
+                if pad_char != 0 {
+                    dest[offset] = pad_char;
+                    dest[offset + 1] = pad_char;
+                    offset += 2;
+                }
+            } else if extra_length == 2 {
+                let o1 = uint8[base_length];
+                let o2 = uint8[base_length + 1];
+                let v1 = ((o1 as u16) << 4) | ((o2 as u16) >> 4);
+                let v2 = ((o2 & 0b1111) as u16) << 2;
 
-            if pad_char != 0 {
-                dest[offset] = pad_char;
+                let u16 = table2[v1 as usize];
+                dest[offset] = (u16 >> 8) as u8;
+                dest[offset + 1] = u16 as u8;
+                offset += 2;
+
+                dest[offset] = table[v2 as usize];
                 offset += 1;
-            }
-        }
 
-        offset
-    })
+                if pad_char != 0 {
+                    dest[offset] = pad_char;
+                    offset += 1;
+                }
+            }
+
+            offset
+        },
+    )
 }

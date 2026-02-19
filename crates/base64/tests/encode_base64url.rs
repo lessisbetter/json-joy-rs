@@ -32,7 +32,12 @@ fn works() {
 
         // Verify it matches standard base64 encoding
         let expected = base64_encode(&blob);
-        assert_eq!(standard, expected, "Failed for blob of length {}", blob.len());
+        assert_eq!(
+            standard,
+            expected,
+            "Failed for blob of length {}",
+            blob.len()
+        );
     }
 }
 

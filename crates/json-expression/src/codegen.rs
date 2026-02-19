@@ -6,8 +6,8 @@
 //! constant folding optimisation at compilation time.
 
 use crate::error::JsError;
-use crate::evaluate::evaluate;
 use crate::eval_ctx::EvalCtx;
+use crate::evaluate::evaluate;
 use crate::operators::operators_map;
 use crate::types::{JsValue, OperatorMap};
 use crate::vars::Vars;

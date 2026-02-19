@@ -2,8 +2,8 @@
 //!
 //! Mirrors `packages/json-joy/src/json-crdt-extensions/peritext/rga/Range.ts`.
 
+use super::{Anchor, Point};
 use crate::json_crdt::nodes::StrNode;
-use super::{Point, Anchor};
 
 // ── Range ─────────────────────────────────────────────────────────────────
 
@@ -14,7 +14,7 @@ use super::{Point, Anchor};
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Range {
     pub start: Point,
-    pub end:   Point,
+    pub end: Point,
 }
 
 impl Range {

@@ -114,17 +114,15 @@ fn encode_con(node: &ConNode) -> Value {
                 "value": encode_ts(*ref_ts)
             })
         }
-        ConValue::Val(pv) => {
-            match pv {
-                PackValue::Undefined => {
-                    json!({ "type": "con", "id": id })
-                }
-                _ => {
-                    let v = serde_json::Value::from(pv.clone());
-                    json!({ "type": "con", "id": id, "value": v })
-                }
+        ConValue::Val(pv) => match pv {
+            PackValue::Undefined => {
+                json!({ "type": "con", "id": id })
             }
-        }
+            _ => {
+                let v = serde_json::Value::from(pv.clone());
+                json!({ "type": "con", "id": id, "value": v })
+            }
+        },
     }
 }
 
@@ -154,63 +152,81 @@ fn encode_obj(model: &Model, node: &ObjNode) -> Value {
 
 fn encode_vec(model: &Model, node: &VecNode) -> Value {
     let id = encode_ts(node.id);
-    let elements: Vec<Value> = node.elements.iter().map(|e| {
-        match e {
+    let elements: Vec<Value> = node
+        .elements
+        .iter()
+        .map(|e| match e {
             None => Value::Null,
-            Some(child_ts) => {
-                match model.index.get(&TsKey::from(*child_ts)) {
-                    Some(child) => encode_node(model, child),
-                    None => Value::Null,
-                }
-            }
-        }
-    }).collect();
+            Some(child_ts) => match model.index.get(&TsKey::from(*child_ts)) {
+                Some(child) => encode_node(model, child),
+                None => Value::Null,
+            },
+        })
+        .collect();
     json!({ "type": "vec", "id": id, "map": elements })
 }
 
 fn encode_str(node: &StrNode) -> Value {
     let id = encode_ts(node.id);
-    let chunks: Vec<Value> = node.rga.iter().map(|chunk| {
-        let chunk_id = encode_ts(chunk.id);
-        if chunk.deleted {
-            json!({ "id": chunk_id, "span": chunk.span })
-        } else {
-            let data = chunk.data.as_deref().unwrap_or("");
-            json!({ "id": chunk_id, "value": data })
-        }
-    }).collect();
+    let chunks: Vec<Value> = node
+        .rga
+        .iter()
+        .map(|chunk| {
+            let chunk_id = encode_ts(chunk.id);
+            if chunk.deleted {
+                json!({ "id": chunk_id, "span": chunk.span })
+            } else {
+                let data = chunk.data.as_deref().unwrap_or("");
+                json!({ "id": chunk_id, "value": data })
+            }
+        })
+        .collect();
     json!({ "type": "str", "id": id, "chunks": chunks })
 }
 
 fn encode_bin(node: &BinNode) -> Value {
     let id = encode_ts(node.id);
-    let chunks: Vec<Value> = node.rga.iter().map(|chunk| {
-        let chunk_id = encode_ts(chunk.id);
-        if chunk.deleted {
-            json!({ "id": chunk_id, "span": chunk.span })
-        } else {
-            let data = chunk.data.as_deref().unwrap_or(&[]);
-            let b64 = B64.encode(data);
-            json!({ "id": chunk_id, "value": b64 })
-        }
-    }).collect();
+    let chunks: Vec<Value> = node
+        .rga
+        .iter()
+        .map(|chunk| {
+            let chunk_id = encode_ts(chunk.id);
+            if chunk.deleted {
+                json!({ "id": chunk_id, "span": chunk.span })
+            } else {
+                let data = chunk.data.as_deref().unwrap_or(&[]);
+                let b64 = B64.encode(data);
+                json!({ "id": chunk_id, "value": b64 })
+            }
+        })
+        .collect();
     json!({ "type": "bin", "id": id, "chunks": chunks })
 }
 
 fn encode_arr(model: &Model, node: &ArrNode) -> Value {
     let id = encode_ts(node.id);
-    let chunks: Vec<Value> = node.rga.iter().map(|chunk| {
-        let chunk_id = encode_ts(chunk.id);
-        if chunk.deleted {
-            json!({ "id": chunk_id, "span": chunk.span })
-        } else {
-            let ids = chunk.data.as_ref().map(|v| v.as_slice()).unwrap_or(&[]);
-            let values: Vec<Value> = ids.iter().filter_map(|id| {
-                model.index.get(&TsKey::from(*id)).map(|n| encode_node(model, n))
-            }).collect();
-            json!({ "id": chunk_id, "value": values })
-        }
-    }).collect();
+    let chunks: Vec<Value> = node
+        .rga
+        .iter()
+        .map(|chunk| {
+            let chunk_id = encode_ts(chunk.id);
+            if chunk.deleted {
+                json!({ "id": chunk_id, "span": chunk.span })
+            } else {
+                let ids = chunk.data.as_ref().map(|v| v.as_slice()).unwrap_or(&[]);
+                let values: Vec<Value> = ids
+                    .iter()
+                    .filter_map(|id| {
+                        model
+                            .index
+                            .get(&TsKey::from(*id))
+                            .map(|n| encode_node(model, n))
+                    })
+                    .collect();
+                json!({ "id": chunk_id, "value": values })
+            }
+        })
+        .collect();
     json!({ "type": "arr", "id": id, "chunks": chunks })
 }
 
@@ -229,21 +245,26 @@ pub enum DecodeError {
 
 /// Decode a verbose JSON document back into a [`Model`].
 pub fn decode(data: &Value) -> Result<Model, DecodeError> {
-    let obj = data.as_object()
+    let obj = data
+        .as_object()
         .ok_or_else(|| DecodeError::Format("expected object".into()))?;
 
-    let time_val = obj.get("time")
+    let time_val = obj
+        .get("time")
         .ok_or_else(|| DecodeError::MissingField("time".into()))?;
-    let root_val = obj.get("root")
+    let root_val = obj
+        .get("root")
         .ok_or_else(|| DecodeError::MissingField("root".into()))?;
 
     let is_server = time_val.is_number();
     let mut model = if is_server {
-        let server_time = time_val.as_u64()
+        let server_time = time_val
+            .as_u64()
             .ok_or_else(|| DecodeError::Format("server time must be u64".into()))?;
         Model::new_server(server_time)
     } else {
-        let timestamps = time_val.as_array()
+        let timestamps = time_val
+            .as_array()
             .ok_or_else(|| DecodeError::Format("logical clock must be array".into()))?;
         let clock = decode_clock(timestamps)?;
         Model::new_from_clock(clock)
@@ -258,7 +279,8 @@ fn decode_clock(timestamps: &[Value]) -> Result<ClockVector, DecodeError> {
         return Err(DecodeError::Format("clock table is empty".into()));
     }
     let first = &timestamps[0];
-    let first_arr = first.as_array()
+    let first_arr = first
+        .as_array()
         .ok_or_else(|| DecodeError::Format("clock entry must be array".into()))?;
     if first_arr.len() < 2 {
         return Err(DecodeError::Format("clock entry too short".into()));
@@ -268,7 +290,8 @@ fn decode_clock(timestamps: &[Value]) -> Result<ClockVector, DecodeError> {
     let mut clock = ClockVector::new(sid, time);
 
     for stamp_val in &timestamps[1..] {
-        let stamp_arr = stamp_val.as_array()
+        let stamp_arr = stamp_val
+            .as_array()
             .ok_or_else(|| DecodeError::Format("clock entry must be array".into()))?;
         if stamp_arr.len() >= 2 {
             let peer_sid = stamp_arr[0].as_u64().unwrap_or(0);
@@ -294,11 +317,13 @@ fn decode_ts(val: &Value) -> Result<Ts, DecodeError> {
 }
 
 fn decode_root(val: &Value, model: &mut Model) -> Result<(), DecodeError> {
-    let obj = val.as_object()
+    let obj = val
+        .as_object()
         .ok_or_else(|| DecodeError::Format("root must be object".into()))?;
 
     // Root is always a "val" node
-    let value_val = obj.get("value")
+    let value_val = obj
+        .get("value")
         .ok_or_else(|| DecodeError::MissingField("root.value".into()))?;
     let child_id = decode_node(value_val, model)?;
     model.root.val = child_id;
@@ -306,10 +331,12 @@ fn decode_root(val: &Value, model: &mut Model) -> Result<(), DecodeError> {
 }
 
 fn decode_node(val: &Value, model: &mut Model) -> Result<Ts, DecodeError> {
-    let obj = val.as_object()
+    let obj = val
+        .as_object()
         .ok_or_else(|| DecodeError::Format("node must be object".into()))?;
 
-    let type_str = obj.get("type")
+    let type_str = obj
+        .get("type")
         .and_then(|v| v.as_str())
         .ok_or_else(|| DecodeError::MissingField("type".into()))?;
 
@@ -327,11 +354,18 @@ fn decode_node(val: &Value, model: &mut Model) -> Result<Ts, DecodeError> {
 
 fn decode_con(val: &Value, model: &mut Model) -> Result<Ts, DecodeError> {
     let obj = val.as_object().unwrap();
-    let id = decode_ts(obj.get("id")
-        .ok_or_else(|| DecodeError::MissingField("con.id".into()))?)?;
+    let id = decode_ts(
+        obj.get("id")
+            .ok_or_else(|| DecodeError::MissingField("con.id".into()))?,
+    )?;
 
-    let con_val = if obj.get("timestamp").and_then(|v| v.as_bool()).unwrap_or(false) {
-        let ts_val = obj.get("value")
+    let con_val = if obj
+        .get("timestamp")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(false)
+    {
+        let ts_val = obj
+            .get("value")
             .ok_or_else(|| DecodeError::MissingField("con.value (timestamp)".into()))?;
         let ref_ts = decode_ts(ts_val)?;
         ConValue::Ref(ref_ts)
@@ -350,8 +384,10 @@ fn decode_con(val: &Value, model: &mut Model) -> Result<Ts, DecodeError> {
 
 fn decode_val(val: &Value, model: &mut Model) -> Result<Ts, DecodeError> {
     let obj = val.as_object().unwrap();
-    let id = decode_ts(obj.get("id")
-        .ok_or_else(|| DecodeError::MissingField("val.id".into()))?)?;
+    let id = decode_ts(
+        obj.get("id")
+            .ok_or_else(|| DecodeError::MissingField("val.id".into()))?,
+    )?;
 
     let child_id = match obj.get("value") {
         Some(v) => decode_node(v, model)?,
@@ -376,10 +412,13 @@ fn decode_val(val: &Value, model: &mut Model) -> Result<Ts, DecodeError> {
 
 fn decode_obj(val: &Value, model: &mut Model) -> Result<Ts, DecodeError> {
     let obj = val.as_object().unwrap();
-    let id = decode_ts(obj.get("id")
-        .ok_or_else(|| DecodeError::MissingField("obj.id".into()))?)?;
+    let id = decode_ts(
+        obj.get("id")
+            .ok_or_else(|| DecodeError::MissingField("obj.id".into()))?,
+    )?;
 
-    let map = obj.get("map")
+    let map = obj
+        .get("map")
         .and_then(|v| v.as_object())
         .ok_or_else(|| DecodeError::MissingField("obj.map".into()))?;
 
@@ -396,10 +435,13 @@ fn decode_obj(val: &Value, model: &mut Model) -> Result<Ts, DecodeError> {
 
 fn decode_vec(val: &Value, model: &mut Model) -> Result<Ts, DecodeError> {
     let obj = val.as_object().unwrap();
-    let id = decode_ts(obj.get("id")
-        .ok_or_else(|| DecodeError::MissingField("vec.id".into()))?)?;
+    let id = decode_ts(
+        obj.get("id")
+            .ok_or_else(|| DecodeError::MissingField("vec.id".into()))?,
+    )?;
 
-    let map_arr = obj.get("map")
+    let map_arr = obj
+        .get("map")
         .and_then(|v| v.as_array())
         .ok_or_else(|| DecodeError::MissingField("vec.map".into()))?
         .clone();
@@ -420,30 +462,40 @@ fn decode_vec(val: &Value, model: &mut Model) -> Result<Ts, DecodeError> {
 
 fn decode_str(val: &Value, model: &mut Model) -> Result<Ts, DecodeError> {
     let obj = val.as_object().unwrap();
-    let id = decode_ts(obj.get("id")
-        .ok_or_else(|| DecodeError::MissingField("str.id".into()))?)?;
+    let id = decode_ts(
+        obj.get("id")
+            .ok_or_else(|| DecodeError::MissingField("str.id".into()))?,
+    )?;
 
-    let chunks_arr = obj.get("chunks")
+    let chunks_arr = obj
+        .get("chunks")
         .and_then(|v| v.as_array())
         .ok_or_else(|| DecodeError::MissingField("str.chunks".into()))?
         .clone();
 
-    use crate::json_crdt::nodes::StrNode;
     use crate::json_crdt::nodes::rga::Chunk;
+    use crate::json_crdt::nodes::StrNode;
 
     let mut node = StrNode::new(id);
     for chunk_val in &chunks_arr {
-        let chunk_obj = chunk_val.as_object()
+        let chunk_obj = chunk_val
+            .as_object()
             .ok_or_else(|| DecodeError::Format("str chunk must be object".into()))?;
-        let chunk_id = decode_ts(chunk_obj.get("id")
-            .ok_or_else(|| DecodeError::MissingField("chunk.id".into()))?)?;
+        let chunk_id = decode_ts(
+            chunk_obj
+                .get("id")
+                .ok_or_else(|| DecodeError::MissingField("chunk.id".into()))?,
+        )?;
         if let Some(span) = chunk_obj.get("span").and_then(|v| v.as_u64()) {
             node.rga.push_chunk(Chunk::new_deleted(chunk_id, span));
         } else if let Some(s) = chunk_obj.get("value").and_then(|v| v.as_str()) {
             let span = s.chars().count() as u64;
-            node.rga.push_chunk(Chunk::new(chunk_id, span, s.to_string()));
+            node.rga
+                .push_chunk(Chunk::new(chunk_id, span, s.to_string()));
         } else {
-            return Err(DecodeError::Format("str chunk must have span or value".into()));
+            return Err(DecodeError::Format(
+                "str chunk must have span or value".into(),
+            ));
         }
     }
     model.index.insert(TsKey::from(id), CrdtNode::Str(node));
@@ -452,32 +504,42 @@ fn decode_str(val: &Value, model: &mut Model) -> Result<Ts, DecodeError> {
 
 fn decode_bin(val: &Value, model: &mut Model) -> Result<Ts, DecodeError> {
     let obj = val.as_object().unwrap();
-    let id = decode_ts(obj.get("id")
-        .ok_or_else(|| DecodeError::MissingField("bin.id".into()))?)?;
+    let id = decode_ts(
+        obj.get("id")
+            .ok_or_else(|| DecodeError::MissingField("bin.id".into()))?,
+    )?;
 
-    let chunks_arr = obj.get("chunks")
+    let chunks_arr = obj
+        .get("chunks")
         .and_then(|v| v.as_array())
         .ok_or_else(|| DecodeError::MissingField("bin.chunks".into()))?
         .clone();
 
-    use crate::json_crdt::nodes::BinNode;
     use crate::json_crdt::nodes::rga::Chunk;
+    use crate::json_crdt::nodes::BinNode;
 
     let mut node = BinNode::new(id);
     for chunk_val in &chunks_arr {
-        let chunk_obj = chunk_val.as_object()
+        let chunk_obj = chunk_val
+            .as_object()
             .ok_or_else(|| DecodeError::Format("bin chunk must be object".into()))?;
-        let chunk_id = decode_ts(chunk_obj.get("id")
-            .ok_or_else(|| DecodeError::MissingField("chunk.id".into()))?)?;
+        let chunk_id = decode_ts(
+            chunk_obj
+                .get("id")
+                .ok_or_else(|| DecodeError::MissingField("chunk.id".into()))?,
+        )?;
         if let Some(span) = chunk_obj.get("span").and_then(|v| v.as_u64()) {
             node.rga.push_chunk(Chunk::new_deleted(chunk_id, span));
         } else if let Some(b64) = chunk_obj.get("value").and_then(|v| v.as_str()) {
-            let data = B64.decode(b64)
+            let data = B64
+                .decode(b64)
                 .map_err(|e| DecodeError::Format(format!("base64 decode error: {}", e)))?;
             let span = data.len() as u64;
             node.rga.push_chunk(Chunk::new(chunk_id, span, data));
         } else {
-            return Err(DecodeError::Format("bin chunk must have span or value".into()));
+            return Err(DecodeError::Format(
+                "bin chunk must have span or value".into(),
+            ));
         }
     }
     model.index.insert(TsKey::from(id), CrdtNode::Bin(node));
@@ -486,23 +548,30 @@ fn decode_bin(val: &Value, model: &mut Model) -> Result<Ts, DecodeError> {
 
 fn decode_arr(val: &Value, model: &mut Model) -> Result<Ts, DecodeError> {
     let obj = val.as_object().unwrap();
-    let id = decode_ts(obj.get("id")
-        .ok_or_else(|| DecodeError::MissingField("arr.id".into()))?)?;
+    let id = decode_ts(
+        obj.get("id")
+            .ok_or_else(|| DecodeError::MissingField("arr.id".into()))?,
+    )?;
 
-    let chunks_arr = obj.get("chunks")
+    let chunks_arr = obj
+        .get("chunks")
         .and_then(|v| v.as_array())
         .ok_or_else(|| DecodeError::MissingField("arr.chunks".into()))?
         .clone();
 
-    use crate::json_crdt::nodes::ArrNode;
     use crate::json_crdt::nodes::rga::Chunk;
+    use crate::json_crdt::nodes::ArrNode;
 
     let mut node = ArrNode::new(id);
     for chunk_val in &chunks_arr {
-        let chunk_obj = chunk_val.as_object()
+        let chunk_obj = chunk_val
+            .as_object()
             .ok_or_else(|| DecodeError::Format("arr chunk must be object".into()))?;
-        let chunk_id = decode_ts(chunk_obj.get("id")
-            .ok_or_else(|| DecodeError::MissingField("chunk.id".into()))?)?;
+        let chunk_id = decode_ts(
+            chunk_obj
+                .get("id")
+                .ok_or_else(|| DecodeError::MissingField("chunk.id".into()))?,
+        )?;
         if let Some(span) = chunk_obj.get("span").and_then(|v| v.as_u64()) {
             node.rga.push_chunk(Chunk::new_deleted(chunk_id, span));
         } else if let Some(values) = chunk_obj.get("value").and_then(|v| v.as_array()) {
@@ -515,7 +584,9 @@ fn decode_arr(val: &Value, model: &mut Model) -> Result<Ts, DecodeError> {
             let span = ids.len() as u64;
             node.rga.push_chunk(Chunk::new(chunk_id, span, ids));
         } else {
-            return Err(DecodeError::Format("arr chunk must have span or value".into()));
+            return Err(DecodeError::Format(
+                "arr chunk must have span or value".into(),
+            ));
         }
     }
     model.index.insert(TsKey::from(id), CrdtNode::Arr(node));
@@ -531,7 +602,9 @@ mod tests {
     use crate::json_crdt_patch::operations::{ConValue, Op};
     use json_joy_json_pack::PackValue;
 
-    fn sid() -> u64 { 654321 }
+    fn sid() -> u64 {
+        654321
+    }
 
     #[test]
     fn encode_empty_model() {

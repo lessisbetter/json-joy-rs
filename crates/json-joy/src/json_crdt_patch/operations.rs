@@ -3,8 +3,8 @@
 //! Mirrors the 16 operation classes in
 //! `packages/json-joy/src/json-crdt-patch/operations.ts`.
 
+use crate::json_crdt_patch::clock::{print_ts, Ts, Tss};
 use json_joy_json_pack::PackValue;
-use crate::json_crdt_patch::clock::{Ts, Tss, print_ts};
 
 // ── ConValue ───────────────────────────────────────────────────────────────
 
@@ -54,15 +54,38 @@ pub enum Op {
     /// Set the value of a `val` register.
     InsVal { id: Ts, obj: Ts, val: Ts },
     /// Set key→value pairs in an `obj` map.
-    InsObj { id: Ts, obj: Ts, data: Vec<(String, Ts)> },
+    InsObj {
+        id: Ts,
+        obj: Ts,
+        data: Vec<(String, Ts)>,
+    },
     /// Set index→value pairs in a `vec` vector.
-    InsVec { id: Ts, obj: Ts, data: Vec<(u8, Ts)> },
+    InsVec {
+        id: Ts,
+        obj: Ts,
+        data: Vec<(u8, Ts)>,
+    },
     /// Insert a string into a `str` RGA.
-    InsStr { id: Ts, obj: Ts, after: Ts, data: String },
+    InsStr {
+        id: Ts,
+        obj: Ts,
+        after: Ts,
+        data: String,
+    },
     /// Insert binary data into a `bin` RGA.
-    InsBin { id: Ts, obj: Ts, after: Ts, data: Vec<u8> },
+    InsBin {
+        id: Ts,
+        obj: Ts,
+        after: Ts,
+        data: Vec<u8>,
+    },
     /// Insert elements into an `arr` RGA.
-    InsArr { id: Ts, obj: Ts, after: Ts, data: Vec<Ts> },
+    InsArr {
+        id: Ts,
+        obj: Ts,
+        after: Ts,
+        data: Vec<Ts>,
+    },
     /// Update an existing element in an `arr` array.
     UpdArr { id: Ts, obj: Ts, after: Ts, val: Ts },
     /// Delete ranges of operations in an object (str/bin/arr).
@@ -75,12 +98,22 @@ impl Op {
     /// Returns the ID (first timestamp) of this operation.
     pub fn id(&self) -> Ts {
         match self {
-            Op::NewCon { id, .. } | Op::NewVal { id } | Op::NewObj { id } |
-            Op::NewVec { id } | Op::NewStr { id } | Op::NewBin { id } |
-            Op::NewArr { id } | Op::InsVal { id, .. } | Op::InsObj { id, .. } |
-            Op::InsVec { id, .. } | Op::InsStr { id, .. } | Op::InsBin { id, .. } |
-            Op::InsArr { id, .. } | Op::UpdArr { id, .. } | Op::Del { id, .. } |
-            Op::Nop { id, .. } => *id,
+            Op::NewCon { id, .. }
+            | Op::NewVal { id }
+            | Op::NewObj { id }
+            | Op::NewVec { id }
+            | Op::NewStr { id }
+            | Op::NewBin { id }
+            | Op::NewArr { id }
+            | Op::InsVal { id, .. }
+            | Op::InsObj { id, .. }
+            | Op::InsVec { id, .. }
+            | Op::InsStr { id, .. }
+            | Op::InsBin { id, .. }
+            | Op::InsArr { id, .. }
+            | Op::UpdArr { id, .. }
+            | Op::Del { id, .. }
+            | Op::Nop { id, .. } => *id,
         }
     }
 
@@ -112,8 +145,8 @@ impl Op {
             Op::InsBin { .. } => "ins_bin",
             Op::InsArr { .. } => "ins_arr",
             Op::UpdArr { .. } => "upd_arr",
-            Op::Del { .. }    => "del",
-            Op::Nop { .. }    => "nop",
+            Op::Del { .. } => "del",
+            Op::Nop { .. } => "nop",
         }
     }
 }
@@ -128,15 +161,45 @@ impl std::fmt::Display for Op {
             format!("{} {}", self.name(), print_ts(id))
         };
         match self {
-            Op::InsVal { obj, val, .. } =>
-                write!(f, "{}, obj = {}, val = {}", base, print_ts(*obj), print_ts(*val)),
-            Op::InsStr { obj, after, data, .. } =>
-                write!(f, "{}, obj = {} {{ {} ← {:?} }}", base, print_ts(*obj), print_ts(*after), data),
-            Op::InsBin { obj, after, data, .. } =>
-                write!(f, "{}, obj = {} {{ {} ← {:?} }}", base, print_ts(*obj), print_ts(*after), data),
+            Op::InsVal { obj, val, .. } => write!(
+                f,
+                "{}, obj = {}, val = {}",
+                base,
+                print_ts(*obj),
+                print_ts(*val)
+            ),
+            Op::InsStr {
+                obj, after, data, ..
+            } => write!(
+                f,
+                "{}, obj = {} {{ {} ← {:?} }}",
+                base,
+                print_ts(*obj),
+                print_ts(*after),
+                data
+            ),
+            Op::InsBin {
+                obj, after, data, ..
+            } => write!(
+                f,
+                "{}, obj = {} {{ {} ← {:?} }}",
+                base,
+                print_ts(*obj),
+                print_ts(*after),
+                data
+            ),
             Op::Del { obj, what, .. } => {
-                let spans: Vec<_> = what.iter().map(|s| format!("{}!{}", print_ts(s.ts()), s.span)).collect();
-                write!(f, "{}, obj = {} {{ {} }}", base, print_ts(*obj), spans.join(", "))
+                let spans: Vec<_> = what
+                    .iter()
+                    .map(|s| format!("{}!{}", print_ts(s.ts()), s.span))
+                    .collect();
+                write!(
+                    f,
+                    "{}, obj = {} {{ {} }}",
+                    base,
+                    print_ts(*obj),
+                    spans.join(", ")
+                )
             }
             _ => write!(f, "{}", base),
         }
@@ -150,13 +213,21 @@ mod tests {
 
     #[test]
     fn span_of_nop() {
-        let op = Op::Nop { id: ts(1, 0), len: 5 };
+        let op = Op::Nop {
+            id: ts(1, 0),
+            len: 5,
+        };
         assert_eq!(op.span(), 5);
     }
 
     #[test]
     fn span_of_ins_str() {
-        let op = Op::InsStr { id: ts(1, 0), obj: ts(1, 0), after: ts(1, 0), data: "hello".into() };
+        let op = Op::InsStr {
+            id: ts(1, 0),
+            obj: ts(1, 0),
+            after: ts(1, 0),
+            data: "hello".into(),
+        };
         assert_eq!(op.span(), 5);
     }
 
@@ -168,7 +239,22 @@ mod tests {
 
     #[test]
     fn op_name() {
-        assert_eq!(Op::NewCon { id: ts(1, 0), val: ConValue::Val(PackValue::Null) }.name(), "new_con");
-        assert_eq!(Op::Del { id: ts(1, 0), obj: ts(1, 0), what: vec![] }.name(), "del");
+        assert_eq!(
+            Op::NewCon {
+                id: ts(1, 0),
+                val: ConValue::Val(PackValue::Null)
+            }
+            .name(),
+            "new_con"
+        );
+        assert_eq!(
+            Op::Del {
+                id: ts(1, 0),
+                obj: ts(1, 0),
+                what: vec![]
+            }
+            .name(),
+            "del"
+        );
     }
 }

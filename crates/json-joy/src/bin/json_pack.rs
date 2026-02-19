@@ -5,8 +5,8 @@
 //!
 //! Mirrors `packages/json-joy/src/json-cli/json-pack.ts`.
 
-use std::io::{self, Read, Write};
 use json_joy::json_cli::{pack, CliError};
+use std::io::{self, Read, Write};
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
@@ -16,7 +16,9 @@ fn main() {
     let mut i = 1;
     while i < args.len() {
         match args[i].as_str() {
-            "--cbor" => { format = "cbor".to_string(); }
+            "--cbor" => {
+                format = "cbor".to_string();
+            }
             "--format" => {
                 i += 1;
                 if let Some(f) = args.get(i) {

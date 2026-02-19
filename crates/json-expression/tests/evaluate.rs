@@ -5,7 +5,7 @@
 //! - `__tests__/jsonExpressionEvaluateTests.ts`
 //! - `__tests__/jsonExpressionUnitTests.ts`
 
-use json_expression::{evaluate, EvalCtx, JsValue, Vars, operators_map};
+use json_expression::{evaluate, operators_map, EvalCtx, JsValue, Vars};
 use serde_json::{json, Value};
 use std::sync::Arc;
 
@@ -121,8 +121,16 @@ fn test_pow() {
 fn test_eq() {
     check(json!(["eq", 1, 1]), json!(true), json!(null));
     check(json!(["==", 1, 2]), json!(false), json!(null));
-    check(json!(["eq", {"foo": "bar"}, {"foo": "bar"}]), json!(true), json!(null));
-    check(json!(["eq", {"foo": "bar"}, {"foo": "baz"}]), json!(false), json!(null));
+    check(
+        json!(["eq", {"foo": "bar"}, {"foo": "bar"}]),
+        json!(true),
+        json!(null),
+    );
+    check(
+        json!(["eq", {"foo": "bar"}, {"foo": "baz"}]),
+        json!(false),
+        json!(null),
+    );
 }
 
 #[test]
@@ -150,7 +158,7 @@ fn test_cmp() {
 
 #[test]
 fn test_between() {
-    check(json!(["=><=" , 5, 1, 10]), json!(true), json!(null));
+    check(json!(["=><=", 5, 1, 10]), json!(true), json!(null));
     check(json!(["between", 0, 1, 10]), json!(false), json!(null));
     check(json!(["><", 5, 1, 10]), json!(true), json!(null));
     check(json!(["><", 1, 1, 10]), json!(false), json!(null));
@@ -299,20 +307,36 @@ fn test_member() {
 
 #[test]
 fn test_cat() {
-    check(json!([".", "hello", " ", "world"]), json!("hello world"), json!(null));
+    check(
+        json!([".", "hello", " ", "world"]),
+        json!("hello world"),
+        json!(null),
+    );
     check(json!(["cat", "foo", "bar"]), json!("foobar"), json!(null));
 }
 
 #[test]
 fn test_contains() {
-    check(json!(["contains", "foobar", "oba"]), json!(true), json!(null));
-    check(json!(["contains", "foobar", "xyz"]), json!(false), json!(null));
+    check(
+        json!(["contains", "foobar", "oba"]),
+        json!(true),
+        json!(null),
+    );
+    check(
+        json!(["contains", "foobar", "xyz"]),
+        json!(false),
+        json!(null),
+    );
 }
 
 #[test]
 fn test_starts() {
     check(json!(["starts", "foobar", "foo"]), json!(true), json!(null));
-    check(json!(["starts", "foobar", "bar"]), json!(false), json!(null));
+    check(
+        json!(["starts", "foobar", "bar"]),
+        json!(false),
+        json!(null),
+    );
 }
 
 #[test]
@@ -323,26 +347,46 @@ fn test_ends() {
 
 #[test]
 fn test_substr() {
-    check(json!(["substr", "hello world", 0, 5]), json!("hello"), json!(null));
-    check(json!(["substr", "hello world", 6, 11]), json!("world"), json!(null));
+    check(
+        json!(["substr", "hello world", 0, 5]),
+        json!("hello"),
+        json!(null),
+    );
+    check(
+        json!(["substr", "hello world", 6, 11]),
+        json!("world"),
+        json!(null),
+    );
 }
 
 #[test]
 fn test_email_validator() {
-    check(json!(["email?", "user@example.com"]), json!(true), json!(null));
+    check(
+        json!(["email?", "user@example.com"]),
+        json!(true),
+        json!(null),
+    );
     check(json!(["email?", "not-an-email"]), json!(false), json!(null));
 }
 
 #[test]
 fn test_uuid_validator() {
-    check(json!(["uuid?", "550e8400-e29b-41d4-a716-446655440000"]), json!(true), json!(null));
+    check(
+        json!(["uuid?", "550e8400-e29b-41d4-a716-446655440000"]),
+        json!(true),
+        json!(null),
+    );
     check(json!(["uuid?", "not-a-uuid"]), json!(false), json!(null));
 }
 
 #[test]
 fn test_ip4_validator() {
     check(json!(["ip4?", "192.168.1.1"]), json!(true), json!(null));
-    check(json!(["ip4?", "999.999.999.999"]), json!(false), json!(null));
+    check(
+        json!(["ip4?", "999.999.999.999"]),
+        json!(false),
+        json!(null),
+    );
 }
 
 #[test]
@@ -367,8 +411,16 @@ fn test_bitwise() {
 #[test]
 fn test_concat() {
     // Array literals must be wrapped as [[arr]] (single-element literal syntax)
-    check(json!(["concat", [[1, 2]], [[3, 4]]]), json!([1, 2, 3, 4]), json!(null));
-    check(json!(["++", [[1]], [[2]], [[3]]]), json!([1, 2, 3]), json!(null));
+    check(
+        json!(["concat", [[1, 2]], [[3, 4]]]),
+        json!([1, 2, 3, 4]),
+        json!(null),
+    );
+    check(
+        json!(["++", [[1]], [[2]], [[3]]]),
+        json!([1, 2, 3]),
+        json!(null),
+    );
 }
 
 #[test]
@@ -378,8 +430,16 @@ fn test_push() {
 
 #[test]
 fn test_head() {
-    check(json!(["head", [[1, 2, 3, 4, 5]], 3]), json!([1, 2, 3]), json!(null));
-    check(json!(["head", [[1, 2, 3, 4, 5]], -2]), json!([4, 5]), json!(null));
+    check(
+        json!(["head", [[1, 2, 3, 4, 5]], 3]),
+        json!([1, 2, 3]),
+        json!(null),
+    );
+    check(
+        json!(["head", [[1, 2, 3, 4, 5]], -2]),
+        json!([4, 5]),
+        json!(null),
+    );
 }
 
 #[test]
@@ -390,7 +450,11 @@ fn test_sort() {
 
 #[test]
 fn test_reverse() {
-    check(json!(["reverse", [[1, 2, 3]]]), json!([3, 2, 1]), json!(null));
+    check(
+        json!(["reverse", [[1, 2, 3]]]),
+        json!([3, 2, 1]),
+        json!(null),
+    );
 }
 
 #[test]
@@ -401,18 +465,34 @@ fn test_in() {
 
 #[test]
 fn test_slice() {
-    check(json!(["slice", [[1, 2, 3, 4, 5]], 1, 3]), json!([2, 3]), json!(null));
+    check(
+        json!(["slice", [[1, 2, 3, 4, 5]], 1, 3]),
+        json!([2, 3]),
+        json!(null),
+    );
 }
 
 #[test]
 fn test_zip() {
-    check(json!(["zip", [[1, 2]], [["a", "b"]]]), json!([[1, "a"], [2, "b"]]), json!(null));
+    check(
+        json!(["zip", [[1, 2]], [["a", "b"]]]),
+        json!([[1, "a"], [2, "b"]]),
+        json!(null),
+    );
 }
 
 #[test]
 fn test_index_of() {
-    check(json!(["indexOf", [[1, 2, 3]], 2]), json!(1_i64), json!(null));
-    check(json!(["indexOf", [[1, 2, 3]], 9]), json!(-1_i64), json!(null));
+    check(
+        json!(["indexOf", [[1, 2, 3]], 2]),
+        json!(1_i64),
+        json!(null),
+    );
+    check(
+        json!(["indexOf", [[1, 2, 3]], 9]),
+        json!(-1_i64),
+        json!(null),
+    );
 }
 
 #[test]
@@ -446,7 +526,14 @@ fn test_map() {
 #[test]
 fn test_reduce() {
     check(
-        json!(["reduce", [[1, 2, 3, 4]], 0, ["acc"], ["x"], ["+", ["$", "acc"], ["$", "x"]]]),
+        json!([
+            "reduce",
+            [[1, 2, 3, 4]],
+            0,
+            ["acc"],
+            ["x"],
+            ["+", ["$", "acc"], ["$", "x"]]
+        ]),
         json!(10.0),
         json!(null),
     );
@@ -531,10 +618,22 @@ fn test_single_element_array_is_literal() {
 fn test_and_short_circuit() {
     // The right-hand side must NOT be evaluated when left is already falsy.
     // Before the fix, ["throw", "boom"] would execute and produce an error.
-    check(json!(["&&", false, ["throw", "boom"]]), json!(false), json!(null));
-    check(json!(["&&", 0, ["throw", "boom"]]), json!(0_i64), json!(null));
+    check(
+        json!(["&&", false, ["throw", "boom"]]),
+        json!(false),
+        json!(null),
+    );
+    check(
+        json!(["&&", 0, ["throw", "boom"]]),
+        json!(0_i64),
+        json!(null),
+    );
     // Three operands: short-circuit fires at the second position
-    check(json!(["&&", 1, false, ["throw", "boom"]]), json!(false), json!(null));
+    check(
+        json!(["&&", 1, false, ["throw", "boom"]]),
+        json!(false),
+        json!(null),
+    );
     // Returns the final evaluated value when all are truthy
     check(json!(["&&", 1, 2, 3]), json!(3_i64), json!(null));
 }
@@ -542,10 +641,22 @@ fn test_and_short_circuit() {
 #[test]
 fn test_or_short_circuit() {
     // The right-hand side must NOT be evaluated when left is already truthy.
-    check(json!(["||", true, ["throw", "boom"]]), json!(true), json!(null));
-    check(json!(["||", 1, ["throw", "boom"]]), json!(1_i64), json!(null));
+    check(
+        json!(["||", true, ["throw", "boom"]]),
+        json!(true),
+        json!(null),
+    );
+    check(
+        json!(["||", 1, ["throw", "boom"]]),
+        json!(1_i64),
+        json!(null),
+    );
     // Three operands: short-circuit fires at the second position
-    check(json!(["||", false, true, ["throw", "boom"]]), json!(true), json!(null));
+    check(
+        json!(["||", false, true, ["throw", "boom"]]),
+        json!(true),
+        json!(null),
+    );
     // Returns the final evaluated value when all are falsy
     check(json!(["||", false, 0, null]), json!(null), json!(null));
 }
@@ -570,8 +681,16 @@ fn test_ip6_validator_with_embedded_ipv4() {
     // IPv6 with embedded IPv4 — requires the `2[0-4]` octet class to be correct.
     // Before the fix, the regex contained `2[0-4}` (14 occurrences), corrupting the
     // character class and causing mis-matches on some embedded-IPv4 addresses.
-    check(json!(["ip6?", "::ffff:192.168.1.1"]), json!(true), json!(null));
-    check(json!(["ip6?", "::ffff:192.168.245.100"]), json!(true), json!(null));
+    check(
+        json!(["ip6?", "::ffff:192.168.1.1"]),
+        json!(true),
+        json!(null),
+    );
+    check(
+        json!(["ip6?", "::ffff:192.168.245.100"]),
+        json!(true),
+        json!(null),
+    );
     check(json!(["ip6?", "::ffff:10.0.0.1"]), json!(true), json!(null));
     // Pure IPv6 still works
     check(json!(["ip6?", "2001:db8::1"]), json!(true), json!(null));
@@ -585,11 +704,23 @@ fn test_ip6_validator_with_embedded_ipv4() {
 fn test_slice_negative_indices() {
     // JS: [1,2,3,4,5].slice(-2, 5) → [4, 5]
     // Before the fix, -2 was clamped to 0 → [1,2,3,4,5] (wrong)
-    check(json!(["slice", [[1, 2, 3, 4, 5]], -2, 5]), json!([4, 5]), json!(null));
+    check(
+        json!(["slice", [[1, 2, 3, 4, 5]], -2, 5]),
+        json!([4, 5]),
+        json!(null),
+    );
     // JS: [1,2,3,4,5].slice(1, -1) → [2, 3, 4]
-    check(json!(["slice", [[1, 2, 3, 4, 5]], 1, -1]), json!([2, 3, 4]), json!(null));
+    check(
+        json!(["slice", [[1, 2, 3, 4, 5]], 1, -1]),
+        json!([2, 3, 4]),
+        json!(null),
+    );
     // Both negative: .slice(-3, -1) → [3, 4]
-    check(json!(["slice", [[1, 2, 3, 4, 5]], -3, -1]), json!([3, 4]), json!(null));
+    check(
+        json!(["slice", [[1, 2, 3, 4, 5]], -3, -1]),
+        json!([3, 4]),
+        json!(null),
+    );
 }
 
 // ----------------------------------------------------------------- Regression: substr negative indices
@@ -625,7 +756,11 @@ fn test_int_wrapping_semantics() {
     // JS `~~3000000000` wraps to -1294967296 (ToInt32 wrapping, not saturating).
     // `~(-1294967296)` = 1294967295.
     // Before the fix, saturating cast gave i32::MAX = 2147483647, so ~2147483647 = -2147483648.
-    check(json!(["~", 3000000000_i64]), json!(1294967295_i64), json!(null));
+    check(
+        json!(["~", 3000000000_i64]),
+        json!(1294967295_i64),
+        json!(null),
+    );
 }
 
 // ----------------------------------------------------------------- Regression: jp.add new key

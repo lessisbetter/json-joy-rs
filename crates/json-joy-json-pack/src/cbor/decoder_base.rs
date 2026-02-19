@@ -142,13 +142,19 @@ impl CborDecoderBase {
 
     /// Decode CBOR bytes into a [`PackValue`].
     pub fn decode(&self, input: &[u8]) -> Result<PackValue, CborError> {
-        let mut cur = Cur { data: input, pos: 0 };
+        let mut cur = Cur {
+            data: input,
+            pos: 0,
+        };
         self.read_any(&mut cur)
     }
 
     /// Decode CBOR bytes, returning value and number of bytes consumed.
     pub fn decode_with_consumed(&self, input: &[u8]) -> Result<(PackValue, usize), CborError> {
-        let mut cur = Cur { data: input, pos: 0 };
+        let mut cur = Cur {
+            data: input,
+            pos: 0,
+        };
         let v = self.read_any(&mut cur)?;
         Ok((v, cur.pos))
     }
@@ -427,17 +433,19 @@ impl CborDecoderBase {
 
     pub fn read_tag_raw(&self, c: &mut Cur, tag: u64) -> Result<PackValue, CborError> {
         let val = self.read_any(c)?;
-        Ok(PackValue::Extension(Box::new(JsonPackExtension::new(tag, val))))
+        Ok(PackValue::Extension(Box::new(JsonPackExtension::new(
+            tag, val,
+        ))))
     }
 
     // ---- Token ----
 
     pub fn read_tkn(&self, c: &mut Cur, minor: u8) -> Result<PackValue, CborError> {
         match minor {
-            20 => Ok(PackValue::Bool(false)),  // 0xf4 & 0x1f
-            21 => Ok(PackValue::Bool(true)),   // 0xf5 & 0x1f
-            22 => Ok(PackValue::Null),          // 0xf6 & 0x1f
-            23 => Ok(PackValue::Undefined),     // 0xf7 & 0x1f
+            20 => Ok(PackValue::Bool(false)), // 0xf4 & 0x1f
+            21 => Ok(PackValue::Bool(true)),  // 0xf5 & 0x1f
+            22 => Ok(PackValue::Null),        // 0xf6 & 0x1f
+            23 => Ok(PackValue::Undefined),   // 0xf7 & 0x1f
             24 => {
                 let v = c.u8()?;
                 Ok(PackValue::Blob(JsonPackValue::new(vec![v])))

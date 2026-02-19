@@ -14,10 +14,7 @@
 
 use serde_json::Value;
 
-use crate::json_ot::types::{
-    ot_binary_irrev::BinaryOp,
-    ot_string_irrev::StringIrrevOp,
-};
+use crate::json_ot::types::{ot_binary_irrev::BinaryOp, ot_string_irrev::StringIrrevOp};
 
 /// Which OT type an edit component uses.
 #[derive(Debug, Clone, PartialEq)]
@@ -29,8 +26,14 @@ pub enum EditType {
 /// An in-place edit component applied during the edit phase.
 #[derive(Debug, Clone, PartialEq)]
 pub enum EditComponent {
-    OtString { path: Vec<String>, op: StringIrrevOp },
-    OtBinary { path: Vec<String>, op: BinaryOp },
+    OtString {
+        path: Vec<String>,
+        op: StringIrrevOp,
+    },
+    OtBinary {
+        path: Vec<String>,
+        op: BinaryOp,
+    },
 }
 
 /// A register ID for pick/data/drop operations.
@@ -150,7 +153,11 @@ fn remove_at_path(doc: &mut Value, path: &[String]) -> Option<Value> {
         Value::Object(map) => map.remove(key),
         Value::Array(arr) => {
             let idx: usize = key.parse().ok()?;
-            if idx < arr.len() { Some(arr.remove(idx)) } else { None }
+            if idx < arr.len() {
+                Some(arr.remove(idx))
+            } else {
+                None
+            }
         }
         _ => None,
     }
@@ -165,7 +172,9 @@ fn insert_at_path(doc: &mut Value, path: &[String], val: Value) {
     let key = &last[0];
     if let Some(parent) = get_mut_at_path(doc, parent_path) {
         match parent {
-            Value::Object(map) => { map.insert(key.clone(), val); }
+            Value::Object(map) => {
+                map.insert(key.clone(), val);
+            }
             Value::Array(arr) => {
                 if key == "-" {
                     arr.push(val);
@@ -210,8 +219,14 @@ mod tests {
     fn pick_then_drop_at_different_path() {
         let doc = json!({"a": 1, "b": 2});
         let op = JsonOp {
-            pick: vec![PickComponent { register: 0, path: vec!["a".to_string()] }],
-            drop: vec![DropComponent { register: 0, path: vec!["c".to_string()] }],
+            pick: vec![PickComponent {
+                register: 0,
+                path: vec!["a".to_string()],
+            }],
+            drop: vec![DropComponent {
+                register: 0,
+                path: vec!["c".to_string()],
+            }],
             ..Default::default()
         };
         let result = apply(doc, &op).unwrap();
@@ -223,8 +238,14 @@ mod tests {
     fn data_then_drop() {
         let doc = json!({});
         let op = JsonOp {
-            data: vec![DataComponent { register: 0, value: json!(42) }],
-            drop: vec![DropComponent { register: 0, path: vec!["x".to_string()] }],
+            data: vec![DataComponent {
+                register: 0,
+                value: json!(42),
+            }],
+            drop: vec![DropComponent {
+                register: 0,
+                path: vec!["x".to_string()],
+            }],
             ..Default::default()
         };
         let result = apply(doc, &op).unwrap();

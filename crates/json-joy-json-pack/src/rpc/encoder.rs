@@ -101,7 +101,12 @@ impl RpcMessageEncoder {
             }
             RpcMessage::RejectedReply(m) => {
                 let auth_stat = m.auth_stat.map(|s| s as u32);
-                self.write_rejected_reply(m.xid, m.stat as u32, m.mismatch_info.as_ref(), auth_stat);
+                self.write_rejected_reply(
+                    m.xid,
+                    m.stat as u32,
+                    m.mismatch_info.as_ref(),
+                    auth_stat,
+                );
             }
         }
         Ok(())

@@ -15,7 +15,9 @@ use crate::json_crdt_patch::patch::Patch;
 /// All patches must share the same session ID. The patches must be ordered
 /// by logical time with no overlapping spans.
 pub fn combine(patches: &mut Vec<Patch>) {
-    if patches.len() < 2 { return; }
+    if patches.len() < 2 {
+        return;
+    }
     // Drain everything into a local Vec, then rebuild
     let all: Vec<Patch> = std::mem::take(patches);
     let mut iter = all.into_iter();
@@ -43,7 +45,10 @@ pub fn combine(patches: &mut Vec<Patch>) {
                     panic!("TIMESTAMP_CONFLICT");
                 }
                 if time_diff > 0 {
-                    first.ops.push(Op::Nop { id: ts(fid.sid, next_tick), len: time_diff as u64 });
+                    first.ops.push(Op::Nop {
+                        id: ts(fid.sid, next_tick),
+                        len: time_diff as u64,
+                    });
                 }
                 first.ops.extend(current.ops);
             }
@@ -57,14 +62,29 @@ pub fn combine(patches: &mut Vec<Patch>) {
 ///
 /// Mutates the patch in place. Clone first if you need the original.
 pub fn compact(patch: &mut Patch) {
-    if patch.ops.len() < 2 { return; }
+    if patch.ops.len() < 2 {
+        return;
+    }
     let ops = std::mem::take(&mut patch.ops);
     let mut new_ops: Vec<Op> = Vec::with_capacity(ops.len());
 
     for op in ops {
         if let Some(last) = new_ops.last_mut() {
-            if let (Op::InsStr { id: lid, obj: lobj, after: lafter, data: ldata },
-                    Op::InsStr { id: cid, obj: cobj, after: cafter, data: cdata }) = (last, &op) {
+            if let (
+                Op::InsStr {
+                    id: lid,
+                    obj: lobj,
+                    after: lafter,
+                    data: ldata,
+                },
+                Op::InsStr {
+                    id: cid,
+                    obj: cobj,
+                    after: cafter,
+                    data: cdata,
+                },
+            ) = (last, &op)
+            {
                 let last_next_tick = lid.time + ldata.chars().count() as u64;
                 let is_time_consecutive = last_next_tick == cid.time;
                 let is_same_string = equal(*lobj, *cobj);
@@ -133,9 +153,9 @@ mod tests {
             data: "hel".into(),
         });
         patch.ops.push(Op::InsStr {
-            id: ts(1, 8),      // time = 5 + 3 = 8
+            id: ts(1, 8), // time = 5 + 3 = 8
             obj: str_id,
-            after: ts(1, 7),   // after = (1, last_char_time) = (1, 7)
+            after: ts(1, 7), // after = (1, last_char_time) = (1, 7)
             data: "lo".into(),
         });
         compact(&mut patch);

@@ -31,7 +31,9 @@ impl Default for JsonDecoderPartial {
 
 impl JsonDecoderPartial {
     pub fn new() -> Self {
-        Self { inner: JsonDecoder::new() }
+        Self {
+            inner: JsonDecoder::new(),
+        }
     }
 
     pub fn decode(&mut self, input: &[u8]) -> Result<PackValue, JsonError> {

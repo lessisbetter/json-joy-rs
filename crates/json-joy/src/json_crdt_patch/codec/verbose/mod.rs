@@ -6,9 +6,9 @@
 //!
 //! Mirrors `packages/json-joy/src/json-crdt-patch/codec/verbose/`.
 
-mod encode;
 mod decode;
+mod encode;
 pub mod types;
 
-pub use encode::encode;
 pub use decode::decode;
+pub use encode::encode;

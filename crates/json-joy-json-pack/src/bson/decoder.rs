@@ -112,7 +112,7 @@ impl BsonDecoder {
     fn read_document(&mut self) -> Result<Vec<(String, BsonValue)>, BsonError> {
         let document_size = self.i32_le()? as usize;
         let start_pos = self.x; // position after the 4-byte size field
-        // Validate the stated document size fits within the buffer
+                                // Validate the stated document size fits within the buffer
         if start_pos + document_size.saturating_sub(4) > self.data.len() {
             return Err(BsonError::UnexpectedEof);
         }
@@ -185,7 +185,9 @@ impl BsonDecoder {
             0x10 => Ok(BsonValue::Int32(self.i32_le()?)),
             0x11 => self.read_timestamp(),
             0x12 => Ok(BsonValue::Int64(self.i64_le()?)),
-            0x13 => Ok(BsonValue::Decimal128(BsonDecimal128 { data: self.buf(16)? })),
+            0x13 => Ok(BsonValue::Decimal128(BsonDecimal128 {
+                data: self.buf(16)?,
+            })),
             0xff => Ok(BsonValue::MinKey),
             0x7f => Ok(BsonValue::MaxKey),
             t => Err(BsonError::UnsupportedType(t)),
@@ -246,7 +248,9 @@ impl BsonDecoder {
         let _total_len = self.i32_le()?; // skip total length
         let code = self.read_string()?;
         let scope = self.read_document()?;
-        Ok(BsonValue::JavaScriptCodeWithScope(BsonJavascriptCodeWithScope { code, scope }))
+        Ok(BsonValue::JavaScriptCodeWithScope(
+            BsonJavascriptCodeWithScope { code, scope },
+        ))
     }
 
     fn read_timestamp(&mut self) -> Result<BsonValue, BsonError> {

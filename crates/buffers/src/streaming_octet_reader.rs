@@ -83,8 +83,7 @@ impl StreamingOctetReader {
             let chunk = &self.chunks[chunk_idx];
             let available = chunk.len() - local_x;
             let to_copy = available.min(remaining);
-            dst[dst_pos..dst_pos + to_copy]
-                .copy_from_slice(&chunk[local_x..local_x + to_copy]);
+            dst[dst_pos..dst_pos + to_copy].copy_from_slice(&chunk[local_x..local_x + to_copy]);
             dst_pos += to_copy;
             remaining -= to_copy;
 

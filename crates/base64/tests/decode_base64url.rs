@@ -1,6 +1,6 @@
 //! Tests for URL-safe base64 decoding (from_base64_url).
 
-use json_joy_base64::{to_base64, from_base64_url};
+use json_joy_base64::{from_base64_url, to_base64};
 use rand::Rng;
 
 fn generate_blob() -> Vec<u8> {

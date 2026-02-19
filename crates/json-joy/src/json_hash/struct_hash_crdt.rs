@@ -9,9 +9,9 @@
 //! The hash is guaranteed to contain only printable ASCII characters,
 //! excluding the newline character.
 
-use crate::json_crdt::nodes::{CrdtNode, NodeIndex, TsKey};
 use super::hash::hash_str;
 use super::struct_hash::struct_hash;
+use crate::json_crdt::nodes::{CrdtNode, NodeIndex, TsKey};
 
 /// Compute a structural hash string for a CRDT node.
 ///
@@ -111,7 +111,7 @@ pub fn struct_hash_crdt(node: Option<&CrdtNode>, index: &NodeIndex) -> String {
 /// `updateJson` and once internally in `updateStr`).  We replicate that
 /// by using `hash_str` from the `hash` module.
 fn hash_str_value(s: &str) -> u32 {
-    use super::hash::{START_STATE, STRING_CONST, update_num, update_str};
+    use super::hash::{update_num, update_str, START_STATE, STRING_CONST};
     // TypeScript: case 'string': state = updateNum(state, STRING); return updateStr(state, s)
     // updateStr itself calls updateNum(state, STRING) internally again.
     let state = update_num(START_STATE, STRING_CONST);
@@ -120,7 +120,7 @@ fn hash_str_value(s: &str) -> u32 {
 
 /// Hash binary data the same way as `hash(uint8array)` in the upstream.
 fn hash_bin_value(bytes: &[u8]) -> u32 {
-    use super::hash::{START_STATE, update_bin};
+    use super::hash::{update_bin, START_STATE};
     update_bin(START_STATE, bytes) as u32
 }
 
@@ -144,12 +144,16 @@ fn radix_36(mut n: u64) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::json_crdt::nodes::{ConNode, StrNode, ObjNode, ArrNode, VecNode, BinNode, ValNode, NodeIndex, TsKey};
+    use crate::json_crdt::nodes::{
+        ArrNode, BinNode, ConNode, NodeIndex, ObjNode, StrNode, TsKey, ValNode, VecNode,
+    };
     use crate::json_crdt_patch::clock::Ts;
     use crate::json_crdt_patch::operations::ConValue;
     use json_joy_json_pack::PackValue;
 
-    fn ts(sid: u64, time: u64) -> Ts { Ts::new(sid, time) }
+    fn ts(sid: u64, time: u64) -> Ts {
+        Ts::new(sid, time)
+    }
 
     #[test]
     fn hash_missing_node_returns_u() {
@@ -177,7 +181,10 @@ mod tests {
     #[test]
     fn hash_con_false() {
         let index: NodeIndex = NodeIndex::new();
-        let node = CrdtNode::Con(ConNode::new(ts(1, 0), ConValue::Val(PackValue::Bool(false))));
+        let node = CrdtNode::Con(ConNode::new(
+            ts(1, 0),
+            ConValue::Val(PackValue::Bool(false)),
+        ));
         let h = struct_hash_crdt(Some(&node), &index);
         assert_eq!(h, "F");
     }
@@ -234,8 +241,14 @@ mod tests {
         let mut index: NodeIndex = NodeIndex::new();
         let con_id_a = ts(1, 1);
         let con_id_b = ts(1, 2);
-        index.insert(TsKey::from(con_id_a), CrdtNode::Con(ConNode::new(con_id_a, ConValue::Val(PackValue::Integer(1)))));
-        index.insert(TsKey::from(con_id_b), CrdtNode::Con(ConNode::new(con_id_b, ConValue::Val(PackValue::Integer(2)))));
+        index.insert(
+            TsKey::from(con_id_a),
+            CrdtNode::Con(ConNode::new(con_id_a, ConValue::Val(PackValue::Integer(1)))),
+        );
+        index.insert(
+            TsKey::from(con_id_b),
+            CrdtNode::Con(ConNode::new(con_id_b, ConValue::Val(PackValue::Integer(2)))),
+        );
 
         let mut obj1 = ObjNode::new(ts(1, 0));
         obj1.put("foo", con_id_a);

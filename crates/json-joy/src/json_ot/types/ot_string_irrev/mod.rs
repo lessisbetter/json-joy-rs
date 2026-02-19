@@ -39,9 +39,18 @@ impl StringIrrevComponent {
 /// Append a component, merging with the last if same type.
 fn append(op: &mut StringIrrevOp, comp: StringIrrevComponent) {
     match (op.last_mut(), &comp) {
-        (Some(StringIrrevComponent::Retain(n)),    StringIrrevComponent::Retain(m))    => { *n += m; return; }
-        (Some(StringIrrevComponent::Delete(n)),    StringIrrevComponent::Delete(m))    => { *n += m; return; }
-        (Some(StringIrrevComponent::Insert(s)),    StringIrrevComponent::Insert(t))    => { s.push_str(t); return; }
+        (Some(StringIrrevComponent::Retain(n)), StringIrrevComponent::Retain(m)) => {
+            *n += m;
+            return;
+        }
+        (Some(StringIrrevComponent::Delete(n)), StringIrrevComponent::Delete(m)) => {
+            *n += m;
+            return;
+        }
+        (Some(StringIrrevComponent::Insert(s)), StringIrrevComponent::Insert(t)) => {
+            s.push_str(t);
+            return;
+        }
         _ => {}
     }
     op.push(comp);
@@ -106,8 +115,12 @@ pub fn compose(op1: &StringIrrevOp, op2: &StringIrrevOp) -> StringIrrevOp {
 
         match (c1, c2) {
             (None, None) => break,
-            (Some(c), None) => { append(&mut result, c); }
-            (None, Some(c)) => { append(&mut result, c); }
+            (Some(c), None) => {
+                append(&mut result, c);
+            }
+            (None, Some(c)) => {
+                append(&mut result, c);
+            }
             (Some(c1), Some(c2)) => {
                 match (&c1, &c2) {
                     // Delete from op1 passes through unchanged
@@ -124,29 +137,41 @@ pub fn compose(op1: &StringIrrevOp, op2: &StringIrrevOp) -> StringIrrevOp {
                     (StringIrrevComponent::Retain(n), StringIrrevComponent::Retain(m)) => {
                         let min = (*n).min(*m);
                         append(&mut result, StringIrrevComponent::Retain(min));
-                        if n > m { rem1 = Some(StringIrrevComponent::Retain(n - m)); }
-                        else if m > n { rem2 = Some(StringIrrevComponent::Retain(m - n)); }
+                        if n > m {
+                            rem1 = Some(StringIrrevComponent::Retain(n - m));
+                        } else if m > n {
+                            rem2 = Some(StringIrrevComponent::Retain(m - n));
+                        }
                     }
                     // Retain op1 + Delete op2: retain becomes delete
                     (StringIrrevComponent::Retain(n), StringIrrevComponent::Delete(m)) => {
                         let min = (*n).min(*m);
                         append(&mut result, StringIrrevComponent::Delete(min));
-                        if n > m { rem1 = Some(StringIrrevComponent::Retain(n - m)); }
-                        else if m > n { rem2 = Some(StringIrrevComponent::Delete(m - n)); }
+                        if n > m {
+                            rem1 = Some(StringIrrevComponent::Retain(n - m));
+                        } else if m > n {
+                            rem2 = Some(StringIrrevComponent::Delete(m - n));
+                        }
                     }
                     // Insert op1 + Retain op2: keep the inserted portion
                     (StringIrrevComponent::Insert(s), StringIrrevComponent::Retain(m)) => {
                         let s_len = s.chars().count();
                         let kept: String = s.chars().take(*m).collect();
                         append(&mut result, StringIrrevComponent::Insert(kept));
-                        if s_len > *m { rem1 = Some(StringIrrevComponent::Insert(s.chars().skip(*m).collect())); }
-                        else if *m > s_len { rem2 = Some(StringIrrevComponent::Retain(m - s_len)); }
+                        if s_len > *m {
+                            rem1 = Some(StringIrrevComponent::Insert(s.chars().skip(*m).collect()));
+                        } else if *m > s_len {
+                            rem2 = Some(StringIrrevComponent::Retain(m - s_len));
+                        }
                     }
                     // Insert op1 + Delete op2: they cancel out
                     (StringIrrevComponent::Insert(s), StringIrrevComponent::Delete(m)) => {
                         let s_len = s.chars().count();
-                        if s_len > *m { rem1 = Some(StringIrrevComponent::Insert(s.chars().skip(*m).collect())); }
-                        else if *m > s_len { rem2 = Some(StringIrrevComponent::Delete(m - s_len)); }
+                        if s_len > *m {
+                            rem1 = Some(StringIrrevComponent::Insert(s.chars().skip(*m).collect()));
+                        } else if *m > s_len {
+                            rem2 = Some(StringIrrevComponent::Delete(m - s_len));
+                        }
                     }
                 }
             }
@@ -169,7 +194,9 @@ pub fn transform(op: &StringIrrevOp, against: &StringIrrevOp, left_wins: bool) -
 
         match (o, a) {
             (None, _) => break,
-            (Some(o), None) => { append(&mut result, o); }
+            (Some(o), None) => {
+                append(&mut result, o);
+            }
             (Some(o), Some(a)) => {
                 match (&o, &a) {
                     // Against inserts: add a retain to skip over the inserted chars
@@ -192,27 +219,39 @@ pub fn transform(op: &StringIrrevOp, against: &StringIrrevOp, left_wins: bool) -
                     (StringIrrevComponent::Retain(n), StringIrrevComponent::Retain(m)) => {
                         let min = (*n).min(*m);
                         append(&mut result, StringIrrevComponent::Retain(min));
-                        if n > m { rem_op = Some(StringIrrevComponent::Retain(n - m)); }
-                        else if m > n { rem_ag = Some(StringIrrevComponent::Retain(m - n)); }
+                        if n > m {
+                            rem_op = Some(StringIrrevComponent::Retain(n - m));
+                        } else if m > n {
+                            rem_ag = Some(StringIrrevComponent::Retain(m - n));
+                        }
                     }
                     // Retain vs delete: the chars we wanted to retain are gone
                     (StringIrrevComponent::Retain(n), StringIrrevComponent::Delete(m)) => {
                         let min = (*n).min(*m);
-                        if n > m { rem_op = Some(StringIrrevComponent::Retain(n - m)); }
-                        else if m > n { rem_ag = Some(StringIrrevComponent::Delete(m - n)); }
+                        if n > m {
+                            rem_op = Some(StringIrrevComponent::Retain(n - m));
+                        } else if m > n {
+                            rem_ag = Some(StringIrrevComponent::Delete(m - n));
+                        }
                     }
                     // Delete vs retain: delete passes through
                     (StringIrrevComponent::Delete(n), StringIrrevComponent::Retain(m)) => {
                         let min = (*n).min(*m);
                         append(&mut result, StringIrrevComponent::Delete(min));
-                        if n > m { rem_op = Some(StringIrrevComponent::Delete(n - m)); }
-                        else if m > n { rem_ag = Some(StringIrrevComponent::Retain(m - n)); }
+                        if n > m {
+                            rem_op = Some(StringIrrevComponent::Delete(n - m));
+                        } else if m > n {
+                            rem_ag = Some(StringIrrevComponent::Retain(m - n));
+                        }
                     }
                     // Delete vs delete: both deleting same region — op delete is redundant
                     (StringIrrevComponent::Delete(n), StringIrrevComponent::Delete(m)) => {
                         let min = (*n).min(*m);
-                        if n > m { rem_op = Some(StringIrrevComponent::Delete(n - m)); }
-                        else if m > n { rem_ag = Some(StringIrrevComponent::Delete(m - n)); }
+                        if n > m {
+                            rem_op = Some(StringIrrevComponent::Delete(n - m));
+                        } else if m > n {
+                            rem_ag = Some(StringIrrevComponent::Delete(m - n));
+                        }
                     }
                 }
             }

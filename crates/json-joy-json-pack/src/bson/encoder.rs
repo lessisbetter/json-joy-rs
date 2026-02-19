@@ -5,7 +5,7 @@
 //! BSON is a little-endian binary format. All multi-byte integers are
 //! written in little-endian byte order.
 
-use super::values::{BsonValue, BsonObjectId};
+use super::values::{BsonObjectId, BsonValue};
 
 /// Encodes a BSON document (a slice of key-value pairs) to bytes.
 ///

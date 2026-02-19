@@ -14,7 +14,12 @@ pub struct WsFrameHeader {
 
 impl WsFrameHeader {
     pub fn new(fin: bool, opcode: u8, length: usize, mask: Option<[u8; 4]>) -> Self {
-        Self { fin, opcode, length, mask }
+        Self {
+            fin,
+            opcode,
+            length,
+            mask,
+        }
     }
 }
 

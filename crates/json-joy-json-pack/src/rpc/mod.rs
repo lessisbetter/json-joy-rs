@@ -9,8 +9,7 @@ pub mod encoder;
 pub mod messages;
 
 pub use constants::{
-    RpcAcceptStat, RpcAuthFlavor, RpcAuthStat, RpcMsgType, RpcRejectStat, RpcReplyStat,
-    RPC_VERSION,
+    RpcAcceptStat, RpcAuthFlavor, RpcAuthStat, RpcMsgType, RpcRejectStat, RpcReplyStat, RPC_VERSION,
 };
 pub use decoder::{RpcDecodeError, RpcMessageDecoder};
 pub use encoder::{RpcEncodeError, RpcMessageEncoder};

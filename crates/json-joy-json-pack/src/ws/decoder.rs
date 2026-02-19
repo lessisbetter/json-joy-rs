@@ -153,7 +153,9 @@ impl WsFrameDecoder {
         let already_read = frame.length - remaining;
         match frame.mask {
             None => self.reader.copy_to(read_size, dst, pos),
-            Some(mask) => self.reader.copy_xor(read_size, dst, pos, mask, already_read),
+            Some(mask) => self
+                .reader
+                .copy_xor(read_size, dst, pos, mask, already_read),
         }
         remaining - read_size
     }

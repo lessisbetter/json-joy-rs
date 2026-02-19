@@ -6,8 +6,8 @@
 //! using insertion sort before serializing, ensuring a deterministic output
 //! regardless of the order keys were inserted into the map.
 
-use json_joy_util::strings::escape;
 use json_joy_util::insertion_sort_by;
+use json_joy_util::strings::escape;
 use serde_json::Value;
 
 /// Serialize `value` to a deterministic JSON string with sorted object keys.

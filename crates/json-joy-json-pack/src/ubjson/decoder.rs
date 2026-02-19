@@ -139,24 +139,27 @@ impl UbjsonDecoder {
     }
 
     pub fn decode(&self, input: &[u8]) -> Result<PackValue, UbjsonError> {
-        let mut c = Cur { data: input, pos: 0 };
+        let mut c = Cur {
+            data: input,
+            pos: 0,
+        };
         self.read_any(&mut c)
     }
 
     pub fn read_any(&self, c: &mut Cur) -> Result<PackValue, UbjsonError> {
         let octet = c.u8()?;
         match octet {
-            0x5a => Ok(PackValue::Null),           // 'Z'
-            0x54 => Ok(PackValue::Bool(true)),     // 'T'
-            0x46 => Ok(PackValue::Bool(false)),    // 'F'
-            0x4e => Ok(PackValue::Undefined),      // 'N'
-            0x55 => Ok(PackValue::Integer(c.u8()? as i64)), // 'U' uint8
-            0x69 => Ok(PackValue::Integer(c.i8()? as i64)), // 'i' int8
+            0x5a => Ok(PackValue::Null),                        // 'Z'
+            0x54 => Ok(PackValue::Bool(true)),                  // 'T'
+            0x46 => Ok(PackValue::Bool(false)),                 // 'F'
+            0x4e => Ok(PackValue::Undefined),                   // 'N'
+            0x55 => Ok(PackValue::Integer(c.u8()? as i64)),     // 'U' uint8
+            0x69 => Ok(PackValue::Integer(c.i8()? as i64)),     // 'i' int8
             0x49 => Ok(PackValue::Integer(c.i16_be()? as i64)), // 'I' int16
             0x6c => Ok(PackValue::Integer(c.i32_be()? as i64)), // 'l' int32
-            0x4c => Ok(PackValue::Integer(c.i64_be()?)), // 'L' int64
-            0x64 => Ok(PackValue::Float(c.f32_be()? as f64)), // 'd' float32
-            0x44 => Ok(PackValue::Float(c.f64_be()?)), // 'D' float64
+            0x4c => Ok(PackValue::Integer(c.i64_be()?)),        // 'L' int64
+            0x64 => Ok(PackValue::Float(c.f32_be()? as f64)),   // 'd' float32
+            0x44 => Ok(PackValue::Float(c.f64_be()?)),          // 'D' float64
             0x53 => {
                 // 'S' string: UBJSON-encoded length then UTF-8
                 let len_val = self.read_any(c)?;
@@ -180,7 +183,8 @@ impl UbjsonDecoder {
         if c.data.len() > c.pos + 2
             && c.data[c.pos] == 0x24     // '$'
             && c.data[c.pos + 1] == 0x55 // 'U'
-            && c.data[c.pos + 2] == 0x23 // '#'
+            && c.data[c.pos + 2] == 0x23
+        // '#'
         {
             c.pos += 3;
             let count_val = self.read_any(c)?;
@@ -212,14 +216,17 @@ impl UbjsonDecoder {
         if count >= 0 {
             // Typed array with count: read `count * word_size` bytes
             let word_size = match typed as u8 {
-                0x49 => 2usize,                // 'I' int16
-                0x6c | 0x64 => 4usize,         // 'l' int32 or 'd' float32
-                0x44 | 0x4c => 8usize,         // 'D' float64 or 'L' int64
+                0x49 => 2usize,        // 'I' int16
+                0x6c | 0x64 => 4usize, // 'l' int32 or 'd' float32
+                0x44 | 0x4c => 8usize, // 'D' float64 or 'L' int64
                 _ => 1usize,
             };
             let total = count as usize * word_size;
             let buf = c.buf(total)?.to_vec();
-            Ok(PackValue::Extension(Box::new(JsonPackExtension::new(typed as u64, PackValue::Bytes(buf)))))
+            Ok(PackValue::Extension(Box::new(JsonPackExtension::new(
+                typed as u64,
+                PackValue::Bytes(buf),
+            ))))
         } else {
             // Standard array: read items until ']'
             let mut arr = Vec::new();

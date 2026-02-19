@@ -2,12 +2,12 @@
 //!
 //! Each struct here corresponds to a TypeScript class extending AbsType<S>.
 
-use std::sync::Arc;
 use serde_json::Value;
+use std::sync::Arc;
 
-use crate::schema::*;
 use super::abs_type::BaseInfo;
 use super::module_type::ModuleType;
+use crate::schema::*;
 
 // -------------------------------------------------------------------------
 // AnyType
@@ -18,15 +18,21 @@ pub struct AnyType {
 }
 
 impl AnyType {
-    pub fn new() -> Self { Self::default() }
+    pub fn new() -> Self {
+        Self::default()
+    }
     pub fn sys(mut self, system: Option<Arc<ModuleType>>) -> Self {
         self.base.system = system;
         self
     }
     pub fn get_schema(&self) -> Schema {
-        Schema::Any(AnySchema { base: SchemaBase::default() })
+        Schema::Any(AnySchema {
+            base: SchemaBase::default(),
+        })
     }
-    pub fn kind(&self) -> &'static str { "any" }
+    pub fn kind(&self) -> &'static str {
+        "any"
+    }
 }
 
 // -------------------------------------------------------------------------
@@ -38,15 +44,21 @@ pub struct BoolType {
 }
 
 impl BoolType {
-    pub fn new() -> Self { Self::default() }
+    pub fn new() -> Self {
+        Self::default()
+    }
     pub fn sys(mut self, system: Option<Arc<ModuleType>>) -> Self {
         self.base.system = system;
         self
     }
     pub fn get_schema(&self) -> Schema {
-        Schema::Bool(BoolSchema { base: SchemaBase::default() })
+        Schema::Bool(BoolSchema {
+            base: SchemaBase::default(),
+        })
     }
-    pub fn kind(&self) -> &'static str { "bool" }
+    pub fn kind(&self) -> &'static str {
+        "bool"
+    }
 }
 
 // -------------------------------------------------------------------------
@@ -59,7 +71,9 @@ pub struct NumType {
 }
 
 impl NumType {
-    pub fn new() -> Self { Self::default() }
+    pub fn new() -> Self {
+        Self::default()
+    }
     pub fn sys(mut self, system: Option<Arc<ModuleType>>) -> Self {
         self.base.system = system;
         self
@@ -68,14 +82,28 @@ impl NumType {
         self.schema.format = Some(format);
         self
     }
-    pub fn gt(mut self, v: f64) -> Self { self.schema.gt = Some(v); self }
-    pub fn gte(mut self, v: f64) -> Self { self.schema.gte = Some(v); self }
-    pub fn lt(mut self, v: f64) -> Self { self.schema.lt = Some(v); self }
-    pub fn lte(mut self, v: f64) -> Self { self.schema.lte = Some(v); self }
+    pub fn gt(mut self, v: f64) -> Self {
+        self.schema.gt = Some(v);
+        self
+    }
+    pub fn gte(mut self, v: f64) -> Self {
+        self.schema.gte = Some(v);
+        self
+    }
+    pub fn lt(mut self, v: f64) -> Self {
+        self.schema.lt = Some(v);
+        self
+    }
+    pub fn lte(mut self, v: f64) -> Self {
+        self.schema.lte = Some(v);
+        self
+    }
     pub fn get_schema(&self) -> Schema {
         Schema::Num(self.schema.clone())
     }
-    pub fn kind(&self) -> &'static str { "num" }
+    pub fn kind(&self) -> &'static str {
+        "num"
+    }
 }
 
 // -------------------------------------------------------------------------
@@ -88,7 +116,9 @@ pub struct StrType {
 }
 
 impl StrType {
-    pub fn new() -> Self { Self::default() }
+    pub fn new() -> Self {
+        Self::default()
+    }
     pub fn sys(mut self, system: Option<Arc<ModuleType>>) -> Self {
         self.base.system = system;
         self
@@ -97,13 +127,24 @@ impl StrType {
         self.schema.format = Some(format);
         self
     }
-    pub fn min(mut self, v: u64) -> Self { self.schema.min = Some(v); self }
-    pub fn max(mut self, v: u64) -> Self { self.schema.max = Some(v); self }
-    pub fn ascii(mut self, v: bool) -> Self { self.schema.ascii = Some(v); self }
+    pub fn min(mut self, v: u64) -> Self {
+        self.schema.min = Some(v);
+        self
+    }
+    pub fn max(mut self, v: u64) -> Self {
+        self.schema.max = Some(v);
+        self
+    }
+    pub fn ascii(mut self, v: bool) -> Self {
+        self.schema.ascii = Some(v);
+        self
+    }
     pub fn get_schema(&self) -> Schema {
         Schema::Str(self.schema.clone())
     }
-    pub fn kind(&self) -> &'static str { "str" }
+    pub fn kind(&self) -> &'static str {
+        "str"
+    }
 }
 
 // -------------------------------------------------------------------------
@@ -125,14 +166,24 @@ impl BinType {
             min: None,
             max: None,
         };
-        Self { inner_type: Box::new(inner_type), schema, base: BaseInfo::default() }
+        Self {
+            inner_type: Box::new(inner_type),
+            schema,
+            base: BaseInfo::default(),
+        }
     }
     pub fn sys(mut self, system: Option<Arc<ModuleType>>) -> Self {
         self.base.system = system;
         self
     }
-    pub fn min(mut self, v: u64) -> Self { self.schema.min = Some(v); self }
-    pub fn max(mut self, v: u64) -> Self { self.schema.max = Some(v); self }
+    pub fn min(mut self, v: u64) -> Self {
+        self.schema.min = Some(v);
+        self
+    }
+    pub fn max(mut self, v: u64) -> Self {
+        self.schema.max = Some(v);
+        self
+    }
     pub fn get_schema(&self) -> Schema {
         Schema::Bin(BinSchema {
             base: SchemaBase::default(),
@@ -142,7 +193,9 @@ impl BinType {
             max: self.schema.max,
         })
     }
-    pub fn kind(&self) -> &'static str { "bin" }
+    pub fn kind(&self) -> &'static str {
+        "bin"
+    }
 }
 
 // -------------------------------------------------------------------------
@@ -156,17 +209,27 @@ pub struct ConType {
 
 impl ConType {
     pub fn new(value: Value) -> Self {
-        Self { value, base: BaseInfo::default() }
+        Self {
+            value,
+            base: BaseInfo::default(),
+        }
     }
     pub fn sys(mut self, system: Option<Arc<ModuleType>>) -> Self {
         self.base.system = system;
         self
     }
-    pub fn literal(&self) -> &Value { &self.value }
-    pub fn get_schema(&self) -> Schema {
-        Schema::Con(ConSchema { base: SchemaBase::default(), value: self.value.clone() })
+    pub fn literal(&self) -> &Value {
+        &self.value
     }
-    pub fn kind(&self) -> &'static str { "con" }
+    pub fn get_schema(&self) -> Schema {
+        Schema::Con(ConSchema {
+            base: SchemaBase::default(),
+            value: self.value.clone(),
+        })
+    }
+    pub fn kind(&self) -> &'static str {
+        "con"
+    }
 }
 
 // -------------------------------------------------------------------------
@@ -182,7 +245,11 @@ pub struct ArrType {
 }
 
 impl ArrType {
-    pub fn new(type_: Option<super::TypeNode>, head: Vec<super::TypeNode>, tail: Vec<super::TypeNode>) -> Self {
+    pub fn new(
+        type_: Option<super::TypeNode>,
+        head: Vec<super::TypeNode>,
+        tail: Vec<super::TypeNode>,
+    ) -> Self {
         Self {
             type_: type_.map(Box::new),
             head,
@@ -195,8 +262,14 @@ impl ArrType {
         self.base.system = system;
         self
     }
-    pub fn min(mut self, v: u64) -> Self { self.schema.min = Some(v); self }
-    pub fn max(mut self, v: u64) -> Self { self.schema.max = Some(v); self }
+    pub fn min(mut self, v: u64) -> Self {
+        self.schema.min = Some(v);
+        self
+    }
+    pub fn max(mut self, v: u64) -> Self {
+        self.schema.max = Some(v);
+        self
+    }
     pub fn get_schema(&self) -> Schema {
         let mut arr = self.schema.clone();
         if let Some(t) = &self.type_ {
@@ -210,7 +283,9 @@ impl ArrType {
         }
         Schema::Arr(arr)
     }
-    pub fn kind(&self) -> &'static str { "arr" }
+    pub fn kind(&self) -> &'static str {
+        "arr"
+    }
 }
 
 // -------------------------------------------------------------------------
@@ -226,10 +301,20 @@ pub struct KeyType {
 
 impl KeyType {
     pub fn new(key: impl Into<String>, val: super::TypeNode) -> Self {
-        Self { key: key.into(), val: Box::new(val), optional: false, base: BaseInfo::default() }
+        Self {
+            key: key.into(),
+            val: Box::new(val),
+            optional: false,
+            base: BaseInfo::default(),
+        }
     }
     pub fn new_opt(key: impl Into<String>, val: super::TypeNode) -> Self {
-        Self { key: key.into(), val: Box::new(val), optional: true, base: BaseInfo::default() }
+        Self {
+            key: key.into(),
+            val: Box::new(val),
+            optional: true,
+            base: BaseInfo::default(),
+        }
     }
     pub fn sys(mut self, system: Option<Arc<ModuleType>>) -> Self {
         self.base.system = system;
@@ -243,7 +328,9 @@ impl KeyType {
             optional: if self.optional { Some(true) } else { None },
         })
     }
-    pub fn kind(&self) -> &'static str { "key" }
+    pub fn kind(&self) -> &'static str {
+        "key"
+    }
 }
 
 // -------------------------------------------------------------------------
@@ -258,7 +345,11 @@ pub struct ObjType {
 
 impl ObjType {
     pub fn new(keys: Vec<KeyType>) -> Self {
-        Self { keys, schema: ObjSchema::default(), base: BaseInfo::default() }
+        Self {
+            keys,
+            schema: ObjSchema::default(),
+            base: BaseInfo::default(),
+        }
     }
     pub fn sys(mut self, system: Option<Arc<ModuleType>>) -> Self {
         self.base.system = system;
@@ -285,17 +376,21 @@ impl ObjType {
     }
     pub fn get_schema(&self) -> Schema {
         let mut obj = self.schema.clone();
-        obj.keys = self.keys.iter().map(|k| {
-            KeySchema {
+        obj.keys = self
+            .keys
+            .iter()
+            .map(|k| KeySchema {
                 base: SchemaBase::default(),
                 key: k.key.clone(),
                 value: Box::new(k.val.get_schema()),
                 optional: if k.optional { Some(true) } else { None },
-            }
-        }).collect();
+            })
+            .collect();
         Schema::Obj(obj)
     }
-    pub fn kind(&self) -> &'static str { "obj" }
+    pub fn kind(&self) -> &'static str {
+        "obj"
+    }
 }
 
 // -------------------------------------------------------------------------
@@ -327,7 +422,9 @@ impl MapType {
             value: Box::new(self.value.get_schema()),
         })
     }
-    pub fn kind(&self) -> &'static str { "map" }
+    pub fn kind(&self) -> &'static str {
+        "map"
+    }
 }
 
 // -------------------------------------------------------------------------
@@ -341,17 +438,27 @@ pub struct RefType {
 
 impl RefType {
     pub fn new(ref_: impl Into<String>) -> Self {
-        Self { ref_: ref_.into(), base: BaseInfo::default() }
+        Self {
+            ref_: ref_.into(),
+            base: BaseInfo::default(),
+        }
     }
     pub fn sys(mut self, system: Option<Arc<ModuleType>>) -> Self {
         self.base.system = system;
         self
     }
-    pub fn ref_name(&self) -> &str { &self.ref_ }
-    pub fn get_schema(&self) -> Schema {
-        Schema::Ref(RefSchema { base: SchemaBase::default(), ref_: self.ref_.clone() })
+    pub fn ref_name(&self) -> &str {
+        &self.ref_
     }
-    pub fn kind(&self) -> &'static str { "ref" }
+    pub fn get_schema(&self) -> Schema {
+        Schema::Ref(RefSchema {
+            base: SchemaBase::default(),
+            ref_: self.ref_.clone(),
+        })
+    }
+    pub fn kind(&self) -> &'static str {
+        "ref"
+    }
 }
 
 // -------------------------------------------------------------------------
@@ -367,7 +474,11 @@ pub struct OrType {
 impl OrType {
     pub fn new(types: Vec<super::TypeNode>) -> Self {
         let discriminator = compute_discriminator(&types);
-        Self { types, discriminator, base: BaseInfo::default() }
+        Self {
+            types,
+            discriminator,
+            base: BaseInfo::default(),
+        }
     }
     pub fn sys(mut self, system: Option<Arc<ModuleType>>) -> Self {
         self.base.system = system;
@@ -380,7 +491,9 @@ impl OrType {
             discriminator: self.discriminator.clone(),
         })
     }
-    pub fn kind(&self) -> &'static str { "or" }
+    pub fn kind(&self) -> &'static str {
+        "or"
+    }
 }
 
 fn compute_discriminator(_types: &[super::TypeNode]) -> Value {
@@ -400,7 +513,11 @@ pub struct FnType {
 
 impl FnType {
     pub fn new(req: super::TypeNode, res: super::TypeNode) -> Self {
-        Self { req: Box::new(req), res: Box::new(res), base: BaseInfo::default() }
+        Self {
+            req: Box::new(req),
+            res: Box::new(res),
+            base: BaseInfo::default(),
+        }
     }
     pub fn sys(mut self, system: Option<Arc<ModuleType>>) -> Self {
         self.base.system = system;
@@ -413,7 +530,9 @@ impl FnType {
             res: Box::new(self.res.get_schema()),
         })
     }
-    pub fn kind(&self) -> &'static str { "fn" }
+    pub fn kind(&self) -> &'static str {
+        "fn"
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -425,7 +544,11 @@ pub struct FnRxType {
 
 impl FnRxType {
     pub fn new(req: super::TypeNode, res: super::TypeNode) -> Self {
-        Self { req: Box::new(req), res: Box::new(res), base: BaseInfo::default() }
+        Self {
+            req: Box::new(req),
+            res: Box::new(res),
+            base: BaseInfo::default(),
+        }
     }
     pub fn sys(mut self, system: Option<Arc<ModuleType>>) -> Self {
         self.base.system = system;
@@ -438,7 +561,9 @@ impl FnRxType {
             res: Box::new(self.res.get_schema()),
         })
     }
-    pub fn kind(&self) -> &'static str { "fn$" }
+    pub fn kind(&self) -> &'static str {
+        "fn$"
+    }
 }
 
 // -------------------------------------------------------------------------
@@ -454,9 +579,20 @@ pub struct AliasType {
 
 impl AliasType {
     pub fn new(system: Arc<ModuleType>, id: impl Into<String>, type_: super::TypeNode) -> Self {
-        Self { id: id.into(), type_: Box::new(type_), system, base: BaseInfo::default() }
+        Self {
+            id: id.into(),
+            type_: Box::new(type_),
+            system,
+            base: BaseInfo::default(),
+        }
     }
-    pub fn get_type(&self) -> &super::TypeNode { &self.type_ }
-    pub fn get_schema(&self) -> Schema { self.type_.get_schema() }
-    pub fn kind(&self) -> &'static str { "alias" }
+    pub fn get_type(&self) -> &super::TypeNode {
+        &self.type_
+    }
+    pub fn get_schema(&self) -> Schema {
+        self.type_.get_schema()
+    }
+    pub fn kind(&self) -> &'static str {
+        "alias"
+    }
 }

@@ -23,7 +23,11 @@ use crate::create_from_base64_bin;
 /// let decoded = from_base64_bin(encoded, 0, encoded.len()).unwrap();
 /// assert_eq!(decoded, b"hello");
 /// ```
-pub fn from_base64_bin(view: &[u8], offset: usize, length: usize) -> Result<Vec<u8>, crate::Base64Error> {
+pub fn from_base64_bin(
+    view: &[u8],
+    offset: usize,
+    length: usize,
+) -> Result<Vec<u8>, crate::Base64Error> {
     let decoder = create_from_base64_bin(None, None)?;
     decoder(view, offset, length)
 }

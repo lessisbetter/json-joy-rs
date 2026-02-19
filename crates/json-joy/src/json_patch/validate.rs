@@ -6,8 +6,8 @@
 //! the spec.  This works on the raw JSON representation before decoding,
 //! so callers can validate untrusted input early.
 
-use serde_json::Value;
 use json_joy_json_pointer::validate_json_pointer;
+use serde_json::Value;
 
 // ── Error ──────────────────────────────────────────────────────────────────
 
@@ -35,13 +35,8 @@ fn err(msg: &str) -> ValidationError {
 /// `"Error in operation [index = N] (reason)."`.
 ///
 /// Mirrors `validateOperations` in the upstream TypeScript.
-pub fn validate_operations(
-    ops: &Value,
-    allow_matches_op: bool,
-) -> Result<(), ValidationError> {
-    let arr = ops
-        .as_array()
-        .ok_or_else(|| err("Not a array."))?;
+pub fn validate_operations(ops: &Value, allow_matches_op: bool) -> Result<(), ValidationError> {
+    let arr = ops.as_array().ok_or_else(|| err("Not a array."))?;
     if arr.is_empty() {
         return Err(err("Empty operation patch."));
     }
@@ -56,10 +51,7 @@ pub fn validate_operations(
 /// Validate a single operation object.
 ///
 /// Mirrors `validateOperation` in the upstream TypeScript.
-pub fn validate_operation(
-    op: &Value,
-    allow_matches_op: bool,
-) -> Result<(), ValidationError> {
+pub fn validate_operation(op: &Value, allow_matches_op: bool) -> Result<(), ValidationError> {
     let map = op.as_object().ok_or_else(|| err("OP_INVALID"))?;
 
     // path must be a string
@@ -69,19 +61,19 @@ pub fn validate_operation(
 
     let op_name = map.get("op").and_then(|v| v.as_str()).unwrap_or("");
     match op_name {
-        "add"            => validate_op_add(map),
-        "remove"         => validate_op_remove(map),
-        "replace"        => validate_op_replace(map),
-        "copy"           => validate_op_copy(map),
-        "move"           => validate_op_move(map, path_str),
-        "flip"           => Ok(()),
-        "inc"            => validate_op_inc(map),
-        "str_ins"        => validate_op_str_ins(map),
-        "str_del"        => validate_op_str_del(map),
-        "extend"         => validate_op_extend(map),
-        "merge"          => validate_op_merge(map),
-        "split"          => validate_op_split(map),
-        _                => validate_predicate_operation(op, allow_matches_op),
+        "add" => validate_op_add(map),
+        "remove" => validate_op_remove(map),
+        "replace" => validate_op_replace(map),
+        "copy" => validate_op_copy(map),
+        "move" => validate_op_move(map, path_str),
+        "flip" => Ok(()),
+        "inc" => validate_op_inc(map),
+        "str_ins" => validate_op_str_ins(map),
+        "str_del" => validate_op_str_del(map),
+        "extend" => validate_op_extend(map),
+        "merge" => validate_op_merge(map),
+        "split" => validate_op_split(map),
+        _ => validate_predicate_operation(op, allow_matches_op),
     }
 }
 
@@ -102,10 +94,10 @@ pub fn validate_predicate_operation(
 
     let op_name = map.get("op").and_then(|v| v.as_str()).unwrap_or("");
     match op_name {
-        "test"           => validate_op_test(map),
-        "test_type"      => validate_op_test_type(map),
-        "test_string"    => validate_op_test_string(map),
-        "test_string_len"=> validate_op_test_string_len(map),
+        "test" => validate_op_test(map),
+        "test_type" => validate_op_test_type(map),
+        "test_string" => validate_op_test_string(map),
+        "test_string_len" => validate_op_test_string_len(map),
         "matches" => {
             if !allow_matches_op {
                 return Err(err("\"matches\" operation not allowed."));
@@ -129,7 +121,9 @@ pub fn validate_predicate_operation(
         }
         "type" => {
             let val = map.get("value").ok_or_else(|| err("OP_VALUE_MISSING"))?;
-            let type_str = val.as_str().ok_or_else(|| err("Expected \"value\" to be string."))?;
+            let type_str = val
+                .as_str()
+                .ok_or_else(|| err("Expected \"value\" to be string."))?;
             if type_str.len() > 20_000 {
                 return Err(err("Value too long."));
             }
@@ -137,11 +131,17 @@ pub fn validate_predicate_operation(
         }
         "defined" | "undefined" => Ok(()),
         "and" | "or" | "not" => {
-            let apply = map
-                .get("apply")
-                .ok_or_else(|| err(&format!("\"{}\" predicate operators must be an array.", op_name)))?;
+            let apply = map.get("apply").ok_or_else(|| {
+                err(&format!(
+                    "\"{}\" predicate operators must be an array.",
+                    op_name
+                ))
+            })?;
             let apply_arr = apply.as_array().ok_or_else(|| {
-                err(&format!("\"{}\" predicate operators must be an array.", op_name))
+                err(&format!(
+                    "\"{}\" predicate operators must be an array.",
+                    op_name
+                ))
             })?;
             if apply_arr.is_empty() {
                 return Err(err("Predicate list is empty."));
@@ -194,7 +194,9 @@ fn validate_op_move(
 }
 
 fn validate_op_inc(map: &serde_json::Map<String, Value>) -> Result<(), ValidationError> {
-    let inc = map.get("inc").ok_or_else(|| err("Invalid \"inc\" value."))?;
+    let inc = map
+        .get("inc")
+        .ok_or_else(|| err("Invalid \"inc\" value."))?;
     if !inc.is_number() {
         return Err(err("Invalid \"inc\" value."));
     }
@@ -203,7 +205,9 @@ fn validate_op_inc(map: &serde_json::Map<String, Value>) -> Result<(), Validatio
 
 fn validate_op_str_ins(map: &serde_json::Map<String, Value>) -> Result<(), ValidationError> {
     validate_non_negative_integer(map, "pos")?;
-    let str_val = map.get("str").ok_or_else(|| err("Expected a string \"text\" field."))?;
+    let str_val = map
+        .get("str")
+        .ok_or_else(|| err("Expected a string \"text\" field."))?;
     if !str_val.is_string() {
         return Err(err("Expected a string \"text\" field."));
     }
@@ -229,7 +233,9 @@ fn validate_op_str_del(map: &serde_json::Map<String, Value>) -> Result<(), Valid
 }
 
 fn validate_op_extend(map: &serde_json::Map<String, Value>) -> Result<(), ValidationError> {
-    let props = map.get("props").ok_or_else(|| err("Invalid \"props\" field."))?;
+    let props = map
+        .get("props")
+        .ok_or_else(|| err("Invalid \"props\" field."))?;
     if !props.is_object() {
         return Err(err("Invalid \"props\" field."));
     }
@@ -271,8 +277,12 @@ fn validate_op_test(map: &serde_json::Map<String, Value>) -> Result<(), Validati
 }
 
 fn validate_op_test_type(map: &serde_json::Map<String, Value>) -> Result<(), ValidationError> {
-    let type_val = map.get("type").ok_or_else(|| err("Invalid \"type\" field."))?;
-    let type_arr = type_val.as_array().ok_or_else(|| err("Invalid \"type\" field."))?;
+    let type_val = map
+        .get("type")
+        .ok_or_else(|| err("Invalid \"type\" field."))?;
+    let type_arr = type_val
+        .as_array()
+        .ok_or_else(|| err("Invalid \"type\" field."))?;
     if type_arr.is_empty() {
         return Err(err("Empty type list."));
     }
@@ -286,7 +296,9 @@ fn validate_op_test_type(map: &serde_json::Map<String, Value>) -> Result<(), Val
 fn validate_op_test_string(map: &serde_json::Map<String, Value>) -> Result<(), ValidationError> {
     validate_not_field(map)?;
     validate_non_negative_integer(map, "pos")?;
-    let str_val = map.get("str").ok_or_else(|| err("Value must be a string."))?;
+    let str_val = map
+        .get("str")
+        .ok_or_else(|| err("Value must be a string."))?;
     if !str_val.is_string() {
         return Err(err("Value must be a string."));
     }
@@ -303,8 +315,12 @@ fn validate_op_test_string_len(
 fn validate_predicate_value_and_case(
     map: &serde_json::Map<String, Value>,
 ) -> Result<(), ValidationError> {
-    let val = map.get("value").ok_or_else(|| err("Expected \"value\" to be string."))?;
-    let s = val.as_str().ok_or_else(|| err("Expected \"value\" to be string."))?;
+    let val = map
+        .get("value")
+        .ok_or_else(|| err("Expected \"value\" to be string."))?;
+    let s = val
+        .as_str()
+        .ok_or_else(|| err("Expected \"value\" to be string."))?;
     if s.len() > 20_000 {
         return Err(err("Value too long."));
     }
@@ -351,9 +367,7 @@ fn validate_integer_field(
     map: &serde_json::Map<String, Value>,
     field: &str,
 ) -> Result<(), ValidationError> {
-    let val = map
-        .get(field)
-        .ok_or_else(|| err("Not an integer."))?;
+    let val = map.get(field).ok_or_else(|| err("Not an integer."))?;
     match val {
         Value::Number(n) => {
             // Must be an integer: f64 with no fractional part
@@ -402,7 +416,10 @@ mod tests {
     #[test]
     fn ops_throws_empty_array() {
         let result = validate_operations(&json!([]), false);
-        assert_eq!(result, Err(ValidationError("Empty operation patch.".into())));
+        assert_eq!(
+            result,
+            Err(ValidationError("Empty operation patch.".into()))
+        );
     }
 
     #[test]
@@ -410,7 +427,9 @@ mod tests {
         let result = validate_operations(&json!([123]), false);
         assert_eq!(
             result,
-            Err(ValidationError("Error in operation [index = 0] (OP_INVALID).".into()))
+            Err(ValidationError(
+                "Error in operation [index = 0] (OP_INVALID).".into()
+            ))
         );
     }
 
@@ -419,7 +438,9 @@ mod tests {
         let result = validate_operations(&json!([{}]), false);
         assert_eq!(
             result,
-            Err(ValidationError("Error in operation [index = 0] (OP_PATH_INVALID).".into()))
+            Err(ValidationError(
+                "Error in operation [index = 0] (OP_PATH_INVALID).".into()
+            ))
         );
     }
 
@@ -428,7 +449,9 @@ mod tests {
         let result = validate_operations(&json!([{"path": ""}]), false);
         assert_eq!(
             result,
-            Err(ValidationError("Error in operation [index = 0] (OP_UNKNOWN).".into()))
+            Err(ValidationError(
+                "Error in operation [index = 0] (OP_UNKNOWN).".into()
+            ))
         );
     }
 
@@ -437,13 +460,18 @@ mod tests {
         let result = validate_operations(&json!([{"path": "", "op": "123"}]), false);
         assert_eq!(
             result,
-            Err(ValidationError("Error in operation [index = 0] (OP_UNKNOWN).".into()))
+            Err(ValidationError(
+                "Error in operation [index = 0] (OP_UNKNOWN).".into()
+            ))
         );
     }
 
     #[test]
     fn ops_succeeds_valid_add() {
-        let result = validate_operations(&json!([{"op": "add", "path": "/adsf", "value": 123}]), false);
+        let result = validate_operations(
+            &json!([{"op": "add", "path": "/adsf", "value": 123}]),
+            false,
+        );
         assert!(result.is_ok());
     }
 
@@ -458,7 +486,9 @@ mod tests {
         );
         assert_eq!(
             result,
-            Err(ValidationError("Error in operation [index = 1] (OP_VALUE_MISSING).".into()))
+            Err(ValidationError(
+                "Error in operation [index = 1] (OP_VALUE_MISSING).".into()
+            ))
         );
     }
 
@@ -473,7 +503,9 @@ mod tests {
         );
         assert_eq!(
             result,
-            Err(ValidationError("Error in operation [index = 1] (POINTER_INVALID).".into()))
+            Err(ValidationError(
+                "Error in operation [index = 1] (POINTER_INVALID).".into()
+            ))
         );
     }
 
@@ -529,10 +561,16 @@ mod tests {
 
     #[test]
     fn move_succeeds_valid() {
-        let result = validate_operation(&json!({"op": "move", "from": "/", "path": "/foo/bar"}), false);
+        let result = validate_operation(
+            &json!({"op": "move", "from": "/", "path": "/foo/bar"}),
+            false,
+        );
         assert!(result.is_ok());
 
-        let result = validate_operation(&json!({"op": "move", "from": "/foo/bar", "path": "/foo"}), false);
+        let result = validate_operation(
+            &json!({"op": "move", "from": "/foo/bar", "path": "/foo"}),
+            false,
+        );
         assert!(result.is_ok());
     }
 
@@ -542,14 +580,20 @@ mod tests {
             &json!({"op": "move", "from": "/foo", "path": "/foo/bar"}),
             false,
         );
-        assert_eq!(result, Err(ValidationError("Cannot move into own children.".into())));
+        assert_eq!(
+            result,
+            Err(ValidationError("Cannot move into own children.".into()))
+        );
     }
 
     // ── test ──────────────────────────────────────────────────────────────
 
     #[test]
     fn test_succeeds_valid() {
-        let result = validate_operation(&json!({"op": "test", "path": "/foo/bar", "value": null}), false);
+        let result = validate_operation(
+            &json!({"op": "test", "path": "/foo/bar", "value": null}),
+            false,
+        );
         assert!(result.is_ok());
     }
 
@@ -569,7 +613,9 @@ mod tests {
 
     #[test]
     fn test_type_succeeds_valid() {
-        let types = ["number", "array", "string", "boolean", "integer", "null", "object"];
+        let types = [
+            "number", "array", "string", "boolean", "integer", "null", "object",
+        ];
         for t in &types {
             let result = validate_operation(
                 &json!({"op": "test_type", "path": "/foo", "type": [t]}),
@@ -581,13 +627,19 @@ mod tests {
 
     #[test]
     fn test_type_throws_empty_list() {
-        let result = validate_operation(&json!({"op": "test_type", "path": "/foo", "type": []}), false);
+        let result = validate_operation(
+            &json!({"op": "test_type", "path": "/foo", "type": []}),
+            false,
+        );
         assert_eq!(result, Err(ValidationError("Empty type list.".into())));
     }
 
     #[test]
     fn test_type_throws_invalid_type() {
-        let result = validate_operation(&json!({"op": "test_type", "path": "/foo", "type": ["monkey"]}), false);
+        let result = validate_operation(
+            &json!({"op": "test_type", "path": "/foo", "type": ["monkey"]}),
+            false,
+        );
         assert_eq!(result, Err(ValidationError("Invalid type.".into())));
     }
 
@@ -595,9 +647,15 @@ mod tests {
 
     #[test]
     fn test_string_succeeds_valid() {
-        let result = validate_operation(&json!({"op": "test_string", "path": "/foo", "pos": 0, "str": "asdf"}), false);
+        let result = validate_operation(
+            &json!({"op": "test_string", "path": "/foo", "pos": 0, "str": "asdf"}),
+            false,
+        );
         assert!(result.is_ok());
-        let result = validate_operation(&json!({"op": "test_string", "path": "/foo", "pos": 123, "str": "", "not": true}), false);
+        let result = validate_operation(
+            &json!({"op": "test_string", "path": "/foo", "pos": 123, "str": "", "not": true}),
+            false,
+        );
         assert!(result.is_ok());
     }
 
@@ -605,9 +663,15 @@ mod tests {
 
     #[test]
     fn test_string_len_succeeds_valid() {
-        let result = validate_operation(&json!({"op": "test_string_len", "path": "/foo", "len": 1}), false);
+        let result = validate_operation(
+            &json!({"op": "test_string_len", "path": "/foo", "len": 1}),
+            false,
+        );
         assert!(result.is_ok());
-        let result = validate_operation(&json!({"op": "test_string_len", "path": "/foo", "len": 0, "not": true}), false);
+        let result = validate_operation(
+            &json!({"op": "test_string_len", "path": "/foo", "len": 0, "not": true}),
+            false,
+        );
         assert!(result.is_ok());
     }
 
@@ -627,10 +691,14 @@ mod tests {
     #[test]
     fn inc_succeeds_valid() {
         for inc_val in [0, 1, -1] {
-            let result = validate_operation(&json!({"op": "inc", "path": "/foo/bar", "inc": inc_val}), false);
+            let result = validate_operation(
+                &json!({"op": "inc", "path": "/foo/bar", "inc": inc_val}),
+                false,
+            );
             assert!(result.is_ok());
         }
-        let result = validate_operation(&json!({"op": "inc", "path": "/foo/bar", "inc": 1.5}), false);
+        let result =
+            validate_operation(&json!({"op": "inc", "path": "/foo/bar", "inc": 1.5}), false);
         assert!(result.is_ok());
     }
 
@@ -638,9 +706,15 @@ mod tests {
 
     #[test]
     fn str_ins_succeeds_valid() {
-        let result = validate_operation(&json!({"op": "str_ins", "path": "/foo/bar", "pos": 0, "str": ""}), false);
+        let result = validate_operation(
+            &json!({"op": "str_ins", "path": "/foo/bar", "pos": 0, "str": ""}),
+            false,
+        );
         assert!(result.is_ok());
-        let result = validate_operation(&json!({"op": "str_ins", "path": "/foo/bar", "pos": 1, "str": "asdf"}), false);
+        let result = validate_operation(
+            &json!({"op": "str_ins", "path": "/foo/bar", "pos": 1, "str": "asdf"}),
+            false,
+        );
         assert!(result.is_ok());
     }
 
@@ -648,9 +722,15 @@ mod tests {
 
     #[test]
     fn str_del_succeeds_valid() {
-        let result = validate_operation(&json!({"op": "str_del", "path": "/foo/bar", "pos": 0, "str": ""}), false);
+        let result = validate_operation(
+            &json!({"op": "str_del", "path": "/foo/bar", "pos": 0, "str": ""}),
+            false,
+        );
         assert!(result.is_ok());
-        let result = validate_operation(&json!({"op": "str_del", "path": "/foo/bar", "pos": 0, "len": 4}), false);
+        let result = validate_operation(
+            &json!({"op": "str_del", "path": "/foo/bar", "pos": 0, "len": 4}),
+            false,
+        );
         assert!(result.is_ok());
     }
 
@@ -658,9 +738,15 @@ mod tests {
 
     #[test]
     fn extend_succeeds_valid() {
-        let result = validate_operation(&json!({"op": "extend", "path": "/foo/bar", "props": {}, "deleteNull": true}), false);
+        let result = validate_operation(
+            &json!({"op": "extend", "path": "/foo/bar", "props": {}, "deleteNull": true}),
+            false,
+        );
         assert!(result.is_ok());
-        let result = validate_operation(&json!({"op": "extend", "path": "/foo/bar", "props": {"foo": "bar"}}), false);
+        let result = validate_operation(
+            &json!({"op": "extend", "path": "/foo/bar", "props": {"foo": "bar"}}),
+            false,
+        );
         assert!(result.is_ok());
     }
 
@@ -668,9 +754,13 @@ mod tests {
 
     #[test]
     fn merge_succeeds_valid() {
-        let result = validate_operation(&json!({"op": "merge", "path": "/foo/bar", "pos": 1}), false);
+        let result =
+            validate_operation(&json!({"op": "merge", "path": "/foo/bar", "pos": 1}), false);
         assert!(result.is_ok());
-        let result = validate_operation(&json!({"op": "merge", "path": "/foo/bar", "pos": 2, "props": {}}), false);
+        let result = validate_operation(
+            &json!({"op": "merge", "path": "/foo/bar", "pos": 2, "props": {}}),
+            false,
+        );
         assert!(result.is_ok());
     }
 
@@ -678,9 +768,13 @@ mod tests {
 
     #[test]
     fn split_succeeds_valid() {
-        let result = validate_operation(&json!({"op": "split", "path": "/foo/bar", "pos": 0}), false);
+        let result =
+            validate_operation(&json!({"op": "split", "path": "/foo/bar", "pos": 0}), false);
         assert!(result.is_ok());
-        let result = validate_operation(&json!({"op": "split", "path": "/foo/bar", "pos": 2, "props": {}}), false);
+        let result = validate_operation(
+            &json!({"op": "split", "path": "/foo/bar", "pos": 2, "props": {}}),
+            false,
+        );
         assert!(result.is_ok());
     }
 
@@ -688,13 +782,19 @@ mod tests {
 
     #[test]
     fn contains_succeeds_valid() {
-        let result = validate_operations(&json!([{"op": "contains", "path": "/foo/bar", "value": "asdf"}]), false);
+        let result = validate_operations(
+            &json!([{"op": "contains", "path": "/foo/bar", "value": "asdf"}]),
+            false,
+        );
         assert!(result.is_ok());
     }
 
     #[test]
     fn contains_throws_non_string_value() {
-        let result = validate_operations(&json!([{"op": "contains", "path": "/foo/bar", "value": 123}]), false);
+        let result = validate_operations(
+            &json!([{"op": "contains", "path": "/foo/bar", "value": 123}]),
+            false,
+        );
         assert!(result.is_err());
     }
 
@@ -711,13 +811,19 @@ mod tests {
 
     #[test]
     fn matches_succeeds_when_allowed() {
-        let result = validate_operations(&json!([{"op": "matches", "path": "/foo/bar", "value": "asdf"}]), true);
+        let result = validate_operations(
+            &json!([{"op": "matches", "path": "/foo/bar", "value": "asdf"}]),
+            true,
+        );
         assert!(result.is_ok());
     }
 
     #[test]
     fn matches_throws_when_not_allowed() {
-        let result = validate_operations(&json!([{"op": "matches", "path": "/foo/bar", "value": "asdf"}]), false);
+        let result = validate_operations(
+            &json!([{"op": "matches", "path": "/foo/bar", "value": "asdf"}]),
+            false,
+        );
         assert!(result.is_err());
     }
 
@@ -725,21 +831,31 @@ mod tests {
 
     #[test]
     fn defined_ops_succeed() {
-        assert!(validate_operations(&json!([{"op": "defined", "path": "/foo/bar"}]), false).is_ok());
-        assert!(validate_operations(&json!([{"op": "undefined", "path": "/foo/bar"}]), false).is_ok());
+        assert!(
+            validate_operations(&json!([{"op": "defined", "path": "/foo/bar"}]), false).is_ok()
+        );
+        assert!(
+            validate_operations(&json!([{"op": "undefined", "path": "/foo/bar"}]), false).is_ok()
+        );
     }
 
     // ── in ────────────────────────────────────────────────────────────────
 
     #[test]
     fn in_succeeds_valid() {
-        let result = validate_operations(&json!([{"op": "in", "path": "/foo/bar", "value": ["asdf"]}]), false);
+        let result = validate_operations(
+            &json!([{"op": "in", "path": "/foo/bar", "value": ["asdf"]}]),
+            false,
+        );
         assert!(result.is_ok());
     }
 
     #[test]
     fn in_throws_non_array_value() {
-        let result = validate_operations(&json!([{"op": "in", "path": "/foo/bar", "value": 123}]), false);
+        let result = validate_operations(
+            &json!([{"op": "in", "path": "/foo/bar", "value": 123}]),
+            false,
+        );
         assert!(result.is_err());
     }
 
@@ -747,27 +863,49 @@ mod tests {
 
     #[test]
     fn more_less_succeed_valid() {
-        assert!(validate_operations(&json!([{"op": "more", "path": "/foo/bar", "value": 5}]), false).is_ok());
-        assert!(validate_operations(&json!([{"op": "less", "path": "/foo/bar", "value": 5}]), false).is_ok());
+        assert!(validate_operations(
+            &json!([{"op": "more", "path": "/foo/bar", "value": 5}]),
+            false
+        )
+        .is_ok());
+        assert!(validate_operations(
+            &json!([{"op": "less", "path": "/foo/bar", "value": 5}]),
+            false
+        )
+        .is_ok());
     }
 
     #[test]
     fn more_less_throw_string_value() {
-        assert!(validate_operations(&json!([{"op": "more", "path": "/foo/bar", "value": "abc"}]), false).is_err());
-        assert!(validate_operations(&json!([{"op": "less", "path": "/foo/bar", "value": "abc"}]), false).is_err());
+        assert!(validate_operations(
+            &json!([{"op": "more", "path": "/foo/bar", "value": "abc"}]),
+            false
+        )
+        .is_err());
+        assert!(validate_operations(
+            &json!([{"op": "less", "path": "/foo/bar", "value": "abc"}]),
+            false
+        )
+        .is_err());
     }
 
     // ── type ──────────────────────────────────────────────────────────────
 
     #[test]
     fn type_op_succeeds_valid() {
-        let result = validate_operations(&json!([{"op": "type", "path": "/foo/bar", "value": "number"}]), false);
+        let result = validate_operations(
+            &json!([{"op": "type", "path": "/foo/bar", "value": "number"}]),
+            false,
+        );
         assert!(result.is_ok());
     }
 
     #[test]
     fn type_op_throws_non_string() {
-        let result = validate_operations(&json!([{"op": "type", "path": "/foo/bar", "value": 123}]), false);
+        let result = validate_operations(
+            &json!([{"op": "type", "path": "/foo/bar", "value": 123}]),
+            false,
+        );
         assert!(result.is_err());
     }
 
@@ -784,7 +922,10 @@ mod tests {
 
     #[test]
     fn and_throws_empty_apply() {
-        let result = validate_operations(&json!([{"op": "and", "path": "/foo/bar", "apply": []}]), false);
+        let result = validate_operations(
+            &json!([{"op": "and", "path": "/foo/bar", "apply": []}]),
+            false,
+        );
         assert!(result.is_err());
     }
 

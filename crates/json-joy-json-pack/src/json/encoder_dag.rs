@@ -27,7 +27,9 @@ impl Default for JsonEncoderDag {
 
 impl JsonEncoderDag {
     pub fn new() -> Self {
-        Self { inner: JsonEncoderStable::new() }
+        Self {
+            inner: JsonEncoderStable::new(),
+        }
     }
 
     pub fn encode(&mut self, value: &PackValue) -> Vec<u8> {
@@ -109,7 +111,11 @@ impl JsonEncoderDag {
             let kb = &obj[b].0;
             let la = ka.chars().count();
             let lb = kb.chars().count();
-            if la == lb { ka.cmp(kb) } else { la.cmp(&lb) }
+            if la == lb {
+                ka.cmp(kb)
+            } else {
+                la.cmp(&lb)
+            }
         });
 
         self.inner.inner.writer.u8(b'{');

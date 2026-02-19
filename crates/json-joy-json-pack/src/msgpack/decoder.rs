@@ -18,7 +18,9 @@ impl Default for MsgPackDecoder {
 
 impl MsgPackDecoder {
     pub fn new() -> Self {
-        Self { inner: MsgPackDecoderFast::new() }
+        Self {
+            inner: MsgPackDecoderFast::new(),
+        }
     }
 
     pub fn decode(&mut self, input: &[u8]) -> Result<PackValue, MsgPackError> {
@@ -62,12 +64,36 @@ impl MsgPackDecoder {
 
         let _after = match byte {
             0xc0 | 0xc1 | 0xc2 | 0xc3 => 0,
-            0xc4 => { let n = self.read_u8_size()?; self.skip(n)?; n + 1 }
-            0xc5 => { let n = self.read_u16_size()?; self.skip(n)?; n + 2 }
-            0xc6 => { let n = self.read_u32_size()?; self.skip(n)?; n + 4 }
-            0xc7 => { let n = self.read_u8_size()?; self.skip(n + 1)?; n + 2 }  // ext8
-            0xc8 => { let n = self.read_u16_size()?; self.skip(n + 1)?; n + 3 } // ext16
-            0xc9 => { let n = self.read_u32_size()?; self.skip(n + 1)?; n + 5 } // ext32
+            0xc4 => {
+                let n = self.read_u8_size()?;
+                self.skip(n)?;
+                n + 1
+            }
+            0xc5 => {
+                let n = self.read_u16_size()?;
+                self.skip(n)?;
+                n + 2
+            }
+            0xc6 => {
+                let n = self.read_u32_size()?;
+                self.skip(n)?;
+                n + 4
+            }
+            0xc7 => {
+                let n = self.read_u8_size()?;
+                self.skip(n + 1)?;
+                n + 2
+            } // ext8
+            0xc8 => {
+                let n = self.read_u16_size()?;
+                self.skip(n + 1)?;
+                n + 3
+            } // ext16
+            0xc9 => {
+                let n = self.read_u32_size()?;
+                self.skip(n + 1)?;
+                n + 5
+            } // ext32
             0xca => self.skip(4)?,  // float32
             0xcb => self.skip(8)?,  // float64
             0xcc => self.skip(1)?,  // uint8
@@ -83,13 +109,41 @@ impl MsgPackDecoder {
             0xd6 => self.skip(5)?,  // fixext4
             0xd7 => self.skip(9)?,  // fixext8
             0xd8 => self.skip(17)?, // fixext16
-            0xd9 => { let n = self.read_u8_size()?; self.skip(n)?; n + 1 }
-            0xda => { let n = self.read_u16_size()?; self.skip(n)?; n + 2 }
-            0xdb => { let n = self.read_u32_size()?; self.skip(n)?; n + 4 }
-            0xdc => { let n = self.read_u16_size()?; let s = self.skip_arr(n)?; s + 2 }
-            0xdd => { let n = self.read_u32_size()?; let s = self.skip_arr(n)?; s + 4 }
-            0xde => { let n = self.read_u16_size()?; let s = self.skip_obj(n)?; s + 2 }
-            0xdf => { let n = self.read_u32_size()?; let s = self.skip_obj(n)?; s + 4 }
+            0xd9 => {
+                let n = self.read_u8_size()?;
+                self.skip(n)?;
+                n + 1
+            }
+            0xda => {
+                let n = self.read_u16_size()?;
+                self.skip(n)?;
+                n + 2
+            }
+            0xdb => {
+                let n = self.read_u32_size()?;
+                self.skip(n)?;
+                n + 4
+            }
+            0xdc => {
+                let n = self.read_u16_size()?;
+                let s = self.skip_arr(n)?;
+                s + 2
+            }
+            0xdd => {
+                let n = self.read_u32_size()?;
+                let s = self.skip_arr(n)?;
+                s + 4
+            }
+            0xde => {
+                let n = self.read_u16_size()?;
+                let s = self.skip_obj(n)?;
+                s + 2
+            }
+            0xdf => {
+                let n = self.read_u32_size()?;
+                let s = self.skip_obj(n)?;
+                s + 4
+            }
             _ => 0,
         };
         Ok(self.inner.x - start)
@@ -133,7 +187,10 @@ impl MsgPackDecoder {
         if self.inner.x + 2 > self.inner.data.len() {
             return Err(MsgPackError::UnexpectedEof);
         }
-        let v = u16::from_be_bytes([self.inner.data[self.inner.x], self.inner.data[self.inner.x + 1]]) as usize;
+        let v = u16::from_be_bytes([
+            self.inner.data[self.inner.x],
+            self.inner.data[self.inner.x + 1],
+        ]) as usize;
         self.inner.x += 2;
         Ok(v)
     }
@@ -153,7 +210,12 @@ impl MsgPackDecoder {
     }
 
     /// Validate that `data[offset..offset+size]` contains exactly one valid MessagePack value.
-    pub fn validate(&mut self, data: &[u8], offset: usize, size: usize) -> Result<(), MsgPackError> {
+    pub fn validate(
+        &mut self,
+        data: &[u8],
+        offset: usize,
+        size: usize,
+    ) -> Result<(), MsgPackError> {
         self.inner.data = data.to_vec();
         self.inner.x = offset;
         let start = offset;

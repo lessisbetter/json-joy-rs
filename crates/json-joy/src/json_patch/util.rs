@@ -6,7 +6,7 @@
 //! factory.  In Rust we expose the path-prefix matcher that is most generally
 //! useful for JSON Patch consumers.
 
-use super::types::{Op};
+use super::types::Op;
 use json_joy_json_pointer::Path;
 
 // ── Path matcher ───────────────────────────────────────────────────────────
@@ -62,22 +62,30 @@ pub fn path_starts_with(path: &[String], prefix: &[String]) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json::json;
     use crate::json_patch::types::Op;
+    use serde_json::json;
 
-    fn s(s: &str) -> String { s.to_string() }
+    fn s(s: &str) -> String {
+        s.to_string()
+    }
     fn path(steps: &[&str]) -> Vec<String> {
         steps.iter().map(|s| s.to_string()).collect()
     }
 
     #[test]
     fn path_starts_with_same_path() {
-        assert!(path_starts_with(&path(&["foo", "bar"]), &path(&["foo", "bar"])));
+        assert!(path_starts_with(
+            &path(&["foo", "bar"]),
+            &path(&["foo", "bar"])
+        ));
     }
 
     #[test]
     fn path_starts_with_longer_path() {
-        assert!(path_starts_with(&path(&["foo", "bar", "baz"]), &path(&["foo", "bar"])));
+        assert!(path_starts_with(
+            &path(&["foo", "bar", "baz"]),
+            &path(&["foo", "bar"])
+        ));
     }
 
     #[test]
@@ -101,7 +109,10 @@ mod tests {
         let prefix = path(&["foo"]);
         let is_match = matcher(&prefix);
 
-        let op = Op::Add { path: path(&["foo", "bar"]), value: json!(1) };
+        let op = Op::Add {
+            path: path(&["foo", "bar"]),
+            value: json!(1),
+        };
         assert!(is_match(&op));
     }
 
@@ -110,7 +121,10 @@ mod tests {
         let prefix = path(&["foo"]);
         let is_match = matcher(&prefix);
 
-        let op = Op::Add { path: path(&["foo"]), value: json!(1) };
+        let op = Op::Add {
+            path: path(&["foo"]),
+            value: json!(1),
+        };
         assert!(is_match(&op));
     }
 
@@ -119,7 +133,10 @@ mod tests {
         let prefix = path(&["foo"]);
         let is_match = matcher(&prefix);
 
-        let op = Op::Add { path: path(&["baz"]), value: json!(2) };
+        let op = Op::Add {
+            path: path(&["baz"]),
+            value: json!(2),
+        };
         assert!(!is_match(&op));
     }
 
@@ -128,8 +145,14 @@ mod tests {
         let prefix: Vec<String> = vec![];
         let is_match = matcher(&prefix);
 
-        let op1 = Op::Add { path: path(&["foo"]), value: json!(1) };
-        let op2 = Op::Remove { path: path(&["a", "b"]), old_value: None };
+        let op1 = Op::Add {
+            path: path(&["foo"]),
+            value: json!(1),
+        };
+        let op2 = Op::Remove {
+            path: path(&["a", "b"]),
+            old_value: None,
+        };
         assert!(is_match(&op1));
         assert!(is_match(&op2));
     }
@@ -139,10 +162,16 @@ mod tests {
         let prefix = path(&["a"]);
         let is_match = matcher(&prefix);
 
-        let op = Op::Remove { path: path(&["a", "1"]), old_value: None };
+        let op = Op::Remove {
+            path: path(&["a", "1"]),
+            old_value: None,
+        };
         assert!(is_match(&op));
 
-        let op2 = Op::Remove { path: path(&["b"]), old_value: None };
+        let op2 = Op::Remove {
+            path: path(&["b"]),
+            old_value: None,
+        };
         assert!(!is_match(&op2));
     }
 }

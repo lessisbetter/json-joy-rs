@@ -774,11 +774,7 @@ mod tests {
     fn test_find_array_element_key_is_index() {
         // Bug 2 fix: key for array element is ReferenceKey::Index(n).
         let doc = json!({"a": {"b": [1, 2, 3]}});
-        let ref_val = find(
-            &doc,
-            &["a".to_string(), "b".to_string(), "1".to_string()],
-        )
-        .unwrap();
+        let ref_val = find(&doc, &["a".to_string(), "b".to_string(), "1".to_string()]).unwrap();
         assert_eq!(ref_val.val, Some(json!(2)));
         assert_eq!(ref_val.key, Some(ReferenceKey::Index(1)));
         assert_eq!(ref_val.index(), Some(1));
@@ -788,11 +784,7 @@ mod tests {
     fn test_find_array_dash_key_is_length() {
         // "-" resolves to arr.len() as a numeric index.
         let doc = json!({"a": {"b": [1, 2, 3]}});
-        let ref_val = find(
-            &doc,
-            &["a".to_string(), "b".to_string(), "-".to_string()],
-        )
-        .unwrap();
+        let ref_val = find(&doc, &["a".to_string(), "b".to_string(), "-".to_string()]).unwrap();
         // val is None (one past the end)
         assert_eq!(ref_val.val, None);
         // key is the array length (3) as a numeric index
@@ -821,11 +813,7 @@ mod tests {
     #[test]
     fn test_find_array_past_end_key_is_index() {
         let doc = json!({"a": {"b": [1, 2, 3]}});
-        let ref_val = find(
-            &doc,
-            &["a".to_string(), "b".to_string(), "3".to_string()],
-        )
-        .unwrap();
+        let ref_val = find(&doc, &["a".to_string(), "b".to_string(), "3".to_string()]).unwrap();
         assert_eq!(ref_val.val, None);
         assert_eq!(ref_val.key, Some(ReferenceKey::Index(3)));
         assert!(ref_val.is_array_end());
@@ -900,11 +888,7 @@ mod tests {
     fn test_upstream_find_array_element_numeric_key() {
         // Upstream: { val: 2, obj: [1,2,3], key: 1 }
         let doc = json!({"a": {"b": [1, 2, 3]}});
-        let r = find(
-            &doc,
-            &["a".to_string(), "b".to_string(), "1".to_string()],
-        )
-        .unwrap();
+        let r = find(&doc, &["a".to_string(), "b".to_string(), "1".to_string()]).unwrap();
         assert_eq!(r.val, Some(json!(2)));
         assert_eq!(r.obj, Some(json!([1, 2, 3])));
         assert_eq!(r.key, Some(ReferenceKey::Index(1)));
@@ -914,11 +898,7 @@ mod tests {
     fn test_upstream_find_end_of_array() {
         // Upstream: { val: undefined, obj: [1,2,3], key: 3 }
         let doc = json!({"a": {"b": [1, 2, 3]}});
-        let r = find(
-            &doc,
-            &["a".to_string(), "b".to_string(), "-".to_string()],
-        )
-        .unwrap();
+        let r = find(&doc, &["a".to_string(), "b".to_string(), "-".to_string()]).unwrap();
         assert_eq!(r.val, None);
         assert_eq!(r.obj, Some(json!([1, 2, 3])));
         assert_eq!(r.key, Some(ReferenceKey::Index(3)));
@@ -930,11 +910,7 @@ mod tests {
     fn test_upstream_find_one_past_array_boundary() {
         // Upstream: { val: undefined, obj: [1,2,3], key: 3 }
         let doc = json!({"a": {"b": [1, 2, 3]}});
-        let r = find(
-            &doc,
-            &["a".to_string(), "b".to_string(), "3".to_string()],
-        )
-        .unwrap();
+        let r = find(&doc, &["a".to_string(), "b".to_string(), "3".to_string()]).unwrap();
         assert_eq!(r.val, None);
         assert_eq!(r.obj, Some(json!([1, 2, 3])));
         assert_eq!(r.key, Some(ReferenceKey::Index(3)));
@@ -974,10 +950,7 @@ mod tests {
     fn test_upstream_throws_invalid_index() {
         // Upstream: findByPointer('/a/b/-1', doc) throws
         let doc = json!({"a": {"b": [1, 2, 3]}});
-        let result = find(
-            &doc,
-            &["a".to_string(), "b".to_string(), "-1".to_string()],
-        );
+        let result = find(&doc, &["a".to_string(), "b".to_string(), "-1".to_string()]);
         assert!(matches!(result, Err(JsonPointerError::InvalidIndex)));
     }
 }

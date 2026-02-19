@@ -39,35 +39,35 @@ pub enum JsonCrdtDataType {
 #[repr(u8)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum JsonCrdtPatchOpcode {
-    NewCon = 0b00000 | JsonCrdtDataType::Con as u8,  // 0
-    NewVal = 0b00000 | JsonCrdtDataType::Val as u8,  // 1
-    NewObj = 0b00000 | JsonCrdtDataType::Obj as u8,  // 2
-    NewVec = 0b00000 | JsonCrdtDataType::Vec as u8,  // 3
-    NewStr = 0b00000 | JsonCrdtDataType::Str as u8,  // 4
-    NewBin = 0b00000 | JsonCrdtDataType::Bin as u8,  // 5
-    NewArr = 0b00000 | JsonCrdtDataType::Arr as u8,  // 6
-    InsVal = 0b01000 | JsonCrdtDataType::Val as u8,  // 9
-    InsObj = 0b01000 | JsonCrdtDataType::Obj as u8,  // 10
-    InsVec = 0b01000 | JsonCrdtDataType::Vec as u8,  // 11
-    InsStr = 0b01000 | JsonCrdtDataType::Str as u8,  // 12
-    InsBin = 0b01000 | JsonCrdtDataType::Bin as u8,  // 13
-    InsArr = 0b01000 | JsonCrdtDataType::Arr as u8,  // 14
+    NewCon = 0b00000 | JsonCrdtDataType::Con as u8, // 0
+    NewVal = 0b00000 | JsonCrdtDataType::Val as u8, // 1
+    NewObj = 0b00000 | JsonCrdtDataType::Obj as u8, // 2
+    NewVec = 0b00000 | JsonCrdtDataType::Vec as u8, // 3
+    NewStr = 0b00000 | JsonCrdtDataType::Str as u8, // 4
+    NewBin = 0b00000 | JsonCrdtDataType::Bin as u8, // 5
+    NewArr = 0b00000 | JsonCrdtDataType::Arr as u8, // 6
+    InsVal = 0b01000 | JsonCrdtDataType::Val as u8, // 9
+    InsObj = 0b01000 | JsonCrdtDataType::Obj as u8, // 10
+    InsVec = 0b01000 | JsonCrdtDataType::Vec as u8, // 11
+    InsStr = 0b01000 | JsonCrdtDataType::Str as u8, // 12
+    InsBin = 0b01000 | JsonCrdtDataType::Bin as u8, // 13
+    InsArr = 0b01000 | JsonCrdtDataType::Arr as u8, // 14
     UpdArr = 0b01000 | JsonCrdtDataType::Arr as u8 + 1, // 15
-    Del    = 0b10000,                                // 16
-    Nop    = 0b10001,                                // 17
+    Del = 0b10000,                                  // 16
+    Nop = 0b10001,                                  // 17
 }
 
 impl JsonCrdtPatchOpcode {
     pub fn from_u8(v: u8) -> Option<Self> {
         match v {
-            0  => Some(Self::NewCon),
-            1  => Some(Self::NewVal),
-            2  => Some(Self::NewObj),
-            3  => Some(Self::NewVec),
-            4  => Some(Self::NewStr),
-            5  => Some(Self::NewBin),
-            6  => Some(Self::NewArr),
-            9  => Some(Self::InsVal),
+            0 => Some(Self::NewCon),
+            1 => Some(Self::NewVal),
+            2 => Some(Self::NewObj),
+            3 => Some(Self::NewVec),
+            4 => Some(Self::NewStr),
+            5 => Some(Self::NewBin),
+            6 => Some(Self::NewArr),
+            9 => Some(Self::InsVal),
             10 => Some(Self::InsObj),
             11 => Some(Self::InsVec),
             12 => Some(Self::InsStr),
@@ -76,7 +76,7 @@ impl JsonCrdtPatchOpcode {
             15 => Some(Self::UpdArr),
             16 => Some(Self::Del),
             17 => Some(Self::Nop),
-            _  => None,
+            _ => None,
         }
     }
 }
@@ -100,6 +100,6 @@ pub mod OpcodeOverlay {
     pub const INS_BIN: u8 = (O::InsBin as u8) << 3;
     pub const INS_ARR: u8 = (O::InsArr as u8) << 3;
     pub const UPD_ARR: u8 = (O::UpdArr as u8) << 3;
-    pub const DEL:     u8 = (O::Del as u8) << 3;
-    pub const NOP:     u8 = (O::Nop as u8) << 3;
+    pub const DEL: u8 = (O::Del as u8) << 3;
+    pub const NOP: u8 = (O::Nop as u8) << 3;
 }

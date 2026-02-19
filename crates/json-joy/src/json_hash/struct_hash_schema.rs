@@ -91,12 +91,24 @@ mod tests {
     #[test]
     fn hash_obj_key_order_independent() {
         let obj1 = s::obj(vec![
-            ("foo".to_string(), Box::new(s::con(PackValue::Integer(1))) as Box<dyn NodeBuilder>),
-            ("bar".to_string(), Box::new(s::con(PackValue::Integer(2))) as Box<dyn NodeBuilder>),
+            (
+                "foo".to_string(),
+                Box::new(s::con(PackValue::Integer(1))) as Box<dyn NodeBuilder>,
+            ),
+            (
+                "bar".to_string(),
+                Box::new(s::con(PackValue::Integer(2))) as Box<dyn NodeBuilder>,
+            ),
         ]);
         let obj2 = s::obj(vec![
-            ("bar".to_string(), Box::new(s::con(PackValue::Integer(2))) as Box<dyn NodeBuilder>),
-            ("foo".to_string(), Box::new(s::con(PackValue::Integer(1))) as Box<dyn NodeBuilder>),
+            (
+                "bar".to_string(),
+                Box::new(s::con(PackValue::Integer(2))) as Box<dyn NodeBuilder>,
+            ),
+            (
+                "foo".to_string(),
+                Box::new(s::con(PackValue::Integer(1))) as Box<dyn NodeBuilder>,
+            ),
         ]);
         assert_eq!(struct_hash_schema(&obj1), struct_hash_schema(&obj2));
     }
@@ -123,9 +135,10 @@ mod tests {
 
     #[test]
     fn hash_no_newlines_in_output() {
-        let obj = s::obj(vec![
-            ("key".to_string(), Box::new(s::str_node("value")) as Box<dyn NodeBuilder>),
-        ]);
+        let obj = s::obj(vec![(
+            "key".to_string(),
+            Box::new(s::str_node("value")) as Box<dyn NodeBuilder>,
+        )]);
         let h = struct_hash_schema(&obj);
         assert!(!h.contains('\n'));
     }

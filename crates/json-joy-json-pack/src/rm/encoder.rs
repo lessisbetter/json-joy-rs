@@ -58,8 +58,7 @@ impl RmRecordEncoder {
         }
         let mut offset = 0;
         while offset < length {
-            let fragment_len =
-                ((length - offset) as u32).min(MAX_SINGLE_FRAME_SIZE) as usize;
+            let fragment_len = ((length - offset) as u32).min(MAX_SINGLE_FRAME_SIZE) as usize;
             let fin = offset + fragment_len >= length;
             self.write_fragment(record, offset, fragment_len, fin);
             offset += fragment_len;

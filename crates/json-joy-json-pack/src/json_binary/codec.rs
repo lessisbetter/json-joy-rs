@@ -29,7 +29,11 @@ pub fn wrap_binary(value: PackValue) -> JsonValue {
             JsonValue::String(uri)
         }
         PackValue::Blob(blob) => {
-            let uri = format!("{}{}", MSGPACK_URI_START, json_joy_base64::to_base64(&blob.val));
+            let uri = format!(
+                "{}{}",
+                MSGPACK_URI_START,
+                json_joy_base64::to_base64(&blob.val)
+            );
             JsonValue::String(uri)
         }
         PackValue::Extension(ext) => {
@@ -45,9 +49,9 @@ pub fn wrap_binary(value: PackValue) -> JsonValue {
             JsonValue::String(uri)
         }
         PackValue::Array(arr) => JsonValue::Array(arr.into_iter().map(wrap_binary).collect()),
-        PackValue::Object(obj) => JsonValue::Object(
-            obj.into_iter().map(|(k, v)| (k, wrap_binary(v))).collect(),
-        ),
+        PackValue::Object(obj) => {
+            JsonValue::Object(obj.into_iter().map(|(k, v)| (k, wrap_binary(v))).collect())
+        }
     }
 }
 
@@ -87,9 +91,10 @@ pub fn unwrap_binary(value: JsonValue) -> PackValue {
                     if let Ok(tag) = tag_str.parse::<u64>() {
                         match json_joy_base64::from_base64(b64) {
                             Ok(bytes) => {
-                                return PackValue::Extension(Box::new(
-                                    JsonPackExtension::new(tag, PackValue::Bytes(bytes))
-                                ));
+                                return PackValue::Extension(Box::new(JsonPackExtension::new(
+                                    tag,
+                                    PackValue::Bytes(bytes),
+                                )));
                             }
                             Err(_) => {}
                         }
@@ -102,7 +107,9 @@ pub fn unwrap_binary(value: JsonValue) -> PackValue {
         }
         JsonValue::Array(arr) => PackValue::Array(arr.into_iter().map(unwrap_binary).collect()),
         JsonValue::Object(obj) => PackValue::Object(
-            obj.into_iter().map(|(k, v)| (k, unwrap_binary(v))).collect(),
+            obj.into_iter()
+                .map(|(k, v)| (k, unwrap_binary(v)))
+                .collect(),
         ),
     }
 }

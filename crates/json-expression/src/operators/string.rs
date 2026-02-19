@@ -54,7 +54,8 @@ fn matches_eval(expr: &[Value], ctx: &mut EvalCtx<'_>) -> Result<JsValue, JsErro
     };
     let create_pattern = ctx.create_pattern.as_ref().ok_or_else(|| {
         JsError::Other(
-            "\"matches\" operator requires \".createPattern()\" option to be implemented.".to_string(),
+            "\"matches\" operator requires \".createPattern()\" option to be implemented."
+                .to_string(),
         )
     })?;
     let matcher = create_pattern(&pattern);
@@ -115,21 +116,117 @@ fn datetime_eval(expr: &[Value], ctx: &mut EvalCtx<'_>) -> Result<JsValue, JsErr
 
 pub fn operators() -> Vec<Arc<OperatorDefinition>> {
     vec![
-        Arc::new(OperatorDefinition { name: ".", aliases: &["cat"], arity: Arity::Variadic, eval_fn: cat_eval, impure: false }),
-        Arc::new(OperatorDefinition { name: "contains", aliases: &[], arity: Arity::Fixed(2), eval_fn: contains_eval, impure: false }),
-        Arc::new(OperatorDefinition { name: "starts", aliases: &[], arity: Arity::Fixed(2), eval_fn: starts_eval, impure: false }),
-        Arc::new(OperatorDefinition { name: "ends", aliases: &[], arity: Arity::Fixed(2), eval_fn: ends_eval, impure: false }),
-        Arc::new(OperatorDefinition { name: "substr", aliases: &[], arity: Arity::Fixed(3), eval_fn: substr_eval, impure: false }),
-        Arc::new(OperatorDefinition { name: "matches", aliases: &[], arity: Arity::Fixed(2), eval_fn: matches_eval, impure: false }),
-        Arc::new(OperatorDefinition { name: "email?", aliases: &[], arity: Arity::Fixed(1), eval_fn: email_eval, impure: false }),
-        Arc::new(OperatorDefinition { name: "hostname?", aliases: &[], arity: Arity::Fixed(1), eval_fn: hostname_eval, impure: false }),
-        Arc::new(OperatorDefinition { name: "ip4?", aliases: &[], arity: Arity::Fixed(1), eval_fn: ip4_eval, impure: false }),
-        Arc::new(OperatorDefinition { name: "ip6?", aliases: &[], arity: Arity::Fixed(1), eval_fn: ip6_eval, impure: false }),
-        Arc::new(OperatorDefinition { name: "uuid?", aliases: &[], arity: Arity::Fixed(1), eval_fn: uuid_eval, impure: false }),
-        Arc::new(OperatorDefinition { name: "uri?", aliases: &[], arity: Arity::Fixed(1), eval_fn: uri_eval, impure: false }),
-        Arc::new(OperatorDefinition { name: "duration?", aliases: &[], arity: Arity::Fixed(1), eval_fn: duration_eval, impure: false }),
-        Arc::new(OperatorDefinition { name: "date?", aliases: &[], arity: Arity::Fixed(1), eval_fn: date_eval, impure: false }),
-        Arc::new(OperatorDefinition { name: "time?", aliases: &[], arity: Arity::Fixed(1), eval_fn: time_eval, impure: false }),
-        Arc::new(OperatorDefinition { name: "dateTime?", aliases: &[], arity: Arity::Fixed(1), eval_fn: datetime_eval, impure: false }),
+        Arc::new(OperatorDefinition {
+            name: ".",
+            aliases: &["cat"],
+            arity: Arity::Variadic,
+            eval_fn: cat_eval,
+            impure: false,
+        }),
+        Arc::new(OperatorDefinition {
+            name: "contains",
+            aliases: &[],
+            arity: Arity::Fixed(2),
+            eval_fn: contains_eval,
+            impure: false,
+        }),
+        Arc::new(OperatorDefinition {
+            name: "starts",
+            aliases: &[],
+            arity: Arity::Fixed(2),
+            eval_fn: starts_eval,
+            impure: false,
+        }),
+        Arc::new(OperatorDefinition {
+            name: "ends",
+            aliases: &[],
+            arity: Arity::Fixed(2),
+            eval_fn: ends_eval,
+            impure: false,
+        }),
+        Arc::new(OperatorDefinition {
+            name: "substr",
+            aliases: &[],
+            arity: Arity::Fixed(3),
+            eval_fn: substr_eval,
+            impure: false,
+        }),
+        Arc::new(OperatorDefinition {
+            name: "matches",
+            aliases: &[],
+            arity: Arity::Fixed(2),
+            eval_fn: matches_eval,
+            impure: false,
+        }),
+        Arc::new(OperatorDefinition {
+            name: "email?",
+            aliases: &[],
+            arity: Arity::Fixed(1),
+            eval_fn: email_eval,
+            impure: false,
+        }),
+        Arc::new(OperatorDefinition {
+            name: "hostname?",
+            aliases: &[],
+            arity: Arity::Fixed(1),
+            eval_fn: hostname_eval,
+            impure: false,
+        }),
+        Arc::new(OperatorDefinition {
+            name: "ip4?",
+            aliases: &[],
+            arity: Arity::Fixed(1),
+            eval_fn: ip4_eval,
+            impure: false,
+        }),
+        Arc::new(OperatorDefinition {
+            name: "ip6?",
+            aliases: &[],
+            arity: Arity::Fixed(1),
+            eval_fn: ip6_eval,
+            impure: false,
+        }),
+        Arc::new(OperatorDefinition {
+            name: "uuid?",
+            aliases: &[],
+            arity: Arity::Fixed(1),
+            eval_fn: uuid_eval,
+            impure: false,
+        }),
+        Arc::new(OperatorDefinition {
+            name: "uri?",
+            aliases: &[],
+            arity: Arity::Fixed(1),
+            eval_fn: uri_eval,
+            impure: false,
+        }),
+        Arc::new(OperatorDefinition {
+            name: "duration?",
+            aliases: &[],
+            arity: Arity::Fixed(1),
+            eval_fn: duration_eval,
+            impure: false,
+        }),
+        Arc::new(OperatorDefinition {
+            name: "date?",
+            aliases: &[],
+            arity: Arity::Fixed(1),
+            eval_fn: date_eval,
+            impure: false,
+        }),
+        Arc::new(OperatorDefinition {
+            name: "time?",
+            aliases: &[],
+            arity: Arity::Fixed(1),
+            eval_fn: time_eval,
+            impure: false,
+        }),
+        Arc::new(OperatorDefinition {
+            name: "dateTime?",
+            aliases: &[],
+            arity: Arity::Fixed(1),
+            eval_fn: datetime_eval,
+            impure: false,
+        }),
     ]
 }

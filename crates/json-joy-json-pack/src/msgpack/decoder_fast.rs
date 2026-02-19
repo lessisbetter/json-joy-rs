@@ -18,7 +18,10 @@ impl Default for MsgPackDecoderFast {
 
 impl MsgPackDecoderFast {
     pub fn new() -> Self {
-        Self { data: Vec::new(), x: 0 }
+        Self {
+            data: Vec::new(),
+            x: 0,
+        }
     }
 
     pub fn decode(&mut self, input: &[u8]) -> Result<PackValue, MsgPackError> {
@@ -130,7 +133,9 @@ impl MsgPackDecoderFast {
             return Err(MsgPackError::UnexpectedEof);
         }
         let slice = &self.data[self.x..self.x + size];
-        let s = std::str::from_utf8(slice).map_err(|_| MsgPackError::InvalidUtf8)?.to_string();
+        let s = std::str::from_utf8(slice)
+            .map_err(|_| MsgPackError::InvalidUtf8)?
+            .to_string();
         self.x += size;
         Ok(s)
     }
@@ -179,13 +184,31 @@ impl MsgPackDecoderFast {
             0xc2 => Ok(PackValue::Bool(false)),
             0xc3 => Ok(PackValue::Bool(true)),
             // bin8, bin16, bin32
-            0xc4 => { let n = self.u8()? as usize; Ok(PackValue::Bytes(self.buf(n)?)) }
-            0xc5 => { let n = self.u16()? as usize; Ok(PackValue::Bytes(self.buf(n)?)) }
-            0xc6 => { let n = self.u32()? as usize; Ok(PackValue::Bytes(self.buf(n)?)) }
+            0xc4 => {
+                let n = self.u8()? as usize;
+                Ok(PackValue::Bytes(self.buf(n)?))
+            }
+            0xc5 => {
+                let n = self.u16()? as usize;
+                Ok(PackValue::Bytes(self.buf(n)?))
+            }
+            0xc6 => {
+                let n = self.u32()? as usize;
+                Ok(PackValue::Bytes(self.buf(n)?))
+            }
             // ext8, ext16, ext32
-            0xc7 => { let n = self.u8()? as usize; self.read_ext(n) }
-            0xc8 => { let n = self.u16()? as usize; self.read_ext(n) }
-            0xc9 => { let n = self.u32()? as usize; self.read_ext(n) }
+            0xc7 => {
+                let n = self.u8()? as usize;
+                self.read_ext(n)
+            }
+            0xc8 => {
+                let n = self.u16()? as usize;
+                self.read_ext(n)
+            }
+            0xc9 => {
+                let n = self.u32()? as usize;
+                self.read_ext(n)
+            }
             // float32, float64
             0xca => Ok(PackValue::Float(self.f32()? as f64)),
             0xcb => Ok(PackValue::Float(self.f64()?)),
@@ -214,15 +237,36 @@ impl MsgPackDecoderFast {
             0xd7 => self.read_ext(8),
             0xd8 => self.read_ext(16),
             // str8, str16, str32
-            0xd9 => { let n = self.u8()? as usize; self.utf8(n).map(PackValue::Str) }
-            0xda => { let n = self.u16()? as usize; self.utf8(n).map(PackValue::Str) }
-            0xdb => { let n = self.u32()? as usize; self.utf8(n).map(PackValue::Str) }
+            0xd9 => {
+                let n = self.u8()? as usize;
+                self.utf8(n).map(PackValue::Str)
+            }
+            0xda => {
+                let n = self.u16()? as usize;
+                self.utf8(n).map(PackValue::Str)
+            }
+            0xdb => {
+                let n = self.u32()? as usize;
+                self.utf8(n).map(PackValue::Str)
+            }
             // array16, array32
-            0xdc => { let n = self.u16()? as usize; self.read_arr(n) }
-            0xdd => { let n = self.u32()? as usize; self.read_arr(n) }
+            0xdc => {
+                let n = self.u16()? as usize;
+                self.read_arr(n)
+            }
+            0xdd => {
+                let n = self.u32()? as usize;
+                self.read_arr(n)
+            }
             // map16, map32
-            0xde => { let n = self.u16()? as usize; self.read_obj(n) }
-            0xdf => { let n = self.u32()? as usize; self.read_obj(n) }
+            0xde => {
+                let n = self.u16()? as usize;
+                self.read_obj(n)
+            }
+            0xdf => {
+                let n = self.u32()? as usize;
+                self.read_obj(n)
+            }
             _ => Err(MsgPackError::InvalidByte(self.x - 1)),
         }
     }
@@ -252,7 +296,10 @@ impl MsgPackDecoderFast {
         let tag = self.i8()?;
         let data = self.buf(size)?;
         // Encode MsgPack extension as Extension(tag=ext_type, val=Bytes(data))
-        Ok(PackValue::Extension(Box::new(JsonPackExtension::new(tag as u8 as u64, PackValue::Bytes(data)))))
+        Ok(PackValue::Extension(Box::new(JsonPackExtension::new(
+            tag as u8 as u64,
+            PackValue::Bytes(data),
+        ))))
     }
 
     /// Read a string key (no __proto__ check — caller must check).

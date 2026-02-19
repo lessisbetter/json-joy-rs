@@ -64,7 +64,13 @@ impl Default for NodeOdds {
 
 impl NodeOdds {
     fn total(&self) -> u32 {
-        self.null + self.boolean + self.number + self.string + self.binary + self.array + self.object
+        self.null
+            + self.boolean
+            + self.number
+            + self.string
+            + self.binary
+            + self.array
+            + self.object
     }
 }
 
@@ -144,7 +150,11 @@ impl RandomJson {
             rng.gen::<f64>() * 1e9
         };
 
-        if num == 0.0 { 0.0 } else { num }
+        if num == 0.0 {
+            0.0
+        } else {
+            num
+        }
     }
 
     /// Generate a random string of the specified length.
@@ -193,15 +203,12 @@ impl RandomJson {
     fn utf16_char(rng: &mut impl Rng) -> char {
         // A selection of interesting Unicode characters
         let chars = [
-            'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
-            'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
-            'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
-            'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
-            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-            '-', '_', '.', ',', ';', '!', '@', '#', '$', '%', '^', '&', '*',
-            '\\', '/', '(', ')', '+', '=',
-            '\n',
-            '👍', '🏻', '😛', 'ä', 'ö', 'ü', 'ß', 'а', 'б', 'в', 'г', '诶', '必', '西',
+            'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q',
+            'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H',
+            'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y',
+            'Z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-', '_', '.', ',', ';', '!',
+            '@', '#', '$', '%', '^', '&', '*', '\\', '/', '(', ')', '+', '=', '\n', '👍', '🏻',
+            '😛', 'ä', 'ö', 'ü', 'ß', 'а', 'б', 'в', 'г', '诶', '必', '西',
         ];
         chars[rng.gen_range(0..chars.len())]
     }
@@ -214,8 +221,17 @@ impl RandomJson {
             boolean: opts.odds.null + opts.odds.boolean,
             number: opts.odds.null + opts.odds.boolean + opts.odds.number,
             string: opts.odds.null + opts.odds.boolean + opts.odds.number + opts.odds.string,
-            binary: opts.odds.null + opts.odds.boolean + opts.odds.number + opts.odds.string + opts.odds.binary,
-            array: opts.odds.null + opts.odds.boolean + opts.odds.number + opts.odds.string + opts.odds.binary + opts.odds.array,
+            binary: opts.odds.null
+                + opts.odds.boolean
+                + opts.odds.number
+                + opts.odds.string
+                + opts.odds.binary,
+            array: opts.odds.null
+                + opts.odds.boolean
+                + opts.odds.number
+                + opts.odds.string
+                + opts.odds.binary
+                + opts.odds.array,
             object: total_odds,
         };
 

@@ -37,9 +37,18 @@ impl BinaryComponent {
 /// Append a component, merging with the last if same type.
 fn append(op: &mut BinaryOp, comp: BinaryComponent) {
     match (op.last_mut(), &comp) {
-        (Some(BinaryComponent::Retain(n)),    BinaryComponent::Retain(m))    => { *n += m; return; }
-        (Some(BinaryComponent::Delete(n)),    BinaryComponent::Delete(m))    => { *n += m; return; }
-        (Some(BinaryComponent::Insert(s)),    BinaryComponent::Insert(t))    => { s.extend_from_slice(t); return; }
+        (Some(BinaryComponent::Retain(n)), BinaryComponent::Retain(m)) => {
+            *n += m;
+            return;
+        }
+        (Some(BinaryComponent::Delete(n)), BinaryComponent::Delete(m)) => {
+            *n += m;
+            return;
+        }
+        (Some(BinaryComponent::Insert(s)), BinaryComponent::Insert(t)) => {
+            s.extend_from_slice(t);
+            return;
+        }
         _ => {}
     }
     op.push(comp);
@@ -103,44 +112,58 @@ pub fn compose(op1: &BinaryOp, op2: &BinaryOp) -> BinaryOp {
 
         match (c1, c2) {
             (None, None) => break,
-            (Some(c), None) => { append(&mut result, c); }
-            (None, Some(c)) => { append(&mut result, c); }
-            (Some(c1), Some(c2)) => {
-                match (&c1, &c2) {
-                    (BinaryComponent::Delete(n), _) => {
-                        append(&mut result, BinaryComponent::Delete(*n));
-                        rem2 = Some(c2);
-                    }
-                    (_, BinaryComponent::Insert(b)) => {
-                        append(&mut result, BinaryComponent::Insert(b.clone()));
-                        rem1 = Some(c1);
-                    }
-                    (BinaryComponent::Retain(n), BinaryComponent::Retain(m)) => {
-                        let min = (*n).min(*m);
-                        append(&mut result, BinaryComponent::Retain(min));
-                        if n > m { rem1 = Some(BinaryComponent::Retain(n - m)); }
-                        else if m > n { rem2 = Some(BinaryComponent::Retain(m - n)); }
-                    }
-                    (BinaryComponent::Retain(n), BinaryComponent::Delete(m)) => {
-                        let min = (*n).min(*m);
-                        append(&mut result, BinaryComponent::Delete(min));
-                        if n > m { rem1 = Some(BinaryComponent::Retain(n - m)); }
-                        else if m > n { rem2 = Some(BinaryComponent::Delete(m - n)); }
-                    }
-                    (BinaryComponent::Insert(b), BinaryComponent::Retain(m)) => {
-                        let b_len = b.len();
-                        let kept = b[..(*m).min(b_len)].to_vec();
-                        append(&mut result, BinaryComponent::Insert(kept));
-                        if b_len > *m { rem1 = Some(BinaryComponent::Insert(b[*m..].to_vec())); }
-                        else if *m > b_len { rem2 = Some(BinaryComponent::Retain(m - b_len)); }
-                    }
-                    (BinaryComponent::Insert(b), BinaryComponent::Delete(m)) => {
-                        let b_len = b.len();
-                        if b_len > *m { rem1 = Some(BinaryComponent::Insert(b[*m..].to_vec())); }
-                        else if *m > b_len { rem2 = Some(BinaryComponent::Delete(m - b_len)); }
+            (Some(c), None) => {
+                append(&mut result, c);
+            }
+            (None, Some(c)) => {
+                append(&mut result, c);
+            }
+            (Some(c1), Some(c2)) => match (&c1, &c2) {
+                (BinaryComponent::Delete(n), _) => {
+                    append(&mut result, BinaryComponent::Delete(*n));
+                    rem2 = Some(c2);
+                }
+                (_, BinaryComponent::Insert(b)) => {
+                    append(&mut result, BinaryComponent::Insert(b.clone()));
+                    rem1 = Some(c1);
+                }
+                (BinaryComponent::Retain(n), BinaryComponent::Retain(m)) => {
+                    let min = (*n).min(*m);
+                    append(&mut result, BinaryComponent::Retain(min));
+                    if n > m {
+                        rem1 = Some(BinaryComponent::Retain(n - m));
+                    } else if m > n {
+                        rem2 = Some(BinaryComponent::Retain(m - n));
                     }
                 }
-            }
+                (BinaryComponent::Retain(n), BinaryComponent::Delete(m)) => {
+                    let min = (*n).min(*m);
+                    append(&mut result, BinaryComponent::Delete(min));
+                    if n > m {
+                        rem1 = Some(BinaryComponent::Retain(n - m));
+                    } else if m > n {
+                        rem2 = Some(BinaryComponent::Delete(m - n));
+                    }
+                }
+                (BinaryComponent::Insert(b), BinaryComponent::Retain(m)) => {
+                    let b_len = b.len();
+                    let kept = b[..(*m).min(b_len)].to_vec();
+                    append(&mut result, BinaryComponent::Insert(kept));
+                    if b_len > *m {
+                        rem1 = Some(BinaryComponent::Insert(b[*m..].to_vec()));
+                    } else if *m > b_len {
+                        rem2 = Some(BinaryComponent::Retain(m - b_len));
+                    }
+                }
+                (BinaryComponent::Insert(b), BinaryComponent::Delete(m)) => {
+                    let b_len = b.len();
+                    if b_len > *m {
+                        rem1 = Some(BinaryComponent::Insert(b[*m..].to_vec()));
+                    } else if *m > b_len {
+                        rem2 = Some(BinaryComponent::Delete(m - b_len));
+                    }
+                }
+            },
         }
     }
     normalize(result)
@@ -160,47 +183,59 @@ pub fn transform(op: &BinaryOp, against: &BinaryOp, left_wins: bool) -> BinaryOp
 
         match (o, a) {
             (None, _) => break,
-            (Some(o), None) => { append(&mut result, o); }
-            (Some(o), Some(a)) => {
-                match (&o, &a) {
-                    (_, BinaryComponent::Insert(b)) => {
-                        let n = b.len();
-                        if left_wins {
-                            rem_op = Some(o);
-                            append(&mut result, BinaryComponent::Retain(n));
-                        } else {
-                            append(&mut result, BinaryComponent::Retain(n));
-                            rem_op = Some(o);
-                        }
-                    }
-                    (BinaryComponent::Insert(b), _) => {
-                        append(&mut result, BinaryComponent::Insert(b.clone()));
-                        rem_ag = Some(a);
-                    }
-                    (BinaryComponent::Retain(n), BinaryComponent::Retain(m)) => {
-                        let min = (*n).min(*m);
-                        append(&mut result, BinaryComponent::Retain(min));
-                        if n > m { rem_op = Some(BinaryComponent::Retain(n - m)); }
-                        else if m > n { rem_ag = Some(BinaryComponent::Retain(m - n)); }
-                    }
-                    (BinaryComponent::Retain(n), BinaryComponent::Delete(m)) => {
-                        let min = (*n).min(*m);
-                        if n > m { rem_op = Some(BinaryComponent::Retain(n - m)); }
-                        else if m > n { rem_ag = Some(BinaryComponent::Delete(m - n)); }
-                    }
-                    (BinaryComponent::Delete(n), BinaryComponent::Retain(m)) => {
-                        let min = (*n).min(*m);
-                        append(&mut result, BinaryComponent::Delete(min));
-                        if n > m { rem_op = Some(BinaryComponent::Delete(n - m)); }
-                        else if m > n { rem_ag = Some(BinaryComponent::Retain(m - n)); }
-                    }
-                    (BinaryComponent::Delete(n), BinaryComponent::Delete(m)) => {
-                        let min = (*n).min(*m);
-                        if n > m { rem_op = Some(BinaryComponent::Delete(n - m)); }
-                        else if m > n { rem_ag = Some(BinaryComponent::Delete(m - n)); }
+            (Some(o), None) => {
+                append(&mut result, o);
+            }
+            (Some(o), Some(a)) => match (&o, &a) {
+                (_, BinaryComponent::Insert(b)) => {
+                    let n = b.len();
+                    if left_wins {
+                        rem_op = Some(o);
+                        append(&mut result, BinaryComponent::Retain(n));
+                    } else {
+                        append(&mut result, BinaryComponent::Retain(n));
+                        rem_op = Some(o);
                     }
                 }
-            }
+                (BinaryComponent::Insert(b), _) => {
+                    append(&mut result, BinaryComponent::Insert(b.clone()));
+                    rem_ag = Some(a);
+                }
+                (BinaryComponent::Retain(n), BinaryComponent::Retain(m)) => {
+                    let min = (*n).min(*m);
+                    append(&mut result, BinaryComponent::Retain(min));
+                    if n > m {
+                        rem_op = Some(BinaryComponent::Retain(n - m));
+                    } else if m > n {
+                        rem_ag = Some(BinaryComponent::Retain(m - n));
+                    }
+                }
+                (BinaryComponent::Retain(n), BinaryComponent::Delete(m)) => {
+                    let min = (*n).min(*m);
+                    if n > m {
+                        rem_op = Some(BinaryComponent::Retain(n - m));
+                    } else if m > n {
+                        rem_ag = Some(BinaryComponent::Delete(m - n));
+                    }
+                }
+                (BinaryComponent::Delete(n), BinaryComponent::Retain(m)) => {
+                    let min = (*n).min(*m);
+                    append(&mut result, BinaryComponent::Delete(min));
+                    if n > m {
+                        rem_op = Some(BinaryComponent::Delete(n - m));
+                    } else if m > n {
+                        rem_ag = Some(BinaryComponent::Retain(m - n));
+                    }
+                }
+                (BinaryComponent::Delete(n), BinaryComponent::Delete(m)) => {
+                    let min = (*n).min(*m);
+                    if n > m {
+                        rem_op = Some(BinaryComponent::Delete(n - m));
+                    } else if m > n {
+                        rem_ag = Some(BinaryComponent::Delete(m - n));
+                    }
+                }
+            },
         }
     }
     normalize(result)

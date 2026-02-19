@@ -8,8 +8,8 @@
 use json_joy_buffers::Writer;
 
 use crate::bson::{
-    BsonBinary, BsonDbPointer, BsonDecimal128, BsonFloat, BsonInt32, BsonInt64,
-    BsonJavascriptCode, BsonObjectId, BsonSymbol, BsonTimestamp, BsonValue,
+    BsonBinary, BsonDbPointer, BsonDecimal128, BsonFloat, BsonInt32, BsonInt64, BsonJavascriptCode,
+    BsonObjectId, BsonSymbol, BsonTimestamp, BsonValue,
 };
 
 use super::error::EjsonEncodeError;
@@ -38,15 +38,24 @@ impl Default for EjsonEncoder {
 
 impl EjsonEncoder {
     pub fn new() -> Self {
-        Self { writer: Writer::new(), options: EjsonEncoderOptions::default() }
+        Self {
+            writer: Writer::new(),
+            options: EjsonEncoderOptions::default(),
+        }
     }
 
     pub fn canonical() -> Self {
-        Self { writer: Writer::new(), options: EjsonEncoderOptions { canonical: true } }
+        Self {
+            writer: Writer::new(),
+            options: EjsonEncoderOptions { canonical: true },
+        }
     }
 
     pub fn with_options(options: EjsonEncoderOptions) -> Self {
-        Self { writer: Writer::new(), options }
+        Self {
+            writer: Writer::new(),
+            options,
+        }
     }
 
     // ----------------------------------------------------------------
@@ -70,30 +79,89 @@ impl EjsonEncoder {
 
     pub fn write_any(&mut self, value: &EjsonValue) -> Result<(), EjsonEncodeError> {
         match value {
-            EjsonValue::Null => { self.write_null(); Ok(()) }
-            EjsonValue::Undefined => { self.write_undefined_wrapper(); Ok(()) }
-            EjsonValue::Bool(b) => { self.write_boolean(*b); Ok(()) }
-            EjsonValue::Number(n) => { self.write_number_as_ejson(*n); Ok(()) }
-            EjsonValue::Str(s) => { self.write_str(s); Ok(()) }
+            EjsonValue::Null => {
+                self.write_null();
+                Ok(())
+            }
+            EjsonValue::Undefined => {
+                self.write_undefined_wrapper();
+                Ok(())
+            }
+            EjsonValue::Bool(b) => {
+                self.write_boolean(*b);
+                Ok(())
+            }
+            EjsonValue::Number(n) => {
+                self.write_number_as_ejson(*n);
+                Ok(())
+            }
+            EjsonValue::Str(s) => {
+                self.write_str(s);
+                Ok(())
+            }
             EjsonValue::Array(arr) => self.write_arr(arr),
             EjsonValue::Object(obj) => self.write_obj(obj),
-            EjsonValue::Date { timestamp_ms, iso } => self.write_date_as_ejson(*timestamp_ms, iso.as_deref()),
-            EjsonValue::RegExp(source, flags) => { self.write_regexp_as_ejson(source, flags); Ok(()) }
-            EjsonValue::ObjectId(id) => { self.write_object_id_as_ejson(id); Ok(()) }
-            EjsonValue::Int32(v) => { self.write_bson_int32_as_ejson(v); Ok(()) }
-            EjsonValue::Int64(v) => { self.write_bson_int64_as_ejson(v); Ok(()) }
-            EjsonValue::BsonFloat(v) => { self.write_bson_float_as_ejson(v); Ok(()) }
-            EjsonValue::Decimal128(v) => { self.write_bson_decimal128_as_ejson(v); Ok(()) }
-            EjsonValue::Binary(v) => { self.write_bson_binary_as_ejson(v); Ok(()) }
-            EjsonValue::Code(v) => { self.write_bson_code_as_ejson(v); Ok(()) }
+            EjsonValue::Date { timestamp_ms, iso } => {
+                self.write_date_as_ejson(*timestamp_ms, iso.as_deref())
+            }
+            EjsonValue::RegExp(source, flags) => {
+                self.write_regexp_as_ejson(source, flags);
+                Ok(())
+            }
+            EjsonValue::ObjectId(id) => {
+                self.write_object_id_as_ejson(id);
+                Ok(())
+            }
+            EjsonValue::Int32(v) => {
+                self.write_bson_int32_as_ejson(v);
+                Ok(())
+            }
+            EjsonValue::Int64(v) => {
+                self.write_bson_int64_as_ejson(v);
+                Ok(())
+            }
+            EjsonValue::BsonFloat(v) => {
+                self.write_bson_float_as_ejson(v);
+                Ok(())
+            }
+            EjsonValue::Decimal128(v) => {
+                self.write_bson_decimal128_as_ejson(v);
+                Ok(())
+            }
+            EjsonValue::Binary(v) => {
+                self.write_bson_binary_as_ejson(v);
+                Ok(())
+            }
+            EjsonValue::Code(v) => {
+                self.write_bson_code_as_ejson(v);
+                Ok(())
+            }
             EjsonValue::CodeWithScope(v) => self.write_bson_code_wscope_bson(&v.code, &v.scope),
-            EjsonValue::Symbol(v) => { self.write_bson_symbol_as_ejson(v); Ok(()) }
-            EjsonValue::Timestamp(v) => { self.write_bson_timestamp_as_ejson(v); Ok(()) }
+            EjsonValue::Symbol(v) => {
+                self.write_bson_symbol_as_ejson(v);
+                Ok(())
+            }
+            EjsonValue::Timestamp(v) => {
+                self.write_bson_timestamp_as_ejson(v);
+                Ok(())
+            }
             EjsonValue::DbPointer(v) => self.write_bson_db_pointer_as_ejson(v),
-            EjsonValue::MinKey(_) => { self.write_bson_min_key_as_ejson(); Ok(()) }
-            EjsonValue::MaxKey(_) => { self.write_bson_max_key_as_ejson(); Ok(()) }
-            EjsonValue::Integer(i) => { self.write_integer_as_ejson(*i); Ok(()) }
-            EjsonValue::Float(f) => { self.write_float_as_ejson(*f); Ok(()) }
+            EjsonValue::MinKey(_) => {
+                self.write_bson_min_key_as_ejson();
+                Ok(())
+            }
+            EjsonValue::MaxKey(_) => {
+                self.write_bson_max_key_as_ejson();
+                Ok(())
+            }
+            EjsonValue::Integer(i) => {
+                self.write_integer_as_ejson(*i);
+                Ok(())
+            }
+            EjsonValue::Float(f) => {
+                self.write_float_as_ejson(*f);
+                Ok(())
+            }
         }
     }
 
@@ -228,7 +296,11 @@ impl EjsonEncoder {
     // ----------------------------------------------------------------
     // Date
 
-    fn write_date_as_ejson(&mut self, timestamp_ms: i64, iso: Option<&str>) -> Result<(), EjsonEncodeError> {
+    fn write_date_as_ejson(
+        &mut self,
+        timestamp_ms: i64,
+        iso: Option<&str>,
+    ) -> Result<(), EjsonEncodeError> {
         // {"$date": ...}
         self.writer.buf(b"{\"$date\":");
 
@@ -407,7 +479,10 @@ impl EjsonEncoder {
     // ----------------------------------------------------------------
     // DbPointer
 
-    fn write_bson_db_pointer_as_ejson(&mut self, v: &BsonDbPointer) -> Result<(), EjsonEncodeError> {
+    fn write_bson_db_pointer_as_ejson(
+        &mut self,
+        v: &BsonDbPointer,
+    ) -> Result<(), EjsonEncodeError> {
         // {"$dbPointer":{"$ref":"...","$id":{"$oid":"..."}}}
         self.writer.buf(b"{\"$dbPointer\":{\"$ref\":");
         self.write_str(&v.name);
@@ -492,12 +567,18 @@ fn bson_to_ejson_value(v: &BsonValue) -> EjsonValue {
         BsonValue::Str(s) => EjsonValue::Str(s.clone()),
         BsonValue::ObjectId(id) => EjsonValue::ObjectId(id.clone()),
         BsonValue::Binary(b) => EjsonValue::Binary(b.clone()),
-        BsonValue::DateTime(ms) => EjsonValue::Date { timestamp_ms: *ms, iso: None },
+        BsonValue::DateTime(ms) => EjsonValue::Date {
+            timestamp_ms: *ms,
+            iso: None,
+        },
         BsonValue::Symbol(s) => EjsonValue::Symbol(s.clone()),
         BsonValue::Timestamp(t) => EjsonValue::Timestamp(t.clone()),
         BsonValue::Array(arr) => EjsonValue::Array(arr.iter().map(bson_to_ejson_value).collect()),
         BsonValue::Document(fields) => EjsonValue::Object(
-            fields.iter().map(|(k, v)| (k.clone(), bson_to_ejson_value(v))).collect()
+            fields
+                .iter()
+                .map(|(k, v)| (k.clone(), bson_to_ejson_value(v)))
+                .collect(),
         ),
         _ => EjsonValue::Null,
     }

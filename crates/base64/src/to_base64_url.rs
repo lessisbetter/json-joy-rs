@@ -28,6 +28,7 @@ pub fn to_base64_url(uint8: &[u8], length: usize) -> String {
     let encoder = create_to_base64(
         Some("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"),
         Some(""),
-    ).unwrap();
+    )
+    .unwrap();
     encoder(uint8, length)
 }

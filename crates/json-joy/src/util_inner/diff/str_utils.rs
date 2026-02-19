@@ -43,9 +43,15 @@ pub fn cleanup_patch(patch: &mut Patch) {
                     // Pop the last two equalities (the one we just processed and the one before)
                     equalities.pop();
                     equalities.pop();
-                    pointer = if let Some(&p) = equalities.last() { p } else { 0 };
+                    pointer = if let Some(&p) = equalities.last() {
+                        p
+                    } else {
+                        0
+                    };
                     // Reset to just before this position
-                    if pointer > 0 { pointer = pointer.saturating_sub(1); }
+                    if pointer > 0 {
+                        pointer = pointer.saturating_sub(1);
+                    }
                     len_ins1 = 0;
                     len_del1 = 0;
                     len_ins2 = 0;
@@ -101,7 +107,9 @@ pub fn cleanup_patch(patch: &mut Patch) {
 }
 
 fn semantic_score(one: &str, two: &str) -> u8 {
-    if one.is_empty() || two.is_empty() { return 6; }
+    if one.is_empty() || two.is_empty() {
+        return 6;
+    }
     let char1 = one.chars().last().unwrap();
     let char2 = two.chars().next().unwrap();
     let non_alnum1 = !char1.is_alphanumeric();
@@ -112,11 +120,21 @@ fn semantic_score(one: &str, two: &str) -> u8 {
     let lb2 = ws2 && (char2 == '\r' || char2 == '\n');
     let bl1 = lb1 && (one.ends_with("\n\r\n") || one.ends_with("\n\n"));
     let bl2 = lb2 && (two.starts_with("\r\n\r\n") || two.starts_with("\n\n"));
-    if bl1 || bl2 { return 5; }
-    if lb1 || lb2 { return 4; }
-    if non_alnum1 && !ws1 && ws2 { return 3; }
-    if ws1 || ws2 { return 2; }
-    if non_alnum1 || non_alnum2 { return 1; }
+    if bl1 || bl2 {
+        return 5;
+    }
+    if lb1 || lb2 {
+        return 4;
+    }
+    if non_alnum1 && !ws1 && ws2 {
+        return 3;
+    }
+    if ws1 || ws2 {
+        return 2;
+    }
+    if non_alnum1 || non_alnum2 {
+        return 1;
+    }
     0
 }
 
@@ -137,7 +155,10 @@ fn cleanup_semantic_lossless(patch: &mut Patch) {
                 let edit_chars: Vec<char> = edit.chars().collect();
                 let common_str: String = edit_chars[edit_chars.len() - common..].iter().collect();
                 equality1 = e1_chars[..e1_chars.len() - common].iter().collect();
-                edit = common_str.clone() + &edit_chars[..edit_chars.len() - common].iter().collect::<String>();
+                edit = common_str.clone()
+                    + &edit_chars[..edit_chars.len() - common]
+                        .iter()
+                        .collect::<String>();
                 equality2 = common_str + &equality2;
             }
 
@@ -145,7 +166,8 @@ fn cleanup_semantic_lossless(patch: &mut Patch) {
             let mut best_eq1 = equality1.clone();
             let mut best_edit = edit.clone();
             let mut best_eq2 = equality2.clone();
-            let mut best_score = semantic_score(&equality1, &edit) + semantic_score(&edit, &equality2);
+            let mut best_score =
+                semantic_score(&equality1, &edit) + semantic_score(&edit, &equality2);
 
             let edit_chars: Vec<char> = edit.chars().collect();
             let eq2_chars: Vec<char> = equality2.chars().collect();
@@ -156,7 +178,9 @@ fn cleanup_semantic_lossless(patch: &mut Patch) {
             while !ed.is_empty() && !eq2.is_empty() {
                 let ed_chars: Vec<char> = ed.chars().collect();
                 let eq2_chars_cur: Vec<char> = eq2.chars().collect();
-                if ed_chars[0] != eq2_chars_cur[0] { break; }
+                if ed_chars[0] != eq2_chars_cur[0] {
+                    break;
+                }
                 let c = ed_chars[0];
                 eq1.push(c);
                 ed = ed_chars[1..].iter().collect::<String>() + &c.to_string();
@@ -174,15 +198,21 @@ fn cleanup_semantic_lossless(patch: &mut Patch) {
             if patch[pointer - 1].1 != best_eq1 {
                 if best_eq1.is_empty() {
                     patch.remove(pointer - 1);
-                    if pointer > 0 { pointer -= 1; }
+                    if pointer > 0 {
+                        pointer -= 1;
+                    }
                 } else {
                     patch[pointer - 1].1 = best_eq1;
                 }
-                if let Some(p) = patch.get_mut(pointer) { p.1 = best_edit; }
+                if let Some(p) = patch.get_mut(pointer) {
+                    p.1 = best_edit;
+                }
                 if pointer + 1 < patch.len() {
                     if best_eq2.is_empty() {
                         patch.remove(pointer + 1);
-                        if pointer > 0 { pointer -= 1; }
+                        if pointer > 0 {
+                            pointer -= 1;
+                        }
                     } else {
                         patch[pointer + 1].1 = best_eq2;
                     }
@@ -202,8 +232,16 @@ mod tests {
     fn cleanup_patch_basic() {
         let mut p = diff("the cat sat on the mat", "the cat sat on the bat");
         cleanup_patch(&mut p);
-        let src: String = p.iter().filter(|(t, _)| *t != PatchOpType::Ins).map(|(_, s)| s.as_str()).collect();
-        let dst: String = p.iter().filter(|(t, _)| *t != PatchOpType::Del).map(|(_, s)| s.as_str()).collect();
+        let src: String = p
+            .iter()
+            .filter(|(t, _)| *t != PatchOpType::Ins)
+            .map(|(_, s)| s.as_str())
+            .collect();
+        let dst: String = p
+            .iter()
+            .filter(|(t, _)| *t != PatchOpType::Del)
+            .map(|(_, s)| s.as_str())
+            .collect();
         assert_eq!(src, "the cat sat on the mat");
         assert_eq!(dst, "the cat sat on the bat");
     }

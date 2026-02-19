@@ -5,9 +5,9 @@
 use serde_json::Value;
 use std::collections::HashMap;
 
+use super::types::{JtdForm, JtdType};
 use crate::schema::NumFormat;
 use crate::type_def::TypeNode;
-use super::types::{JtdForm, JtdType};
 
 fn num_format_to_jtd(format: NumFormat) -> Option<JtdType> {
     match format {
@@ -24,18 +24,48 @@ fn num_format_to_jtd(format: NumFormat) -> Option<JtdType> {
 
 fn const_num_to_jtd(n: f64) -> JtdForm {
     if n != n.round() {
-        return JtdForm::Type { type_: JtdType::Float64 };
+        return JtdForm::Type {
+            type_: JtdType::Float64,
+        };
     }
     if n >= 0.0 {
-        if n <= 255.0 { return JtdForm::Type { type_: JtdType::Uint8 }; }
-        if n <= 65535.0 { return JtdForm::Type { type_: JtdType::Uint16 }; }
-        if n <= 4294967295.0 { return JtdForm::Type { type_: JtdType::Uint32 }; }
-        return JtdForm::Type { type_: JtdType::Float64 };
+        if n <= 255.0 {
+            return JtdForm::Type {
+                type_: JtdType::Uint8,
+            };
+        }
+        if n <= 65535.0 {
+            return JtdForm::Type {
+                type_: JtdType::Uint16,
+            };
+        }
+        if n <= 4294967295.0 {
+            return JtdForm::Type {
+                type_: JtdType::Uint32,
+            };
+        }
+        return JtdForm::Type {
+            type_: JtdType::Float64,
+        };
     }
-    if n >= -128.0 { return JtdForm::Type { type_: JtdType::Int8 }; }
-    if n >= -32768.0 { return JtdForm::Type { type_: JtdType::Int16 }; }
-    if n >= -2147483648.0 { return JtdForm::Type { type_: JtdType::Int32 }; }
-    JtdForm::Type { type_: JtdType::Float64 }
+    if n >= -128.0 {
+        return JtdForm::Type {
+            type_: JtdType::Int8,
+        };
+    }
+    if n >= -32768.0 {
+        return JtdForm::Type {
+            type_: JtdType::Int16,
+        };
+    }
+    if n >= -2147483648.0 {
+        return JtdForm::Type {
+            type_: JtdType::Int32,
+        };
+    }
+    JtdForm::Type {
+        type_: JtdType::Float64,
+    }
 }
 
 /// Convert a `TypeNode` to a JTD form.
@@ -45,11 +75,17 @@ pub fn to_jtd_form(type_: &TypeNode) -> JtdForm {
     match type_ {
         TypeNode::Any(_) => JtdForm::Empty { nullable: true },
 
-        TypeNode::Bool(_) => JtdForm::Type { type_: JtdType::Boolean },
+        TypeNode::Bool(_) => JtdForm::Type {
+            type_: JtdType::Boolean,
+        },
 
         TypeNode::Con(t) => match &t.value {
-            Value::Bool(_) => JtdForm::Type { type_: JtdType::Boolean },
-            Value::String(_) => JtdForm::Type { type_: JtdType::String },
+            Value::Bool(_) => JtdForm::Type {
+                type_: JtdType::Boolean,
+            },
+            Value::String(_) => JtdForm::Type {
+                type_: JtdType::String,
+            },
             Value::Number(n) => {
                 let f = n.as_f64().unwrap_or(0.0);
                 const_num_to_jtd(f)
@@ -66,7 +102,9 @@ pub fn to_jtd_form(type_: &TypeNode) -> JtdForm {
             JtdForm::Type { type_: jtd_type }
         }
 
-        TypeNode::Str(_) => JtdForm::Type { type_: JtdType::String },
+        TypeNode::Str(_) => JtdForm::Type {
+            type_: JtdType::String,
+        },
 
         TypeNode::Arr(t) => {
             if let Some(item_type) = &t.type_ {
@@ -101,7 +139,9 @@ pub fn to_jtd_form(type_: &TypeNode) -> JtdForm {
             values: Box::new(to_jtd_form(&t.value)),
         },
 
-        TypeNode::Ref(t) => JtdForm::Ref { ref_: t.ref_.clone() },
+        TypeNode::Ref(t) => JtdForm::Ref {
+            ref_: t.ref_.clone(),
+        },
 
         TypeNode::Alias(alias) => to_jtd_form(alias.get_type()),
 

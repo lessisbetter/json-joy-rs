@@ -16,11 +16,13 @@
 /// the required range without pulling in an external `rand` crate.
 pub fn random_session_id() -> u64 {
     const SESSION_MAX: u64 = 9007199254740991; // 2^53 - 1
-    const RESERVED: u64 = 0xFFFF;             // 65535
+    const RESERVED: u64 = 0xFFFF; // 65535
     const DIFF: u64 = SESSION_MAX - RESERVED;
 
     use std::time::{SystemTime, UNIX_EPOCH};
-    let d = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default();
+    let d = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default();
     // Mix seconds and sub-second nanos for entropy.
     let seed = (d.as_secs() << 30) ^ (d.subsec_nanos() as u64);
     let mixed = seed

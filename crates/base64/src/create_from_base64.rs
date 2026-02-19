@@ -102,10 +102,26 @@ pub fn create_from_base64(
         let mut i = 0;
 
         while i < main_length {
-            let sextet0 = if i < length { table[encoded_bytes[i] as usize] } else { -1 };
-            let sextet1 = if i + 1 < length { table[encoded_bytes[i + 1] as usize] } else { -1 };
-            let sextet2 = if i + 2 < length { table[encoded_bytes[i + 2] as usize] } else { -1 };
-            let sextet3 = if i + 3 < length { table[encoded_bytes[i + 3] as usize] } else { -1 };
+            let sextet0 = if i < length {
+                table[encoded_bytes[i] as usize]
+            } else {
+                -1
+            };
+            let sextet1 = if i + 1 < length {
+                table[encoded_bytes[i + 1] as usize]
+            } else {
+                -1
+            };
+            let sextet2 = if i + 2 < length {
+                table[encoded_bytes[i + 2] as usize]
+            } else {
+                -1
+            };
+            let sextet3 = if i + 3 < length {
+                table[encoded_bytes[i + 3] as usize]
+            } else {
+                -1
+            };
 
             if sextet0 < 0 || sextet1 < 0 || sextet2 < 0 || sextet3 < 0 {
                 return Err(Base64Error::InvalidBase64String);
@@ -125,7 +141,11 @@ pub fn create_from_base64(
 
         if padding == 2 {
             let sextet0 = table[encoded_bytes[main_length] as usize];
-            let sextet1 = if main_length + 1 < length { table[encoded_bytes[main_length + 1] as usize] } else { -1 };
+            let sextet1 = if main_length + 1 < length {
+                table[encoded_bytes[main_length + 1] as usize]
+            } else {
+                -1
+            };
 
             if sextet0 < 0 || sextet1 < 0 {
                 return Err(Base64Error::InvalidBase64String);
@@ -138,7 +158,11 @@ pub fn create_from_base64(
         } else if padding == 1 {
             let sextet0 = table[encoded_bytes[main_length] as usize];
             let sextet1 = table[encoded_bytes[main_length + 1] as usize];
-            let sextet2 = if main_length + 2 < length { table[encoded_bytes[main_length + 2] as usize] } else { -1 };
+            let sextet2 = if main_length + 2 < length {
+                table[encoded_bytes[main_length + 2] as usize]
+            } else {
+                -1
+            };
 
             if sextet0 < 0 || sextet1 < 0 || sextet2 < 0 {
                 return Err(Base64Error::InvalidBase64String);

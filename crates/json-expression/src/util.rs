@@ -74,7 +74,11 @@ pub fn num(value: &JsValue) -> f64 {
             Value::Array(_) | Value::Object(_) => f64::NAN,
         },
     };
-    if n.is_nan() { 0.0 } else { n }
+    if n.is_nan() {
+        0.0
+    } else {
+        n
+    }
 }
 
 /// Truncates a value to an i32. Mirrors JS `~~value` (ToInt32: wrapping, not saturating).
@@ -106,12 +110,24 @@ pub fn cmp(a: &JsValue, b: &JsValue) -> i64 {
         (JsValue::Json(Value::Number(na)), JsValue::Json(Value::Number(nb))) => {
             let fa = na.as_f64().unwrap_or(0.0);
             let fb = nb.as_f64().unwrap_or(0.0);
-            if fa > fb { 1 } else if fa < fb { -1 } else { 0 }
+            if fa > fb {
+                1
+            } else if fa < fb {
+                -1
+            } else {
+                0
+            }
         }
         _ => {
             let sa = str_val(a);
             let sb = str_val(b);
-            if sa > sb { 1 } else if sa < sb { -1 } else { 0 }
+            if sa > sb {
+                1
+            } else if sa < sb {
+                -1
+            } else {
+                0
+            }
         }
     }
 }
@@ -246,12 +262,16 @@ pub fn member(container: &JsValue, index: &JsValue) -> Result<JsValue, JsError> 
             Ok(i64_to_jsval(b[i as usize] as i64))
         }
         JsValue::Json(Value::Object(obj)) => match index {
-            JsValue::Json(Value::String(k)) => {
-                Ok(obj.get(k.as_str()).map(|v| JsValue::Json(v.clone())).unwrap_or(JsValue::Undefined))
-            }
+            JsValue::Json(Value::String(k)) => Ok(obj
+                .get(k.as_str())
+                .map(|v| JsValue::Json(v.clone()))
+                .unwrap_or(JsValue::Undefined)),
             JsValue::Json(Value::Number(n)) => {
                 let k = n.to_string();
-                Ok(obj.get(k.as_str()).map(|v| JsValue::Json(v.clone())).unwrap_or(JsValue::Undefined))
+                Ok(obj
+                    .get(k.as_str())
+                    .map(|v| JsValue::Json(v.clone()))
+                    .unwrap_or(JsValue::Undefined))
             }
             _ => Err(JsError::NotStringIndex),
         },
@@ -296,8 +316,16 @@ pub fn substr(s: &JsValue, from: &JsValue, to: &JsValue) -> JsValue {
     let to_i = int(to);
 
     // Mirror JS str.slice(): negative indices count from end
-    let start = if from_i < 0 { (len + from_i).max(0) as usize } else { from_i.min(len) as usize };
-    let end = if to_i < 0 { (len + to_i).max(0) as usize } else { to_i.min(len) as usize };
+    let start = if from_i < 0 {
+        (len + from_i).max(0) as usize
+    } else {
+        from_i.min(len) as usize
+    };
+    let end = if to_i < 0 {
+        (len + to_i).max(0) as usize
+    } else {
+        to_i.min(len) as usize
+    };
 
     let result: String = chars[start..end].iter().collect();
     JsValue::Json(Value::String(result))
@@ -330,8 +358,9 @@ fn ip4_regex() -> &'static regex::Regex {
     static RE: OnceLock<regex::Regex> = OnceLock::new();
     RE.get_or_init(|| {
         regex::Regex::new(
-            r"^(?:(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.){3}(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)$"
-        ).unwrap()
+            r"^(?:(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.){3}(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)$",
+        )
+        .unwrap()
     })
 }
 
@@ -349,9 +378,8 @@ fn uuid_regex() -> &'static regex::Regex {
     use std::sync::OnceLock;
     static RE: OnceLock<regex::Regex> = OnceLock::new();
     RE.get_or_init(|| {
-        regex::Regex::new(
-            r"(?i)^(?:urn:uuid:)?[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$"
-        ).unwrap()
+        regex::Regex::new(r"(?i)^(?:urn:uuid:)?[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$")
+            .unwrap()
     })
 }
 
@@ -375,7 +403,8 @@ fn duration_regex() -> &'static regex::Regex {
     use std::sync::OnceLock;
     static RE: OnceLock<regex::Regex> = OnceLock::new();
     RE.get_or_init(|| {
-        regex::Regex::new(r"^P(?!$)((\d+Y)?(\d+M)?(\d+D)?(T(?=\d)(\d+H)?(\d+M)?(\d+S)?)?|(\d+W)?)$").unwrap()
+        regex::Regex::new(r"^P(?!$)((\d+Y)?(\d+M)?(\d+D)?(T(?=\d)(\d+H)?(\d+M)?(\d+S)?)?|(\d+W)?)$")
+            .unwrap()
     })
 }
 
@@ -389,7 +418,10 @@ fn time_regex() -> &'static regex::Regex {
     use std::sync::OnceLock;
     static RE: OnceLock<regex::Regex> = OnceLock::new();
     RE.get_or_init(|| {
-        regex::Regex::new(r"(?i)^(\d{2}):(\d{2}):(\d{2}(?:\.\d+)?)(z|([+-])(\d{2})(?::?(\d{2}))?)?$").unwrap()
+        regex::Regex::new(
+            r"(?i)^(\d{2}):(\d{2}):(\d{2}(?:\.\d+)?)(z|([+-])(\d{2})(?::?(\d{2}))?)?$",
+        )
+        .unwrap()
     })
 }
 
@@ -486,9 +518,19 @@ pub fn is_time(value: &JsValue) -> bool {
     let min: i32 = caps[2].parse().unwrap_or(99);
     let sec: f64 = caps[3].parse().unwrap_or(99.0);
     let tz = caps.get(4).map(|m| m.as_str());
-    let tz_sign: i32 = if caps.get(5).map(|m| m.as_str()) == Some("-") { -1 } else { 1 };
-    let tz_h: i32 = caps.get(6).and_then(|m| m.as_str().parse().ok()).unwrap_or(0);
-    let tz_m: i32 = caps.get(7).and_then(|m| m.as_str().parse().ok()).unwrap_or(0);
+    let tz_sign: i32 = if caps.get(5).map(|m| m.as_str()) == Some("-") {
+        -1
+    } else {
+        1
+    };
+    let tz_h: i32 = caps
+        .get(6)
+        .and_then(|m| m.as_str().parse().ok())
+        .unwrap_or(0);
+    let tz_m: i32 = caps
+        .get(7)
+        .and_then(|m| m.as_str().parse().ok())
+        .unwrap_or(0);
     if tz_h > 23 || tz_m > 59 || tz.is_none() {
         return false;
     }
@@ -506,7 +548,9 @@ pub fn is_datetime(value: &JsValue) -> bool {
         _ => return false,
     };
     // Split on 't', 'T', ' ' or '\t'
-    let parts: Vec<&str> = s.splitn(2, |c: char| c == 't' || c == 'T' || c == ' ').collect();
+    let parts: Vec<&str> = s
+        .splitn(2, |c: char| c == 't' || c == 'T' || c == ' ')
+        .collect();
     if parts.len() != 2 {
         return false;
     }

@@ -35,7 +35,10 @@ impl BencodeDecoder {
     }
 
     pub fn decode(&self, input: &[u8]) -> Result<PackValue, BencodeError> {
-        let mut c = Cur { data: input, pos: 0 };
+        let mut c = Cur {
+            data: input,
+            pos: 0,
+        };
         self.read_any(&mut c)
     }
 
@@ -45,10 +48,22 @@ impl BencodeDecoder {
             b'i' => self.read_num(c),
             b'd' => self.read_obj(c),
             b'l' => self.read_arr(c),
-            b't' => { c.pos += 1; Ok(PackValue::Bool(true)) }
-            b'f' => { c.pos += 1; Ok(PackValue::Bool(false)) }
-            b'n' => { c.pos += 1; Ok(PackValue::Null) }
-            b'u' => { c.pos += 1; Ok(PackValue::Undefined) }
+            b't' => {
+                c.pos += 1;
+                Ok(PackValue::Bool(true))
+            }
+            b'f' => {
+                c.pos += 1;
+                Ok(PackValue::Bool(false))
+            }
+            b'n' => {
+                c.pos += 1;
+                Ok(PackValue::Null)
+            }
+            b'u' => {
+                c.pos += 1;
+                Ok(PackValue::Undefined)
+            }
             b'0'..=b'9' => self.read_bin_as_value(c),
             _ => Err(BencodeError::InvalidByte(c.pos)),
         }

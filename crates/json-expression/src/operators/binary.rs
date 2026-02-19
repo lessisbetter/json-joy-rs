@@ -14,13 +14,11 @@ fn u8_eval(expr: &[Value], ctx: &mut EvalCtx<'_>) -> Result<JsValue, JsError> {
 }
 
 pub fn operators() -> Vec<Arc<OperatorDefinition>> {
-    vec![
-        Arc::new(OperatorDefinition {
-            name: "u8",
-            aliases: &[],
-            arity: Arity::Fixed(2),
-            eval_fn: u8_eval,
-            impure: false,
-        }),
-    ]
+    vec![Arc::new(OperatorDefinition {
+        name: "u8",
+        aliases: &[],
+        arity: Arity::Fixed(2),
+        eval_fn: u8_eval,
+        impure: false,
+    })]
 }

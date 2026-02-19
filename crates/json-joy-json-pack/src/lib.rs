@@ -12,8 +12,8 @@ mod pack_value;
 pub mod avro;
 pub mod bencode;
 pub mod bson;
-pub mod ejson;
 pub mod cbor;
+pub mod ejson;
 pub mod ion;
 pub mod json;
 pub mod json_binary;
@@ -43,8 +43,8 @@ pub use cbor::{
 mod tests {
     use super::bencode::{BencodeDecoder, BencodeEncoder};
     use super::cbor::*;
-    use super::ubjson::{UbjsonDecoder, UbjsonEncoder};
     use super::json_binary;
+    use super::ubjson::{UbjsonDecoder, UbjsonEncoder};
     use super::PackValue;
     use serde_json::json;
 
@@ -270,8 +270,14 @@ mod tests {
     fn json_decoder_string() {
         use super::json::JsonDecoder;
         let mut dec = JsonDecoder::new();
-        assert_eq!(dec.decode(b"\"hello\"").unwrap(), PackValue::Str("hello".into()));
-        assert_eq!(dec.decode(b"\"a\\nb\"").unwrap(), PackValue::Str("a\nb".into()));
+        assert_eq!(
+            dec.decode(b"\"hello\"").unwrap(),
+            PackValue::Str("hello".into())
+        );
+        assert_eq!(
+            dec.decode(b"\"a\\nb\"").unwrap(),
+            PackValue::Str("a\nb".into())
+        );
     }
 
     #[test]
@@ -309,11 +315,19 @@ mod tests {
         use super::json::JsonDecoder;
         let mut dec = JsonDecoder::new();
         let arr = dec.decode(b"[1,2,3]").unwrap();
-        assert_eq!(arr, PackValue::Array(vec![
-            PackValue::Integer(1), PackValue::Integer(2), PackValue::Integer(3),
-        ]));
+        assert_eq!(
+            arr,
+            PackValue::Array(vec![
+                PackValue::Integer(1),
+                PackValue::Integer(2),
+                PackValue::Integer(3),
+            ])
+        );
         let obj = dec.decode(b"{\"a\":1}").unwrap();
-        assert_eq!(obj, PackValue::Object(vec![("a".into(), PackValue::Integer(1))]));
+        assert_eq!(
+            obj,
+            PackValue::Object(vec![("a".into(), PackValue::Integer(1))])
+        );
     }
 
     #[test]
@@ -346,19 +360,26 @@ mod tests {
         let mut dec = JsonDecoderPartial::new();
         // Missing closing bracket
         let v = dec.decode(b"[1, 2, 3").unwrap();
-        assert_eq!(v, PackValue::Array(vec![
-            PackValue::Integer(1), PackValue::Integer(2), PackValue::Integer(3),
-        ]));
+        assert_eq!(
+            v,
+            PackValue::Array(vec![
+                PackValue::Integer(1),
+                PackValue::Integer(2),
+                PackValue::Integer(3),
+            ])
+        );
         // Trailing comma
         let v = dec.decode(b"[1, 2, ").unwrap();
-        assert_eq!(v, PackValue::Array(vec![
-            PackValue::Integer(1), PackValue::Integer(2),
-        ]));
+        assert_eq!(
+            v,
+            PackValue::Array(vec![PackValue::Integer(1), PackValue::Integer(2),])
+        );
         // Corrupt element — upstream drops it, returns prior elements
         let v = dec.decode(b"[1, 2, x").unwrap();
-        assert_eq!(v, PackValue::Array(vec![
-            PackValue::Integer(1), PackValue::Integer(2),
-        ]));
+        assert_eq!(
+            v,
+            PackValue::Array(vec![PackValue::Integer(1), PackValue::Integer(2),])
+        );
     }
 
     #[test]
@@ -367,13 +388,19 @@ mod tests {
         let mut dec = JsonDecoderPartial::new();
         // Missing value for last key — key-value pair is dropped
         let v = dec.decode(b"{\"foo\": 1, \"bar\":").unwrap();
-        assert_eq!(v, PackValue::Object(vec![("foo".into(), PackValue::Integer(1))]));
+        assert_eq!(
+            v,
+            PackValue::Object(vec![("foo".into(), PackValue::Integer(1))])
+        );
         // Complete pairs
         let v = dec.decode(b"{\"a\":1,\"b\":2").unwrap();
-        assert_eq!(v, PackValue::Object(vec![
-            ("a".into(), PackValue::Integer(1)),
-            ("b".into(), PackValue::Integer(2)),
-        ]));
+        assert_eq!(
+            v,
+            PackValue::Object(vec![
+                ("a".into(), PackValue::Integer(1)),
+                ("b".into(), PackValue::Integer(2)),
+            ])
+        );
     }
 
     // --- Slice 4: MessagePack format ---
@@ -558,7 +585,7 @@ mod tests {
         let mut dec = RmRecordDecoder::new();
         // Push only the header, not the payload
         dec.push(&[0x80, 0x00, 0x00, 0x05]); // fin=1, len=5
-        // No payload yet => should return None
+                                             // No payload yet => should return None
         assert!(dec.read_record().is_none());
         // Push the payload
         dec.push(b"hello");
@@ -796,10 +823,7 @@ mod tests {
         use super::resp::RespEncoder;
         use super::PackValue;
         let mut enc = RespEncoder::new();
-        let arr = PackValue::Array(vec![
-            PackValue::Integer(1),
-            PackValue::Integer(2),
-        ]);
+        let arr = PackValue::Array(vec![PackValue::Integer(1), PackValue::Integer(2)]);
         let out = enc.encode(&arr);
         assert_eq!(out, b"*2\r\n:1\r\n:2\r\n");
     }
@@ -835,7 +859,10 @@ mod tests {
         use super::resp::RespDecoder;
         use super::PackValue;
         let mut dec = RespDecoder::new();
-        assert_eq!(dec.decode(b"+hello\r\n").unwrap(), PackValue::Str("hello".into()));
+        assert_eq!(
+            dec.decode(b"+hello\r\n").unwrap(),
+            PackValue::Str("hello".into())
+        );
     }
 
     #[test]
@@ -857,7 +884,9 @@ mod tests {
         ];
         for v in values {
             let bytes = enc.encode(&v);
-            let decoded = dec.decode(&bytes).unwrap_or_else(|e| panic!("decode failed for {v:?}: {e}"));
+            let decoded = dec
+                .decode(&bytes)
+                .unwrap_or_else(|e| panic!("decode failed for {v:?}: {e}"));
             // For arrays, check recursively
             match (&v, &decoded) {
                 (PackValue::Array(a), PackValue::Array(b)) => assert_eq!(a.len(), b.len()),
@@ -955,7 +984,9 @@ mod tests {
         let mut enc = RpcMessageEncoder::new();
         let cred = RpcOpaqueAuth::none();
         let verf = RpcOpaqueAuth::none();
-        let bytes = enc.encode_call(42, 100003, 3, 1, &cred, &verf, &[]).unwrap();
+        let bytes = enc
+            .encode_call(42, 100003, 3, 1, &cred, &verf, &[])
+            .unwrap();
         let dec = RpcMessageDecoder::new();
         let msg = dec.decode_message(&bytes).unwrap().unwrap();
         if let RpcMessage::Call(call) = msg {
@@ -970,11 +1001,15 @@ mod tests {
 
     #[test]
     fn rpc_accepted_reply_roundtrip() {
-        use super::rpc::{RpcAcceptStat, RpcMessage, RpcMessageDecoder, RpcMessageEncoder, RpcOpaqueAuth};
+        use super::rpc::{
+            RpcAcceptStat, RpcMessage, RpcMessageDecoder, RpcMessageEncoder, RpcOpaqueAuth,
+        };
         let mut enc = RpcMessageEncoder::new();
         let verf = RpcOpaqueAuth::none();
         let results = b"\x00\x00\x00\x01";
-        let bytes = enc.encode_accepted_reply(99, &verf, 0, None, results).unwrap();
+        let bytes = enc
+            .encode_accepted_reply(99, &verf, 0, None, results)
+            .unwrap();
         let dec = RpcMessageDecoder::new();
         let msg = dec.decode_message(&bytes).unwrap().unwrap();
         if let RpcMessage::AcceptedReply(reply) = msg {
@@ -988,7 +1023,9 @@ mod tests {
 
     #[test]
     fn rpc_rejected_reply_auth_error() {
-        use super::rpc::{RpcAuthStat, RpcMessage, RpcMessageDecoder, RpcMessageEncoder, RpcRejectStat};
+        use super::rpc::{
+            RpcAuthStat, RpcMessage, RpcMessageDecoder, RpcMessageEncoder, RpcRejectStat,
+        };
         let mut enc = RpcMessageEncoder::new();
         let bytes = enc.encode_rejected_reply(7, 1, None, Some(1));
         let dec = RpcMessageDecoder::new();
@@ -1004,9 +1041,14 @@ mod tests {
 
     #[test]
     fn rpc_opaque_auth_body() {
-        use super::rpc::{RpcAuthFlavor, RpcMessage, RpcMessageDecoder, RpcMessageEncoder, RpcOpaqueAuth};
+        use super::rpc::{
+            RpcAuthFlavor, RpcMessage, RpcMessageDecoder, RpcMessageEncoder, RpcOpaqueAuth,
+        };
         let mut enc = RpcMessageEncoder::new();
-        let cred = RpcOpaqueAuth { flavor: RpcAuthFlavor::AuthSys, body: b"uid\x00".to_vec() };
+        let cred = RpcOpaqueAuth {
+            flavor: RpcAuthFlavor::AuthSys,
+            body: b"uid\x00".to_vec(),
+        };
         let verf = RpcOpaqueAuth::none();
         let bytes = enc.encode_call(1, 1, 1, 1, &cred, &verf, &[]).unwrap();
         let dec = RpcMessageDecoder::new();
@@ -1215,7 +1257,9 @@ mod tests {
         assert_eq!(s, "true");
         let s = enc.encode_to_string(&EjsonValue::Bool(false)).unwrap();
         assert_eq!(s, "false");
-        let s = enc.encode_to_string(&EjsonValue::Str("hello".to_string())).unwrap();
+        let s = enc
+            .encode_to_string(&EjsonValue::Str("hello".to_string()))
+            .unwrap();
         assert_eq!(s, "\"hello\"");
     }
 
@@ -1235,7 +1279,9 @@ mod tests {
         let s = enc.encode_to_string(&EjsonValue::Number(42.0)).unwrap();
         assert_eq!(s, r#"{"$numberInt":"42"}"#);
         // Integer outside Int32 range
-        let s = enc.encode_to_string(&EjsonValue::Number(2147483648.0)).unwrap();
+        let s = enc
+            .encode_to_string(&EjsonValue::Number(2147483648.0))
+            .unwrap();
         assert_eq!(s, r#"{"$numberLong":"2147483648"}"#);
         // Float
         let s = enc.encode_to_string(&EjsonValue::Number(3.14)).unwrap();
@@ -1252,9 +1298,13 @@ mod tests {
         let s = enc.encode_to_string(&EjsonValue::Number(3.14)).unwrap();
         assert_eq!(s, "3.14");
         // Non-finite still get wrapped
-        let s = enc.encode_to_string(&EjsonValue::Number(f64::INFINITY)).unwrap();
+        let s = enc
+            .encode_to_string(&EjsonValue::Number(f64::INFINITY))
+            .unwrap();
         assert_eq!(s, r#"{"$numberDouble":"Infinity"}"#);
-        let s = enc.encode_to_string(&EjsonValue::Number(f64::NEG_INFINITY)).unwrap();
+        let s = enc
+            .encode_to_string(&EjsonValue::Number(f64::NEG_INFINITY))
+            .unwrap();
         assert_eq!(s, r#"{"$numberDouble":"-Infinity"}"#);
         let s = enc.encode_to_string(&EjsonValue::Number(f64::NAN)).unwrap();
         assert_eq!(s, r#"{"$numberDouble":"NaN"}"#);
@@ -1285,7 +1335,9 @@ mod tests {
         use super::bson::BsonInt64;
         use super::ejson::{EjsonEncoder, EjsonEncoderOptions, EjsonValue};
         let mut enc = EjsonEncoder::with_options(EjsonEncoderOptions { canonical: true });
-        let v = BsonInt64 { value: 1234567890123 };
+        let v = BsonInt64 {
+            value: 1234567890123,
+        };
         let s = enc.encode_to_string(&EjsonValue::Int64(v)).unwrap();
         assert_eq!(s, r#"{"$numberLong":"1234567890123"}"#);
     }
@@ -1305,7 +1357,11 @@ mod tests {
         use super::bson::BsonObjectId;
         use super::ejson::{EjsonEncoder, EjsonValue};
         let mut enc = EjsonEncoder::new();
-        let id = BsonObjectId { timestamp: 0x507f1f77, process: 0xbcf86cd799, counter: 0x439011 };
+        let id = BsonObjectId {
+            timestamp: 0x507f1f77,
+            process: 0xbcf86cd799,
+            counter: 0x439011,
+        };
         let s = enc.encode_to_string(&EjsonValue::ObjectId(id)).unwrap();
         assert_eq!(s, r#"{"$oid":"507f1f77bcf86cd799439011"}"#);
     }
@@ -1315,7 +1371,10 @@ mod tests {
         use super::bson::BsonBinary;
         use super::ejson::{EjsonEncoder, EjsonValue};
         let mut enc = EjsonEncoder::new();
-        let bin = BsonBinary { subtype: 0, data: vec![1, 2, 3, 4] };
+        let bin = BsonBinary {
+            subtype: 0,
+            data: vec![1, 2, 3, 4],
+        };
         let s = enc.encode_to_string(&EjsonValue::Binary(bin)).unwrap();
         assert_eq!(s, r#"{"$binary":{"base64":"AQIDBA==","subType":"00"}}"#);
     }
@@ -1325,7 +1384,9 @@ mod tests {
         use super::bson::BsonJavascriptCode;
         use super::ejson::{EjsonEncoder, EjsonValue};
         let mut enc = EjsonEncoder::new();
-        let code = BsonJavascriptCode { code: "function() { return 42; }".to_string() };
+        let code = BsonJavascriptCode {
+            code: "function() { return 42; }".to_string(),
+        };
         let s = enc.encode_to_string(&EjsonValue::Code(code)).unwrap();
         assert_eq!(s, r#"{"$code":"function() { return 42; }"}"#);
     }
@@ -1335,7 +1396,9 @@ mod tests {
         use super::bson::BsonSymbol;
         use super::ejson::{EjsonEncoder, EjsonValue};
         let mut enc = EjsonEncoder::new();
-        let sym = BsonSymbol { symbol: "mySymbol".to_string() };
+        let sym = BsonSymbol {
+            symbol: "mySymbol".to_string(),
+        };
         let s = enc.encode_to_string(&EjsonValue::Symbol(sym)).unwrap();
         assert_eq!(s, r#"{"$symbol":"mySymbol"}"#);
     }
@@ -1345,7 +1408,10 @@ mod tests {
         use super::bson::BsonTimestamp;
         use super::ejson::{EjsonEncoder, EjsonValue};
         let mut enc = EjsonEncoder::new();
-        let ts = BsonTimestamp { timestamp: 1234567890, increment: 12345 };
+        let ts = BsonTimestamp {
+            timestamp: 1234567890,
+            increment: 12345,
+        };
         let s = enc.encode_to_string(&EjsonValue::Timestamp(ts)).unwrap();
         assert_eq!(s, r#"{"$timestamp":{"t":1234567890,"i":12345}}"#);
     }
@@ -1355,19 +1421,29 @@ mod tests {
         use super::bson::{BsonMaxKey, BsonMinKey};
         use super::ejson::{EjsonEncoder, EjsonValue};
         let mut enc = EjsonEncoder::new();
-        assert_eq!(enc.encode_to_string(&EjsonValue::MinKey(BsonMinKey)).unwrap(), r#"{"$minKey":1}"#);
-        assert_eq!(enc.encode_to_string(&EjsonValue::MaxKey(BsonMaxKey)).unwrap(), r#"{"$maxKey":1}"#);
+        assert_eq!(
+            enc.encode_to_string(&EjsonValue::MinKey(BsonMinKey))
+                .unwrap(),
+            r#"{"$minKey":1}"#
+        );
+        assert_eq!(
+            enc.encode_to_string(&EjsonValue::MaxKey(BsonMaxKey))
+                .unwrap(),
+            r#"{"$maxKey":1}"#
+        );
     }
 
     #[test]
     fn ejson_encoder_regexp() {
         use super::ejson::{EjsonEncoder, EjsonValue};
         let mut enc = EjsonEncoder::new();
-        let s = enc.encode_to_string(&EjsonValue::RegExp(
-            "pattern".to_string(),
-            "gi".to_string(),
-        )).unwrap();
-        assert_eq!(s, r#"{"$regularExpression":{"pattern":"pattern","options":"gi"}}"#);
+        let s = enc
+            .encode_to_string(&EjsonValue::RegExp("pattern".to_string(), "gi".to_string()))
+            .unwrap();
+        assert_eq!(
+            s,
+            r#"{"$regularExpression":{"pattern":"pattern","options":"gi"}}"#
+        );
     }
 
     #[test]
@@ -1375,10 +1451,12 @@ mod tests {
         use super::ejson::{EjsonEncoder, EjsonValue};
         // 2023-01-01T00:00:00.000Z = 1672531200000 ms
         let mut enc = EjsonEncoder::new();
-        let s = enc.encode_to_string(&EjsonValue::Date {
-            timestamp_ms: 1672531200000,
-            iso: Some("2023-01-01T00:00:00.000Z".to_string()),
-        }).unwrap();
+        let s = enc
+            .encode_to_string(&EjsonValue::Date {
+                timestamp_ms: 1672531200000,
+                iso: Some("2023-01-01T00:00:00.000Z".to_string()),
+            })
+            .unwrap();
         assert_eq!(s, r#"{"$date":"2023-01-01T00:00:00.000Z"}"#);
     }
 
@@ -1386,10 +1464,12 @@ mod tests {
     fn ejson_encoder_date_canonical() {
         use super::ejson::{EjsonEncoder, EjsonEncoderOptions, EjsonValue};
         let mut enc = EjsonEncoder::with_options(EjsonEncoderOptions { canonical: true });
-        let s = enc.encode_to_string(&EjsonValue::Date {
-            timestamp_ms: 1672531200000,
-            iso: Some("2023-01-01T00:00:00.000Z".to_string()),
-        }).unwrap();
+        let s = enc
+            .encode_to_string(&EjsonValue::Date {
+                timestamp_ms: 1672531200000,
+                iso: Some("2023-01-01T00:00:00.000Z".to_string()),
+            })
+            .unwrap();
         assert_eq!(s, r#"{"$date":{"$numberLong":"1672531200000"}}"#);
     }
 
@@ -1398,10 +1478,20 @@ mod tests {
         use super::bson::{BsonDbPointer, BsonObjectId};
         use super::ejson::{EjsonEncoder, EjsonValue};
         let mut enc = EjsonEncoder::new();
-        let id = BsonObjectId { timestamp: 0x507f1f77, process: 0xbcf86cd799, counter: 0x439011 };
-        let ptr = BsonDbPointer { name: "collection".to_string(), id };
+        let id = BsonObjectId {
+            timestamp: 0x507f1f77,
+            process: 0xbcf86cd799,
+            counter: 0x439011,
+        };
+        let ptr = BsonDbPointer {
+            name: "collection".to_string(),
+            id,
+        };
         let s = enc.encode_to_string(&EjsonValue::DbPointer(ptr)).unwrap();
-        assert_eq!(s, r#"{"$dbPointer":{"$ref":"collection","$id":{"$oid":"507f1f77bcf86cd799439011"}}}"#);
+        assert_eq!(
+            s,
+            r#"{"$dbPointer":{"$ref":"collection","$id":{"$oid":"507f1f77bcf86cd799439011"}}}"#
+        );
     }
 
     #[test]
@@ -1414,7 +1504,10 @@ mod tests {
             EjsonValue::Number(3.0),
         ]);
         let s = enc.encode_to_string(&arr).unwrap();
-        assert_eq!(s, r#"[{"$numberInt":"1"},{"$numberInt":"2"},{"$numberInt":"3"}]"#);
+        assert_eq!(
+            s,
+            r#"[{"$numberInt":"1"},{"$numberInt":"2"},{"$numberInt":"3"}]"#
+        );
     }
 
     // ---------------------------------------------------------------- EJSON decoder
@@ -1428,7 +1521,10 @@ mod tests {
         assert_eq!(dec.decode_str("false").unwrap(), EjsonValue::Bool(false));
         assert_eq!(dec.decode_str("42").unwrap(), EjsonValue::Integer(42));
         assert_eq!(dec.decode_str("3.14").unwrap(), EjsonValue::Float(3.14));
-        assert_eq!(dec.decode_str("\"hello\"").unwrap(), EjsonValue::Str("hello".to_string()));
+        assert_eq!(
+            dec.decode_str("\"hello\"").unwrap(),
+            EjsonValue::Str("hello".to_string())
+        );
     }
 
     #[test]
@@ -1436,8 +1532,14 @@ mod tests {
         use super::bson::BsonObjectId;
         use super::ejson::{EjsonDecoder, EjsonValue};
         let mut dec = EjsonDecoder::new();
-        let v = dec.decode_str(r#"{"$oid":"507f1f77bcf86cd799439011"}"#).unwrap();
-        let expected = BsonObjectId { timestamp: 0x507f1f77, process: 0xbcf86cd799, counter: 0x439011 };
+        let v = dec
+            .decode_str(r#"{"$oid":"507f1f77bcf86cd799439011"}"#)
+            .unwrap();
+        let expected = BsonObjectId {
+            timestamp: 0x507f1f77,
+            process: 0xbcf86cd799,
+            counter: 0x439011,
+        };
         assert_eq!(v, EjsonValue::ObjectId(expected));
     }
 
@@ -1483,8 +1585,15 @@ mod tests {
         use super::bson::BsonInt64;
         use super::ejson::{EjsonDecoder, EjsonValue};
         let mut dec = EjsonDecoder::new();
-        let v = dec.decode_str(r#"{"$numberLong":"1234567890123"}"#).unwrap();
-        assert_eq!(v, EjsonValue::Int64(BsonInt64 { value: 1234567890123 }));
+        let v = dec
+            .decode_str(r#"{"$numberLong":"1234567890123"}"#)
+            .unwrap();
+        assert_eq!(
+            v,
+            EjsonValue::Int64(BsonInt64 {
+                value: 1234567890123
+            })
+        );
     }
 
     #[test]
@@ -1496,9 +1605,19 @@ mod tests {
         assert_eq!(v, EjsonValue::BsonFloat(BsonFloat { value: 3.14 }));
         // Special values
         let v_inf = dec.decode_str(r#"{"$numberDouble":"Infinity"}"#).unwrap();
-        assert_eq!(v_inf, EjsonValue::BsonFloat(BsonFloat { value: f64::INFINITY }));
+        assert_eq!(
+            v_inf,
+            EjsonValue::BsonFloat(BsonFloat {
+                value: f64::INFINITY
+            })
+        );
         let v_neginf = dec.decode_str(r#"{"$numberDouble":"-Infinity"}"#).unwrap();
-        assert_eq!(v_neginf, EjsonValue::BsonFloat(BsonFloat { value: f64::NEG_INFINITY }));
+        assert_eq!(
+            v_neginf,
+            EjsonValue::BsonFloat(BsonFloat {
+                value: f64::NEG_INFINITY
+            })
+        );
         let v_nan = dec.decode_str(r#"{"$numberDouble":"NaN"}"#).unwrap();
         if let EjsonValue::BsonFloat(bf) = v_nan {
             assert!(bf.value.is_nan());
@@ -1513,7 +1632,12 @@ mod tests {
         use super::ejson::{EjsonDecoder, EjsonValue};
         let mut dec = EjsonDecoder::new();
         let v = dec.decode_str(r#"{"$numberDecimal":"123.456"}"#).unwrap();
-        assert_eq!(v, EjsonValue::Decimal128(BsonDecimal128 { data: vec![0u8; 16] }));
+        assert_eq!(
+            v,
+            EjsonValue::Decimal128(BsonDecimal128 {
+                data: vec![0u8; 16]
+            })
+        );
     }
 
     #[test]
@@ -1521,15 +1645,25 @@ mod tests {
         use super::bson::BsonBinary;
         use super::ejson::{EjsonDecoder, EjsonValue};
         let mut dec = EjsonDecoder::new();
-        let v = dec.decode_str(r#"{"$binary":{"base64":"AQIDBA==","subType":"00"}}"#).unwrap();
-        assert_eq!(v, EjsonValue::Binary(BsonBinary { subtype: 0, data: vec![1, 2, 3, 4] }));
+        let v = dec
+            .decode_str(r#"{"$binary":{"base64":"AQIDBA==","subType":"00"}}"#)
+            .unwrap();
+        assert_eq!(
+            v,
+            EjsonValue::Binary(BsonBinary {
+                subtype: 0,
+                data: vec![1, 2, 3, 4]
+            })
+        );
     }
 
     #[test]
     fn ejson_decoder_uuid() {
         use super::ejson::{EjsonDecoder, EjsonValue};
         let mut dec = EjsonDecoder::new();
-        let v = dec.decode_str(r#"{"$uuid":"c8edabc3-f738-4ca3-b68d-ab92a91478a3"}"#).unwrap();
+        let v = dec
+            .decode_str(r#"{"$uuid":"c8edabc3-f738-4ca3-b68d-ab92a91478a3"}"#)
+            .unwrap();
         if let EjsonValue::Binary(bin) = v {
             assert_eq!(bin.subtype, 4);
             assert_eq!(bin.data.len(), 16);
@@ -1553,8 +1687,15 @@ mod tests {
         use super::bson::BsonJavascriptCode;
         use super::ejson::{EjsonDecoder, EjsonValue};
         let mut dec = EjsonDecoder::new();
-        let v = dec.decode_str(r#"{"$code":"function() { return 42; }"}"#).unwrap();
-        assert_eq!(v, EjsonValue::Code(BsonJavascriptCode { code: "function() { return 42; }".to_string() }));
+        let v = dec
+            .decode_str(r#"{"$code":"function() { return 42; }"}"#)
+            .unwrap();
+        assert_eq!(
+            v,
+            EjsonValue::Code(BsonJavascriptCode {
+                code: "function() { return 42; }".to_string()
+            })
+        );
     }
 
     #[test]
@@ -1563,7 +1704,12 @@ mod tests {
         use super::ejson::{EjsonDecoder, EjsonValue};
         let mut dec = EjsonDecoder::new();
         let v = dec.decode_str(r#"{"$symbol":"mySymbol"}"#).unwrap();
-        assert_eq!(v, EjsonValue::Symbol(BsonSymbol { symbol: "mySymbol".to_string() }));
+        assert_eq!(
+            v,
+            EjsonValue::Symbol(BsonSymbol {
+                symbol: "mySymbol".to_string()
+            })
+        );
     }
 
     #[test]
@@ -1571,8 +1717,16 @@ mod tests {
         use super::bson::BsonTimestamp;
         use super::ejson::{EjsonDecoder, EjsonValue};
         let mut dec = EjsonDecoder::new();
-        let v = dec.decode_str(r#"{"$timestamp":{"t":1234567890,"i":12345}}"#).unwrap();
-        assert_eq!(v, EjsonValue::Timestamp(BsonTimestamp { timestamp: 1234567890, increment: 12345 }));
+        let v = dec
+            .decode_str(r#"{"$timestamp":{"t":1234567890,"i":12345}}"#)
+            .unwrap();
+        assert_eq!(
+            v,
+            EjsonValue::Timestamp(BsonTimestamp {
+                timestamp: 1234567890,
+                increment: 12345
+            })
+        );
     }
 
     #[test]
@@ -1595,7 +1749,9 @@ mod tests {
     fn ejson_decoder_regexp() {
         use super::ejson::{EjsonDecoder, EjsonValue};
         let mut dec = EjsonDecoder::new();
-        let v = dec.decode_str(r#"{"$regularExpression":{"pattern":"test","options":"gi"}}"#).unwrap();
+        let v = dec
+            .decode_str(r#"{"$regularExpression":{"pattern":"test","options":"gi"}}"#)
+            .unwrap();
         assert_eq!(v, EjsonValue::RegExp("test".to_string(), "gi".to_string()));
     }
 
@@ -1604,12 +1760,18 @@ mod tests {
         use super::bson::{BsonDbPointer, BsonObjectId};
         use super::ejson::{EjsonDecoder, EjsonValue};
         let mut dec = EjsonDecoder::new();
-        let v = dec.decode_str(
-            r#"{"$dbPointer":{"$ref":"collection","$id":{"$oid":"507f1f77bcf86cd799439011"}}}"#
-        ).unwrap();
+        let v = dec
+            .decode_str(
+                r#"{"$dbPointer":{"$ref":"collection","$id":{"$oid":"507f1f77bcf86cd799439011"}}}"#,
+            )
+            .unwrap();
         let expected = BsonDbPointer {
             name: "collection".to_string(),
-            id: BsonObjectId { timestamp: 0x507f1f77, process: 0xbcf86cd799, counter: 0x439011 },
+            id: BsonObjectId {
+                timestamp: 0x507f1f77,
+                process: 0xbcf86cd799,
+                counter: 0x439011,
+            },
         };
         assert_eq!(v, EjsonValue::DbPointer(expected));
     }
@@ -1618,16 +1780,32 @@ mod tests {
     fn ejson_decoder_date_iso() {
         use super::ejson::{EjsonDecoder, EjsonValue};
         let mut dec = EjsonDecoder::new();
-        let v = dec.decode_str(r#"{"$date":"2023-01-01T00:00:00.000Z"}"#).unwrap();
-        assert_eq!(v, EjsonValue::Date { timestamp_ms: 1672531200000, iso: None });
+        let v = dec
+            .decode_str(r#"{"$date":"2023-01-01T00:00:00.000Z"}"#)
+            .unwrap();
+        assert_eq!(
+            v,
+            EjsonValue::Date {
+                timestamp_ms: 1672531200000,
+                iso: None
+            }
+        );
     }
 
     #[test]
     fn ejson_decoder_date_canonical() {
         use super::ejson::{EjsonDecoder, EjsonValue};
         let mut dec = EjsonDecoder::new();
-        let v = dec.decode_str(r#"{"$date":{"$numberLong":"1672531200000"}}"#).unwrap();
-        assert_eq!(v, EjsonValue::Date { timestamp_ms: 1672531200000, iso: None });
+        let v = dec
+            .decode_str(r#"{"$date":{"$numberLong":"1672531200000"}}"#)
+            .unwrap();
+        assert_eq!(
+            v,
+            EjsonValue::Date {
+                timestamp_ms: 1672531200000,
+                iso: None
+            }
+        );
     }
 
     #[test]
@@ -1645,15 +1823,24 @@ mod tests {
         use super::bson::{BsonMaxKey, BsonMinKey};
         use super::ejson::{EjsonDecoder, EjsonValue};
         let mut dec = EjsonDecoder::new();
-        assert_eq!(dec.decode_str(r#"{"$minKey":1}"#).unwrap(), EjsonValue::MinKey(BsonMinKey));
-        assert_eq!(dec.decode_str(r#"{"$maxKey":1}"#).unwrap(), EjsonValue::MaxKey(BsonMaxKey));
+        assert_eq!(
+            dec.decode_str(r#"{"$minKey":1}"#).unwrap(),
+            EjsonValue::MinKey(BsonMinKey)
+        );
+        assert_eq!(
+            dec.decode_str(r#"{"$maxKey":1}"#).unwrap(),
+            EjsonValue::MaxKey(BsonMaxKey)
+        );
     }
 
     #[test]
     fn ejson_decoder_undefined() {
         use super::ejson::{EjsonDecoder, EjsonValue};
         let mut dec = EjsonDecoder::new();
-        assert_eq!(dec.decode_str(r#"{"$undefined":true}"#).unwrap(), EjsonValue::Undefined);
+        assert_eq!(
+            dec.decode_str(r#"{"$undefined":true}"#).unwrap(),
+            EjsonValue::Undefined
+        );
     }
 
     #[test]
@@ -1663,7 +1850,10 @@ mod tests {
         let v = dec.decode_str(r#"{"name":"John","age":30}"#).unwrap();
         if let EjsonValue::Object(pairs) = v {
             assert_eq!(pairs.len(), 2);
-            assert_eq!(pairs[0], ("name".to_string(), EjsonValue::Str("John".to_string())));
+            assert_eq!(
+                pairs[0],
+                ("name".to_string(), EjsonValue::Str("John".to_string()))
+            );
             assert_eq!(pairs[1], ("age".to_string(), EjsonValue::Integer(30)));
         } else {
             panic!("expected Object");
@@ -1699,11 +1889,14 @@ mod tests {
         use super::ejson::{EjsonDecoder, EjsonValue};
         let mut dec = EjsonDecoder::new();
         let v = dec.decode_str(r#"[1,2,3]"#).unwrap();
-        assert_eq!(v, EjsonValue::Array(vec![
-            EjsonValue::Integer(1),
-            EjsonValue::Integer(2),
-            EjsonValue::Integer(3),
-        ]));
+        assert_eq!(
+            v,
+            EjsonValue::Array(vec![
+                EjsonValue::Integer(1),
+                EjsonValue::Integer(2),
+                EjsonValue::Integer(3),
+            ])
+        );
     }
 
     #[test]
@@ -1712,8 +1905,14 @@ mod tests {
         use super::ejson::{EjsonDecoder, EjsonEncoder, EjsonValue};
         let mut enc = EjsonEncoder::new();
         let mut dec = EjsonDecoder::new();
-        let id = BsonObjectId { timestamp: 0x507f1f77, process: 0xbcf86cd799, counter: 0x439011 };
-        let encoded = enc.encode_to_string(&EjsonValue::ObjectId(id.clone())).unwrap();
+        let id = BsonObjectId {
+            timestamp: 0x507f1f77,
+            process: 0xbcf86cd799,
+            counter: 0x439011,
+        };
+        let encoded = enc
+            .encode_to_string(&EjsonValue::ObjectId(id.clone()))
+            .unwrap();
         let decoded = dec.decode_str(&encoded).unwrap();
         assert_eq!(decoded, EjsonValue::ObjectId(id));
     }
@@ -1724,8 +1923,13 @@ mod tests {
         use super::ejson::{EjsonDecoder, EjsonEncoder, EjsonValue};
         let mut enc = EjsonEncoder::new();
         let mut dec = EjsonDecoder::new();
-        let bin = BsonBinary { subtype: 0, data: vec![1, 2, 3, 4] };
-        let encoded = enc.encode_to_string(&EjsonValue::Binary(bin.clone())).unwrap();
+        let bin = BsonBinary {
+            subtype: 0,
+            data: vec![1, 2, 3, 4],
+        };
+        let encoded = enc
+            .encode_to_string(&EjsonValue::Binary(bin.clone()))
+            .unwrap();
         let decoded = dec.decode_str(&encoded).unwrap();
         assert_eq!(decoded, EjsonValue::Binary(bin));
     }
@@ -1736,8 +1940,13 @@ mod tests {
         use super::ejson::{EjsonDecoder, EjsonEncoder, EjsonValue};
         let mut enc = EjsonEncoder::new();
         let mut dec = EjsonDecoder::new();
-        let ts = BsonTimestamp { timestamp: 1234567890, increment: 12345 };
-        let encoded = enc.encode_to_string(&EjsonValue::Timestamp(ts.clone())).unwrap();
+        let ts = BsonTimestamp {
+            timestamp: 1234567890,
+            increment: 12345,
+        };
+        let encoded = enc
+            .encode_to_string(&EjsonValue::Timestamp(ts.clone()))
+            .unwrap();
         let decoded = dec.decode_str(&encoded).unwrap();
         assert_eq!(decoded, EjsonValue::Timestamp(ts));
     }
@@ -1871,8 +2080,9 @@ mod tests {
         let mut enc = MsgPackEncoderFast::new();
         let mut dec = MsgPackDecoderFast::new();
         // fixmap holds 0..=15 pairs; 15 pairs → 0x8f header
-        let pairs: Vec<(String, PackValue)> =
-            (0..15).map(|i| (format!("k{i}"), PackValue::Integer(i))).collect();
+        let pairs: Vec<(String, PackValue)> = (0..15)
+            .map(|i| (format!("k{i}"), PackValue::Integer(i)))
+            .collect();
         let obj = PackValue::Object(pairs.clone());
         let bytes = enc.encode(&obj);
         assert_eq!(bytes[0], 0x8f, "fixmap(15) header");
@@ -1984,7 +2194,10 @@ mod tests {
         let mut dec = RespDecoder::new();
         // ~2\r\n:1\r\n:2\r\n — set with 2 integer elements
         let v = dec.decode(b"~2\r\n:1\r\n:2\r\n").unwrap();
-        assert_eq!(v, PackValue::Array(vec![PackValue::Integer(1), PackValue::Integer(2)]));
+        assert_eq!(
+            v,
+            PackValue::Array(vec![PackValue::Integer(1), PackValue::Integer(2)])
+        );
     }
 
     #[test]
@@ -1993,7 +2206,10 @@ mod tests {
         let mut dec = RespDecoder::new();
         // %1\r\n+key\r\n:42\r\n — map with 1 pair
         let v = dec.decode(b"%1\r\n+key\r\n:42\r\n").unwrap();
-        assert_eq!(v, PackValue::Object(vec![("key".to_string(), PackValue::Integer(42))]));
+        assert_eq!(
+            v,
+            PackValue::Object(vec![("key".to_string(), PackValue::Integer(42))])
+        );
     }
 
     #[test]
@@ -2085,9 +2301,12 @@ mod tests {
         let mut dec = RespDecoder::new();
         // *2\r\n*2\r\n:1\r\n:2\r\n:3\r\n — nested arrays
         let v = dec.decode(b"*2\r\n*2\r\n:1\r\n:2\r\n:3\r\n").unwrap();
-        assert_eq!(v, PackValue::Array(vec![
-            PackValue::Array(vec![PackValue::Integer(1), PackValue::Integer(2)]),
-            PackValue::Integer(3),
-        ]));
+        assert_eq!(
+            v,
+            PackValue::Array(vec![
+                PackValue::Array(vec![PackValue::Integer(1), PackValue::Integer(2)]),
+                PackValue::Integer(3),
+            ])
+        );
     }
 }

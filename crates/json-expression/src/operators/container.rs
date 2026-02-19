@@ -20,7 +20,13 @@ fn member_eval(expr: &[Value], ctx: &mut EvalCtx<'_>) -> Result<JsValue, JsError
 
 pub fn operators() -> Vec<Arc<OperatorDefinition>> {
     vec![
-        Arc::new(OperatorDefinition { name: "[]", aliases: &["member"], arity: Arity::Fixed(2), eval_fn: member_eval, impure: false }),
+        Arc::new(OperatorDefinition {
+            name: "[]",
+            aliases: &["member"],
+            arity: Arity::Fixed(2),
+            eval_fn: member_eval,
+            impure: false,
+        }),
         // Note: 'len' is also defined in type_ops.ts; container.ts provides the same.
         // We register it here under its own key — the map will take the last one.
         // For exact parity, use "len" from type_ops which was added first.

@@ -171,11 +171,7 @@ impl<'a> JsonPathParser<'a> {
                 None
             };
 
-            Ok(Selector::Slice {
-                start,
-                end,
-                step,
-            })
+            Ok(Selector::Slice { start, end, step })
         } else {
             Ok(Selector::Index(start.unwrap_or(0)))
         }
@@ -206,7 +202,9 @@ impl<'a> JsonPathParser<'a> {
         }
 
         let num_str = &self.input[start..self.pos];
-        num_str.parse::<isize>().map_err(|_| ParseError::InvalidNumber)
+        num_str
+            .parse::<isize>()
+            .map_err(|_| ParseError::InvalidNumber)
     }
 
     fn parse_identifier(&mut self) -> Result<String, ParseError> {
@@ -346,15 +344,14 @@ impl<'a> JsonPathParser<'a> {
 
         // No comparison operator — treat as existence test
         match &left {
-            ValueExpression::Path(path) => {
-                Ok(FilterExpression::Existence { path: path.clone() })
-            }
-            ValueExpression::Current => {
-                Ok(FilterExpression::Existence { path: JSONPath::new(vec![]) })
-            }
-            ValueExpression::Function { name, args } => {
-                Ok(FilterExpression::Function { name: name.clone(), args: args.clone() })
-            }
+            ValueExpression::Path(path) => Ok(FilterExpression::Existence { path: path.clone() }),
+            ValueExpression::Current => Ok(FilterExpression::Existence {
+                path: JSONPath::new(vec![]),
+            }),
+            ValueExpression::Function { name, args } => Ok(FilterExpression::Function {
+                name: name.clone(),
+                args: args.clone(),
+            }),
             _ => Err(ParseError::InvalidSelector),
         }
     }
@@ -554,24 +551,44 @@ impl<'a> JsonPathParser<'a> {
         }
 
         let num_str = &self.input[start..self.pos];
-        num_str.parse::<f64>().map_err(|_| ParseError::InvalidNumber)
+        num_str
+            .parse::<f64>()
+            .map_err(|_| ParseError::InvalidNumber)
     }
 
     /// Peek at the next comparison operator without consuming input.
     /// Returns the operator token length and enum value, or None.
     fn peek_comparison_operator(&self) -> Option<ComparisonToken> {
         if self.peek_str("==") {
-            Some(ComparisonToken { operator: ComparisonOperator::Equal, len: 2 })
+            Some(ComparisonToken {
+                operator: ComparisonOperator::Equal,
+                len: 2,
+            })
         } else if self.peek_str("!=") {
-            Some(ComparisonToken { operator: ComparisonOperator::NotEqual, len: 2 })
+            Some(ComparisonToken {
+                operator: ComparisonOperator::NotEqual,
+                len: 2,
+            })
         } else if self.peek_str("<=") {
-            Some(ComparisonToken { operator: ComparisonOperator::LessEqual, len: 2 })
+            Some(ComparisonToken {
+                operator: ComparisonOperator::LessEqual,
+                len: 2,
+            })
         } else if self.peek_str(">=") {
-            Some(ComparisonToken { operator: ComparisonOperator::GreaterEqual, len: 2 })
+            Some(ComparisonToken {
+                operator: ComparisonOperator::GreaterEqual,
+                len: 2,
+            })
         } else if self.peek_str("<") {
-            Some(ComparisonToken { operator: ComparisonOperator::Less, len: 1 })
+            Some(ComparisonToken {
+                operator: ComparisonOperator::Less,
+                len: 1,
+            })
         } else if self.peek_str(">") {
-            Some(ComparisonToken { operator: ComparisonOperator::Greater, len: 1 })
+            Some(ComparisonToken {
+                operator: ComparisonOperator::Greater,
+                len: 1,
+            })
         } else {
             None
         }

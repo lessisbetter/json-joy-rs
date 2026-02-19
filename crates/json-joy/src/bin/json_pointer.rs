@@ -7,8 +7,8 @@
 //!
 //! Mirrors `packages/json-joy/src/json-cli/json-pointer.ts`.
 
-use std::io::{self, Read, Write};
 use json_joy::json_cli::lookup_pointer;
+use std::io::{self, Read, Write};
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();

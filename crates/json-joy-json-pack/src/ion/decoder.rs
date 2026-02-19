@@ -345,10 +345,7 @@ impl IonDecoder {
         Ok(val)
     }
 
-    fn try_read_symbol_table_struct(
-        &mut self,
-        end: usize,
-    ) -> Result<Vec<String>, IonDecodeError> {
+    fn try_read_symbol_table_struct(&mut self, end: usize) -> Result<Vec<String>, IonDecodeError> {
         let descriptor = self.read_byte()?;
         let type_id = (descriptor >> 4) & 0x0f;
         let length = descriptor & 0x0f;

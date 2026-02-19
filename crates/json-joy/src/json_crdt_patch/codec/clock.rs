@@ -32,7 +32,10 @@ pub struct RelativeTimestamp {
 
 impl RelativeTimestamp {
     pub fn new(session_index: u32, time_diff: u64) -> Self {
-        Self { session_index, time_diff }
+        Self {
+            session_index,
+            time_diff,
+        }
     }
 }
 
@@ -146,7 +149,10 @@ impl ClockEncoder {
         } else {
             // Find this session in the peer map, or fall back to local time.
             let clock = self.clock.as_ref().ok_or("encoder not reset")?;
-            let peer_ref = clock.peers.get(&sid).copied()
+            let peer_ref = clock
+                .peers
+                .get(&sid)
+                .copied()
                 .unwrap_or_else(|| Ts::new(sid, clock.time.saturating_sub(1)));
             let idx = self.next_index;
             self.next_index += 1;
@@ -168,7 +174,9 @@ impl ClockEncoder {
     /// the table deterministically.  Mirrors `ClockEncoder.toJson()`.
     pub fn to_json(&self) -> Vec<u64> {
         // Collect (index, sid, time) tuples and sort by index.
-        let mut entries: Vec<(u32, u64, u64)> = self.table.iter()
+        let mut entries: Vec<(u32, u64, u64)> = self
+            .table
+            .iter()
             .map(|(&sid, &(idx, ref_ts))| (idx, sid, ref_ts.time))
             .collect();
         entries.sort_by_key(|(idx, _, _)| *idx);
@@ -427,8 +435,12 @@ mod tests {
         let flat = encoder.to_json();
         let decoder = ClockDecoder::from_arr(&flat).unwrap();
 
-        let decoded1 = decoder.decode_id(rel1.session_index, rel1.time_diff).unwrap();
-        let decoded2 = decoder.decode_id(rel2.session_index, rel2.time_diff).unwrap();
+        let decoded1 = decoder
+            .decode_id(rel1.session_index, rel1.time_diff)
+            .unwrap();
+        let decoded2 = decoder
+            .decode_id(rel2.session_index, rel2.time_diff)
+            .unwrap();
 
         assert_eq!(decoded1, ts(100, 18));
         assert_eq!(decoded2, ts(50, 12));

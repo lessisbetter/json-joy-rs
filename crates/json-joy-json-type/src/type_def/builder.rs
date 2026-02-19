@@ -2,14 +2,14 @@
 //!
 //! Upstream reference: json-type/src/type/TypeBuilder.ts
 
-use std::sync::Arc;
-use std::collections::HashMap;
 use serde_json::Value;
+use std::collections::HashMap;
+use std::sync::Arc;
 
-use crate::schema::Schema;
 use super::classes::*;
 use super::module_type::ModuleType;
 use super::TypeNode;
+use crate::schema::Schema;
 
 /// Factory for constructing TypeNode instances.
 ///
@@ -26,7 +26,9 @@ impl TypeBuilder {
     }
 
     pub fn with_system(system: Arc<ModuleType>) -> Self {
-        Self { system: Some(system) }
+        Self {
+            system: Some(system),
+        }
     }
 
     fn sys(&self) -> Option<Arc<ModuleType>> {
@@ -111,7 +113,12 @@ impl TypeBuilder {
         TypeNode::Arr(ArrType::new(Some(type_), vec![], vec![]).sys(self.sys()))
     }
 
-    pub fn Tuple(&self, head: Vec<TypeNode>, type_: Option<TypeNode>, tail: Option<Vec<TypeNode>>) -> TypeNode {
+    pub fn Tuple(
+        &self,
+        head: Vec<TypeNode>,
+        type_: Option<TypeNode>,
+        tail: Option<Vec<TypeNode>>,
+    ) -> TypeNode {
         TypeNode::Arr(ArrType::new(type_, head, tail.unwrap_or_default()).sys(self.sys()))
     }
 
@@ -156,7 +163,10 @@ impl TypeBuilder {
 
     /// Create a union type from a list of const values.
     pub fn enum_<T: Into<Value> + Clone>(&self, values: Vec<T>) -> TypeNode {
-        let types = values.into_iter().map(|v| self.Const(v.into(), None)).collect();
+        let types = values
+            .into_iter()
+            .map(|v| self.Const(v.into(), None))
+            .collect();
         self.Or(types)
     }
 
@@ -169,9 +179,7 @@ impl TypeBuilder {
     pub fn object(&self, record: HashMap<String, TypeNode>) -> TypeNode {
         let mut keys: Vec<_> = record.into_iter().collect();
         keys.sort_by(|a, b| a.0.cmp(&b.0));
-        let key_types: Vec<KeyType> = keys.into_iter()
-            .map(|(k, v)| KeyType::new(k, v))
-            .collect();
+        let key_types: Vec<KeyType> = keys.into_iter().map(|(k, v)| KeyType::new(k, v)).collect();
         self.Object(key_types)
     }
 
@@ -201,23 +209,39 @@ impl TypeBuilder {
             }
             Schema::Con(s) => self.Const(s.value.clone(), None),
             Schema::Arr(s) => {
-                let head: Vec<TypeNode> = s.head.as_deref().unwrap_or(&[]).iter().map(|h| self.import(h)).collect();
+                let head: Vec<TypeNode> = s
+                    .head
+                    .as_deref()
+                    .unwrap_or(&[])
+                    .iter()
+                    .map(|h| self.import(h))
+                    .collect();
                 let type_ = s.type_.as_deref().map(|t| self.import(t));
-                let tail: Vec<TypeNode> = s.tail.as_deref().unwrap_or(&[]).iter().map(|t| self.import(t)).collect();
+                let tail: Vec<TypeNode> = s
+                    .tail
+                    .as_deref()
+                    .unwrap_or(&[])
+                    .iter()
+                    .map(|t| self.import(t))
+                    .collect();
                 let mut arr = ArrType::new(type_, head, tail);
                 arr.schema.min = s.min;
                 arr.schema.max = s.max;
                 TypeNode::Arr(arr.sys(self.sys()))
             }
             Schema::Obj(s) => {
-                let keys: Vec<KeyType> = s.keys.iter().map(|k| {
-                    let val = self.import(&k.value);
-                    if k.optional == Some(true) {
-                        KeyType::new_opt(k.key.clone(), val)
-                    } else {
-                        KeyType::new(k.key.clone(), val)
-                    }
-                }).collect();
+                let keys: Vec<KeyType> = s
+                    .keys
+                    .iter()
+                    .map(|k| {
+                        let val = self.import(&k.value);
+                        if k.optional == Some(true) {
+                            KeyType::new_opt(k.key.clone(), val)
+                        } else {
+                            KeyType::new(k.key.clone(), val)
+                        }
+                    })
+                    .collect();
                 let mut obj = ObjType::new(keys).sys(self.sys());
                 obj.schema.decode_unknown_keys = s.decode_unknown_keys;
                 obj.schema.encode_unknown_keys = s.encode_unknown_keys;
@@ -284,7 +308,8 @@ impl TypeBuilder {
                 }
             }
             Value::Object(map) => {
-                let keys: Vec<KeyType> = map.iter()
+                let keys: Vec<KeyType> = map
+                    .iter()
                     .map(|(k, v)| KeyType::new(k.clone(), self.from_value(v)))
                     .collect();
                 self.Object(keys)

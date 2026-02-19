@@ -10,12 +10,12 @@ pub mod jtd;
 pub mod metaschema;
 pub mod random;
 pub mod schema;
-pub mod typescript;
 pub mod type_def;
+pub mod typescript;
 pub mod value;
 
 // Re-export the most commonly used types at crate root
+pub use codegen::validator::{validate, ErrorMode, ValidationResult, ValidatorOptions};
 pub use constants::ValidationError;
 pub use schema::{Schema, SchemaBase};
 pub use type_def::{BaseInfo, ModuleType, TypeBuilder, TypeNode};
-pub use codegen::validator::{validate, ValidationResult, ValidatorOptions, ErrorMode};

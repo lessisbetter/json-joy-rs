@@ -63,42 +63,116 @@ fn between_eq_eq_eval(expr: &[Value], ctx: &mut EvalCtx<'_>) -> Result<JsValue, 
     let val = crate::evaluate(&expr[1], ctx)?;
     let min = crate::evaluate(&expr[2], ctx)?;
     let max = crate::evaluate(&expr[3], ctx)?;
-    Ok(JsValue::Json(Value::Bool(util::between_eq_eq(&val, &min, &max))))
+    Ok(JsValue::Json(Value::Bool(util::between_eq_eq(
+        &val, &min, &max,
+    ))))
 }
 
 fn between_ne_ne_eval(expr: &[Value], ctx: &mut EvalCtx<'_>) -> Result<JsValue, JsError> {
     let val = crate::evaluate(&expr[1], ctx)?;
     let min = crate::evaluate(&expr[2], ctx)?;
     let max = crate::evaluate(&expr[3], ctx)?;
-    Ok(JsValue::Json(Value::Bool(util::between_ne_ne(&val, &min, &max))))
+    Ok(JsValue::Json(Value::Bool(util::between_ne_ne(
+        &val, &min, &max,
+    ))))
 }
 
 fn between_eq_ne_eval(expr: &[Value], ctx: &mut EvalCtx<'_>) -> Result<JsValue, JsError> {
     let val = crate::evaluate(&expr[1], ctx)?;
     let min = crate::evaluate(&expr[2], ctx)?;
     let max = crate::evaluate(&expr[3], ctx)?;
-    Ok(JsValue::Json(Value::Bool(util::between_eq_ne(&val, &min, &max))))
+    Ok(JsValue::Json(Value::Bool(util::between_eq_ne(
+        &val, &min, &max,
+    ))))
 }
 
 fn between_ne_eq_eval(expr: &[Value], ctx: &mut EvalCtx<'_>) -> Result<JsValue, JsError> {
     let val = crate::evaluate(&expr[1], ctx)?;
     let min = crate::evaluate(&expr[2], ctx)?;
     let max = crate::evaluate(&expr[3], ctx)?;
-    Ok(JsValue::Json(Value::Bool(util::between_ne_eq(&val, &min, &max))))
+    Ok(JsValue::Json(Value::Bool(util::between_ne_eq(
+        &val, &min, &max,
+    ))))
 }
 
 pub fn operators() -> Vec<Arc<OperatorDefinition>> {
     vec![
-        Arc::new(OperatorDefinition { name: "==", aliases: &["eq"], arity: Arity::Fixed(2), eval_fn: eq_eval, impure: false }),
-        Arc::new(OperatorDefinition { name: "!=", aliases: &["ne"], arity: Arity::Fixed(2), eval_fn: ne_eval, impure: false }),
-        Arc::new(OperatorDefinition { name: ">", aliases: &["gt"], arity: Arity::Fixed(2), eval_fn: gt_eval, impure: false }),
-        Arc::new(OperatorDefinition { name: ">=", aliases: &["ge"], arity: Arity::Fixed(2), eval_fn: ge_eval, impure: false }),
-        Arc::new(OperatorDefinition { name: "<", aliases: &["lt"], arity: Arity::Fixed(2), eval_fn: lt_eval, impure: false }),
-        Arc::new(OperatorDefinition { name: "<=", aliases: &["le"], arity: Arity::Fixed(2), eval_fn: le_eval, impure: false }),
-        Arc::new(OperatorDefinition { name: "cmp", aliases: &[], arity: Arity::Fixed(2), eval_fn: cmp_eval, impure: false }),
-        Arc::new(OperatorDefinition { name: "=><=" , aliases: &["between"], arity: Arity::Fixed(3), eval_fn: between_eq_eq_eval, impure: false }),
-        Arc::new(OperatorDefinition { name: "><", aliases: &[], arity: Arity::Fixed(3), eval_fn: between_ne_ne_eval, impure: false }),
-        Arc::new(OperatorDefinition { name: "=><", aliases: &[], arity: Arity::Fixed(3), eval_fn: between_eq_ne_eval, impure: false }),
-        Arc::new(OperatorDefinition { name: "><=", aliases: &[], arity: Arity::Fixed(3), eval_fn: between_ne_eq_eval, impure: false }),
+        Arc::new(OperatorDefinition {
+            name: "==",
+            aliases: &["eq"],
+            arity: Arity::Fixed(2),
+            eval_fn: eq_eval,
+            impure: false,
+        }),
+        Arc::new(OperatorDefinition {
+            name: "!=",
+            aliases: &["ne"],
+            arity: Arity::Fixed(2),
+            eval_fn: ne_eval,
+            impure: false,
+        }),
+        Arc::new(OperatorDefinition {
+            name: ">",
+            aliases: &["gt"],
+            arity: Arity::Fixed(2),
+            eval_fn: gt_eval,
+            impure: false,
+        }),
+        Arc::new(OperatorDefinition {
+            name: ">=",
+            aliases: &["ge"],
+            arity: Arity::Fixed(2),
+            eval_fn: ge_eval,
+            impure: false,
+        }),
+        Arc::new(OperatorDefinition {
+            name: "<",
+            aliases: &["lt"],
+            arity: Arity::Fixed(2),
+            eval_fn: lt_eval,
+            impure: false,
+        }),
+        Arc::new(OperatorDefinition {
+            name: "<=",
+            aliases: &["le"],
+            arity: Arity::Fixed(2),
+            eval_fn: le_eval,
+            impure: false,
+        }),
+        Arc::new(OperatorDefinition {
+            name: "cmp",
+            aliases: &[],
+            arity: Arity::Fixed(2),
+            eval_fn: cmp_eval,
+            impure: false,
+        }),
+        Arc::new(OperatorDefinition {
+            name: "=><=",
+            aliases: &["between"],
+            arity: Arity::Fixed(3),
+            eval_fn: between_eq_eq_eval,
+            impure: false,
+        }),
+        Arc::new(OperatorDefinition {
+            name: "><",
+            aliases: &[],
+            arity: Arity::Fixed(3),
+            eval_fn: between_ne_ne_eval,
+            impure: false,
+        }),
+        Arc::new(OperatorDefinition {
+            name: "=><",
+            aliases: &[],
+            arity: Arity::Fixed(3),
+            eval_fn: between_eq_ne_eval,
+            impure: false,
+        }),
+        Arc::new(OperatorDefinition {
+            name: "><=",
+            aliases: &[],
+            arity: Arity::Fixed(3),
+            eval_fn: between_ne_eq_eval,
+            impure: false,
+        }),
     ]
 }

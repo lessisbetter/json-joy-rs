@@ -108,14 +108,12 @@ impl AvroSchemaDecoder {
             }
             AvroSchema::Map { values } => {
                 let values = values.as_ref().clone();
-                let map = self.decoder.read_map(|dec| {
-                    Self::read_value_with_named(dec, &values, &HashMap::new())
-                })?;
+                let map = self
+                    .decoder
+                    .read_map(|dec| Self::read_value_with_named(dec, &values, &HashMap::new()))?;
                 Ok(AvroValue::Map(map))
             }
-            AvroSchema::Fixed { size, .. } => {
-                Ok(AvroValue::Fixed(self.decoder.read_fixed(*size)?))
-            }
+            AvroSchema::Fixed { size, .. } => Ok(AvroValue::Fixed(self.decoder.read_fixed(*size)?)),
             AvroSchema::Union(schemas) => {
                 let idx = self.decoder.read_union_index()?;
                 if idx >= schemas.len() {

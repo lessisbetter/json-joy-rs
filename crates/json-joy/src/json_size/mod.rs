@@ -20,7 +20,10 @@ pub fn msgpack_size_fast(value: &PackValue) -> usize {
     match value {
         PackValue::Null | PackValue::Undefined => 1,
         PackValue::Bool(_) => 1,
-        PackValue::Integer(_) | PackValue::UInteger(_) | PackValue::Float(_) | PackValue::BigInt(_) => 9,
+        PackValue::Integer(_)
+        | PackValue::UInteger(_)
+        | PackValue::Float(_)
+        | PackValue::BigInt(_) => 9,
         PackValue::Str(s) => 4 + s.len(),
         PackValue::Bytes(b) => 5 + b.len(),
         PackValue::Array(arr) => {
@@ -100,9 +103,7 @@ mod tests {
 
     #[test]
     fn object_size() {
-        let obj = PackValue::Object(vec![
-            ("key".to_owned(), PackValue::Integer(1)),
-        ]);
+        let obj = PackValue::Object(vec![("key".to_owned(), PackValue::Integer(1))]);
         // 2 + (2 + 3 + 9) = 16
         assert_eq!(msgpack_size_fast(&obj), 16);
     }

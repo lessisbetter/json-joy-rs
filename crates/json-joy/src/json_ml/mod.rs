@@ -198,16 +198,29 @@ mod tests {
         JsonMlNode::Text(s.to_owned())
     }
 
-    fn el(tag: &str, attrs: Option<Vec<(String, String)>>, children: Vec<JsonMlNode>) -> JsonMlNode {
+    fn el(
+        tag: &str,
+        attrs: Option<Vec<(String, String)>>,
+        children: Vec<JsonMlNode>,
+    ) -> JsonMlNode {
         JsonMlNode::Element(JsonMlElement {
-            tag: if tag.is_empty() { Tag::Fragment } else { Tag::Named(tag.to_owned()) },
+            tag: if tag.is_empty() {
+                Tag::Fragment
+            } else {
+                Tag::Named(tag.to_owned())
+            },
             attrs,
             children,
         })
     }
 
     fn attrs(pairs: &[(&str, &str)]) -> Option<Vec<(String, String)>> {
-        Some(pairs.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect())
+        Some(
+            pairs
+                .iter()
+                .map(|(k, v)| (k.to_string(), v.to_string()))
+                .collect(),
+        )
     }
 
     #[test]
@@ -250,10 +263,11 @@ mod tests {
     #[test]
     fn mixed_element_and_text_children() {
         // ['div', null, ['b', null, 'bold'], ' text']
-        let node = el("div", None, vec![
-            el("b", None, vec![text("bold")]),
-            text(" text"),
-        ]);
+        let node = el(
+            "div",
+            None,
+            vec![el("b", None, vec![text("bold")]), text(" text")],
+        );
         assert_eq!(to_html(&node, "", ""), "<div><b>bold</b> text</div>");
     }
 
@@ -269,7 +283,11 @@ mod tests {
 
     #[test]
     fn walker_visits_all_nodes() {
-        let tree = el("div", None, vec![text("a"), el("span", None, vec![text("b")])]);
+        let tree = el(
+            "div",
+            None,
+            vec![text("a"), el("span", None, vec![text("b")])],
+        );
         let visited: Vec<_> = walk(tree).collect();
         assert_eq!(visited.len(), 4); // div, "a", span, "b"
     }
@@ -308,9 +326,7 @@ mod tests {
 
     #[test]
     fn indented_output() {
-        let tree = el("div", None, vec![
-            el("span", None, vec![text("inner")]),
-        ]);
+        let tree = el("div", None, vec![el("span", None, vec![text("inner")])]);
         let result = to_html(&tree, "  ", "");
         assert!(result.contains('\n'));
         assert!(result.starts_with("<div>"));

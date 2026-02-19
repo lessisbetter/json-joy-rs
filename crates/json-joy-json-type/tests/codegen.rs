@@ -5,33 +5,47 @@
 //! - json-type/src/jtd/__tests__/converter.spec.ts
 //! - json-type/src/json-schema/__tests__/converter.spec.ts
 
-use serde_json::{json, Value};
 use json_joy_json_type::{
-    validate, ValidationResult, ValidatorOptions, ErrorMode,
-    type_def::{TypeBuilder, ModuleType},
+    type_def::{ModuleType, TypeBuilder},
+    validate, ErrorMode, ValidationResult, ValidatorOptions,
 };
+use serde_json::{json, Value};
 
 fn t() -> TypeBuilder {
     TypeBuilder::new()
 }
 
 fn opts_bool() -> ValidatorOptions {
-    ValidatorOptions { errors: ErrorMode::Boolean, ..Default::default() }
+    ValidatorOptions {
+        errors: ErrorMode::Boolean,
+        ..Default::default()
+    }
 }
 
 fn opts_str() -> ValidatorOptions {
-    ValidatorOptions { errors: ErrorMode::String, ..Default::default() }
+    ValidatorOptions {
+        errors: ErrorMode::String,
+        ..Default::default()
+    }
 }
 
 fn opts_obj() -> ValidatorOptions {
-    ValidatorOptions { errors: ErrorMode::Object, ..Default::default() }
+    ValidatorOptions {
+        errors: ErrorMode::Object,
+        ..Default::default()
+    }
 }
 
 /// Run validation across all three error modes. The value should pass (is_ok == true).
 fn assert_valid(type_node: &json_joy_json_type::TypeNode, value: Value) {
     for opts in [opts_bool(), opts_str(), opts_obj()] {
         let result = validate(&value, type_node, &opts, &[]);
-        assert!(result.is_ok(), "expected valid for {:?}, got {:?}", value, result);
+        assert!(
+            result.is_ok(),
+            "expected valid for {:?}, got {:?}",
+            value,
+            result
+        );
     }
 }
 
@@ -39,7 +53,12 @@ fn assert_valid(type_node: &json_joy_json_type::TypeNode, value: Value) {
 fn assert_invalid(type_node: &json_joy_json_type::TypeNode, value: Value) {
     for opts in [opts_bool(), opts_str(), opts_obj()] {
         let result = validate(&value, type_node, &opts, &[]);
-        assert!(result.is_err(), "expected invalid for {:?}, got {:?}", value, result);
+        assert!(
+            result.is_err(),
+            "expected invalid for {:?}, got {:?}",
+            value,
+            result
+        );
     }
 }
 
@@ -55,7 +74,14 @@ fn error_code(result: ValidationResult) -> String {
 #[test]
 fn any_accepts_all_values() {
     let type_ = t().any();
-    for v in [json!(1), json!("hello"), json!({}), json!([]), json!(null), json!(true)] {
+    for v in [
+        json!(1),
+        json!("hello"),
+        json!({}),
+        json!([]),
+        json!(null),
+        json!(true),
+    ] {
         assert_valid(&type_, v);
     }
 }
@@ -469,7 +495,7 @@ fn tuple_validates_positional_elements() {
         ValidationResult::ObjectError { path, .. } => {
             assert_eq!(path, vec![json!(0)]);
         }
-        _ => panic!()
+        _ => panic!(),
     }
     // wrong type at position 1
     let result = validate(&json!([0, 1]), &type_, &opts_obj(), &[]);
@@ -478,7 +504,7 @@ fn tuple_validates_positional_elements() {
         ValidationResult::ObjectError { path, .. } => {
             assert_eq!(path, vec![json!(1)]);
         }
-        _ => panic!()
+        _ => panic!(),
     }
 }
 
@@ -487,9 +513,18 @@ fn tuple_validates_positional_elements() {
 #[test]
 fn boolean_error_mode() {
     let type_ = t().num();
-    let opts = ValidatorOptions { errors: ErrorMode::Boolean, ..Default::default() };
-    assert_eq!(validate(&json!(123), &type_, &opts, &[]), ValidationResult::Ok);
-    assert_eq!(validate(&json!("x"), &type_, &opts, &[]), ValidationResult::BoolError);
+    let opts = ValidatorOptions {
+        errors: ErrorMode::Boolean,
+        ..Default::default()
+    };
+    assert_eq!(
+        validate(&json!(123), &type_, &opts, &[]),
+        ValidationResult::Ok
+    );
+    assert_eq!(
+        validate(&json!("x"), &type_, &opts, &[]),
+        ValidationResult::BoolError
+    );
 }
 
 // ── String error mode ────────────────────────────────────────────────────────
@@ -498,7 +533,10 @@ fn boolean_error_mode() {
 fn string_error_mode() {
     use json_joy_json_type::type_def::KeyType;
     let type_ = t().Object(vec![KeyType::new("num", t().num())]);
-    let opts = ValidatorOptions { errors: ErrorMode::String, ..Default::default() };
+    let opts = ValidatorOptions {
+        errors: ErrorMode::String,
+        ..Default::default()
+    };
     let result = validate(&json!({"num": "bad"}), &type_, &opts, &[]);
     match result {
         ValidationResult::StringError(s) => {
@@ -513,13 +551,16 @@ fn string_error_mode() {
 
 #[test]
 fn ref_resolves_through_module() {
-    use std::sync::Arc;
-    use json_joy_json_type::type_def::{RefType, BaseInfo};
+    use json_joy_json_type::type_def::{BaseInfo, RefType};
     use json_joy_json_type::TypeNode;
+    use std::sync::Arc;
 
     let module = Arc::new(ModuleType::new());
     // Register a 'MyNum' alias
-    module.alias("MyNum", json_joy_json_type::schema::Schema::Num(json_joy_json_type::schema::NumSchema::default()));
+    module.alias(
+        "MyNum",
+        json_joy_json_type::schema::Schema::Num(json_joy_json_type::schema::NumSchema::default()),
+    );
 
     let mut ref_type = RefType::new("MyNum");
     ref_type.base = BaseInfo::new().with_system(Some(module));

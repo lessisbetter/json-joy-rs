@@ -4,7 +4,9 @@
 
 use json_joy_buffers::Writer;
 
-use super::constants::{Resp, RESP_EXTENSION_ATTRIBUTES, RESP_EXTENSION_PUSH, RESP_EXTENSION_VERBATIM_STRING};
+use super::constants::{
+    Resp, RESP_EXTENSION_ATTRIBUTES, RESP_EXTENSION_PUSH, RESP_EXTENSION_VERBATIM_STRING,
+};
 use crate::PackValue;
 
 /// RESP3 protocol encoder.
@@ -140,7 +142,8 @@ impl RespEncoder {
             self.writer.u8(b'i');
             self.writer.u16(u16::from_be_bytes([b'n', b'f']));
         } else if f == f64::NEG_INFINITY {
-            self.writer.u32(u32::from_be_bytes([b'-', b'i', b'n', b'f']));
+            self.writer
+                .u32(u32::from_be_bytes([b'-', b'i', b'n', b'f']));
         } else if f.is_nan() {
             self.writer.u8(b'n');
             self.writer.u16(u16::from_be_bytes([b'a', b'n']));
@@ -194,9 +197,7 @@ impl RespEncoder {
         // encoding prefix: "txt:" or "bin:" (4 bytes)
         let enc_bytes = encoding.as_bytes();
         assert_eq!(enc_bytes.len(), 3, "encoding must be 3 chars");
-        let prefix = u32::from_be_bytes([
-            enc_bytes[0], enc_bytes[1], enc_bytes[2], b':',
-        ]);
+        let prefix = u32::from_be_bytes([enc_bytes[0], enc_bytes[1], enc_bytes[2], b':']);
         self.writer.u32(prefix);
         self.writer.buf(bytes);
         self.write_rn();
@@ -291,9 +292,8 @@ impl RespEncoder {
 
     pub fn write_start_str(&mut self) {
         // $?\r\n
-        self.writer.u32(
-            (Resp::STR_BULK as u32) << 24 | (b'?' as u32) << 16 | Resp::RN as u32,
-        );
+        self.writer
+            .u32((Resp::STR_BULK as u32) << 24 | (b'?' as u32) << 16 | Resp::RN as u32);
     }
 
     pub fn write_str_chunk(&mut self, s: &str) {
@@ -308,14 +308,14 @@ impl RespEncoder {
 
     pub fn write_end_str(&mut self) {
         // ;0\r\n
-        self.writer.u32((b';' as u32) << 24 | (b'0' as u32) << 16 | Resp::RN as u32);
+        self.writer
+            .u32((b';' as u32) << 24 | (b'0' as u32) << 16 | Resp::RN as u32);
     }
 
     pub fn write_start_arr(&mut self) {
         // *?\r\n
-        self.writer.u32(
-            (Resp::ARR as u32) << 24 | (b'?' as u32) << 16 | Resp::RN as u32,
-        );
+        self.writer
+            .u32((Resp::ARR as u32) << 24 | (b'?' as u32) << 16 | Resp::RN as u32);
     }
 
     pub fn write_end_arr(&mut self) {
@@ -326,9 +326,8 @@ impl RespEncoder {
 
     pub fn write_start_obj(&mut self) {
         // %?\r\n
-        self.writer.u32(
-            (Resp::OBJ as u32) << 24 | (b'?' as u32) << 16 | Resp::RN as u32,
-        );
+        self.writer
+            .u32((Resp::OBJ as u32) << 24 | (b'?' as u32) << 16 | Resp::RN as u32);
     }
 
     pub fn write_end_obj(&mut self) {

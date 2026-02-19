@@ -85,7 +85,9 @@ pub struct Extensions {
 impl Extensions {
     /// Create an empty registry.
     pub fn new() -> Self {
-        Self { ext: std::collections::HashMap::new() }
+        Self {
+            ext: std::collections::HashMap::new(),
+        }
     }
 
     /// Register an extension.  If an extension with the same ID was already
@@ -157,7 +159,10 @@ mod tests {
     #[test]
     fn extensions_register_and_get() {
         let mut exts = Extensions::new();
-        exts.register(Box::new(MockExt { id: 42, name: "mock" }));
+        exts.register(Box::new(MockExt {
+            id: 42,
+            name: "mock",
+        }));
         assert!(exts.get(42).is_some());
         assert_eq!(exts.get(42).unwrap().name(), "mock");
         assert_eq!(exts.get(42).unwrap().id(), 42);
@@ -182,8 +187,14 @@ mod tests {
     #[test]
     fn extensions_register_overwrites_same_id() {
         let mut exts = Extensions::new();
-        exts.register(Box::new(MockExt { id: 7, name: "first" }));
-        exts.register(Box::new(MockExt { id: 7, name: "second" }));
+        exts.register(Box::new(MockExt {
+            id: 7,
+            name: "first",
+        }));
+        exts.register(Box::new(MockExt {
+            id: 7,
+            name: "second",
+        }));
         assert_eq!(exts.size(), 1);
         assert_eq!(exts.get(7).unwrap().name(), "second");
     }

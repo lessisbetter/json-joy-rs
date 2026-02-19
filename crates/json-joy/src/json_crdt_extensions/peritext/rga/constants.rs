@@ -16,5 +16,5 @@
 #[repr(u8)]
 pub enum Anchor {
     Before = 0,
-    After  = 1,
+    After = 1,
 }

@@ -80,13 +80,17 @@ impl fmt::Display for EjsonDecodeError {
             EjsonDecodeError::InvalidCodeWithScope => write!(f, "Invalid CodeWScope format"),
             EjsonDecodeError::InvalidSymbol => write!(f, "Invalid Symbol format"),
             EjsonDecodeError::InvalidTimestamp => write!(f, "Invalid Timestamp format"),
-            EjsonDecodeError::InvalidRegularExpression => write!(f, "Invalid RegularExpression format"),
+            EjsonDecodeError::InvalidRegularExpression => {
+                write!(f, "Invalid RegularExpression format")
+            }
             EjsonDecodeError::InvalidDbPointer => write!(f, "Invalid DBPointer format"),
             EjsonDecodeError::InvalidDate => write!(f, "Invalid Date format"),
             EjsonDecodeError::InvalidMinKey => write!(f, "Invalid MinKey format"),
             EjsonDecodeError::InvalidMaxKey => write!(f, "Invalid MaxKey format"),
             EjsonDecodeError::InvalidUndefined => write!(f, "Invalid Undefined format"),
-            EjsonDecodeError::ExtraKeys(kind) => write!(f, "Invalid {kind} format: extra keys not allowed"),
+            EjsonDecodeError::ExtraKeys(kind) => {
+                write!(f, "Invalid {kind} format: extra keys not allowed")
+            }
         }
     }
 }

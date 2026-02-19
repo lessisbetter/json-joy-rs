@@ -14,10 +14,10 @@ use serde_json::{Map, Value};
 
 pub const START_STATE: i32 = 5381;
 
-pub const NULL_CONST:   i32 = 982452847_u32 as i32;
-pub const TRUE_CONST:   i32 = 982453247_u32 as i32;
-pub const FALSE_CONST:  i32 = 982454243_u32 as i32;
-pub const ARRAY_CONST:  i32 = 982452259_u32 as i32;
+pub const NULL_CONST: i32 = 982452847_u32 as i32;
+pub const TRUE_CONST: i32 = 982453247_u32 as i32;
+pub const FALSE_CONST: i32 = 982454243_u32 as i32;
+pub const ARRAY_CONST: i32 = 982452259_u32 as i32;
 pub const STRING_CONST: i32 = 982453601_u32 as i32;
 pub const OBJECT_CONST: i32 = 982454533_u32 as i32;
 pub const BINARY_CONST: i32 = 982454837_u32 as i32;
@@ -179,6 +179,9 @@ mod tests {
     fn update_num_basic() {
         // Verify: (5381 << 5) + 5381 + 982452847 == 987630420
         let result = update_num(START_STATE, NULL_CONST);
-        assert_eq!(result, (5381_i32 << 5).wrapping_add(5381).wrapping_add(NULL_CONST));
+        assert_eq!(
+            result,
+            (5381_i32 << 5).wrapping_add(5381).wrapping_add(NULL_CONST)
+        );
     }
 }

@@ -79,7 +79,10 @@ pub fn deep_equal(a: &Value, b: &Value) -> bool {
 /// assert!(deep_equal_binary(&a, &b));
 /// assert!(!deep_equal_binary(&a, &c));
 /// ```
-pub fn deep_equal_binary(a: &crate::json_clone::JsonBinary, b: &crate::json_clone::JsonBinary) -> bool {
+pub fn deep_equal_binary(
+    a: &crate::json_clone::JsonBinary,
+    b: &crate::json_clone::JsonBinary,
+) -> bool {
     use crate::json_clone::JsonBinary;
 
     match (a, b) {

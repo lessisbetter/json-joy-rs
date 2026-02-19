@@ -17,7 +17,13 @@ pub trait UndoManager {
     type RedoState;
 
     /// Push a new undo item onto the stack.
-    fn push(&mut self, state: Self::UndoState, callback: Box<dyn FnOnce(Self::UndoState) -> (Self::RedoState, Box<dyn FnOnce(Self::RedoState)>)>);
+    fn push(
+        &mut self,
+        state: Self::UndoState,
+        callback: Box<
+            dyn FnOnce(Self::UndoState) -> (Self::RedoState, Box<dyn FnOnce(Self::RedoState)>),
+        >,
+    );
     /// Undo the most recent operation.
     fn undo(&mut self);
     /// Redo the most recently undone operation.

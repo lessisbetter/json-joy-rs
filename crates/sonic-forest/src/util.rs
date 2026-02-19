@@ -5,17 +5,29 @@
 use crate::types::Node;
 
 #[inline]
-fn get_p<N: Node>(arena: &[N], idx: u32) -> Option<u32>  { arena[idx as usize].p() }
+fn get_p<N: Node>(arena: &[N], idx: u32) -> Option<u32> {
+    arena[idx as usize].p()
+}
 #[inline]
-fn get_l<N: Node>(arena: &[N], idx: u32) -> Option<u32>  { arena[idx as usize].l() }
+fn get_l<N: Node>(arena: &[N], idx: u32) -> Option<u32> {
+    arena[idx as usize].l()
+}
 #[inline]
-fn get_r<N: Node>(arena: &[N], idx: u32) -> Option<u32>  { arena[idx as usize].r() }
+fn get_r<N: Node>(arena: &[N], idx: u32) -> Option<u32> {
+    arena[idx as usize].r()
+}
 #[inline]
-fn set_l<N: Node>(arena: &mut Vec<N>, idx: u32, v: Option<u32>) { arena[idx as usize].set_l(v); }
+fn set_l<N: Node>(arena: &mut Vec<N>, idx: u32, v: Option<u32>) {
+    arena[idx as usize].set_l(v);
+}
 #[inline]
-fn set_r<N: Node>(arena: &mut Vec<N>, idx: u32, v: Option<u32>) { arena[idx as usize].set_r(v); }
+fn set_r<N: Node>(arena: &mut Vec<N>, idx: u32, v: Option<u32>) {
+    arena[idx as usize].set_r(v);
+}
 #[inline]
-fn set_p<N: Node>(arena: &mut Vec<N>, idx: u32, v: Option<u32>) { arena[idx as usize].set_p(v); }
+fn set_p<N: Node>(arena: &mut Vec<N>, idx: u32, v: Option<u32>) {
+    arena[idx as usize].set_p(v);
+}
 
 /// Leftmost node in the position tree.  Mirrors `first`.
 pub fn first<N: Node>(arena: &[N], root: Option<u32>) -> Option<u32> {
@@ -23,7 +35,7 @@ pub fn first<N: Node>(arena: &[N], root: Option<u32>) -> Option<u32> {
     while let Some(idx) = curr {
         match get_l(arena, idx) {
             Some(l) => curr = Some(l),
-            None    => return Some(idx),
+            None => return Some(idx),
         }
     }
     curr
@@ -33,7 +45,9 @@ pub fn first<N: Node>(arena: &[N], root: Option<u32>) -> Option<u32> {
 pub fn next<N: Node>(arena: &[N], node: u32) -> Option<u32> {
     if let Some(r) = get_r(arena, node) {
         let mut curr = r;
-        while let Some(l) = get_l(arena, curr) { curr = l; }
+        while let Some(l) = get_l(arena, curr) {
+            curr = l;
+        }
         return Some(curr);
     }
     let mut curr = node;
@@ -63,19 +77,31 @@ pub fn remove<N: Node>(arena: &mut Vec<N>, root: Option<u32>, node: u32) -> Opti
     match (l, r) {
         (None, None) => {
             if let Some(p) = p {
-                if get_l(arena, p) == Some(node) { set_l(arena, p, None); }
-                else                              { set_r(arena, p, None); }
+                if get_l(arena, p) == Some(node) {
+                    set_l(arena, p, None);
+                } else {
+                    set_r(arena, p, None);
+                }
             }
-            if p.is_none() { None } else { root }
+            if p.is_none() {
+                None
+            } else {
+                root
+            }
         }
         (Some(l), Some(r)) => {
             let mut most_right = l;
-            while let Some(rr) = get_r(arena, most_right) { most_right = rr; }
+            while let Some(rr) = get_r(arena, most_right) {
+                most_right = rr;
+            }
             set_r(arena, most_right, Some(r));
             set_p(arena, r, Some(most_right));
             if let Some(p) = p {
-                if get_l(arena, p) == Some(node) { set_l(arena, p, Some(l)); }
-                else                              { set_r(arena, p, Some(l)); }
+                if get_l(arena, p) == Some(node) {
+                    set_l(arena, p, Some(l));
+                } else {
+                    set_r(arena, p, Some(l));
+                }
                 set_p(arena, l, Some(p));
                 root
             } else {
@@ -87,8 +113,11 @@ pub fn remove<N: Node>(arena: &mut Vec<N>, root: Option<u32>, node: u32) -> Opti
             let child = l.or(r).unwrap();
             set_p(arena, child, p);
             if let Some(p) = p {
-                if get_l(arena, p) == Some(node) { set_l(arena, p, Some(child)); }
-                else                              { set_r(arena, p, Some(child)); }
+                if get_l(arena, p) == Some(node) {
+                    set_l(arena, p, Some(child));
+                } else {
+                    set_r(arena, p, Some(child));
+                }
                 root
             } else {
                 Some(child)

@@ -71,14 +71,14 @@ impl CntNode {
 
         let con_id = model.next_ts();
         model.apply_operation(&Op::NewCon {
-            id:  con_id,
+            id: con_id,
             val: ConValue::Val(PackValue::Integer(new_val)),
         });
 
         let ins_id = model.next_ts();
         model.apply_operation(&Op::InsObj {
-            id:   ins_id,
-            obj:  self.obj_id,
+            id: ins_id,
+            obj: self.obj_id,
             data: vec![(key, con_id)],
         });
     }
@@ -109,8 +109,12 @@ mod tests {
     use crate::json_crdt_patch::clock::ts;
     use crate::json_crdt_patch::operations::Op;
 
-    fn sid1() -> u64 { 100 }
-    fn sid2() -> u64 { 200 }
+    fn sid1() -> u64 {
+        100
+    }
+    fn sid2() -> u64 {
+        200
+    }
 
     fn setup(sid: u64) -> (Model, CntNode) {
         let mut model = Model::new(sid);
@@ -169,8 +173,8 @@ mod tests {
                     m1.index.insert_node(con_id2, cloned);
                     let ins_id = m1.next_ts();
                     m1.apply_operation(&Op::InsObj {
-                        id:   ins_id,
-                        obj:  obj_id,
+                        id: ins_id,
+                        obj: obj_id,
                         data: vec![(sid2_key, con_id2)],
                     });
                 }

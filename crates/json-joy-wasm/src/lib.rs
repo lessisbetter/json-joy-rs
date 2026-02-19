@@ -13,12 +13,12 @@
 use serde::Serialize as _;
 use wasm_bindgen::prelude::*;
 
+use json_joy::json_crdt::codec::structural::binary as structural_binary;
 use json_joy::json_crdt::model::api::find_path;
-use json_joy::json_crdt::model::Model as CrdtModel;
 use json_joy::json_crdt::model::util::random_session_id;
+use json_joy::json_crdt::model::Model as CrdtModel;
 use json_joy::json_crdt::nodes::{BinNode, CrdtNode, IndexExt};
 use json_joy::json_crdt::ORIGIN;
-use json_joy::json_crdt::codec::structural::binary as structural_binary;
 use json_joy::json_crdt_diff::JsonCrdtDiff;
 use json_joy::json_crdt_patch::clock::{Ts, Tss};
 use json_joy::json_crdt_patch::operations::Op;
@@ -59,9 +59,7 @@ fn json_to_pack(v: &Value) -> PackValue {
 /// - Objects → ObjNode (values via `build_json` recursively)
 fn build_json(builder: &mut PatchBuilder, v: &Value) -> Ts {
     match v {
-        Value::Null | Value::Bool(_) | Value::Number(_) => {
-            builder.con_val(json_to_pack(v))
-        }
+        Value::Null | Value::Bool(_) | Value::Number(_) => builder.con_val(json_to_pack(v)),
         Value::String(s) => {
             // Strings become CRDT-editable StrNodes, matching upstream behaviour.
             let str_id = builder.str_node();
@@ -120,7 +118,10 @@ fn parse_path(path_json: &str) -> Result<Vec<Value>, String> {
 /// Merge a collection of patches into a single `Patch` by concatenating ops.
 fn merge_patches(patches: Vec<Patch>) -> Patch {
     match patches.len() {
-        0 => Patch { ops: vec![], meta: None },
+        0 => Patch {
+            ops: vec![],
+            meta: None,
+        },
         1 => patches.into_iter().next().unwrap(),
         _ => {
             let ops: Vec<Op> = patches.into_iter().flat_map(|p| p.ops).collect();
@@ -161,7 +162,11 @@ pub struct Model {
 
 impl Model {
     fn from_inner(inner: CrdtModel) -> Self {
-        Self { inner, local_changes: Vec::new(), view_cache: None }
+        Self {
+            inner,
+            local_changes: Vec::new(),
+            view_cache: None,
+        }
     }
 
     /// Execute `f` with a fresh `PatchBuilder` seeded from the model clock,
@@ -171,7 +176,7 @@ impl Model {
     where
         F: FnOnce(&CrdtModel, &mut PatchBuilder) -> Result<(), String>,
     {
-        let sid  = self.inner.clock.sid;
+        let sid = self.inner.clock.sid;
         let time = self.inner.clock.time;
         let mut builder = PatchBuilder::new(sid, time);
         f(&self.inner, &mut builder)?;
@@ -191,8 +196,7 @@ impl Model {
         if path.is_empty() {
             return Ok(root_val);
         }
-        find_path(&self.inner, root_val, path)
-            .map_err(|e| format!("path not found: {e:?}"))
+        find_path(&self.inner, root_val, path).map_err(|e| format!("path not found: {e:?}"))
     }
 }
 
@@ -209,7 +213,7 @@ impl Model {
     pub fn create(sid: Option<u64>) -> Model {
         let inner = match sid {
             Some(s) => CrdtModel::new(s),
-            None    => CrdtModel::create(),
+            None => CrdtModel::create(),
         };
         Self::from_inner(inner)
     }
@@ -447,12 +451,7 @@ impl Model {
     ///
     /// Called by `model.api.str(path).ins(index, text)`.
     #[wasm_bindgen(js_name = "apiStrIns")]
-    pub fn api_str_ins(
-        &mut self,
-        path_json: &str,
-        index: u32,
-        text: &str,
-    ) -> Result<(), JsValue> {
+    pub fn api_str_ins(&mut self, path_json: &str, index: u32, text: &str) -> Result<(), JsValue> {
         if text.is_empty() {
             return Ok(());
         }
@@ -480,12 +479,7 @@ impl Model {
     ///
     /// Called by `model.api.str(path).del(index, count)`.
     #[wasm_bindgen(js_name = "apiStrDel")]
-    pub fn api_str_del(
-        &mut self,
-        path_json: &str,
-        index: u32,
-        length: u32,
-    ) -> Result<(), JsValue> {
+    pub fn api_str_del(&mut self, path_json: &str, index: u32, length: u32) -> Result<(), JsValue> {
         if length == 0 {
             return Ok(());
         }
@@ -512,12 +506,7 @@ impl Model {
     ///
     /// Called by `model.api.bin(path).ins(index, bytes)`.
     #[wasm_bindgen(js_name = "apiBinIns")]
-    pub fn api_bin_ins(
-        &mut self,
-        path_json: &str,
-        index: u32,
-        data: &[u8],
-    ) -> Result<(), JsValue> {
+    pub fn api_bin_ins(&mut self, path_json: &str, index: u32, data: &[u8]) -> Result<(), JsValue> {
         if data.is_empty() {
             return Ok(());
         }
@@ -531,8 +520,7 @@ impl Model {
                 Some(CrdtNode::Bin(n)) => n,
                 _ => return Err(JsValue::from_str("bin node not found at path")),
             };
-            bin_find(node, index - 1)
-                .ok_or_else(|| JsValue::from_str("bin index out of bounds"))?
+            bin_find(node, index - 1).ok_or_else(|| JsValue::from_str("bin index out of bounds"))?
         };
         self.with_builder(|_, builder| {
             builder.ins_bin(bin_id, after, data.to_vec());
@@ -545,12 +533,7 @@ impl Model {
     ///
     /// Called by `model.api.bin(path).del(index, count)`.
     #[wasm_bindgen(js_name = "apiBinDel")]
-    pub fn api_bin_del(
-        &mut self,
-        path_json: &str,
-        index: u32,
-        length: u32,
-    ) -> Result<(), JsValue> {
+    pub fn api_bin_del(&mut self, path_json: &str, index: u32, length: u32) -> Result<(), JsValue> {
         if length == 0 {
             return Ok(());
         }
@@ -649,12 +632,7 @@ impl Model {
     ///
     /// Called by `model.api.arr(path).del(index, count)`.
     #[wasm_bindgen(js_name = "apiArrDel")]
-    pub fn api_arr_del(
-        &mut self,
-        path_json: &str,
-        index: u32,
-        length: u32,
-    ) -> Result<(), JsValue> {
+    pub fn api_arr_del(&mut self, path_json: &str, index: u32, length: u32) -> Result<(), JsValue> {
         if length == 0 {
             return Ok(());
         }
@@ -720,7 +698,7 @@ impl Model {
 
         // Compute diff from current root node to `next`.
         let patch = {
-            let sid  = self.inner.clock.sid;
+            let sid = self.inner.clock.sid;
             let time = self.inner.clock.time;
             let mut differ = JsonCrdtDiff::new(sid, time, &self.inner.index);
 
@@ -784,7 +762,9 @@ impl Model {
         let bin_id = self.resolve(&path).map_err(|e| JsValue::from_str(&e))?;
         match IndexExt::get(&self.inner.index, &bin_id) {
             Some(CrdtNode::Bin(n)) => {
-                let size: usize = n.rga.iter_live()
+                let size: usize = n
+                    .rga
+                    .iter_live()
                     .filter_map(|c| c.data.as_deref())
                     .map(|b| b.len())
                     .sum();
@@ -822,7 +802,8 @@ impl Model {
             None => Value::Null,
         };
         let ser = serde_wasm_bindgen::Serializer::json_compatible();
-        view.serialize(&ser).map_err(|e| JsValue::from_str(&format!("{e}")))
+        view.serialize(&ser)
+            .map_err(|e| JsValue::from_str(&format!("{e}")))
     }
 }
 
@@ -855,7 +836,11 @@ fn bin_find_interval(node: &BinNode, pos: usize, len: usize) -> Vec<Tss> {
             let chunk_start = count;
             let chunk_end = count + chunk_len;
             if chunk_end > pos && chunk_start < end {
-                let local_start = if chunk_start >= pos { 0 } else { pos - chunk_start };
+                let local_start = if chunk_start >= pos {
+                    0
+                } else {
+                    pos - chunk_start
+                };
                 let local_end = (end - chunk_start).min(chunk_len);
                 result.push(Tss::new(
                     chunk.id.sid,
@@ -959,7 +944,8 @@ mod tests {
     fn api_obj_set_nested_key() {
         let mut m = model();
         m.api_set(r#"{}"#).unwrap();
-        m.api_obj_set("null", r#"{"name":"alice","age":30}"#).unwrap();
+        m.api_obj_set("null", r#"{"name":"alice","age":30}"#)
+            .unwrap();
         let v = m.inner.view();
         assert_eq!(v["name"], json!("alice"));
         assert_eq!(v["age"], json!(30));
@@ -1033,7 +1019,7 @@ mod tests {
         let mut m = model();
         m.api_set(r#"{"x":1}"#).unwrap();
         m.diff_apply(r#"{"x":1}"#).unwrap(); // same state — may or may not produce patch
-        // The important invariant: view is still correct
+                                             // The important invariant: view is still correct
         let v = m.inner.view();
         assert_eq!(v["x"], json!(1));
     }

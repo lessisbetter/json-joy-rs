@@ -109,8 +109,8 @@ impl<'a> SliceReader<'a> {
 
     fn read_opaque_auth(&mut self) -> Result<RpcOpaqueAuth, RpcDecodeError> {
         let flavor_u32 = self.u32()?;
-        let flavor = RpcAuthFlavor::try_from(flavor_u32)
-            .map_err(RpcDecodeError::InvalidAuthFlavor)?;
+        let flavor =
+            RpcAuthFlavor::try_from(flavor_u32).map_err(RpcDecodeError::InvalidAuthFlavor)?;
         let len = self.u32()?;
         if len > 400 {
             return Err(RpcDecodeError::AuthBodyTooLarge(len));

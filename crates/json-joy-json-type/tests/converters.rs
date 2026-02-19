@@ -4,12 +4,12 @@
 //! - json-type/src/jtd/__tests__/converter.spec.ts
 //! - json-type/src/json-schema/__tests__/converter.spec.ts
 
-use serde_json::json;
 use json_joy_json_type::{
     json_schema::type_to_json_schema,
-    jtd::{to_jtd_form, JtdForm, types::JtdType},
+    jtd::{to_jtd_form, types::JtdType, JtdForm},
     type_def::TypeBuilder,
 };
+use serde_json::json;
 
 fn t() -> TypeBuilder {
     TypeBuilder::new()
@@ -20,13 +20,23 @@ fn t() -> TypeBuilder {
 #[test]
 fn jtd_str_type() {
     let form = to_jtd_form(&t().str());
-    assert!(matches!(form, JtdForm::Type { type_: JtdType::String }));
+    assert!(matches!(
+        form,
+        JtdForm::Type {
+            type_: JtdType::String
+        }
+    ));
 }
 
 #[test]
 fn jtd_bool_type() {
     let form = to_jtd_form(&t().bool());
-    assert!(matches!(form, JtdForm::Type { type_: JtdType::Boolean }));
+    assert!(matches!(
+        form,
+        JtdForm::Type {
+            type_: JtdType::Boolean
+        }
+    ));
 }
 
 #[test]
@@ -36,13 +46,23 @@ fn jtd_num_with_u8_format() {
     n.schema.format = Some(NumFormat::U8);
     let type_ = json_joy_json_type::TypeNode::Num(n);
     let form = to_jtd_form(&type_);
-    assert!(matches!(form, JtdForm::Type { type_: JtdType::Uint8 }));
+    assert!(matches!(
+        form,
+        JtdForm::Type {
+            type_: JtdType::Uint8
+        }
+    ));
 }
 
 #[test]
 fn jtd_num_default_is_float64() {
     let form = to_jtd_form(&t().num());
-    assert!(matches!(form, JtdForm::Type { type_: JtdType::Float64 }));
+    assert!(matches!(
+        form,
+        JtdForm::Type {
+            type_: JtdType::Float64
+        }
+    ));
 }
 
 #[test]
@@ -55,21 +75,36 @@ fn jtd_any_type() {
 fn jtd_const_string() {
     let type_ = t().Const(json!("hello"), None);
     let form = to_jtd_form(&type_);
-    assert!(matches!(form, JtdForm::Type { type_: JtdType::String }));
+    assert!(matches!(
+        form,
+        JtdForm::Type {
+            type_: JtdType::String
+        }
+    ));
 }
 
 #[test]
 fn jtd_const_number_uint8() {
     let type_ = t().Const(json!(255), None);
     let form = to_jtd_form(&type_);
-    assert!(matches!(form, JtdForm::Type { type_: JtdType::Uint8 }));
+    assert!(matches!(
+        form,
+        JtdForm::Type {
+            type_: JtdType::Uint8
+        }
+    ));
 }
 
 #[test]
 fn jtd_const_bool() {
     let type_ = t().Const(json!(true), None);
     let form = to_jtd_form(&type_);
-    assert!(matches!(form, JtdForm::Type { type_: JtdType::Boolean }));
+    assert!(matches!(
+        form,
+        JtdForm::Type {
+            type_: JtdType::Boolean
+        }
+    ));
 }
 
 #[test]
@@ -78,7 +113,12 @@ fn jtd_array_of_str() {
     let form = to_jtd_form(&type_);
     match form {
         JtdForm::Elements { elements } => {
-            assert!(matches!(*elements, JtdForm::Type { type_: JtdType::String }));
+            assert!(matches!(
+                *elements,
+                JtdForm::Type {
+                    type_: JtdType::String
+                }
+            ));
         }
         _ => panic!("expected Elements form"),
     }
@@ -93,7 +133,11 @@ fn jtd_object_with_required_and_optional() {
     ]);
     let form = to_jtd_form(&type_);
     match form {
-        JtdForm::Properties { properties, optional_properties, .. } => {
+        JtdForm::Properties {
+            properties,
+            optional_properties,
+            ..
+        } => {
             assert!(properties.contains_key("name"));
             assert!(optional_properties.contains_key("age"));
             assert!(!properties.contains_key("age"));
@@ -108,7 +152,12 @@ fn jtd_map_type() {
     let form = to_jtd_form(&type_);
     match form {
         JtdForm::Values { values } => {
-            assert!(matches!(*values, JtdForm::Type { type_: JtdType::String }));
+            assert!(matches!(
+                *values,
+                JtdForm::Type {
+                    type_: JtdType::String
+                }
+            ));
         }
         _ => panic!("expected Values form"),
     }

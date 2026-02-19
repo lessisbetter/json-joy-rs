@@ -21,7 +21,9 @@ fn resolve_var(vars: &crate::vars::Vars, varname_val: &JsValue) -> Result<JsValu
     }
     let path = parse_json_pointer(pointer);
     match &data {
-        JsValue::Json(v) => Ok(get(v, &path).map(|v| JsValue::Json(v.clone())).unwrap_or(JsValue::Undefined)),
+        JsValue::Json(v) => Ok(get(v, &path)
+            .map(|v| JsValue::Json(v.clone()))
+            .unwrap_or(JsValue::Undefined)),
         _ => Ok(JsValue::Undefined),
     }
 }

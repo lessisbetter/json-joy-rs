@@ -81,6 +81,9 @@ mod tests {
     fn test_list_to_uint8() {
         assert_eq!(list_to_uint8(&[]), vec![]);
         assert_eq!(list_to_uint8(&[&[1, 2][..]]), vec![1, 2]);
-        assert_eq!(list_to_uint8(&[&[1][..], &[2][..], &[3][..]]), vec![1, 2, 3]);
+        assert_eq!(
+            list_to_uint8(&[&[1][..], &[2][..], &[3][..]]),
+            vec![1, 2, 3]
+        );
     }
 }

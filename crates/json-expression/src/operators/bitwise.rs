@@ -38,9 +38,33 @@ fn bit_not_eval(expr: &[Value], ctx: &mut EvalCtx<'_>) -> Result<JsValue, JsErro
 
 pub fn operators() -> Vec<Arc<OperatorDefinition>> {
     vec![
-        Arc::new(OperatorDefinition { name: "&", aliases: &["bitAnd"], arity: Arity::Variadic, eval_fn: bit_and_eval, impure: false }),
-        Arc::new(OperatorDefinition { name: "|", aliases: &["bitOr"], arity: Arity::Variadic, eval_fn: bit_or_eval, impure: false }),
-        Arc::new(OperatorDefinition { name: "^", aliases: &["bitXor"], arity: Arity::Variadic, eval_fn: bit_xor_eval, impure: false }),
-        Arc::new(OperatorDefinition { name: "~", aliases: &["bitNot"], arity: Arity::Fixed(1), eval_fn: bit_not_eval, impure: false }),
+        Arc::new(OperatorDefinition {
+            name: "&",
+            aliases: &["bitAnd"],
+            arity: Arity::Variadic,
+            eval_fn: bit_and_eval,
+            impure: false,
+        }),
+        Arc::new(OperatorDefinition {
+            name: "|",
+            aliases: &["bitOr"],
+            arity: Arity::Variadic,
+            eval_fn: bit_or_eval,
+            impure: false,
+        }),
+        Arc::new(OperatorDefinition {
+            name: "^",
+            aliases: &["bitXor"],
+            arity: Arity::Variadic,
+            eval_fn: bit_xor_eval,
+            impure: false,
+        }),
+        Arc::new(OperatorDefinition {
+            name: "~",
+            aliases: &["bitNot"],
+            arity: Arity::Fixed(1),
+            eval_fn: bit_not_eval,
+            impure: false,
+        }),
     ]
 }

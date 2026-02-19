@@ -2,7 +2,7 @@
 //!
 //! Mirrors `packages/json-joy/src/util/diff/`.
 
+pub mod bin;
+pub mod line;
 pub mod str;
 pub mod str_utils;
-pub mod line;
-pub mod bin;

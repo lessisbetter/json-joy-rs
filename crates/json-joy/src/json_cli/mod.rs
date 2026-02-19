@@ -14,8 +14,8 @@ use json_joy_json_pack::PackValue;
 use json_joy_json_pointer::find_by_pointer;
 use serde_json::Value;
 
-use crate::json_patch::{apply_patch, ApplyPatchOptions};
 use crate::json_patch::codec::json::from_json_patch;
+use crate::json_patch::{apply_patch, ApplyPatchOptions};
 
 // ── Errors ────────────────────────────────────────────────────────────────
 
@@ -32,18 +32,20 @@ pub enum CliError {
 impl std::fmt::Display for CliError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            CliError::Json(e)           => write!(f, "{e}"),
-            CliError::MsgPack(e)        => write!(f, "{e}"),
-            CliError::Cbor(e)           => write!(f, "{e}"),
-            CliError::Patch(e)          => write!(f, "{e}"),
-            CliError::Pointer(e)        => write!(f, "{e}"),
-            CliError::UnknownFormat(e)  => write!(f, "Unknown format: {e}"),
+            CliError::Json(e) => write!(f, "{e}"),
+            CliError::MsgPack(e) => write!(f, "{e}"),
+            CliError::Cbor(e) => write!(f, "{e}"),
+            CliError::Patch(e) => write!(f, "{e}"),
+            CliError::Pointer(e) => write!(f, "{e}"),
+            CliError::UnknownFormat(e) => write!(f, "Unknown format: {e}"),
         }
     }
 }
 
 impl From<serde_json::Error> for CliError {
-    fn from(e: serde_json::Error) -> Self { CliError::Json(e) }
+    fn from(e: serde_json::Error) -> Self {
+        CliError::Json(e)
+    }
 }
 
 // ── json-pack ─────────────────────────────────────────────────────────────
@@ -87,8 +89,7 @@ pub fn unpack_msgpack(bytes: &[u8]) -> Result<String, CliError> {
 
 /// Decode CBOR bytes to a JSON string.
 pub fn unpack_cbor(bytes: &[u8]) -> Result<String, CliError> {
-    let pack = decode_cbor_value(bytes)
-        .map_err(|e| CliError::Cbor(format!("{e:?}")))?;
+    let pack = decode_cbor_value(bytes).map_err(|e| CliError::Cbor(format!("{e:?}")))?;
     let value = Value::from(pack);
     Ok(serde_json::to_string_pretty(&value)?)
 }
@@ -113,11 +114,9 @@ pub fn unpack(bytes: &[u8], format: &str) -> Result<String, CliError> {
 pub fn apply_json_patch(doc_json: &str, patch_json: &str) -> Result<String, CliError> {
     let doc: Value = serde_json::from_str(doc_json)?;
     let ops_raw: Value = serde_json::from_str(patch_json)?;
-    let ops = from_json_patch(&ops_raw)
-        .map_err(|e| CliError::Patch(format!("{e:?}")))?;
+    let ops = from_json_patch(&ops_raw).map_err(|e| CliError::Patch(format!("{e:?}")))?;
     let options = ApplyPatchOptions { mutate: true };
-    let result = apply_patch(doc, &ops, &options)
-        .map_err(|e| CliError::Patch(format!("{e:?}")))?;
+    let result = apply_patch(doc, &ops, &options).map_err(|e| CliError::Patch(format!("{e:?}")))?;
     Ok(serde_json::to_string_pretty(&result.doc)?)
 }
 
@@ -171,21 +170,21 @@ mod tests {
     #[test]
     fn pack_unpack_msgpack_null() {
         let bytes = pack_msgpack("null").unwrap();
-        let json  = unpack_msgpack(&bytes).unwrap();
+        let json = unpack_msgpack(&bytes).unwrap();
         assert_eq!(json.trim(), "null");
     }
 
     #[test]
     fn pack_unpack_msgpack_number() {
         let bytes = pack_msgpack("42").unwrap();
-        let json  = unpack_msgpack(&bytes).unwrap();
+        let json = unpack_msgpack(&bytes).unwrap();
         assert_eq!(json.trim(), "42");
     }
 
     #[test]
     fn pack_unpack_msgpack_string() {
         let bytes = pack_msgpack("\"hello\"").unwrap();
-        let json  = unpack_msgpack(&bytes).unwrap();
+        let json = unpack_msgpack(&bytes).unwrap();
         assert_eq!(json.trim(), "\"hello\"");
     }
 
@@ -193,7 +192,7 @@ mod tests {
     fn pack_unpack_msgpack_object() {
         let orig = r#"{"a":1,"b":true}"#;
         let bytes = pack_msgpack(orig).unwrap();
-        let json  = unpack_msgpack(&bytes).unwrap();
+        let json = unpack_msgpack(&bytes).unwrap();
         let v: Value = serde_json::from_str(&json).unwrap();
         assert_eq!(v["a"], 1);
         assert_eq!(v["b"], true);
@@ -201,9 +200,9 @@ mod tests {
 
     #[test]
     fn pack_unpack_cbor_array() {
-        let orig  = "[1,2,3]";
+        let orig = "[1,2,3]";
         let bytes = pack_cbor(orig).unwrap();
-        let json  = unpack_cbor(&bytes).unwrap();
+        let json = unpack_cbor(&bytes).unwrap();
         let v: Value = serde_json::from_str(&json).unwrap();
         assert_eq!(v, serde_json::json!([1, 2, 3]));
     }
@@ -218,18 +217,18 @@ mod tests {
 
     #[test]
     fn patch_add_key() {
-        let doc   = r#"{"a":1}"#;
+        let doc = r#"{"a":1}"#;
         let patch = r#"[{"op":"add","path":"/b","value":2}]"#;
-        let out   = apply_json_patch(doc, patch).unwrap();
+        let out = apply_json_patch(doc, patch).unwrap();
         let v: Value = serde_json::from_str(&out).unwrap();
         assert_eq!(v["b"], 2);
     }
 
     #[test]
     fn patch_remove_key() {
-        let doc   = r#"{"a":1,"b":2}"#;
+        let doc = r#"{"a":1,"b":2}"#;
         let patch = r#"[{"op":"remove","path":"/a"}]"#;
-        let out   = apply_json_patch(doc, patch).unwrap();
+        let out = apply_json_patch(doc, patch).unwrap();
         let v: Value = serde_json::from_str(&out).unwrap();
         assert!(v.get("a").is_none());
         assert_eq!(v["b"], 2);
@@ -237,9 +236,9 @@ mod tests {
 
     #[test]
     fn patch_replace_value() {
-        let doc   = r#"{"x":1}"#;
+        let doc = r#"{"x":1}"#;
         let patch = r#"[{"op":"replace","path":"/x","value":99}]"#;
-        let out   = apply_json_patch(doc, patch).unwrap();
+        let out = apply_json_patch(doc, patch).unwrap();
         let v: Value = serde_json::from_str(&out).unwrap();
         assert_eq!(v["x"], 99);
     }

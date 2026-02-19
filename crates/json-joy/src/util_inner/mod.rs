@@ -5,7 +5,7 @@
 //! TypeScript-specific or browser-specific utilities (Defer, throttle, dom,
 //! events, iterator polyfill) are not ported.
 
-pub mod str_cnt;
 pub mod diff;
+pub mod str_cnt;
 
 pub use str_cnt::str_cnt;

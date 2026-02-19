@@ -319,10 +319,15 @@ impl CborEncoderStable {
 
 /// Number of bytes needed for the CBOR text string header given the byte length.
 fn str_header_length(size: usize) -> usize {
-    if size <= 23 { 1 }
-    else if size <= 0xff { 2 }
-    else if size <= 0xffff { 3 }
-    else { 5 }
+    if size <= 23 {
+        1
+    } else if size <= 0xff {
+        2
+    } else if size <= 0xffff {
+        3
+    } else {
+        5
+    }
 }
 
 /// Compare object keys for stable sort (mirrors `objKeyCmp` from upstream).

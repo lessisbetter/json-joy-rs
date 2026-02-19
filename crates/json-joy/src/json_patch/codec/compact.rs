@@ -52,14 +52,18 @@ pub const OPCODE_OR: u8 = 45;
 /// Encodes a path as a JSON array of path components (strings/numbers).
 /// In the compact format, paths are stored as arrays, not JSON Pointer strings.
 fn encode_path_as_array(path: &[String]) -> Value {
-    Value::Array(path.iter().map(|s| {
-        // If the segment is a pure integer, encode as number for compactness.
-        if let Ok(n) = s.parse::<u64>() {
-            json!(n)
-        } else {
-            json!(s)
-        }
-    }).collect())
+    Value::Array(
+        path.iter()
+            .map(|s| {
+                // If the segment is a pure integer, encode as number for compactness.
+                if let Ok(n) = s.parse::<u64>() {
+                    json!(n)
+                } else {
+                    json!(s)
+                }
+            })
+            .collect(),
+    )
 }
 
 /// Decodes a path from a compact value.
@@ -70,13 +74,20 @@ fn encode_path_as_array(path: &[String]) -> Value {
 fn decode_path_from_value(v: &Value) -> Result<Path, PatchError> {
     match v {
         Value::String(s) => Ok(json_joy_json_pointer::parse_json_pointer(s)),
-        Value::Array(arr) => arr.iter().map(|item| match item {
-            Value::String(s) => Ok(s.clone()),
-            Value::Number(n) => Ok(n.to_string()),
-            _ => Err(PatchError::InvalidOp("path component must be string or number".into())),
-        }).collect(),
+        Value::Array(arr) => arr
+            .iter()
+            .map(|item| match item {
+                Value::String(s) => Ok(s.clone()),
+                Value::Number(n) => Ok(n.to_string()),
+                _ => Err(PatchError::InvalidOp(
+                    "path component must be string or number".into(),
+                )),
+            })
+            .collect(),
         Value::Null => Ok(vec![]),
-        _ => Err(PatchError::InvalidOp("path must be a string or array".into())),
+        _ => Err(PatchError::InvalidOp(
+            "path must be a string or array".into(),
+        )),
     }
 }
 
@@ -134,7 +145,11 @@ fn encode_op(op: &Op, parent_path: Option<&[String]>, options: &EncodeOptions) -
                 json!([opcode, encode_path_as_array(path)])
             }
         }
-        Op::Replace { path, value, old_value } => {
+        Op::Replace {
+            path,
+            value,
+            old_value,
+        } => {
             let opcode = opcode_value(OPCODE_REPLACE, "replace", options);
             if let Some(ov) = old_value {
                 json!([opcode, encode_path_as_array(path), value, ov])
@@ -167,7 +182,12 @@ fn encode_op(op: &Op, parent_path: Option<&[String]>, options: &EncodeOptions) -
             pos,
             str_val
         ]),
-        Op::StrDel { path, pos, str_val, len } => {
+        Op::StrDel {
+            path,
+            pos,
+            str_val,
+            len,
+        } => {
             let opcode = opcode_value(OPCODE_STR_DEL, "str_del", options);
             if let Some(s) = str_val {
                 json!([opcode, encode_path_as_array(path), pos, s])
@@ -200,12 +220,25 @@ fn encode_op(op: &Op, parent_path: Option<&[String]>, options: &EncodeOptions) -
                 json!([opcode, encode_path_as_array(path), pos])
             }
         }
-        Op::Extend { path, props, delete_null } => {
+        Op::Extend {
+            path,
+            props,
+            delete_null,
+        } => {
             let opcode = opcode_value(OPCODE_EXTEND, "extend", options);
             if *delete_null {
-                json!([opcode, encode_path_as_array(path), Value::Object(props.clone()), 1])
+                json!([
+                    opcode,
+                    encode_path_as_array(path),
+                    Value::Object(props.clone()),
+                    1
+                ])
             } else {
-                json!([opcode, encode_path_as_array(path), Value::Object(props.clone())])
+                json!([
+                    opcode,
+                    encode_path_as_array(path),
+                    Value::Object(props.clone())
+                ])
             }
         }
         Op::Defined { path } => json!([
@@ -216,7 +249,11 @@ fn encode_op(op: &Op, parent_path: Option<&[String]>, options: &EncodeOptions) -
             opcode_value(OPCODE_UNDEFINED, "undefined", options),
             relative_path(path)
         ]),
-        Op::Contains { path, value, ignore_case } => {
+        Op::Contains {
+            path,
+            value,
+            ignore_case,
+        } => {
             let opcode = opcode_value(OPCODE_CONTAINS, "contains", options);
             let rp = relative_path(path);
             if *ignore_case {
@@ -225,7 +262,11 @@ fn encode_op(op: &Op, parent_path: Option<&[String]>, options: &EncodeOptions) -
                 json!([opcode, rp, value])
             }
         }
-        Op::Ends { path, value, ignore_case } => {
+        Op::Ends {
+            path,
+            value,
+            ignore_case,
+        } => {
             let opcode = opcode_value(OPCODE_ENDS, "ends", options);
             let rp = relative_path(path);
             if *ignore_case {
@@ -234,7 +275,11 @@ fn encode_op(op: &Op, parent_path: Option<&[String]>, options: &EncodeOptions) -
                 json!([opcode, rp, value])
             }
         }
-        Op::Starts { path, value, ignore_case } => {
+        Op::Starts {
+            path,
+            value,
+            ignore_case,
+        } => {
             let opcode = opcode_value(OPCODE_STARTS, "starts", options);
             let rp = relative_path(path);
             if *ignore_case {
@@ -258,7 +303,11 @@ fn encode_op(op: &Op, parent_path: Option<&[String]>, options: &EncodeOptions) -
             relative_path(path),
             value
         ]),
-        Op::Matches { path, value, ignore_case } => {
+        Op::Matches {
+            path,
+            value,
+            ignore_case,
+        } => {
             let opcode = opcode_value(OPCODE_MATCHES, "matches", options);
             let rp = relative_path(path);
             if *ignore_case {
@@ -275,7 +324,12 @@ fn encode_op(op: &Op, parent_path: Option<&[String]>, options: &EncodeOptions) -
                 Value::Array(types)
             ])
         }
-        Op::TestString { path, pos, str_val, not } => {
+        Op::TestString {
+            path,
+            pos,
+            str_val,
+            not,
+        } => {
             let opcode = opcode_value(OPCODE_TEST_STRING, "test_string", options);
             let rp = relative_path(path);
             if *not {
@@ -301,7 +355,8 @@ fn encode_op(op: &Op, parent_path: Option<&[String]>, options: &EncodeOptions) -
         Op::And { path, ops } => {
             let opcode = opcode_value(OPCODE_AND, "and", options);
             let rp = relative_path(path);
-            let sub_ops: Vec<Value> = ops.iter()
+            let sub_ops: Vec<Value> = ops
+                .iter()
                 .map(|op| encode_op(op, Some(path), options))
                 .collect();
             json!([opcode, rp, Value::Array(sub_ops)])
@@ -309,7 +364,8 @@ fn encode_op(op: &Op, parent_path: Option<&[String]>, options: &EncodeOptions) -
         Op::Not { path, ops } => {
             let opcode = opcode_value(OPCODE_NOT, "not", options);
             let rp = relative_path(path);
-            let sub_ops: Vec<Value> = ops.iter()
+            let sub_ops: Vec<Value> = ops
+                .iter()
                 .map(|op| encode_op(op, Some(path), options))
                 .collect();
             json!([opcode, rp, Value::Array(sub_ops)])
@@ -317,7 +373,8 @@ fn encode_op(op: &Op, parent_path: Option<&[String]>, options: &EncodeOptions) -
         Op::Or { path, ops } => {
             let opcode = opcode_value(OPCODE_OR, "or", options);
             let rp = relative_path(path);
-            let sub_ops: Vec<Value> = ops.iter()
+            let sub_ops: Vec<Value> = ops
+                .iter()
                 .map(|op| encode_op(op, Some(path), options))
                 .collect();
             json!([opcode, rp, Value::Array(sub_ops)])
@@ -329,7 +386,8 @@ fn encode_op(op: &Op, parent_path: Option<&[String]>, options: &EncodeOptions) -
 
 /// Decodes a JSON array of compact ops into a list of `Op` values.
 pub fn decode(data: &Value) -> Result<Vec<Op>, PatchError> {
-    let arr = data.as_array()
+    let arr = data
+        .as_array()
         .ok_or_else(|| PatchError::InvalidOp("compact patch must be an array".into()))?;
     arr.iter().map(|v| decode_op(v, None)).collect()
 }
@@ -337,11 +395,16 @@ pub fn decode(data: &Value) -> Result<Vec<Op>, PatchError> {
 fn get_u8_or_str_opcode(v: &Value) -> Result<OpCodeKey, PatchError> {
     match v {
         Value::Number(n) => {
-            let code = n.as_u64().ok_or_else(|| PatchError::InvalidOp("opcode must be u8".into()))? as u8;
+            let code = n
+                .as_u64()
+                .ok_or_else(|| PatchError::InvalidOp("opcode must be u8".into()))?
+                as u8;
             Ok(OpCodeKey::Numeric(code))
         }
         Value::String(s) => Ok(OpCodeKey::Name(s.as_str())),
-        _ => Err(PatchError::InvalidOp("opcode must be number or string".into())),
+        _ => Err(PatchError::InvalidOp(
+            "opcode must be number or string".into(),
+        )),
     }
 }
 
@@ -360,11 +423,14 @@ impl<'a> OpCodeKey<'a> {
 }
 
 fn arr_get(arr: &[Value], idx: usize) -> Result<&Value, PatchError> {
-    arr.get(idx).ok_or_else(|| PatchError::InvalidOp(format!("compact op array too short, missing index {idx}")))
+    arr.get(idx).ok_or_else(|| {
+        PatchError::InvalidOp(format!("compact op array too short, missing index {idx}"))
+    })
 }
 
 fn decode_op(v: &Value, parent_path: Option<&[String]>) -> Result<Op, PatchError> {
-    let arr = v.as_array()
+    let arr = v
+        .as_array()
         .ok_or_else(|| PatchError::InvalidOp("compact op must be an array".into()))?;
     if arr.is_empty() {
         return Err(PatchError::InvalidOp("compact op array is empty".into()));
@@ -386,7 +452,11 @@ fn decode_op(v: &Value, parent_path: Option<&[String]>) -> Result<Op, PatchError
         let path = decode_path_from_value(arr_get(arr, 1)?)?;
         let value = arr_get(arr, 2)?.clone();
         let old_value = arr.get(3).cloned();
-        return Ok(Op::Replace { path, value, old_value });
+        return Ok(Op::Replace {
+            path,
+            value,
+            old_value,
+        });
     }
     if key.matches(OPCODE_COPY, "copy") {
         let path = decode_path_from_value(arr_get(arr, 1)?)?;
@@ -401,31 +471,55 @@ fn decode_op(v: &Value, parent_path: Option<&[String]>) -> Result<Op, PatchError
     if key.matches(OPCODE_TEST, "test") {
         let path = decode_relative_path(arr_get(arr, 1)?, parent_path)?;
         let value = arr_get(arr, 2)?.clone();
-        let not = arr.get(3).and_then(|v| v.as_u64()).map(|n| n != 0).unwrap_or(false);
+        let not = arr
+            .get(3)
+            .and_then(|v| v.as_u64())
+            .map(|n| n != 0)
+            .unwrap_or(false);
         return Ok(Op::Test { path, value, not });
     }
     if key.matches(OPCODE_STR_INS, "str_ins") {
         let path = decode_path_from_value(arr_get(arr, 1)?)?;
-        let pos = arr_get(arr, 2)?.as_u64()
-            .ok_or_else(|| PatchError::InvalidOp("str_ins: pos must be number".into()))? as usize;
-        let str_val = arr_get(arr, 3)?.as_str()
-            .ok_or_else(|| PatchError::InvalidOp("str_ins: str must be string".into()))?.to_string();
+        let pos = arr_get(arr, 2)?
+            .as_u64()
+            .ok_or_else(|| PatchError::InvalidOp("str_ins: pos must be number".into()))?
+            as usize;
+        let str_val = arr_get(arr, 3)?
+            .as_str()
+            .ok_or_else(|| PatchError::InvalidOp("str_ins: str must be string".into()))?
+            .to_string();
         return Ok(Op::StrIns { path, pos, str_val });
     }
     if key.matches(OPCODE_STR_DEL, "str_del") {
         let path = decode_path_from_value(arr_get(arr, 1)?)?;
-        let pos = arr_get(arr, 2)?.as_u64()
-            .ok_or_else(|| PatchError::InvalidOp("str_del: pos must be number".into()))? as usize;
+        let pos = arr_get(arr, 2)?
+            .as_u64()
+            .ok_or_else(|| PatchError::InvalidOp("str_del: pos must be number".into()))?
+            as usize;
         // len == 4 means str form; len == 5 means numeric-length form (arr[3] == 0, arr[4] == len)
         if len < 5 {
-            let str_val = arr_get(arr, 3)?.as_str()
-                .ok_or_else(|| PatchError::InvalidOp("str_del: str must be string".into()))?.to_string();
-            return Ok(Op::StrDel { path, pos, str_val: Some(str_val), len: None });
+            let str_val = arr_get(arr, 3)?
+                .as_str()
+                .ok_or_else(|| PatchError::InvalidOp("str_del: str must be string".into()))?
+                .to_string();
+            return Ok(Op::StrDel {
+                path,
+                pos,
+                str_val: Some(str_val),
+                len: None,
+            });
         } else {
             // arr[3] is 0 (sentinel), arr[4] is len
-            let del_len = arr_get(arr, 4)?.as_u64()
-                .ok_or_else(|| PatchError::InvalidOp("str_del: len must be number".into()))? as usize;
-            return Ok(Op::StrDel { path, pos, str_val: None, len: Some(del_len) });
+            let del_len = arr_get(arr, 4)?
+                .as_u64()
+                .ok_or_else(|| PatchError::InvalidOp("str_del: len must be number".into()))?
+                as usize;
+            return Ok(Op::StrDel {
+                path,
+                pos,
+                str_val: None,
+                len: Some(del_len),
+            });
         }
     }
     if key.matches(OPCODE_FLIP, "flip") {
@@ -434,31 +528,45 @@ fn decode_op(v: &Value, parent_path: Option<&[String]>) -> Result<Op, PatchError
     }
     if key.matches(OPCODE_INC, "inc") {
         let path = decode_path_from_value(arr_get(arr, 1)?)?;
-        let inc = arr_get(arr, 2)?.as_f64()
+        let inc = arr_get(arr, 2)?
+            .as_f64()
             .ok_or_else(|| PatchError::InvalidOp("inc: inc must be number".into()))?;
         return Ok(Op::Inc { path, inc });
     }
     if key.matches(OPCODE_SPLIT, "split") {
         let path = decode_path_from_value(arr_get(arr, 1)?)?;
-        let pos = arr_get(arr, 2)?.as_u64()
-            .ok_or_else(|| PatchError::InvalidOp("split: pos must be number".into()))? as usize;
+        let pos = arr_get(arr, 2)?
+            .as_u64()
+            .ok_or_else(|| PatchError::InvalidOp("split: pos must be number".into()))?
+            as usize;
         let props = arr.get(3).filter(|v| !v.is_null()).cloned();
         return Ok(Op::Split { path, pos, props });
     }
     if key.matches(OPCODE_MERGE, "merge") {
         let path = decode_path_from_value(arr_get(arr, 1)?)?;
-        let pos = arr_get(arr, 2)?.as_u64()
-            .ok_or_else(|| PatchError::InvalidOp("merge: pos must be number".into()))? as usize;
+        let pos = arr_get(arr, 2)?
+            .as_u64()
+            .ok_or_else(|| PatchError::InvalidOp("merge: pos must be number".into()))?
+            as usize;
         let props = arr.get(3).filter(|v| !v.is_null()).cloned();
         return Ok(Op::Merge { path, pos, props });
     }
     if key.matches(OPCODE_EXTEND, "extend") {
         let path = decode_path_from_value(arr_get(arr, 1)?)?;
-        let props = arr_get(arr, 2)?.as_object()
+        let props = arr_get(arr, 2)?
+            .as_object()
             .ok_or_else(|| PatchError::InvalidOp("extend: props must be object".into()))?
             .clone();
-        let delete_null = arr.get(3).and_then(|v| v.as_u64()).map(|n| n != 0).unwrap_or(false);
-        return Ok(Op::Extend { path, props, delete_null });
+        let delete_null = arr
+            .get(3)
+            .and_then(|v| v.as_u64())
+            .map(|n| n != 0)
+            .unwrap_or(false);
+        return Ok(Op::Extend {
+            path,
+            props,
+            delete_null,
+        });
     }
     if key.matches(OPCODE_DEFINED, "defined") {
         let path = decode_relative_path(arr_get(arr, 1)?, parent_path)?;
@@ -470,109 +578,189 @@ fn decode_op(v: &Value, parent_path: Option<&[String]>) -> Result<Op, PatchError
     }
     if key.matches(OPCODE_CONTAINS, "contains") {
         let path = decode_relative_path(arr_get(arr, 1)?, parent_path)?;
-        let value = arr_get(arr, 2)?.as_str()
-            .ok_or_else(|| PatchError::InvalidOp("contains: value must be string".into()))?.to_string();
-        let ignore_case = arr.get(3).and_then(|v| v.as_u64()).map(|n| n != 0).unwrap_or(false);
-        return Ok(Op::Contains { path, value, ignore_case });
+        let value = arr_get(arr, 2)?
+            .as_str()
+            .ok_or_else(|| PatchError::InvalidOp("contains: value must be string".into()))?
+            .to_string();
+        let ignore_case = arr
+            .get(3)
+            .and_then(|v| v.as_u64())
+            .map(|n| n != 0)
+            .unwrap_or(false);
+        return Ok(Op::Contains {
+            path,
+            value,
+            ignore_case,
+        });
     }
     if key.matches(OPCODE_ENDS, "ends") {
         let path = decode_relative_path(arr_get(arr, 1)?, parent_path)?;
-        let value = arr_get(arr, 2)?.as_str()
-            .ok_or_else(|| PatchError::InvalidOp("ends: value must be string".into()))?.to_string();
-        let ignore_case = arr.get(3).and_then(|v| v.as_u64()).map(|n| n != 0).unwrap_or(false);
-        return Ok(Op::Ends { path, value, ignore_case });
+        let value = arr_get(arr, 2)?
+            .as_str()
+            .ok_or_else(|| PatchError::InvalidOp("ends: value must be string".into()))?
+            .to_string();
+        let ignore_case = arr
+            .get(3)
+            .and_then(|v| v.as_u64())
+            .map(|n| n != 0)
+            .unwrap_or(false);
+        return Ok(Op::Ends {
+            path,
+            value,
+            ignore_case,
+        });
     }
     if key.matches(OPCODE_STARTS, "starts") {
         let path = decode_relative_path(arr_get(arr, 1)?, parent_path)?;
-        let value = arr_get(arr, 2)?.as_str()
-            .ok_or_else(|| PatchError::InvalidOp("starts: value must be string".into()))?.to_string();
-        let ignore_case = arr.get(3).and_then(|v| v.as_u64()).map(|n| n != 0).unwrap_or(false);
-        return Ok(Op::Starts { path, value, ignore_case });
+        let value = arr_get(arr, 2)?
+            .as_str()
+            .ok_or_else(|| PatchError::InvalidOp("starts: value must be string".into()))?
+            .to_string();
+        let ignore_case = arr
+            .get(3)
+            .and_then(|v| v.as_u64())
+            .map(|n| n != 0)
+            .unwrap_or(false);
+        return Ok(Op::Starts {
+            path,
+            value,
+            ignore_case,
+        });
     }
     if key.matches(OPCODE_IN, "in") {
         let path = decode_relative_path(arr_get(arr, 1)?, parent_path)?;
-        let value = arr_get(arr, 2)?.as_array()
+        let value = arr_get(arr, 2)?
+            .as_array()
             .ok_or_else(|| PatchError::InvalidOp("in: value must be array".into()))?
             .clone();
         return Ok(Op::In { path, value });
     }
     if key.matches(OPCODE_LESS, "less") {
         let path = decode_relative_path(arr_get(arr, 1)?, parent_path)?;
-        let value = arr_get(arr, 2)?.as_f64()
+        let value = arr_get(arr, 2)?
+            .as_f64()
             .ok_or_else(|| PatchError::InvalidOp("less: value must be number".into()))?;
         return Ok(Op::Less { path, value });
     }
     if key.matches(OPCODE_MORE, "more") {
         let path = decode_relative_path(arr_get(arr, 1)?, parent_path)?;
-        let value = arr_get(arr, 2)?.as_f64()
+        let value = arr_get(arr, 2)?
+            .as_f64()
             .ok_or_else(|| PatchError::InvalidOp("more: value must be number".into()))?;
         return Ok(Op::More { path, value });
     }
     if key.matches(OPCODE_MATCHES, "matches") {
         let path = decode_relative_path(arr_get(arr, 1)?, parent_path)?;
-        let value = arr_get(arr, 2)?.as_str()
-            .ok_or_else(|| PatchError::InvalidOp("matches: value must be string".into()))?.to_string();
-        let ignore_case = arr.get(3).and_then(|v| v.as_u64()).map(|n| n != 0).unwrap_or(false);
-        return Ok(Op::Matches { path, value, ignore_case });
+        let value = arr_get(arr, 2)?
+            .as_str()
+            .ok_or_else(|| PatchError::InvalidOp("matches: value must be string".into()))?
+            .to_string();
+        let ignore_case = arr
+            .get(3)
+            .and_then(|v| v.as_u64())
+            .map(|n| n != 0)
+            .unwrap_or(false);
+        return Ok(Op::Matches {
+            path,
+            value,
+            ignore_case,
+        });
     }
     if key.matches(OPCODE_TEST_TYPE, "test_type") {
         let path = decode_relative_path(arr_get(arr, 1)?, parent_path)?;
-        let types_arr = arr_get(arr, 2)?.as_array()
+        let types_arr = arr_get(arr, 2)?
+            .as_array()
             .ok_or_else(|| PatchError::InvalidOp("test_type: type must be array".into()))?;
-        let type_vals: Result<Vec<JsonPatchType>, PatchError> = types_arr.iter()
+        let type_vals: Result<Vec<JsonPatchType>, PatchError> = types_arr
+            .iter()
             .map(|v| {
-                let s = v.as_str().ok_or_else(|| PatchError::InvalidOp("test_type: type element must be string".into()))?;
+                let s = v.as_str().ok_or_else(|| {
+                    PatchError::InvalidOp("test_type: type element must be string".into())
+                })?;
                 JsonPatchType::from_str(s)
             })
             .collect();
-        return Ok(Op::TestType { path, type_vals: type_vals? });
+        return Ok(Op::TestType {
+            path,
+            type_vals: type_vals?,
+        });
     }
     if key.matches(OPCODE_TEST_STRING, "test_string") {
         let path = decode_relative_path(arr_get(arr, 1)?, parent_path)?;
-        let pos = arr_get(arr, 2)?.as_u64()
-            .ok_or_else(|| PatchError::InvalidOp("test_string: pos must be number".into()))? as usize;
-        let str_val = arr_get(arr, 3)?.as_str()
-            .ok_or_else(|| PatchError::InvalidOp("test_string: str must be string".into()))?.to_string();
-        let not = arr.get(4).and_then(|v| v.as_u64()).map(|n| n != 0).unwrap_or(false);
-        return Ok(Op::TestString { path, pos, str_val, not });
+        let pos = arr_get(arr, 2)?
+            .as_u64()
+            .ok_or_else(|| PatchError::InvalidOp("test_string: pos must be number".into()))?
+            as usize;
+        let str_val = arr_get(arr, 3)?
+            .as_str()
+            .ok_or_else(|| PatchError::InvalidOp("test_string: str must be string".into()))?
+            .to_string();
+        let not = arr
+            .get(4)
+            .and_then(|v| v.as_u64())
+            .map(|n| n != 0)
+            .unwrap_or(false);
+        return Ok(Op::TestString {
+            path,
+            pos,
+            str_val,
+            not,
+        });
     }
     if key.matches(OPCODE_TEST_STRING_LEN, "test_string_len") {
         let path = decode_relative_path(arr_get(arr, 1)?, parent_path)?;
-        let the_len = arr_get(arr, 2)?.as_u64()
-            .ok_or_else(|| PatchError::InvalidOp("test_string_len: len must be number".into()))? as usize;
-        let not = arr.get(3).and_then(|v| v.as_u64()).map(|n| n != 0).unwrap_or(false);
-        return Ok(Op::TestStringLen { path, len: the_len, not });
+        let the_len = arr_get(arr, 2)?
+            .as_u64()
+            .ok_or_else(|| PatchError::InvalidOp("test_string_len: len must be number".into()))?
+            as usize;
+        let not = arr
+            .get(3)
+            .and_then(|v| v.as_u64())
+            .map(|n| n != 0)
+            .unwrap_or(false);
+        return Ok(Op::TestStringLen {
+            path,
+            len: the_len,
+            not,
+        });
     }
     if key.matches(OPCODE_TYPE, "type") {
         let path = decode_relative_path(arr_get(arr, 1)?, parent_path)?;
-        let type_str = arr_get(arr, 2)?.as_str()
+        let type_str = arr_get(arr, 2)?
+            .as_str()
             .ok_or_else(|| PatchError::InvalidOp("type: value must be string".into()))?;
         let value = JsonPatchType::from_str(type_str)?;
         return Ok(Op::Type { path, value });
     }
     if key.matches(OPCODE_AND, "and") {
         let path = decode_relative_path(arr_get(arr, 1)?, parent_path)?;
-        let sub_arr = arr_get(arr, 2)?.as_array()
+        let sub_arr = arr_get(arr, 2)?
+            .as_array()
             .ok_or_else(|| PatchError::InvalidOp("and: ops must be array".into()))?;
-        let ops: Result<Vec<Op>, PatchError> = sub_arr.iter()
+        let ops: Result<Vec<Op>, PatchError> = sub_arr
+            .iter()
             .map(|v| decode_op_relative(v, &path))
             .collect();
         return Ok(Op::And { path, ops: ops? });
     }
     if key.matches(OPCODE_NOT, "not") {
         let path = decode_relative_path(arr_get(arr, 1)?, parent_path)?;
-        let sub_arr = arr_get(arr, 2)?.as_array()
+        let sub_arr = arr_get(arr, 2)?
+            .as_array()
             .ok_or_else(|| PatchError::InvalidOp("not: ops must be array".into()))?;
-        let ops: Result<Vec<Op>, PatchError> = sub_arr.iter()
+        let ops: Result<Vec<Op>, PatchError> = sub_arr
+            .iter()
             .map(|v| decode_op_relative(v, &path))
             .collect();
         return Ok(Op::Not { path, ops: ops? });
     }
     if key.matches(OPCODE_OR, "or") {
         let path = decode_relative_path(arr_get(arr, 1)?, parent_path)?;
-        let sub_arr = arr_get(arr, 2)?.as_array()
+        let sub_arr = arr_get(arr, 2)?
+            .as_array()
             .ok_or_else(|| PatchError::InvalidOp("or: ops must be array".into()))?;
-        let ops: Result<Vec<Op>, PatchError> = sub_arr.iter()
+        let ops: Result<Vec<Op>, PatchError> = sub_arr
+            .iter()
             .map(|v| decode_op_relative(v, &path))
             .collect();
         return Ok(Op::Or { path, ops: ops? });
@@ -605,8 +793,16 @@ mod tests {
     use crate::json_patch::codec::json::{from_json, to_json};
     use serde_json::json;
 
-    fn opts() -> EncodeOptions { EncodeOptions { string_opcode: false } }
-    fn opts_str() -> EncodeOptions { EncodeOptions { string_opcode: true } }
+    fn opts() -> EncodeOptions {
+        EncodeOptions {
+            string_opcode: false,
+        }
+    }
+    fn opts_str() -> EncodeOptions {
+        EncodeOptions {
+            string_opcode: true,
+        }
+    }
 
     fn roundtrip(op: Op) -> Op {
         let ops = vec![op];
@@ -630,28 +826,45 @@ mod tests {
         // numeric opcode roundtrip
         let compact = encode(&ops, &opts());
         let decoded = decode(&compact).expect("decode failed");
-        assert_eq!(to_json(&decoded[0]), json_val, "numeric opcode roundtrip failed");
+        assert_eq!(
+            to_json(&decoded[0]),
+            json_val,
+            "numeric opcode roundtrip failed"
+        );
         // string opcode roundtrip
         let compact_str = encode(&ops, &opts_str());
         let decoded_str = decode(&compact_str).expect("decode str failed");
-        assert_eq!(to_json(&decoded_str[0]), json_val, "string opcode roundtrip failed");
+        assert_eq!(
+            to_json(&decoded_str[0]),
+            json_val,
+            "string opcode roundtrip failed"
+        );
     }
 
     #[test]
     fn roundtrip_add() {
-        let op = Op::Add { path: vec!["a".to_string()], value: json!(42) };
+        let op = Op::Add {
+            path: vec!["a".to_string()],
+            value: json!(42),
+        };
         json_roundtrip(op);
     }
 
     #[test]
     fn roundtrip_remove() {
-        let op = Op::Remove { path: vec!["a".to_string()], old_value: None };
+        let op = Op::Remove {
+            path: vec!["a".to_string()],
+            old_value: None,
+        };
         json_roundtrip(op);
     }
 
     #[test]
     fn roundtrip_remove_with_old_value() {
-        let op = Op::Remove { path: vec!["x".to_string()], old_value: Some(json!("prev")) };
+        let op = Op::Remove {
+            path: vec!["x".to_string()],
+            old_value: Some(json!("prev")),
+        };
         json_roundtrip(op);
     }
 
@@ -685,19 +898,31 @@ mod tests {
 
     #[test]
     fn roundtrip_test() {
-        let op = Op::Test { path: vec!["a".to_string()], value: json!(1), not: false };
+        let op = Op::Test {
+            path: vec!["a".to_string()],
+            value: json!(1),
+            not: false,
+        };
         json_roundtrip(op);
     }
 
     #[test]
     fn roundtrip_test_not() {
-        let op = Op::Test { path: vec!["a".to_string()], value: json!(null), not: true };
+        let op = Op::Test {
+            path: vec!["a".to_string()],
+            value: json!(null),
+            not: true,
+        };
         json_roundtrip(op);
     }
 
     #[test]
     fn roundtrip_str_ins() {
-        let op = Op::StrIns { path: vec!["s".to_string()], pos: 3, str_val: "hello".to_string() };
+        let op = Op::StrIns {
+            path: vec!["s".to_string()],
+            pos: 3,
+            str_val: "hello".to_string(),
+        };
         json_roundtrip(op);
     }
 
@@ -725,7 +950,9 @@ mod tests {
         let compact = encode(&ops, &opts());
         let decoded = decode(&compact).expect("decode failed");
         match &decoded[0] {
-            Op::StrDel { pos, str_val, len, .. } => {
+            Op::StrDel {
+                pos, str_val, len, ..
+            } => {
                 assert_eq!(*pos, 2);
                 assert!(str_val.is_none());
                 assert_eq!(*len, Some(3));
@@ -736,13 +963,18 @@ mod tests {
 
     #[test]
     fn roundtrip_flip() {
-        let op = Op::Flip { path: vec!["b".to_string()] };
+        let op = Op::Flip {
+            path: vec!["b".to_string()],
+        };
         json_roundtrip(op);
     }
 
     #[test]
     fn roundtrip_inc() {
-        let op = Op::Inc { path: vec!["n".to_string()], inc: 5.0 };
+        let op = Op::Inc {
+            path: vec!["n".to_string()],
+            inc: 5.0,
+        };
         json_roundtrip(op);
     }
 
@@ -751,8 +983,13 @@ mod tests {
         let op = Op::And {
             path: vec![],
             ops: vec![
-                Op::Defined { path: vec!["a".to_string()] },
-                Op::Less { path: vec!["a".to_string()], value: 100.0 },
+                Op::Defined {
+                    path: vec!["a".to_string()],
+                },
+                Op::Less {
+                    path: vec!["a".to_string()],
+                    value: 100.0,
+                },
             ],
         };
         json_roundtrip(op);
@@ -762,9 +999,9 @@ mod tests {
     fn roundtrip_or() {
         let op = Op::Or {
             path: vec!["x".to_string()],
-            ops: vec![
-                Op::Defined { path: vec!["x".to_string()] },
-            ],
+            ops: vec![Op::Defined {
+                path: vec!["x".to_string()],
+            }],
         };
         json_roundtrip(op);
     }
@@ -773,16 +1010,19 @@ mod tests {
     fn roundtrip_not() {
         let op = Op::Not {
             path: vec![],
-            ops: vec![
-                Op::Undefined { path: vec!["x".to_string()] },
-            ],
+            ops: vec![Op::Undefined {
+                path: vec!["x".to_string()],
+            }],
         };
         json_roundtrip(op);
     }
 
     #[test]
     fn encode_format_numeric_opcode() {
-        let op = Op::Add { path: vec!["foo".to_string()], value: json!(1) };
+        let op = Op::Add {
+            path: vec!["foo".to_string()],
+            value: json!(1),
+        };
         let compact = encode(&[op], &opts());
         let arr = compact.as_array().unwrap();
         // Outer array has one op
@@ -795,7 +1035,10 @@ mod tests {
 
     #[test]
     fn encode_format_string_opcode() {
-        let op = Op::Remove { path: vec!["a".to_string()], old_value: None };
+        let op = Op::Remove {
+            path: vec!["a".to_string()],
+            old_value: None,
+        };
         let compact = encode(&[op], &opts_str());
         let arr = compact.as_array().unwrap();
         let op_arr = arr[0].as_array().unwrap();
@@ -818,7 +1061,10 @@ mod tests {
 
     #[test]
     fn encode_empty_path_as_empty_array() {
-        let op = Op::Add { path: vec![], value: json!("x") };
+        let op = Op::Add {
+            path: vec![],
+            value: json!("x"),
+        };
         let compact = encode(&[op], &opts());
         let op_arr = compact.as_array().unwrap()[0].as_array().unwrap();
         assert_eq!(op_arr[1], json!([]));
@@ -828,7 +1074,11 @@ mod tests {
     fn roundtrip_extend() {
         let mut props = serde_json::Map::new();
         props.insert("k".to_string(), json!("v"));
-        let op = Op::Extend { path: vec![], props, delete_null: true };
+        let op = Op::Extend {
+            path: vec![],
+            props,
+            delete_null: true,
+        };
         json_roundtrip(op);
     }
 }

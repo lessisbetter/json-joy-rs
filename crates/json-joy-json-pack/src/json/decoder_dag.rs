@@ -24,7 +24,9 @@ impl Default for JsonDecoderDag {
 
 impl JsonDecoderDag {
     pub fn new() -> Self {
-        Self { inner: JsonDecoder::new() }
+        Self {
+            inner: JsonDecoder::new(),
+        }
     }
 
     pub fn decode(&mut self, input: &[u8]) -> Result<PackValue, JsonError> {
@@ -73,7 +75,8 @@ impl JsonDecoderDag {
         self.inner.skip_whitespace();
 
         // "/"
-        if !self.consume_literal(b'"') || !self.consume_literal(b'/') || !self.consume_literal(b'"') {
+        if !self.consume_literal(b'"') || !self.consume_literal(b'/') || !self.consume_literal(b'"')
+        {
             backtrack!()
         }
         self.inner.skip_whitespace();
@@ -138,7 +141,8 @@ impl JsonDecoderDag {
         self.inner.skip_whitespace();
 
         // "/"
-        if !self.consume_literal(b'"') || !self.consume_literal(b'/') || !self.consume_literal(b'"') {
+        if !self.consume_literal(b'"') || !self.consume_literal(b'/') || !self.consume_literal(b'"')
+        {
             backtrack!()
         }
         self.inner.skip_whitespace();

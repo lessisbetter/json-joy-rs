@@ -1,9 +1,6 @@
 //! Tests for binary base64 encoding (to_base64_bin).
 
-use json_joy_base64::{
-    to_base64_bin, to_base64,
-    create_to_base64_bin, create_to_base64_bin_uint8,
-};
+use json_joy_base64::{create_to_base64_bin, create_to_base64_bin_uint8, to_base64, to_base64_bin};
 use rand::Rng;
 
 fn generate_blob() -> Vec<u8> {
@@ -31,7 +28,12 @@ fn works() {
         let mut bin_with_buffer = vec![0u8; blob.len() * 4 + 3];
         let len = encode(&blob, 0, blob.len(), &mut bin_with_buffer, 3);
         let encoded = &bin_with_buffer[3..len];
-        assert_eq!(encoded, expected_bytes, "Failed for blob of length {}", blob.len());
+        assert_eq!(
+            encoded,
+            expected_bytes,
+            "Failed for blob of length {}",
+            blob.len()
+        );
 
         // Verify no mutation of input
         let dupe = copy_slice(&blob);

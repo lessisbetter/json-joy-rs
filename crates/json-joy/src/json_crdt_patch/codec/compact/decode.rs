@@ -2,11 +2,11 @@
 //!
 //! Mirrors `packages/json-joy/src/json-crdt-patch/codec/compact/decode.ts`.
 
-use serde_json::Value;
 use crate::json_crdt_patch::clock::{ts, tss, ClockVector, ServerClockVector, Ts};
 use crate::json_crdt_patch::enums::{JsonCrdtPatchOpcode, SESSION};
 use crate::json_crdt_patch::patch::Patch;
 use crate::json_crdt_patch::patch_builder::PatchBuilder;
+use serde_json::Value;
 
 fn decode_id(v: &Value, patch_sid: u64) -> Ts {
     match v {
@@ -36,13 +36,19 @@ fn json_to_pack(v: &Value) -> json_joy_json_pack::PackValue {
         }
         Value::String(s) => PackValue::Str(s.clone()),
         Value::Array(arr) => PackValue::Array(arr.iter().map(json_to_pack).collect()),
-        Value::Object(obj) => PackValue::Object(obj.iter().map(|(k, v)| (k.clone(), json_to_pack(v))).collect()),
+        Value::Object(obj) => PackValue::Object(
+            obj.iter()
+                .map(|(k, v)| (k.clone(), json_to_pack(v)))
+                .collect(),
+        ),
     }
 }
 
 /// Decodes a compact-format array into a [`Patch`].
 pub fn decode(data: &[Value]) -> Patch {
-    if data.is_empty() { panic!("INVALID_PATCH"); }
+    if data.is_empty() {
+        panic!("INVALID_PATCH");
+    }
 
     // First element is the header: [id, meta?]
     let header = data[0].as_array().expect("INVALID_HEADER");
@@ -68,7 +74,10 @@ pub fn decode(data: &[Value]) -> Patch {
 
     // Remaining elements are operations
     for op_val in &data[1..] {
-        let arr = match op_val.as_array() { Some(a) => a, None => continue };
+        let arr = match op_val.as_array() {
+            Some(a) => a,
+            None => continue,
+        };
         let opcode_num = match arr.get(0).and_then(|v| v.as_u64()) {
             Some(n) => n as u8,
             None => continue,
@@ -82,16 +91,31 @@ pub fn decode(data: &[Value]) -> Patch {
                     let ref_id = decode_id(arr.get(2).unwrap_or(&Value::Null), patch_sid);
                     builder.con_ref(ref_id);
                 } else {
-                    let val = arr.get(1).map(json_to_pack).unwrap_or(json_joy_json_pack::PackValue::Undefined);
+                    let val = arr
+                        .get(1)
+                        .map(json_to_pack)
+                        .unwrap_or(json_joy_json_pack::PackValue::Undefined);
                     builder.con_val(val);
                 }
             }
-            Some(JsonCrdtPatchOpcode::NewVal) => { builder.val(); }
-            Some(JsonCrdtPatchOpcode::NewObj) => { builder.obj(); }
-            Some(JsonCrdtPatchOpcode::NewVec) => { builder.vec(); }
-            Some(JsonCrdtPatchOpcode::NewStr) => { builder.str_node(); }
-            Some(JsonCrdtPatchOpcode::NewBin) => { builder.bin(); }
-            Some(JsonCrdtPatchOpcode::NewArr) => { builder.arr(); }
+            Some(JsonCrdtPatchOpcode::NewVal) => {
+                builder.val();
+            }
+            Some(JsonCrdtPatchOpcode::NewObj) => {
+                builder.obj();
+            }
+            Some(JsonCrdtPatchOpcode::NewVec) => {
+                builder.vec();
+            }
+            Some(JsonCrdtPatchOpcode::NewStr) => {
+                builder.str_node();
+            }
+            Some(JsonCrdtPatchOpcode::NewBin) => {
+                builder.bin();
+            }
+            Some(JsonCrdtPatchOpcode::NewArr) => {
+                builder.arr();
+            }
             Some(JsonCrdtPatchOpcode::InsVal) => {
                 let obj = decode_id(arr.get(1).unwrap_or(&Value::Null), patch_sid);
                 let val = decode_id(arr.get(2).unwrap_or(&Value::Null), patch_sid);
@@ -108,7 +132,9 @@ pub fn decode(data: &[Value]) -> Patch {
                     }
                     i += 2;
                 }
-                if !tuples.is_empty() { builder.ins_obj(obj, tuples); }
+                if !tuples.is_empty() {
+                    builder.ins_obj(obj, tuples);
+                }
             }
             Some(JsonCrdtPatchOpcode::InsVec) => {
                 let obj = decode_id(arr.get(1).unwrap_or(&Value::Null), patch_sid);
@@ -121,21 +147,29 @@ pub fn decode(data: &[Value]) -> Patch {
                     }
                     i += 2;
                 }
-                if !tuples.is_empty() { builder.ins_vec(obj, tuples); }
+                if !tuples.is_empty() {
+                    builder.ins_vec(obj, tuples);
+                }
             }
             Some(JsonCrdtPatchOpcode::InsStr) => {
                 let obj = decode_id(arr.get(1).unwrap_or(&Value::Null), patch_sid);
                 let after = decode_id(arr.get(2).unwrap_or(&Value::Null), patch_sid);
                 let data = arr.get(3).and_then(|v| v.as_str()).unwrap_or("").to_owned();
-                if !data.is_empty() { builder.ins_str(obj, after, data); }
+                if !data.is_empty() {
+                    builder.ins_str(obj, after, data);
+                }
             }
             Some(JsonCrdtPatchOpcode::InsBin) => {
                 let obj = decode_id(arr.get(1).unwrap_or(&Value::Null), patch_sid);
                 let after = decode_id(arr.get(2).unwrap_or(&Value::Null), patch_sid);
                 let b64 = arr.get(3).and_then(|v| v.as_str()).unwrap_or("");
                 use base64::Engine;
-                let data = base64::engine::general_purpose::STANDARD.decode(b64).unwrap_or_default();
-                if !data.is_empty() { builder.ins_bin(obj, after, data); }
+                let data = base64::engine::general_purpose::STANDARD
+                    .decode(b64)
+                    .unwrap_or_default();
+                if !data.is_empty() {
+                    builder.ins_bin(obj, after, data);
+                }
             }
             Some(JsonCrdtPatchOpcode::InsArr) => {
                 let obj = decode_id(arr.get(1).unwrap_or(&Value::Null), patch_sid);
@@ -151,7 +185,8 @@ pub fn decode(data: &[Value]) -> Patch {
             }
             Some(JsonCrdtPatchOpcode::Del) => {
                 let obj = decode_id(arr.get(1).unwrap_or(&Value::Null), patch_sid);
-                let what: Vec<crate::json_crdt_patch::clock::Tss> = arr[2..].iter()
+                let what: Vec<crate::json_crdt_patch::clock::Tss> = arr[2..]
+                    .iter()
                     .filter_map(|s| {
                         let a = s.as_array()?;
                         let sid = a.get(0)?.as_u64()?;

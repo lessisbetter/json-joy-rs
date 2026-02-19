@@ -36,8 +36,8 @@ use crate::json_crdt::model::Model;
 use crate::json_crdt_patch::clock::Ts;
 use crate::json_crdt_patch::codec::clock::ClockTable;
 use crate::json_crdt_patch::enums::SESSION;
-use crate::json_crdt_patch::patch::Patch;
 use crate::json_crdt_patch::operations::Op;
+use crate::json_crdt_patch::patch::Patch;
 use crate::json_crdt_patch::util::binary::CrdtReader;
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -79,7 +79,10 @@ pub struct PartialEditModel {
 impl PartialEditModel {
     /// Wrap an existing `Model`.
     pub fn new(model: Model) -> Self {
-        Self { inner: model, deletes: Vec::new() }
+        Self {
+            inner: model,
+            deletes: Vec::new(),
+        }
     }
 
     /// Delegate patch application to the inner model.
@@ -175,7 +178,10 @@ impl PartialEdit {
     ///
     /// Mirrors `PartialEdit.applyPatch`.
     pub fn apply_patch(&mut self, patch: &Patch) {
-        self.doc.as_mut().expect("model not loaded").apply_patch(patch);
+        self.doc
+            .as_mut()
+            .expect("model not loaded")
+            .apply_patch(patch);
     }
 
     /// After applying patches, propagate any new sessions from the model's
@@ -190,7 +196,8 @@ impl PartialEdit {
             let local_sid = peers.sid;
             if self.clock_table.get_by_sid(local_sid).is_none() {
                 use crate::json_crdt_patch::clock::ts;
-                self.clock_table.push(ts(local_sid, peers.time.saturating_sub(1)));
+                self.clock_table
+                    .push(ts(local_sid, peers.time.saturating_sub(1)));
             }
             // Add all peer sessions.
             for (_sid, &peer_ts) in &peers.peers {
@@ -288,7 +295,7 @@ fn op_obj(op: &Op) -> Option<Ts> {
         Op::InsBin { obj, .. } => Some(*obj),
         Op::InsArr { obj, .. } => Some(*obj),
         Op::UpdArr { obj, .. } => Some(*obj),
-        Op::Del    { obj, .. } => Some(*obj),
+        Op::Del { obj, .. } => Some(*obj),
         // Creation ops and Nop don't reference an existing node.
         _ => None,
     }
@@ -342,13 +349,15 @@ fn to_base36(n: u64) -> String {
 mod tests {
     use super::*;
     use crate::json_crdt::codec::indexed::binary as indexed;
-    use crate::json_crdt::model::Model;
     use crate::json_crdt::constants::ORIGIN;
+    use crate::json_crdt::model::Model;
     use crate::json_crdt_patch::clock::ts;
     use crate::json_crdt_patch::operations::{ConValue, Op};
     use json_joy_json_pack::PackValue;
 
-    fn sid() -> u64 { 111222 }
+    fn sid() -> u64 {
+        111222
+    }
 
     // ── PartialEdit unit tests ─────────────────────────────────────────────
 
@@ -389,7 +398,10 @@ mod tests {
         });
 
         pe.populate_load_list(&patch);
-        assert!(pe.load_list.contains("r"), "root op must add 'r' to load list");
+        assert!(
+            pe.load_list.contains("r"),
+            "root op must add 'r' to load list"
+        );
     }
 
     #[test]
@@ -433,7 +445,11 @@ mod tests {
         assert_eq!(fields_to_load.len(), 1);
         // The field should be in the full fields map.
         let field_name = fields_to_load[0];
-        assert!(fields.contains_key(field_name), "field {} should exist in encoded document", field_name);
+        assert!(
+            fields.contains_key(field_name),
+            "field {} should exist in encoded document",
+            field_name
+        );
     }
 
     #[test]

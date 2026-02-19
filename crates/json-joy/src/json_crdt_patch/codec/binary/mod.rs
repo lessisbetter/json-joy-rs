@@ -2,11 +2,11 @@
 //!
 //! Mirrors `packages/json-joy/src/json-crdt-patch/codec/binary/`.
 
-mod encoder;
 mod decoder;
+mod encoder;
 
+pub use decoder::{DecodeError, Decoder};
 pub use encoder::Encoder;
-pub use decoder::{Decoder, DecodeError};
 
 use crate::json_crdt_patch::patch::Patch;
 
@@ -25,14 +25,20 @@ pub fn decode(data: &[u8]) -> Result<Patch, DecodeError> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use json_joy_json_pack::PackValue;
-    use crate::json_crdt_patch::clock::{ts, interval};
+    use crate::json_crdt_patch::clock::{interval, ts};
     use crate::json_crdt_patch::operations::{ConValue, Op};
     use crate::json_crdt_patch::patch::Patch;
+    use json_joy_json_pack::PackValue;
 
-    fn sid() -> u64 { 1 }
-    fn t(time: u64) -> crate::json_crdt_patch::clock::Ts { ts(sid(), time) }
-    fn other(time: u64) -> crate::json_crdt_patch::clock::Ts { ts(2, time) }
+    fn sid() -> u64 {
+        1
+    }
+    fn t(time: u64) -> crate::json_crdt_patch::clock::Ts {
+        ts(sid(), time)
+    }
+    fn other(time: u64) -> crate::json_crdt_patch::clock::Ts {
+        ts(2, time)
+    }
 
     fn roundtrip(ops: Vec<Op>) -> Patch {
         let mut patch = Patch::new();
@@ -45,31 +51,46 @@ mod tests {
 
     #[test]
     fn new_con_null() {
-        let ops = vec![Op::NewCon { id: t(1), val: ConValue::Val(PackValue::Null) }];
+        let ops = vec![Op::NewCon {
+            id: t(1),
+            val: ConValue::Val(PackValue::Null),
+        }];
         let out = roundtrip(ops.clone());
         assert_eq!(out.ops, ops);
     }
 
     #[test]
     fn new_con_bool() {
-        let ops = vec![Op::NewCon { id: t(1), val: ConValue::Val(PackValue::Bool(true)) }];
+        let ops = vec![Op::NewCon {
+            id: t(1),
+            val: ConValue::Val(PackValue::Bool(true)),
+        }];
         let out = roundtrip(ops.clone());
         assert_eq!(out.ops, ops);
     }
 
     #[test]
     fn new_con_integer() {
-        let ops = vec![Op::NewCon { id: t(1), val: ConValue::Val(PackValue::Integer(-42)) }];
+        let ops = vec![Op::NewCon {
+            id: t(1),
+            val: ConValue::Val(PackValue::Integer(-42)),
+        }];
         let out = roundtrip(ops.clone());
         assert_eq!(out.ops, ops);
     }
 
     #[test]
     fn new_con_float() {
-        let ops = vec![Op::NewCon { id: t(1), val: ConValue::Val(PackValue::Float(3.14)) }];
+        let ops = vec![Op::NewCon {
+            id: t(1),
+            val: ConValue::Val(PackValue::Float(3.14)),
+        }];
         let out = roundtrip(ops.clone());
         match &out.ops[0] {
-            Op::NewCon { val: ConValue::Val(PackValue::Float(f)), .. } => {
+            Op::NewCon {
+                val: ConValue::Val(PackValue::Float(f)),
+                ..
+            } => {
                 assert!((f - 3.14_f64).abs() < 1e-10, "float mismatch: {f}");
             }
             other => panic!("unexpected op: {other:?}"),
@@ -78,21 +99,30 @@ mod tests {
 
     #[test]
     fn new_con_string() {
-        let ops = vec![Op::NewCon { id: t(1), val: ConValue::Val(PackValue::Str("hello".to_string())) }];
+        let ops = vec![Op::NewCon {
+            id: t(1),
+            val: ConValue::Val(PackValue::Str("hello".to_string())),
+        }];
         let out = roundtrip(ops.clone());
         assert_eq!(out.ops, ops);
     }
 
     #[test]
     fn new_con_binary() {
-        let ops = vec![Op::NewCon { id: t(1), val: ConValue::Val(PackValue::Bytes(vec![0xDE, 0xAD, 0xBE, 0xEF])) }];
+        let ops = vec![Op::NewCon {
+            id: t(1),
+            val: ConValue::Val(PackValue::Bytes(vec![0xDE, 0xAD, 0xBE, 0xEF])),
+        }];
         let out = roundtrip(ops.clone());
         assert_eq!(out.ops, ops);
     }
 
     #[test]
     fn new_con_ref() {
-        let ops = vec![Op::NewCon { id: t(2), val: ConValue::Ref(other(5)) }];
+        let ops = vec![Op::NewCon {
+            id: t(2),
+            val: ConValue::Ref(other(5)),
+        }];
         let out = roundtrip(ops.clone());
         assert_eq!(out.ops, ops);
     }
@@ -141,7 +171,11 @@ mod tests {
 
     #[test]
     fn ins_val() {
-        let ops = vec![Op::InsVal { id: t(10), obj: t(1), val: t(5) }];
+        let ops = vec![Op::InsVal {
+            id: t(10),
+            obj: t(1),
+            val: t(5),
+        }];
         let out = roundtrip(ops.clone());
         assert_eq!(out.ops, ops);
     }
@@ -170,28 +204,48 @@ mod tests {
 
     #[test]
     fn ins_str() {
-        let ops = vec![Op::InsStr { id: t(10), obj: t(1), after: t(0), data: "hello".to_string() }];
+        let ops = vec![Op::InsStr {
+            id: t(10),
+            obj: t(1),
+            after: t(0),
+            data: "hello".to_string(),
+        }];
         let out = roundtrip(ops.clone());
         assert_eq!(out.ops, ops);
     }
 
     #[test]
     fn ins_bin() {
-        let ops = vec![Op::InsBin { id: t(10), obj: t(1), after: t(0), data: vec![1, 2, 3] }];
+        let ops = vec![Op::InsBin {
+            id: t(10),
+            obj: t(1),
+            after: t(0),
+            data: vec![1, 2, 3],
+        }];
         let out = roundtrip(ops.clone());
         assert_eq!(out.ops, ops);
     }
 
     #[test]
     fn ins_arr() {
-        let ops = vec![Op::InsArr { id: t(10), obj: t(1), after: t(0), data: vec![t(5), other(7)] }];
+        let ops = vec![Op::InsArr {
+            id: t(10),
+            obj: t(1),
+            after: t(0),
+            data: vec![t(5), other(7)],
+        }];
         let out = roundtrip(ops.clone());
         assert_eq!(out.ops, ops);
     }
 
     #[test]
     fn upd_arr() {
-        let ops = vec![Op::UpdArr { id: t(10), obj: t(1), after: t(5), val: other(3) }];
+        let ops = vec![Op::UpdArr {
+            id: t(10),
+            obj: t(1),
+            after: t(5),
+            val: other(3),
+        }];
         let out = roundtrip(ops.clone());
         assert_eq!(out.ops, ops);
     }
@@ -199,7 +253,11 @@ mod tests {
     #[test]
     fn del_single_range() {
         // interval(stamp, tick_offset, span): deletes 2 ticks starting from t(3)+0
-        let ops = vec![Op::Del { id: t(10), obj: t(1), what: vec![interval(t(3), 0, 2)] }];
+        let ops = vec![Op::Del {
+            id: t(10),
+            obj: t(1),
+            what: vec![interval(t(3), 0, 2)],
+        }];
         let out = roundtrip(ops.clone());
         assert_eq!(out.ops, ops);
     }
@@ -227,8 +285,17 @@ mod tests {
         // A patch containing multiple different operations.
         let ops = vec![
             Op::NewStr { id: t(1) },
-            Op::InsStr { id: t(2), obj: t(1), after: t(0), data: "hi".to_string() },
-            Op::Del { id: t(4), obj: t(1), what: vec![interval(t(2), 0, 1)] },
+            Op::InsStr {
+                id: t(2),
+                obj: t(1),
+                after: t(0),
+                data: "hi".to_string(),
+            },
+            Op::Del {
+                id: t(4),
+                obj: t(1),
+                what: vec![interval(t(2), 0, 1)],
+            },
             Op::Nop { id: t(5), len: 1 },
         ];
         let out = roundtrip(ops.clone());

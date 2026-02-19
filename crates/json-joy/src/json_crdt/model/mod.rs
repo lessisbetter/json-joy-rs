@@ -12,22 +12,22 @@
 //! [`Model::apply_operation`].  The resulting JSON view can be obtained with
 //! [`Model::view`].
 
-pub mod util;
 pub mod api;
+pub mod util;
 
 pub use api::ModelApi;
 
 use serde_json::Value;
 
+use super::constants::ORIGIN;
+use super::nodes::{
+    ArrNode, BinNode, ConNode, CrdtNode, IndexExt, NodeIndex, ObjNode, RootNode, StrNode, ValNode,
+    VecNode,
+};
 use crate::json_crdt_patch::clock::{ClockVector, Ts};
 use crate::json_crdt_patch::enums::SESSION;
 use crate::json_crdt_patch::operations::{ConValue, Op};
 use crate::json_crdt_patch::patch::Patch;
-use super::constants::ORIGIN;
-use super::nodes::{
-    ArrNode, BinNode, ConNode, CrdtNode, IndexExt, NodeIndex, ObjNode, RootNode,
-    StrNode, ValNode, VecNode,
-};
 
 /// In-memory JSON CRDT document model.
 ///
@@ -104,42 +104,48 @@ impl Model {
             // ── Creation operations ────────────────────────────────────────
             Op::NewCon { id, val } => {
                 if !self.index.contains_ts(id) {
-                    self.index.insert_node(*id, CrdtNode::Con(ConNode::new(*id, val.clone())));
+                    self.index
+                        .insert_node(*id, CrdtNode::Con(ConNode::new(*id, val.clone())));
                 }
             }
             Op::NewVal { id } => {
                 if !self.index.contains_ts(id) {
-                    self.index.insert_node(*id, CrdtNode::Val(ValNode::new(*id)));
+                    self.index
+                        .insert_node(*id, CrdtNode::Val(ValNode::new(*id)));
                 }
             }
             Op::NewObj { id } => {
                 if !self.index.contains_ts(id) {
-                    self.index.insert_node(*id, CrdtNode::Obj(ObjNode::new(*id)));
+                    self.index
+                        .insert_node(*id, CrdtNode::Obj(ObjNode::new(*id)));
                 }
             }
             Op::NewVec { id } => {
                 if !self.index.contains_ts(id) {
-                    self.index.insert_node(*id, CrdtNode::Vec(VecNode::new(*id)));
+                    self.index
+                        .insert_node(*id, CrdtNode::Vec(VecNode::new(*id)));
                 }
             }
             Op::NewStr { id } => {
                 if !self.index.contains_ts(id) {
-                    self.index.insert_node(*id, CrdtNode::Str(StrNode::new(*id)));
+                    self.index
+                        .insert_node(*id, CrdtNode::Str(StrNode::new(*id)));
                 }
             }
             Op::NewBin { id } => {
                 if !self.index.contains_ts(id) {
-                    self.index.insert_node(*id, CrdtNode::Bin(BinNode::new(*id)));
+                    self.index
+                        .insert_node(*id, CrdtNode::Bin(BinNode::new(*id)));
                 }
             }
             Op::NewArr { id } => {
                 if !self.index.contains_ts(id) {
-                    self.index.insert_node(*id, CrdtNode::Arr(ArrNode::new(*id)));
+                    self.index
+                        .insert_node(*id, CrdtNode::Arr(ArrNode::new(*id)));
                 }
             }
 
             // ── Mutation operations ────────────────────────────────────────
-
             /// Set the value of a `val` register (or the document root).
             Op::InsVal { obj, val, .. } => {
                 // The root register is addressed by ORIGIN (SESSION::SYSTEM, time 0).
@@ -177,21 +183,36 @@ impl Model {
             }
 
             /// Insert text into a `str` RGA.
-            Op::InsStr { id, obj, after, data } => {
+            Op::InsStr {
+                id,
+                obj,
+                after,
+                data,
+            } => {
                 if let Some(CrdtNode::Str(node)) = self.index.get_mut_ts(obj) {
                     node.ins(*after, *id, data.clone());
                 }
             }
 
             /// Insert bytes into a `bin` RGA.
-            Op::InsBin { id, obj, after, data } => {
+            Op::InsBin {
+                id,
+                obj,
+                after,
+                data,
+            } => {
                 if let Some(CrdtNode::Bin(node)) = self.index.get_mut_ts(obj) {
                     node.ins(*after, *id, data.clone());
                 }
             }
 
             /// Insert node-ID references into an `arr` RGA.
-            Op::InsArr { id, obj, after, data } => {
+            Op::InsArr {
+                id,
+                obj,
+                after,
+                data,
+            } => {
                 if let Some(CrdtNode::Arr(node)) = self.index.get_mut_ts(obj) {
                     // Filter out references older than the array node itself.
                     let filtered: Vec<Ts> = data
@@ -206,21 +227,21 @@ impl Model {
             }
 
             /// Update (replace) an existing element in an `arr` RGA.
-            Op::UpdArr { obj, after, val, .. } => {
+            Op::UpdArr {
+                obj, after, val, ..
+            } => {
                 if let Some(CrdtNode::Arr(node)) = self.index.get_mut_ts(obj) {
                     node.upd(*after, *val);
                 }
             }
 
             /// Delete ranges in a `str`, `bin`, or `arr`.
-            Op::Del { obj, what, .. } => {
-                match self.index.get_mut_ts(obj) {
-                    Some(CrdtNode::Str(node)) => node.delete(what),
-                    Some(CrdtNode::Bin(node)) => node.delete(what),
-                    Some(CrdtNode::Arr(node)) => node.delete(what),
-                    _ => {}
-                }
-            }
+            Op::Del { obj, what, .. } => match self.index.get_mut_ts(obj) {
+                Some(CrdtNode::Str(node)) => node.delete(what),
+                Some(CrdtNode::Bin(node)) => node.delete(what),
+                Some(CrdtNode::Arr(node)) => node.delete(what),
+                _ => {}
+            },
 
             Op::Nop { .. } => {}
         }
@@ -263,10 +284,14 @@ impl Model {
 /// Uses both seconds and sub-second nanos to avoid collisions within the same second.
 fn random_sid() -> u64 {
     use std::time::{SystemTime, UNIX_EPOCH};
-    let d = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default();
+    let d = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default();
     // Combine seconds (upper bits) and nanos (lower 30 bits) for more entropy.
     let seed = (d.as_secs() << 30) ^ (d.subsec_nanos() as u64);
-    seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407) | 65536
+    seed.wrapping_mul(6364136223846793005)
+        .wrapping_add(1442695040888963407)
+        | 65536
 }
 
 #[cfg(test)]
@@ -277,7 +302,9 @@ mod tests {
     use json_joy_json_pack::PackValue;
     use serde_json::json;
 
-    fn sid() -> u64 { 123456 }
+    fn sid() -> u64 {
+        123456
+    }
 
     /// Helper: build a simple one-string-field object.
     ///

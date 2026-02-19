@@ -52,11 +52,9 @@ pub fn pack_to_json(v: PackValue) -> JsonValue {
         PackValue::Bool(b) => JsonValue::Bool(b),
         PackValue::Integer(i) => JsonValue::Number(i.into()),
         PackValue::UInteger(u) => JsonValue::Number(u.into()),
-        PackValue::Float(f) => {
-            serde_json::Number::from_f64(f)
-                .map(JsonValue::Number)
-                .unwrap_or(JsonValue::Null)
-        }
+        PackValue::Float(f) => serde_json::Number::from_f64(f)
+            .map(JsonValue::Number)
+            .unwrap_or(JsonValue::Null),
         PackValue::BigInt(i) => {
             // Attempt to fit in i64
             if i >= i64::MIN as i128 && i <= i64::MAX as i128 {

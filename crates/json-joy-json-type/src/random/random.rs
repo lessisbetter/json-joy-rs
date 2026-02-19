@@ -2,18 +2,22 @@
 //!
 //! Upstream reference: json-type/src/random/Random.ts
 
+use json_joy_json_random::{RandomJson, RandomJsonOptions};
 use rand::Rng;
 use serde_json::Value;
-use json_joy_json_random::{RandomJson, RandomJsonOptions};
 
+use crate::type_def::classes::{
+    ArrType, BinType, BoolType, MapType, NumType, ObjType, OrType, StrType,
+};
 use crate::type_def::TypeNode;
-use crate::type_def::classes::{ArrType, BinType, BoolType, MapType, NumType, ObjType, OrType, StrType};
 
 /// Generates random JSON values that conform to a given TypeNode schema.
 pub struct Random;
 
 impl Random {
-    pub fn new() -> Self { Self }
+    pub fn new() -> Self {
+        Self
+    }
 
     /// Generate a random value matching the given TypeNode.
     pub fn gen(&self, type_: &TypeNode) -> Value {
@@ -32,7 +36,9 @@ impl Random {
                 // Try to resolve ref via system
                 if let Some(system) = &t.base.system {
                     if let Ok(alias) = system.resolve(&t.ref_) {
-                        return self.gen(&crate::type_def::builder::TypeBuilder::new().import(&alias.schema));
+                        return self.gen(
+                            &crate::type_def::builder::TypeBuilder::new().import(&alias.schema),
+                        );
                     }
                 }
                 Value::Null
@@ -44,7 +50,11 @@ impl Random {
     }
 
     fn gen_any(&self) -> Value {
-        RandomJson::generate(RandomJsonOptions { root_node: None, node_count: 5, ..Default::default() })
+        RandomJson::generate(RandomJsonOptions {
+            root_node: None,
+            node_count: 5,
+            ..Default::default()
+        })
     }
 
     fn gen_bool(&self, _t: &BoolType) -> Value {
@@ -58,11 +68,23 @@ impl Random {
         let is_int = schema.format.map(|f| f.is_integer()).unwrap_or(false);
         let is_uint = schema.format.map(|f| f.is_unsigned()).unwrap_or(false);
 
-        let lo = schema.gt.map(|v| v + 1.0).or(schema.gte).unwrap_or(f64::MIN);
-        let hi = schema.lt.map(|v| v - 1.0).or(schema.lte).unwrap_or(f64::MAX);
+        let lo = schema
+            .gt
+            .map(|v| v + 1.0)
+            .or(schema.gte)
+            .unwrap_or(f64::MIN);
+        let hi = schema
+            .lt
+            .map(|v| v - 1.0)
+            .or(schema.lte)
+            .unwrap_or(f64::MAX);
 
         let (lo, hi) = if lo > hi { (hi, lo) } else { (lo, hi) };
-        let range = if hi - lo > 1_000_000.0 { 1_000_000.0 } else { hi - lo };
+        let range = if hi - lo > 1_000_000.0 {
+            1_000_000.0
+        } else {
+            hi - lo
+        };
 
         let v = lo + rng.gen::<f64>() * range;
         let v = if is_int { v.round() } else { v };
@@ -78,10 +100,15 @@ impl Random {
         let min = schema.min.unwrap_or(0) as usize;
         let max = schema.max.map(|v| v as usize).unwrap_or(16).max(min);
         let len = rand::thread_rng().gen_range(min..=max);
-        let is_ascii = schema.format.map(|f| matches!(f, crate::schema::StrFormat::Ascii)).unwrap_or(false)
+        let is_ascii = schema
+            .format
+            .map(|f| matches!(f, crate::schema::StrFormat::Ascii))
+            .unwrap_or(false)
             || schema.ascii.unwrap_or(false);
         let s = if is_ascii {
-            (0..len).map(|_| rand::thread_rng().gen_range(32u8..=126) as char).collect::<String>()
+            (0..len)
+                .map(|_| rand::thread_rng().gen_range(32u8..=126) as char)
+                .collect::<String>()
         } else {
             RandomJson::gen_string(Some(len))
         };
@@ -153,5 +180,7 @@ impl Random {
 }
 
 impl Default for Random {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }

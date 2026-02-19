@@ -49,15 +49,15 @@ impl AvroSchema {
     /// Returns the full name (namespace.name if both present).
     pub fn full_name(&self) -> Option<String> {
         match self {
-            AvroSchema::Record { name, namespace, .. } => {
-                Some(qualify(name, namespace.as_deref()))
-            }
-            AvroSchema::Enum { name, namespace, .. } => {
-                Some(qualify(name, namespace.as_deref()))
-            }
-            AvroSchema::Fixed { name, namespace, .. } => {
-                Some(qualify(name, namespace.as_deref()))
-            }
+            AvroSchema::Record {
+                name, namespace, ..
+            } => Some(qualify(name, namespace.as_deref())),
+            AvroSchema::Enum {
+                name, namespace, ..
+            } => Some(qualify(name, namespace.as_deref())),
+            AvroSchema::Fixed {
+                name, namespace, ..
+            } => Some(qualify(name, namespace.as_deref())),
             _ => None,
         }
     }

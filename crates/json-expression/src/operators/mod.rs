@@ -14,7 +14,7 @@ pub mod patch;
 pub mod string;
 pub mod type_ops;
 
-use crate::types::{OperatorDefinition, OperatorMap, operators_to_map};
+use crate::types::{operators_to_map, OperatorDefinition, OperatorMap};
 use std::sync::Arc;
 
 /// All operators combined — mirrors upstream `operators` array.

@@ -2,13 +2,13 @@
 //!
 //! Mirrors `packages/json-joy/src/json-crdt-patch/codec/binary/Decoder.ts`.
 
-use json_joy_json_pack::PackValue;
 use crate::json_crdt_patch::clock::{interval, ts, ClockVector, ServerClockVector, Ts, Tss};
 use crate::json_crdt_patch::enums::{JsonCrdtPatchOpcode, SESSION};
 use crate::json_crdt_patch::operations::{ConValue, Op};
 use crate::json_crdt_patch::patch::Patch;
 use crate::json_crdt_patch::patch_builder::PatchBuilder;
 use crate::json_crdt_patch::util::binary::CrdtReader;
+use json_joy_json_pack::PackValue;
 
 /// Error type for binary decoding failures.
 #[derive(Debug, Clone, PartialEq)]
@@ -37,11 +37,15 @@ impl std::error::Error for DecodeError {}
 pub struct Decoder;
 
 impl Default for Decoder {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Decoder {
-    pub fn new() -> Self { Self }
+    pub fn new() -> Self {
+        Self
+    }
 
     /// Decodes a binary blob into a [`Patch`].
     pub fn decode<'a>(&self, data: &'a [u8]) -> Result<Patch, DecodeError> {
@@ -127,12 +131,24 @@ impl Decoder {
                     builder.con_ref(id_ref);
                 }
             }
-            Some(JsonCrdtPatchOpcode::NewVal) => { builder.val(); }
-            Some(JsonCrdtPatchOpcode::NewObj) => { builder.obj(); }
-            Some(JsonCrdtPatchOpcode::NewVec) => { builder.vec(); }
-            Some(JsonCrdtPatchOpcode::NewStr) => { builder.str_node(); }
-            Some(JsonCrdtPatchOpcode::NewBin) => { builder.bin(); }
-            Some(JsonCrdtPatchOpcode::NewArr) => { builder.arr(); }
+            Some(JsonCrdtPatchOpcode::NewVal) => {
+                builder.val();
+            }
+            Some(JsonCrdtPatchOpcode::NewObj) => {
+                builder.obj();
+            }
+            Some(JsonCrdtPatchOpcode::NewVec) => {
+                builder.vec();
+            }
+            Some(JsonCrdtPatchOpcode::NewStr) => {
+                builder.str_node();
+            }
+            Some(JsonCrdtPatchOpcode::NewBin) => {
+                builder.bin();
+            }
+            Some(JsonCrdtPatchOpcode::NewArr) => {
+                builder.arr();
+            }
             Some(JsonCrdtPatchOpcode::InsVal) => {
                 let obj = self.decode_id(r, patch_sid);
                 let val = self.decode_id(r, patch_sid);
@@ -239,7 +255,9 @@ fn read_cbor<'a>(r: &mut CrdtReader<'a>) -> Result<PackValue, DecodeError> {
             // Array
             let len = read_cbor_uint(r, info)? as usize;
             let mut arr = Vec::with_capacity(len);
-            for _ in 0..len { arr.push(read_cbor(r)?); }
+            for _ in 0..len {
+                arr.push(read_cbor(r)?);
+            }
             Ok(PackValue::Array(arr))
         }
         5 => {
@@ -270,11 +288,16 @@ fn read_cbor<'a>(r: &mut CrdtReader<'a>) -> Result<PackValue, DecodeError> {
                 }
                 26 => {
                     let bytes = r.buf(4);
-                    Ok(PackValue::Float(f32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]) as f64))
+                    Ok(PackValue::Float(
+                        f32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]) as f64,
+                    ))
                 }
                 27 => {
                     let bytes = r.buf(8);
-                    Ok(PackValue::Float(f64::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7]])))
+                    Ok(PackValue::Float(f64::from_be_bytes([
+                        bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6],
+                        bytes[7],
+                    ])))
                 }
                 _ => Err(DecodeError::InvalidCbor),
             }
@@ -297,7 +320,9 @@ fn read_cbor_uint<'a>(r: &mut CrdtReader<'a>, info: u8) -> Result<u64, DecodeErr
         }
         27 => {
             let b = r.buf(8);
-            Ok(u64::from_be_bytes([b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7]]))
+            Ok(u64::from_be_bytes([
+                b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7],
+            ]))
         }
         _ => Err(DecodeError::InvalidCbor),
     }

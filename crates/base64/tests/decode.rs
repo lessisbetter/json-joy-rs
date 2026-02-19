@@ -1,6 +1,6 @@
 //! Tests for base64 decoding (from_base64).
 
-use json_joy_base64::{to_base64, from_base64, create_from_base64, Base64Error};
+use json_joy_base64::{create_from_base64, from_base64, to_base64, Base64Error};
 use rand::Rng;
 
 fn generate_blob() -> Vec<u8> {

@@ -23,14 +23,14 @@ use json_joy_json_pack::msgpack::{MsgPackDecoderFast, MsgPackEncoderFast};
 use json_joy_json_pack::PackValue;
 use serde_json::{Map, Value};
 
-use crate::json_patch::types::{JsonPatchType, Op, PatchError, Path};
 use super::compact::{
     OPCODE_ADD, OPCODE_AND, OPCODE_CONTAINS, OPCODE_COPY, OPCODE_DEFINED, OPCODE_ENDS,
-    OPCODE_EXTEND, OPCODE_FLIP, OPCODE_IN, OPCODE_INC, OPCODE_LESS, OPCODE_MATCHES,
-    OPCODE_MERGE, OPCODE_MORE, OPCODE_MOVE, OPCODE_NOT, OPCODE_OR, OPCODE_REMOVE,
-    OPCODE_REPLACE, OPCODE_SPLIT, OPCODE_STARTS, OPCODE_STR_DEL, OPCODE_STR_INS, OPCODE_TEST,
-    OPCODE_TEST_STRING, OPCODE_TEST_STRING_LEN, OPCODE_TEST_TYPE, OPCODE_TYPE, OPCODE_UNDEFINED,
+    OPCODE_EXTEND, OPCODE_FLIP, OPCODE_IN, OPCODE_INC, OPCODE_LESS, OPCODE_MATCHES, OPCODE_MERGE,
+    OPCODE_MORE, OPCODE_MOVE, OPCODE_NOT, OPCODE_OR, OPCODE_REMOVE, OPCODE_REPLACE, OPCODE_SPLIT,
+    OPCODE_STARTS, OPCODE_STR_DEL, OPCODE_STR_INS, OPCODE_TEST, OPCODE_TEST_STRING,
+    OPCODE_TEST_STRING_LEN, OPCODE_TEST_TYPE, OPCODE_TYPE, OPCODE_UNDEFINED,
 };
+use crate::json_patch::types::{JsonPatchType, Op, PatchError, Path};
 
 // ── Encode ─────────────────────────────────────────────────────────────────
 
@@ -48,14 +48,18 @@ fn ops_to_pack_value(ops: &[Op]) -> PackValue {
 }
 
 fn path_to_pack_value(path: &[String]) -> PackValue {
-    PackValue::Array(path.iter().map(|s| {
-        // encode integer-looking segments as integers for compactness
-        if let Ok(n) = s.parse::<u64>() {
-            PackValue::UInteger(n)
-        } else {
-            PackValue::Str(s.clone())
-        }
-    }).collect())
+    PackValue::Array(
+        path.iter()
+            .map(|s| {
+                // encode integer-looking segments as integers for compactness
+                if let Ok(n) = s.parse::<u64>() {
+                    PackValue::UInteger(n)
+                } else {
+                    PackValue::Str(s.clone())
+                }
+            })
+            .collect(),
+    )
 }
 
 /// Returns a relative path PackValue (relative to parent_path).
@@ -87,13 +91,19 @@ fn json_val_to_pack(v: &Value) -> PackValue {
         Value::String(s) => PackValue::Str(s.clone()),
         Value::Array(arr) => PackValue::Array(arr.iter().map(json_val_to_pack).collect()),
         Value::Object(obj) => PackValue::Object(
-            obj.iter().map(|(k, v)| (k.clone(), json_val_to_pack(v))).collect()
+            obj.iter()
+                .map(|(k, v)| (k.clone(), json_val_to_pack(v)))
+                .collect(),
         ),
     }
 }
 
 fn json_map_to_pack(m: &Map<String, Value>) -> PackValue {
-    PackValue::Object(m.iter().map(|(k, v)| (k.clone(), json_val_to_pack(v))).collect())
+    PackValue::Object(
+        m.iter()
+            .map(|(k, v)| (k.clone(), json_val_to_pack(v)))
+            .collect(),
+    )
 }
 
 fn op_to_pack_value(op: &Op, parent_path: Option<&[String]>) -> PackValue {
@@ -110,16 +120,24 @@ fn op_to_pack_value(op: &Op, parent_path: Option<&[String]>) -> PackValue {
                 PackValue::UInteger(OPCODE_REMOVE as u64),
                 path_to_pack_value(path),
             ];
-            if let Some(ov) = old_value { arr.push(json_val_to_pack(ov)); }
+            if let Some(ov) = old_value {
+                arr.push(json_val_to_pack(ov));
+            }
             PackValue::Array(arr)
         }
-        Op::Replace { path, value, old_value } => {
+        Op::Replace {
+            path,
+            value,
+            old_value,
+        } => {
             let mut arr = vec![
                 PackValue::UInteger(OPCODE_REPLACE as u64),
                 path_to_pack_value(path),
                 json_val_to_pack(value),
             ];
-            if let Some(ov) = old_value { arr.push(json_val_to_pack(ov)); }
+            if let Some(ov) = old_value {
+                arr.push(json_val_to_pack(ov));
+            }
             PackValue::Array(arr)
         }
         Op::Copy { path, from } => PackValue::Array(vec![
@@ -138,7 +156,9 @@ fn op_to_pack_value(op: &Op, parent_path: Option<&[String]>) -> PackValue {
                 rp(path),
                 json_val_to_pack(value),
             ];
-            if *not { arr.push(PackValue::UInteger(1)); }
+            if *not {
+                arr.push(PackValue::UInteger(1));
+            }
             PackValue::Array(arr)
         }
         Op::StrIns { path, pos, str_val } => PackValue::Array(vec![
@@ -147,7 +167,12 @@ fn op_to_pack_value(op: &Op, parent_path: Option<&[String]>) -> PackValue {
             PackValue::UInteger(*pos as u64),
             PackValue::Str(str_val.clone()),
         ]),
-        Op::StrDel { path, pos, str_val, len } => {
+        Op::StrDel {
+            path,
+            pos,
+            str_val,
+            len,
+        } => {
             if let Some(s) = str_val {
                 PackValue::Array(vec![
                     PackValue::UInteger(OPCODE_STR_DEL as u64),
@@ -180,7 +205,9 @@ fn op_to_pack_value(op: &Op, parent_path: Option<&[String]>) -> PackValue {
                 path_to_pack_value(path),
                 PackValue::UInteger(*pos as u64),
             ];
-            if let Some(p) = props { arr.push(json_val_to_pack(p)); }
+            if let Some(p) = props {
+                arr.push(json_val_to_pack(p));
+            }
             PackValue::Array(arr)
         }
         Op::Merge { path, pos, props } => {
@@ -189,51 +216,75 @@ fn op_to_pack_value(op: &Op, parent_path: Option<&[String]>) -> PackValue {
                 path_to_pack_value(path),
                 PackValue::UInteger(*pos as u64),
             ];
-            if let Some(p) = props { arr.push(json_val_to_pack(p)); }
+            if let Some(p) = props {
+                arr.push(json_val_to_pack(p));
+            }
             PackValue::Array(arr)
         }
-        Op::Extend { path, props, delete_null } => {
+        Op::Extend {
+            path,
+            props,
+            delete_null,
+        } => {
             let mut arr = vec![
                 PackValue::UInteger(OPCODE_EXTEND as u64),
                 path_to_pack_value(path),
                 json_map_to_pack(props),
             ];
-            if *delete_null { arr.push(PackValue::UInteger(1)); }
+            if *delete_null {
+                arr.push(PackValue::UInteger(1));
+            }
             PackValue::Array(arr)
         }
-        Op::Defined { path } => PackValue::Array(vec![
-            PackValue::UInteger(OPCODE_DEFINED as u64),
-            rp(path),
-        ]),
-        Op::Undefined { path } => PackValue::Array(vec![
-            PackValue::UInteger(OPCODE_UNDEFINED as u64),
-            rp(path),
-        ]),
-        Op::Contains { path, value, ignore_case } => {
+        Op::Defined { path } => {
+            PackValue::Array(vec![PackValue::UInteger(OPCODE_DEFINED as u64), rp(path)])
+        }
+        Op::Undefined { path } => {
+            PackValue::Array(vec![PackValue::UInteger(OPCODE_UNDEFINED as u64), rp(path)])
+        }
+        Op::Contains {
+            path,
+            value,
+            ignore_case,
+        } => {
             let mut arr = vec![
                 PackValue::UInteger(OPCODE_CONTAINS as u64),
                 rp(path),
                 PackValue::Str(value.clone()),
             ];
-            if *ignore_case { arr.push(PackValue::UInteger(1)); }
+            if *ignore_case {
+                arr.push(PackValue::UInteger(1));
+            }
             PackValue::Array(arr)
         }
-        Op::Ends { path, value, ignore_case } => {
+        Op::Ends {
+            path,
+            value,
+            ignore_case,
+        } => {
             let mut arr = vec![
                 PackValue::UInteger(OPCODE_ENDS as u64),
                 rp(path),
                 PackValue::Str(value.clone()),
             ];
-            if *ignore_case { arr.push(PackValue::UInteger(1)); }
+            if *ignore_case {
+                arr.push(PackValue::UInteger(1));
+            }
             PackValue::Array(arr)
         }
-        Op::Starts { path, value, ignore_case } => {
+        Op::Starts {
+            path,
+            value,
+            ignore_case,
+        } => {
             let mut arr = vec![
                 PackValue::UInteger(OPCODE_STARTS as u64),
                 rp(path),
                 PackValue::Str(value.clone()),
             ];
-            if *ignore_case { arr.push(PackValue::UInteger(1)); }
+            if *ignore_case {
+                arr.push(PackValue::UInteger(1));
+            }
             PackValue::Array(arr)
         }
         Op::In { path, value } => PackValue::Array(vec![
@@ -251,28 +302,46 @@ fn op_to_pack_value(op: &Op, parent_path: Option<&[String]>) -> PackValue {
             rp(path),
             PackValue::Float(*value),
         ]),
-        Op::Matches { path, value, ignore_case } => {
+        Op::Matches {
+            path,
+            value,
+            ignore_case,
+        } => {
             let mut arr = vec![
                 PackValue::UInteger(OPCODE_MATCHES as u64),
                 rp(path),
                 PackValue::Str(value.clone()),
             ];
-            if *ignore_case { arr.push(PackValue::UInteger(1)); }
+            if *ignore_case {
+                arr.push(PackValue::UInteger(1));
+            }
             PackValue::Array(arr)
         }
         Op::TestType { path, type_vals } => PackValue::Array(vec![
             PackValue::UInteger(OPCODE_TEST_TYPE as u64),
             rp(path),
-            PackValue::Array(type_vals.iter().map(|t| PackValue::Str(t.as_str().to_string())).collect()),
+            PackValue::Array(
+                type_vals
+                    .iter()
+                    .map(|t| PackValue::Str(t.as_str().to_string()))
+                    .collect(),
+            ),
         ]),
-        Op::TestString { path, pos, str_val, not } => {
+        Op::TestString {
+            path,
+            pos,
+            str_val,
+            not,
+        } => {
             let mut arr = vec![
                 PackValue::UInteger(OPCODE_TEST_STRING as u64),
                 rp(path),
                 PackValue::UInteger(*pos as u64),
                 PackValue::Str(str_val.clone()),
             ];
-            if *not { arr.push(PackValue::UInteger(1)); }
+            if *not {
+                arr.push(PackValue::UInteger(1));
+            }
             PackValue::Array(arr)
         }
         Op::TestStringLen { path, len, not } => {
@@ -281,7 +350,9 @@ fn op_to_pack_value(op: &Op, parent_path: Option<&[String]>) -> PackValue {
                 rp(path),
                 PackValue::UInteger(*len as u64),
             ];
-            if *not { arr.push(PackValue::UInteger(1)); }
+            if *not {
+                arr.push(PackValue::UInteger(1));
+            }
             PackValue::Array(arr)
         }
         Op::Type { path, value } => PackValue::Array(vec![
@@ -292,17 +363,29 @@ fn op_to_pack_value(op: &Op, parent_path: Option<&[String]>) -> PackValue {
         Op::And { path, ops } => PackValue::Array(vec![
             PackValue::UInteger(OPCODE_AND as u64),
             rp(path),
-            PackValue::Array(ops.iter().map(|op| op_to_pack_value(op, Some(path))).collect()),
+            PackValue::Array(
+                ops.iter()
+                    .map(|op| op_to_pack_value(op, Some(path)))
+                    .collect(),
+            ),
         ]),
         Op::Not { path, ops } => PackValue::Array(vec![
             PackValue::UInteger(OPCODE_NOT as u64),
             rp(path),
-            PackValue::Array(ops.iter().map(|op| op_to_pack_value(op, Some(path))).collect()),
+            PackValue::Array(
+                ops.iter()
+                    .map(|op| op_to_pack_value(op, Some(path)))
+                    .collect(),
+            ),
         ]),
         Op::Or { path, ops } => PackValue::Array(vec![
             PackValue::UInteger(OPCODE_OR as u64),
             rp(path),
-            PackValue::Array(ops.iter().map(|op| op_to_pack_value(op, Some(path))).collect()),
+            PackValue::Array(
+                ops.iter()
+                    .map(|op| op_to_pack_value(op, Some(path)))
+                    .collect(),
+            ),
         ]),
     }
 }
@@ -328,19 +411,28 @@ pub fn decode(data: &[u8]) -> Result<Vec<Op>, BinaryDecodeError> {
 fn decode_pack_ops(v: &PackValue) -> Result<Vec<Op>, PatchError> {
     let arr = match v {
         PackValue::Array(a) => a,
-        _ => return Err(PatchError::InvalidOp("binary patch must be a MsgPack array".into())),
+        _ => {
+            return Err(PatchError::InvalidOp(
+                "binary patch must be a MsgPack array".into(),
+            ))
+        }
     };
     arr.iter().map(|item| decode_pack_op(item, None)).collect()
 }
 
 fn pack_to_path(v: &PackValue) -> Result<Path, PatchError> {
     match v {
-        PackValue::Array(arr) => arr.iter().map(|item| match item {
-            PackValue::Str(s) => Ok(s.clone()),
-            PackValue::Integer(n) => Ok(n.to_string()),
-            PackValue::UInteger(n) => Ok(n.to_string()),
-            _ => Err(PatchError::InvalidOp("path component must be string or integer".into())),
-        }).collect(),
+        PackValue::Array(arr) => arr
+            .iter()
+            .map(|item| match item {
+                PackValue::Str(s) => Ok(s.clone()),
+                PackValue::Integer(n) => Ok(n.to_string()),
+                PackValue::UInteger(n) => Ok(n.to_string()),
+                _ => Err(PatchError::InvalidOp(
+                    "path component must be string or integer".into(),
+                )),
+            })
+            .collect(),
         PackValue::Str(s) => Ok(json_joy_json_pointer::parse_json_pointer(s)),
         PackValue::Null => Ok(vec![]),
         _ => Err(PatchError::InvalidOp("path must be array or string".into())),
@@ -389,17 +481,22 @@ fn pack_to_json_value(v: &PackValue) -> Value {
 }
 
 fn pack_arr_get(arr: &[PackValue], idx: usize) -> Result<&PackValue, PatchError> {
-    arr.get(idx).ok_or_else(|| PatchError::InvalidOp(
-        format!("binary op array too short, missing index {idx}")
-    ))
+    arr.get(idx).ok_or_else(|| {
+        PatchError::InvalidOp(format!("binary op array too short, missing index {idx}"))
+    })
 }
 
 fn pack_as_u64(v: &PackValue) -> Result<u64, PatchError> {
     match v {
         PackValue::UInteger(n) => Ok(*n),
         PackValue::Integer(n) => {
-            if *n >= 0 { Ok(*n as u64) }
-            else { Err(PatchError::InvalidOp("expected non-negative integer".into())) }
+            if *n >= 0 {
+                Ok(*n as u64)
+            } else {
+                Err(PatchError::InvalidOp(
+                    "expected non-negative integer".into(),
+                ))
+            }
         }
         _ => Err(PatchError::InvalidOp("expected integer".into())),
     }
@@ -456,7 +553,11 @@ fn decode_pack_op(v: &PackValue, parent_path: Option<&[String]>) -> Result<Op, P
             let path = pack_to_path(pack_arr_get(arr, 1)?)?;
             let value = pack_to_json_value(pack_arr_get(arr, 2)?);
             let old_value = arr.get(3).map(pack_to_json_value);
-            Ok(Op::Replace { path, value, old_value })
+            Ok(Op::Replace {
+                path,
+                value,
+                old_value,
+            })
         }
         OPCODE_COPY => {
             let path = pack_to_path(pack_arr_get(arr, 1)?)?;
@@ -486,11 +587,21 @@ fn decode_pack_op(v: &PackValue, parent_path: Option<&[String]>) -> Result<Op, P
             if len < 5 {
                 // str form
                 let str_val = pack_as_str(pack_arr_get(arr, 3)?)?.to_string();
-                Ok(Op::StrDel { path, pos, str_val: Some(str_val), len: None })
+                Ok(Op::StrDel {
+                    path,
+                    pos,
+                    str_val: Some(str_val),
+                    len: None,
+                })
             } else {
                 // numeric length form: arr[3] == 0, arr[4] == len
                 let del_len = pack_as_u64(pack_arr_get(arr, 4)?)? as usize;
-                Ok(Op::StrDel { path, pos, str_val: None, len: Some(del_len) })
+                Ok(Op::StrDel {
+                    path,
+                    pos,
+                    str_val: None,
+                    len: Some(del_len),
+                })
             }
         }
         OPCODE_FLIP => {
@@ -505,26 +616,41 @@ fn decode_pack_op(v: &PackValue, parent_path: Option<&[String]>) -> Result<Op, P
         OPCODE_SPLIT => {
             let path = pack_to_path(pack_arr_get(arr, 1)?)?;
             let pos = pack_as_u64(pack_arr_get(arr, 2)?)? as usize;
-            let props = arr.get(3).map(pack_to_json_value)
-                .and_then(|v| if v.is_null() { None } else { Some(v) });
+            let props = arr.get(3).map(pack_to_json_value).and_then(|v| {
+                if v.is_null() {
+                    None
+                } else {
+                    Some(v)
+                }
+            });
             Ok(Op::Split { path, pos, props })
         }
         OPCODE_MERGE => {
             let path = pack_to_path(pack_arr_get(arr, 1)?)?;
             let pos = pack_as_u64(pack_arr_get(arr, 2)?)? as usize;
-            let props = arr.get(3).map(pack_to_json_value)
-                .and_then(|v| if v.is_null() { None } else { Some(v) });
+            let props = arr.get(3).map(pack_to_json_value).and_then(|v| {
+                if v.is_null() {
+                    None
+                } else {
+                    Some(v)
+                }
+            });
             Ok(Op::Merge { path, pos, props })
         }
         OPCODE_EXTEND => {
             let path = pack_to_path(pack_arr_get(arr, 1)?)?;
             let props_pack = pack_arr_get(arr, 2)?;
             let props_val = pack_to_json_value(props_pack);
-            let props = props_val.as_object()
+            let props = props_val
+                .as_object()
                 .ok_or_else(|| PatchError::InvalidOp("extend: props must be object".into()))?
                 .clone();
             let delete_null = arr.get(3).map(pack_as_bool_flag).unwrap_or(false);
-            Ok(Op::Extend { path, props, delete_null })
+            Ok(Op::Extend {
+                path,
+                props,
+                delete_null,
+            })
         }
         OPCODE_DEFINED => {
             let path = pack_relative_path(pack_arr_get(arr, 1)?, parent_path)?;
@@ -538,19 +664,31 @@ fn decode_pack_op(v: &PackValue, parent_path: Option<&[String]>) -> Result<Op, P
             let path = pack_relative_path(pack_arr_get(arr, 1)?, parent_path)?;
             let value = pack_as_str(pack_arr_get(arr, 2)?)?.to_string();
             let ignore_case = arr.get(3).map(pack_as_bool_flag).unwrap_or(false);
-            Ok(Op::Contains { path, value, ignore_case })
+            Ok(Op::Contains {
+                path,
+                value,
+                ignore_case,
+            })
         }
         OPCODE_ENDS => {
             let path = pack_relative_path(pack_arr_get(arr, 1)?, parent_path)?;
             let value = pack_as_str(pack_arr_get(arr, 2)?)?.to_string();
             let ignore_case = arr.get(3).map(pack_as_bool_flag).unwrap_or(false);
-            Ok(Op::Ends { path, value, ignore_case })
+            Ok(Op::Ends {
+                path,
+                value,
+                ignore_case,
+            })
         }
         OPCODE_STARTS => {
             let path = pack_relative_path(pack_arr_get(arr, 1)?, parent_path)?;
             let value = pack_as_str(pack_arr_get(arr, 2)?)?.to_string();
             let ignore_case = arr.get(3).map(pack_as_bool_flag).unwrap_or(false);
-            Ok(Op::Starts { path, value, ignore_case })
+            Ok(Op::Starts {
+                path,
+                value,
+                ignore_case,
+            })
         }
         OPCODE_IN => {
             let path = pack_relative_path(pack_arr_get(arr, 1)?, parent_path)?;
@@ -558,7 +696,10 @@ fn decode_pack_op(v: &PackValue, parent_path: Option<&[String]>) -> Result<Op, P
                 PackValue::Array(a) => a.iter().map(pack_to_json_value).collect(),
                 _ => return Err(PatchError::InvalidOp("in: value must be array".into())),
             };
-            Ok(Op::In { path, value: val_arr })
+            Ok(Op::In {
+                path,
+                value: val_arr,
+            })
         }
         OPCODE_LESS => {
             let path = pack_relative_path(pack_arr_get(arr, 1)?, parent_path)?;
@@ -574,34 +715,55 @@ fn decode_pack_op(v: &PackValue, parent_path: Option<&[String]>) -> Result<Op, P
             let path = pack_relative_path(pack_arr_get(arr, 1)?, parent_path)?;
             let value = pack_as_str(pack_arr_get(arr, 2)?)?.to_string();
             let ignore_case = arr.get(3).map(pack_as_bool_flag).unwrap_or(false);
-            Ok(Op::Matches { path, value, ignore_case })
+            Ok(Op::Matches {
+                path,
+                value,
+                ignore_case,
+            })
         }
         OPCODE_TEST_TYPE => {
             let path = pack_relative_path(pack_arr_get(arr, 1)?, parent_path)?;
             let types_pack = match pack_arr_get(arr, 2)? {
                 PackValue::Array(a) => a,
-                _ => return Err(PatchError::InvalidOp("test_type: type must be array".into())),
+                _ => {
+                    return Err(PatchError::InvalidOp(
+                        "test_type: type must be array".into(),
+                    ))
+                }
             };
-            let type_vals: Result<Vec<JsonPatchType>, PatchError> = types_pack.iter()
+            let type_vals: Result<Vec<JsonPatchType>, PatchError> = types_pack
+                .iter()
                 .map(|v| {
                     let s = pack_as_str(v)?;
                     JsonPatchType::from_str(s)
                 })
                 .collect();
-            Ok(Op::TestType { path, type_vals: type_vals? })
+            Ok(Op::TestType {
+                path,
+                type_vals: type_vals?,
+            })
         }
         OPCODE_TEST_STRING => {
             let path = pack_relative_path(pack_arr_get(arr, 1)?, parent_path)?;
             let pos = pack_as_u64(pack_arr_get(arr, 2)?)? as usize;
             let str_val = pack_as_str(pack_arr_get(arr, 3)?)?.to_string();
             let not = arr.get(4).map(pack_as_bool_flag).unwrap_or(false);
-            Ok(Op::TestString { path, pos, str_val, not })
+            Ok(Op::TestString {
+                path,
+                pos,
+                str_val,
+                not,
+            })
         }
         OPCODE_TEST_STRING_LEN => {
             let path = pack_relative_path(pack_arr_get(arr, 1)?, parent_path)?;
             let the_len = pack_as_u64(pack_arr_get(arr, 2)?)? as usize;
             let not = arr.get(3).map(pack_as_bool_flag).unwrap_or(false);
-            Ok(Op::TestStringLen { path, len: the_len, not })
+            Ok(Op::TestStringLen {
+                path,
+                len: the_len,
+                not,
+            })
         }
         OPCODE_TYPE => {
             let path = pack_relative_path(pack_arr_get(arr, 1)?, parent_path)?;
@@ -615,7 +777,8 @@ fn decode_pack_op(v: &PackValue, parent_path: Option<&[String]>) -> Result<Op, P
                 PackValue::Array(a) => a,
                 _ => return Err(PatchError::InvalidOp("and: ops must be array".into())),
             };
-            let ops: Result<Vec<Op>, PatchError> = sub_arr.iter()
+            let ops: Result<Vec<Op>, PatchError> = sub_arr
+                .iter()
                 .map(|item| decode_pack_op(item, Some(&path)))
                 .collect();
             Ok(Op::And { path, ops: ops? })
@@ -626,7 +789,8 @@ fn decode_pack_op(v: &PackValue, parent_path: Option<&[String]>) -> Result<Op, P
                 PackValue::Array(a) => a,
                 _ => return Err(PatchError::InvalidOp("not: ops must be array".into())),
             };
-            let ops: Result<Vec<Op>, PatchError> = sub_arr.iter()
+            let ops: Result<Vec<Op>, PatchError> = sub_arr
+                .iter()
                 .map(|item| decode_pack_op(item, Some(&path)))
                 .collect();
             Ok(Op::Not { path, ops: ops? })
@@ -637,12 +801,15 @@ fn decode_pack_op(v: &PackValue, parent_path: Option<&[String]>) -> Result<Op, P
                 PackValue::Array(a) => a,
                 _ => return Err(PatchError::InvalidOp("or: ops must be array".into())),
             };
-            let ops: Result<Vec<Op>, PatchError> = sub_arr.iter()
+            let ops: Result<Vec<Op>, PatchError> = sub_arr
+                .iter()
                 .map(|item| decode_pack_op(item, Some(&path)))
                 .collect();
             Ok(Op::Or { path, ops: ops? })
         }
-        _ => Err(PatchError::InvalidOp(format!("OP_UNKNOWN: opcode {opcode}"))),
+        _ => Err(PatchError::InvalidOp(format!(
+            "OP_UNKNOWN: opcode {opcode}"
+        ))),
     }
 }
 
@@ -661,22 +828,34 @@ mod tests {
         let decoded = decode(&bytes).expect("decode failed");
         assert_eq!(decoded.len(), 1);
         let json_after = to_json(&decoded[0]);
-        assert_eq!(json_after, json_before, "JSON representation changed after binary roundtrip");
+        assert_eq!(
+            json_after, json_before,
+            "JSON representation changed after binary roundtrip"
+        );
     }
 
     #[test]
     fn roundtrip_add() {
-        roundtrip(Op::Add { path: vec!["a".to_string()], value: json!(42) });
+        roundtrip(Op::Add {
+            path: vec!["a".to_string()],
+            value: json!(42),
+        });
     }
 
     #[test]
     fn roundtrip_remove() {
-        roundtrip(Op::Remove { path: vec!["a".to_string()], old_value: None });
+        roundtrip(Op::Remove {
+            path: vec!["a".to_string()],
+            old_value: None,
+        });
     }
 
     #[test]
     fn roundtrip_remove_with_old_value() {
-        roundtrip(Op::Remove { path: vec!["x".to_string()], old_value: Some(json!("prev")) });
+        roundtrip(Op::Remove {
+            path: vec!["x".to_string()],
+            old_value: Some(json!("prev")),
+        });
     }
 
     #[test]
@@ -690,27 +869,45 @@ mod tests {
 
     #[test]
     fn roundtrip_copy() {
-        roundtrip(Op::Copy { path: vec!["b".to_string()], from: vec!["a".to_string()] });
+        roundtrip(Op::Copy {
+            path: vec!["b".to_string()],
+            from: vec!["a".to_string()],
+        });
     }
 
     #[test]
     fn roundtrip_move() {
-        roundtrip(Op::Move { path: vec!["b".to_string()], from: vec!["a".to_string()] });
+        roundtrip(Op::Move {
+            path: vec!["b".to_string()],
+            from: vec!["a".to_string()],
+        });
     }
 
     #[test]
     fn roundtrip_test() {
-        roundtrip(Op::Test { path: vec!["a".to_string()], value: json!(1), not: false });
+        roundtrip(Op::Test {
+            path: vec!["a".to_string()],
+            value: json!(1),
+            not: false,
+        });
     }
 
     #[test]
     fn roundtrip_test_not() {
-        roundtrip(Op::Test { path: vec!["a".to_string()], value: json!(null), not: true });
+        roundtrip(Op::Test {
+            path: vec!["a".to_string()],
+            value: json!(null),
+            not: true,
+        });
     }
 
     #[test]
     fn roundtrip_str_ins() {
-        roundtrip(Op::StrIns { path: vec!["s".to_string()], pos: 3, str_val: "hello".to_string() });
+        roundtrip(Op::StrIns {
+            path: vec!["s".to_string()],
+            pos: 3,
+            str_val: "hello".to_string(),
+        });
     }
 
     #[test]
@@ -725,11 +922,18 @@ mod tests {
 
     #[test]
     fn roundtrip_str_del_len_form() {
-        let op = Op::StrDel { path: vec!["s".to_string()], pos: 1, str_val: None, len: Some(3) };
+        let op = Op::StrDel {
+            path: vec!["s".to_string()],
+            pos: 1,
+            str_val: None,
+            len: Some(3),
+        };
         let bytes = encode(&[op]);
         let decoded = decode(&bytes).expect("decode failed");
         match &decoded[0] {
-            Op::StrDel { pos, str_val, len, .. } => {
+            Op::StrDel {
+                pos, str_val, len, ..
+            } => {
                 assert_eq!(*pos, 1);
                 assert!(str_val.is_none());
                 assert_eq!(*len, Some(3));
@@ -740,12 +944,17 @@ mod tests {
 
     #[test]
     fn roundtrip_flip() {
-        roundtrip(Op::Flip { path: vec!["b".to_string()] });
+        roundtrip(Op::Flip {
+            path: vec!["b".to_string()],
+        });
     }
 
     #[test]
     fn roundtrip_inc() {
-        roundtrip(Op::Inc { path: vec!["n".to_string()], inc: 5.0 });
+        roundtrip(Op::Inc {
+            path: vec!["n".to_string()],
+            inc: 5.0,
+        });
     }
 
     #[test]
@@ -753,8 +962,13 @@ mod tests {
         roundtrip(Op::And {
             path: vec![],
             ops: vec![
-                Op::Defined { path: vec!["a".to_string()] },
-                Op::Less { path: vec!["a".to_string()], value: 100.0 },
+                Op::Defined {
+                    path: vec!["a".to_string()],
+                },
+                Op::Less {
+                    path: vec!["a".to_string()],
+                    value: 100.0,
+                },
             ],
         });
     }
@@ -763,7 +977,9 @@ mod tests {
     fn roundtrip_or() {
         roundtrip(Op::Or {
             path: vec!["x".to_string()],
-            ops: vec![Op::Defined { path: vec!["x".to_string()] }],
+            ops: vec![Op::Defined {
+                path: vec!["x".to_string()],
+            }],
         });
     }
 
@@ -771,7 +987,9 @@ mod tests {
     fn roundtrip_not() {
         roundtrip(Op::Not {
             path: vec![],
-            ops: vec![Op::Undefined { path: vec!["x".to_string()] }],
+            ops: vec![Op::Undefined {
+                path: vec!["x".to_string()],
+            }],
         });
     }
 
@@ -779,7 +997,11 @@ mod tests {
     fn roundtrip_extend() {
         let mut props = serde_json::Map::new();
         props.insert("k".to_string(), json!("v"));
-        roundtrip(Op::Extend { path: vec![], props, delete_null: true });
+        roundtrip(Op::Extend {
+            path: vec![],
+            props,
+            delete_null: true,
+        });
     }
 
     #[test]
@@ -790,7 +1012,10 @@ mod tests {
 
     #[test]
     fn encode_produces_bytes() {
-        let op = Op::Add { path: vec!["x".to_string()], value: json!(1) };
+        let op = Op::Add {
+            path: vec!["x".to_string()],
+            value: json!(1),
+        };
         let bytes = encode(&[op]);
         assert!(!bytes.is_empty());
         // should be a fixarray starting with 0x91 (array of 1)
@@ -800,9 +1025,19 @@ mod tests {
     #[test]
     fn multiple_ops_roundtrip() {
         let ops = vec![
-            Op::Add { path: vec!["a".to_string()], value: json!(1) },
-            Op::Remove { path: vec!["b".to_string()], old_value: None },
-            Op::Test { path: vec!["c".to_string()], value: json!(true), not: false },
+            Op::Add {
+                path: vec!["a".to_string()],
+                value: json!(1),
+            },
+            Op::Remove {
+                path: vec!["b".to_string()],
+                old_value: None,
+            },
+            Op::Test {
+                path: vec!["c".to_string()],
+                value: json!(true),
+                not: false,
+            },
         ];
         let json_before: Vec<Value> = ops.iter().map(|o| to_json(o)).collect();
         let bytes = encode(&ops);

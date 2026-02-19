@@ -24,7 +24,9 @@ pub type Patch = Vec<PatchOperation>;
 pub fn normalize(patch: Patch) -> Patch {
     let mut result: Patch = Vec::with_capacity(patch.len());
     for (op_type, text) in patch {
-        if text.is_empty() { continue; }
+        if text.is_empty() {
+            continue;
+        }
         match result.last_mut() {
             Some(last) if last.0 == op_type => last.1.push_str(&text),
             _ => result.push((op_type, text)),
@@ -35,12 +37,18 @@ pub fn normalize(patch: Patch) -> Patch {
 
 /// Number of chars in the common prefix of `txt1` and `txt2`.
 pub fn pfx(txt1: &str, txt2: &str) -> usize {
-    pfx_chars(&txt1.chars().collect::<Vec<_>>(), &txt2.chars().collect::<Vec<_>>())
+    pfx_chars(
+        &txt1.chars().collect::<Vec<_>>(),
+        &txt2.chars().collect::<Vec<_>>(),
+    )
 }
 
 /// Number of chars in the common suffix of `txt1` and `txt2`.
 pub fn sfx(txt1: &str, txt2: &str) -> usize {
-    sfx_chars(&txt1.chars().collect::<Vec<_>>(), &txt2.chars().collect::<Vec<_>>())
+    sfx_chars(
+        &txt1.chars().collect::<Vec<_>>(),
+        &txt2.chars().collect::<Vec<_>>(),
+    )
 }
 
 /// Length of the longest suffix of `str1` that is a prefix of `str2` (in chars).
@@ -99,7 +107,8 @@ pub fn diff_edit(src: &str, dst: &str, caret: i64) -> Patch {
                         let dst_pfx = &dst_chars[..pfx_len];
                         let src_pfx = &src_chars[..pfx_len];
                         if src_pfx == dst_pfx {
-                            let del: String = src_chars[pfx_len..src_len - sfx_len].iter().collect();
+                            let del: String =
+                                src_chars[pfx_len..src_len - sfx_len].iter().collect();
                             let mut patch: Patch = Vec::new();
                             if !src_pfx.is_empty() {
                                 patch.push((PatchOpType::Eql, src_pfx.iter().collect()));
@@ -144,14 +153,17 @@ pub fn patch_dst(patch: &Patch) -> String {
 
 /// Invert a patch so it transforms dst → src instead of src → dst.
 pub fn invert(patch: Patch) -> Patch {
-    patch.into_iter().map(|(op_type, txt)| {
-        let inv = match op_type {
-            PatchOpType::Eql => PatchOpType::Eql,
-            PatchOpType::Ins => PatchOpType::Del,
-            PatchOpType::Del => PatchOpType::Ins,
-        };
-        (inv, txt)
-    }).collect()
+    patch
+        .into_iter()
+        .map(|(op_type, txt)| {
+            let inv = match op_type {
+                PatchOpType::Eql => PatchOpType::Eql,
+                PatchOpType::Ins => PatchOpType::Del,
+                PatchOpType::Del => PatchOpType::Ins,
+            };
+            (inv, txt)
+        })
+        .collect()
 }
 
 /// Apply a patch, calling callbacks for insertions and deletions.
@@ -185,7 +197,9 @@ where
 // ── Internal helpers (char-slice based) ──────────────────────────────────
 
 fn pfx_chars(c1: &[char], c2: &[char]) -> usize {
-    if c1.is_empty() || c2.is_empty() || c1[0] != c2[0] { return 0; }
+    if c1.is_empty() || c2.is_empty() || c1[0] != c2[0] {
+        return 0;
+    }
     let mut min = 0usize;
     let mut max = c1.len().min(c2.len());
     let mut mid = max;
@@ -205,7 +219,9 @@ fn pfx_chars(c1: &[char], c2: &[char]) -> usize {
 fn sfx_chars(c1: &[char], c2: &[char]) -> usize {
     let n1 = c1.len();
     let n2 = c2.len();
-    if n1 == 0 || n2 == 0 || c1[n1 - 1] != c2[n2 - 1] { return 0; }
+    if n1 == 0 || n2 == 0 || c1[n1 - 1] != c2[n2 - 1] {
+        return 0;
+    }
     let mut min = 0usize;
     let mut max = n1.min(n2);
     let mut mid = max;
@@ -225,13 +241,17 @@ fn sfx_chars(c1: &[char], c2: &[char]) -> usize {
 fn overlap_chars(c1: &[char], c2: &[char]) -> usize {
     let n1 = c1.len();
     let n2 = c2.len();
-    if n1 == 0 || n2 == 0 { return 0; }
+    if n1 == 0 || n2 == 0 {
+        return 0;
+    }
 
     let min_len = n1.min(n2);
     let c1_trim = if n1 > n2 { &c1[n1 - n2..] } else { c1 };
     let c2_trim = if n1 < n2 { &c2[..n1] } else { c2 };
 
-    if c1_trim == c2_trim { return min_len; }
+    if c1_trim == c2_trim {
+        return min_len;
+    }
 
     let mut best = 0usize;
     let mut length = 1usize;
@@ -252,8 +272,12 @@ fn overlap_chars(c1: &[char], c2: &[char]) -> usize {
 
 /// Find the first occurrence of `needle` in `haystack`, returning the starting index.
 fn find_char_slice(haystack: &[char], needle: &[char]) -> Option<usize> {
-    if needle.is_empty() { return Some(0); }
-    if needle.len() > haystack.len() { return None; }
+    if needle.is_empty() {
+        return Some(0);
+    }
+    if needle.len() > haystack.len() {
+        return None;
+    }
     haystack.windows(needle.len()).position(|w| w == needle)
 }
 
@@ -265,7 +289,11 @@ fn chars_to_string(chars: &[char]) -> String {
 
 fn diff_internal(src: &str, dst: &str) -> Patch {
     if src == dst {
-        return if src.is_empty() { vec![] } else { vec![(PatchOpType::Eql, src.to_string())] };
+        return if src.is_empty() {
+            vec![]
+        } else {
+            vec![(PatchOpType::Eql, src.to_string())]
+        };
     }
 
     let c_src: Vec<char> = src.chars().collect();
@@ -279,14 +307,22 @@ fn diff_internal(src: &str, dst: &str) -> Patch {
 
     // Strip common suffix
     let suffix_len = sfx_chars(c_src, c_dst);
-    let suffix = if suffix_len > 0 { chars_to_string(&c_src[c_src.len() - suffix_len..]) } else { String::new() };
+    let suffix = if suffix_len > 0 {
+        chars_to_string(&c_src[c_src.len() - suffix_len..])
+    } else {
+        String::new()
+    };
     let c_src = &c_src[..c_src.len() - suffix_len];
     let c_dst = &c_dst[..c_dst.len() - suffix_len];
 
     // Compute diff on the middle block
     let mut result = diff_no_common_affix(c_src, c_dst);
-    if !prefix.is_empty() { result.insert(0, (PatchOpType::Eql, prefix)); }
-    if !suffix.is_empty() { result.push((PatchOpType::Eql, suffix)); }
+    if !prefix.is_empty() {
+        result.insert(0, (PatchOpType::Eql, prefix));
+    }
+    if !suffix.is_empty() {
+        result.push((PatchOpType::Eql, suffix));
+    }
 
     cleanup_merge(&mut result);
     result
@@ -294,7 +330,11 @@ fn diff_internal(src: &str, dst: &str) -> Patch {
 
 fn diff_no_common_affix(c1: &[char], c2: &[char]) -> Patch {
     if c1.is_empty() {
-        return if c2.is_empty() { vec![] } else { vec![(PatchOpType::Ins, chars_to_string(c2))] };
+        return if c2.is_empty() {
+            vec![]
+        } else {
+            vec![(PatchOpType::Ins, chars_to_string(c2))]
+        };
     }
     if c2.is_empty() {
         return vec![(PatchOpType::Del, chars_to_string(c1))];
@@ -304,22 +344,38 @@ fn diff_no_common_affix(c1: &[char], c2: &[char]) -> Patch {
     let n2 = c2.len();
 
     // Check if shorter is contained in longer
-    let (long, short, long_is_src) = if n1 > n2 { (c1, c2, true) } else { (c2, c1, false) };
+    let (long, short, long_is_src) = if n1 > n2 {
+        (c1, c2, true)
+    } else {
+        (c2, c1, false)
+    };
     if let Some(idx) = find_char_slice(long, short) {
         let short_str = chars_to_string(short);
         let start_str = chars_to_string(&long[..idx]);
         let end_str = chars_to_string(&long[idx + short.len()..]);
         return if long_is_src {
             let mut patch = vec![];
-            if !start_str.is_empty() { patch.push((PatchOpType::Del, start_str)); }
-            if !short_str.is_empty() { patch.push((PatchOpType::Eql, short_str)); }
-            if !end_str.is_empty() { patch.push((PatchOpType::Del, end_str)); }
+            if !start_str.is_empty() {
+                patch.push((PatchOpType::Del, start_str));
+            }
+            if !short_str.is_empty() {
+                patch.push((PatchOpType::Eql, short_str));
+            }
+            if !end_str.is_empty() {
+                patch.push((PatchOpType::Del, end_str));
+            }
             patch
         } else {
             let mut patch = vec![];
-            if !start_str.is_empty() { patch.push((PatchOpType::Ins, start_str)); }
-            if !short_str.is_empty() { patch.push((PatchOpType::Eql, short_str)); }
-            if !end_str.is_empty() { patch.push((PatchOpType::Ins, end_str)); }
+            if !start_str.is_empty() {
+                patch.push((PatchOpType::Ins, start_str));
+            }
+            if !short_str.is_empty() {
+                patch.push((PatchOpType::Eql, short_str));
+            }
+            if !end_str.is_empty() {
+                patch.push((PatchOpType::Ins, end_str));
+            }
             patch
         };
     }
@@ -395,7 +451,8 @@ fn bisect(c1: &[char], c2: &[char]) -> Patch {
                 v2[k2_offset - 1] + 1
             };
             let mut y2 = x2 - k2;
-            while x2 < n1 as i64 && y2 < n2 as i64
+            while x2 < n1 as i64
+                && y2 < n2 as i64
                 && c1[n1 - 1 - x2 as usize] == c2[n2 - 1 - y2 as usize]
             {
                 x2 += 1;
@@ -474,7 +531,11 @@ pub(crate) fn cleanup_merge(diff: &mut Patch) {
             PatchOpType::Eql => {
                 let prev_eq: Option<usize> = {
                     let p = pointer as i64 - ins_cnt as i64 - del_cnt as i64 - 1;
-                    if p >= 0 { Some(p as usize) } else { None }
+                    if p >= 0 {
+                        Some(p as usize)
+                    } else {
+                        None
+                    }
                 };
 
                 // Handle accumulated del/ins before this equality
@@ -533,10 +594,10 @@ pub(crate) fn cleanup_merge(diff: &mut Patch) {
                     } else {
                         let del = del_txt.clone();
                         let ins = ins_txt.clone();
-                        let _ = diff.splice(start..pointer, [
-                            (PatchOpType::Del, del),
-                            (PatchOpType::Ins, ins),
-                        ]);
+                        let _ = diff.splice(
+                            start..pointer,
+                            [(PatchOpType::Del, del), (PatchOpType::Ins, ins)],
+                        );
                         pointer = start + 2;
                     }
                 }
@@ -579,7 +640,8 @@ pub(crate) fn cleanup_merge(diff: &mut Patch) {
                 && cur_chars[cur_chars.len() - prev_chars.len()..] == prev_chars[..]
             {
                 // Shift edit over previous equality
-                let new_cur: String = prev_chars.iter()
+                let new_cur: String = prev_chars
+                    .iter()
                     .chain(cur_chars[..cur_chars.len() - prev_chars.len()].iter())
                     .collect();
                 let new_next: String = prev_chars.iter().chain(next_chars.iter()).collect();
@@ -593,7 +655,8 @@ pub(crate) fn cleanup_merge(diff: &mut Patch) {
             {
                 // Shift edit over next equality
                 let new_prev: String = prev_chars.iter().chain(next_chars.iter()).collect();
-                let new_cur: String = cur_chars[next_chars.len()..].iter()
+                let new_cur: String = cur_chars[next_chars.len()..]
+                    .iter()
                     .chain(next_chars.iter())
                     .collect();
                 diff[pointer - 1].1 = new_prev;

@@ -26,8 +26,8 @@ use std::collections::HashMap;
 use crate::json_crdt::constants::UNDEFINED_TS;
 use crate::json_crdt::model::Model;
 use crate::json_crdt::nodes::{
-    ArrNode, BinNode, ConNode, CrdtNode, IndexExt, NodeIndex, ObjNode, StrNode, TsKey,
-    ValNode, VecNode,
+    ArrNode, BinNode, ConNode, CrdtNode, IndexExt, NodeIndex, ObjNode, StrNode, TsKey, ValNode,
+    VecNode,
 };
 use crate::json_crdt_patch::clock::{ts as mk_ts, ClockVector, Ts};
 use crate::json_crdt_patch::codec::clock::ClockTable;
@@ -246,52 +246,96 @@ fn write_cbor_value(w: &mut CrdtWriter, pv: &PackValue) {
         PV::Str(s) => write_cbor_str(w, s),
         PV::Bytes(b) => {
             let len = b.len();
-            if len <= 23 { w.u8(0x40 | len as u8); }
-            else if len <= 0xFF { w.u8(0x58); w.u8(len as u8); }
-            else { w.u8(0x59); w.buf(&(len as u16).to_be_bytes()); }
+            if len <= 23 {
+                w.u8(0x40 | len as u8);
+            } else if len <= 0xFF {
+                w.u8(0x58);
+                w.u8(len as u8);
+            } else {
+                w.u8(0x59);
+                w.buf(&(len as u16).to_be_bytes());
+            }
             w.buf(b);
         }
         PV::Array(arr) => {
             let len = arr.len();
-            if len <= 23 { w.u8(0x80 | len as u8); }
-            else { w.u8(0x98); w.u8(len as u8); }
-            for item in arr { write_cbor_value(w, item); }
+            if len <= 23 {
+                w.u8(0x80 | len as u8);
+            } else {
+                w.u8(0x98);
+                w.u8(len as u8);
+            }
+            for item in arr {
+                write_cbor_value(w, item);
+            }
         }
         PV::Object(map) => {
             let len = map.len();
-            if len <= 23 { w.u8(0xA0 | len as u8); }
-            else { w.u8(0xB8); w.u8(len as u8); }
-            for (k, v) in map { write_cbor_str(w, k); write_cbor_value(w, v); }
+            if len <= 23 {
+                w.u8(0xA0 | len as u8);
+            } else {
+                w.u8(0xB8);
+                w.u8(len as u8);
+            }
+            for (k, v) in map {
+                write_cbor_str(w, k);
+                write_cbor_value(w, v);
+            }
         }
         PV::UInteger(n) => write_cbor_uint(w, *n),
         PV::BigInt(n) => {
-            if *n >= 0 { write_cbor_uint(w, *n as u64); }
-            else { write_cbor_neg(w, (-1 - n) as u64); }
+            if *n >= 0 {
+                write_cbor_uint(w, *n as u64);
+            } else {
+                write_cbor_neg(w, (-1 - n) as u64);
+            }
         }
         PV::Extension(_) | PV::Blob(_) => w.u8(0xF6),
     }
 }
 
 fn write_cbor_uint(w: &mut CrdtWriter, n: u64) {
-    if n <= 23 { w.u8(n as u8); }
-    else if n <= 0xFF { w.u8(0x18); w.u8(n as u8); }
-    else if n <= 0xFFFF { w.u8(0x19); w.buf(&(n as u16).to_be_bytes()); }
-    else if n <= 0xFFFF_FFFF { w.u8(0x1A); w.buf(&(n as u32).to_be_bytes()); }
-    else { w.u8(0x1B); w.buf(&n.to_be_bytes()); }
+    if n <= 23 {
+        w.u8(n as u8);
+    } else if n <= 0xFF {
+        w.u8(0x18);
+        w.u8(n as u8);
+    } else if n <= 0xFFFF {
+        w.u8(0x19);
+        w.buf(&(n as u16).to_be_bytes());
+    } else if n <= 0xFFFF_FFFF {
+        w.u8(0x1A);
+        w.buf(&(n as u32).to_be_bytes());
+    } else {
+        w.u8(0x1B);
+        w.buf(&n.to_be_bytes());
+    }
 }
 
 fn write_cbor_neg(w: &mut CrdtWriter, n: u64) {
-    if n <= 23 { w.u8(0x20 | n as u8); }
-    else if n <= 0xFF { w.u8(0x38); w.u8(n as u8); }
-    else { w.u8(0x39); w.buf(&(n as u16).to_be_bytes()); }
+    if n <= 23 {
+        w.u8(0x20 | n as u8);
+    } else if n <= 0xFF {
+        w.u8(0x38);
+        w.u8(n as u8);
+    } else {
+        w.u8(0x39);
+        w.buf(&(n as u16).to_be_bytes());
+    }
 }
 
 fn write_cbor_str(w: &mut CrdtWriter, s: &str) {
     let bytes = s.as_bytes();
     let len = bytes.len();
-    if len <= 23 { w.u8(0x60 | len as u8); }
-    else if len <= 0xFF { w.u8(0x78); w.u8(len as u8); }
-    else { w.u8(0x79); w.buf(&(len as u16).to_be_bytes()); }
+    if len <= 23 {
+        w.u8(0x60 | len as u8);
+    } else if len <= 0xFF {
+        w.u8(0x78);
+        w.u8(len as u8);
+    } else {
+        w.u8(0x79);
+        w.buf(&(len as u16).to_be_bytes());
+    }
     w.buf(bytes);
 }
 
@@ -310,14 +354,12 @@ pub enum DecodeError {
 
 /// Decode indexed binary fields back into a [`Model`].
 pub fn decode(fields: &IndexedFields) -> Result<Model, DecodeError> {
-    let clock_bytes = fields.get("c")
-        .ok_or(DecodeError::MissingClock)?;
+    let clock_bytes = fields.get("c").ok_or(DecodeError::MissingClock)?;
 
     let table = decode_clock_table(clock_bytes)?;
 
     // Build the initial vector clock from the table
-    let first = table.by_idx.first()
-        .ok_or(DecodeError::InvalidClockTable)?;
+    let first = table.by_idx.first().ok_or(DecodeError::InvalidClockTable)?;
     let mut clock = ClockVector::new(first.sid, first.time + 1);
     for entry in &table.by_idx[1..] {
         clock.observe(*entry, 1);
@@ -370,7 +412,8 @@ fn decode_clock_table(data: &[u8]) -> Result<ClockTable, DecodeError> {
 
 fn read_ts_indexed(r: &mut CrdtReader, table: &ClockTable) -> Result<Ts, DecodeError> {
     let (idx, time_diff) = r.id();
-    let ref_ts = table.get_by_index(idx as usize)
+    let ref_ts = table
+        .get_by_index(idx as usize)
         .ok_or_else(|| DecodeError::Format(format!("invalid session index {}", idx)))?;
     if ref_ts.time < time_diff {
         return Err(DecodeError::Format("time underflow".into()));
@@ -387,12 +430,18 @@ fn parse_field_name(name: &str, table: &ClockTable) -> Result<Ts, DecodeError> {
         .ok_or_else(|| DecodeError::Format(format!("invalid base-36: {}", parts[0])))?;
     let time = from_base36(parts[1])
         .ok_or_else(|| DecodeError::Format(format!("invalid base-36: {}", parts[1])))?;
-    let ref_ts = table.get_by_index(sid_idx as usize)
+    let ref_ts = table
+        .get_by_index(sid_idx as usize)
         .ok_or_else(|| DecodeError::Format(format!("invalid session index {}", sid_idx)))?;
     Ok(mk_ts(ref_ts.sid, time))
 }
 
-fn decode_node(r: &mut CrdtReader, id: Ts, table: &ClockTable, _clock: &ClockVector) -> Result<CrdtNode, DecodeError> {
+fn decode_node(
+    r: &mut CrdtReader,
+    id: Ts,
+    table: &ClockTable,
+    _clock: &ClockVector,
+) -> Result<CrdtNode, DecodeError> {
     let octet = r.u8();
     let major = octet >> 5;
     let info = octet & 0x1F;
@@ -420,10 +469,14 @@ fn decode_node(r: &mut CrdtReader, id: Ts, table: &ClockTable, _clock: &ClockVec
     }
 }
 
-fn decode_con(r: &mut CrdtReader, id: Ts, length: usize, table: &ClockTable) -> Result<CrdtNode, DecodeError> {
+fn decode_con(
+    r: &mut CrdtReader,
+    id: Ts,
+    length: usize,
+    table: &ClockTable,
+) -> Result<CrdtNode, DecodeError> {
     let val = if length == 0 {
-        let pv = read_cbor_value(r)
-            .map_err(|e| DecodeError::Format(e.to_string()))?;
+        let pv = read_cbor_value(r).map_err(|e| DecodeError::Format(e.to_string()))?;
         ConValue::Val(pv)
     } else {
         let ref_ts = read_ts_indexed(r, table)?;
@@ -439,18 +492,27 @@ fn decode_val(r: &mut CrdtReader, id: Ts, table: &ClockTable) -> Result<CrdtNode
     Ok(CrdtNode::Val(node))
 }
 
-fn decode_obj(r: &mut CrdtReader, id: Ts, length: usize, table: &ClockTable) -> Result<CrdtNode, DecodeError> {
+fn decode_obj(
+    r: &mut CrdtReader,
+    id: Ts,
+    length: usize,
+    table: &ClockTable,
+) -> Result<CrdtNode, DecodeError> {
     let mut node = ObjNode::new(id);
     for _ in 0..length {
-        let key = read_cbor_str_indexed(r)
-            .map_err(|e| DecodeError::Format(e.to_string()))?;
+        let key = read_cbor_str_indexed(r).map_err(|e| DecodeError::Format(e.to_string()))?;
         let child_ts = read_ts_indexed(r, table)?;
         node.keys.insert(key, child_ts);
     }
     Ok(CrdtNode::Obj(node))
 }
 
-fn decode_vec(r: &mut CrdtReader, id: Ts, length: usize, table: &ClockTable) -> Result<CrdtNode, DecodeError> {
+fn decode_vec(
+    r: &mut CrdtReader,
+    id: Ts,
+    length: usize,
+    table: &ClockTable,
+) -> Result<CrdtNode, DecodeError> {
     let mut node = VecNode::new(id);
     for _ in 0..length {
         let octet = r.u8();
@@ -464,14 +526,18 @@ fn decode_vec(r: &mut CrdtReader, id: Ts, length: usize, table: &ClockTable) -> 
     Ok(CrdtNode::Vec(node))
 }
 
-fn decode_str(r: &mut CrdtReader, id: Ts, count: usize, table: &ClockTable) -> Result<CrdtNode, DecodeError> {
-    use crate::json_crdt::nodes::StrNode;
+fn decode_str(
+    r: &mut CrdtReader,
+    id: Ts,
+    count: usize,
+    table: &ClockTable,
+) -> Result<CrdtNode, DecodeError> {
     use crate::json_crdt::nodes::rga::Chunk;
+    use crate::json_crdt::nodes::StrNode;
     let mut node = StrNode::new(id);
     for _ in 0..count {
         let chunk_id = read_ts_indexed(r, table)?;
-        let val = read_cbor_value(r)
-            .map_err(|e| DecodeError::Format(e.to_string()))?;
+        let val = read_cbor_value(r).map_err(|e| DecodeError::Format(e.to_string()))?;
         match val {
             PackValue::Integer(n) if n >= 0 => {
                 node.rga.push_chunk(Chunk::new_deleted(chunk_id, n as u64));
@@ -486,9 +552,14 @@ fn decode_str(r: &mut CrdtReader, id: Ts, count: usize, table: &ClockTable) -> R
     Ok(CrdtNode::Str(node))
 }
 
-fn decode_bin(r: &mut CrdtReader, id: Ts, count: usize, table: &ClockTable) -> Result<CrdtNode, DecodeError> {
-    use crate::json_crdt::nodes::BinNode;
+fn decode_bin(
+    r: &mut CrdtReader,
+    id: Ts,
+    count: usize,
+    table: &ClockTable,
+) -> Result<CrdtNode, DecodeError> {
     use crate::json_crdt::nodes::rga::Chunk;
+    use crate::json_crdt::nodes::BinNode;
     let mut node = BinNode::new(id);
     for _ in 0..count {
         let chunk_id = read_ts_indexed(r, table)?;
@@ -503,9 +574,14 @@ fn decode_bin(r: &mut CrdtReader, id: Ts, count: usize, table: &ClockTable) -> R
     Ok(CrdtNode::Bin(node))
 }
 
-fn decode_arr(r: &mut CrdtReader, id: Ts, count: usize, table: &ClockTable) -> Result<CrdtNode, DecodeError> {
-    use crate::json_crdt::nodes::ArrNode;
+fn decode_arr(
+    r: &mut CrdtReader,
+    id: Ts,
+    count: usize,
+    table: &ClockTable,
+) -> Result<CrdtNode, DecodeError> {
     use crate::json_crdt::nodes::rga::Chunk;
+    use crate::json_crdt::nodes::ArrNode;
     let mut node = ArrNode::new(id);
     for _ in 0..count {
         let chunk_id = read_ts_indexed(r, table)?;
@@ -557,14 +633,19 @@ fn read_cbor_value(r: &mut CrdtReader) -> Result<PackValue, CborError> {
         4 => {
             let len = read_cbor_argument(r, info)? as usize;
             let mut items = Vec::with_capacity(len);
-            for _ in 0..len { items.push(read_cbor_value(r)?); }
+            for _ in 0..len {
+                items.push(read_cbor_value(r)?);
+            }
             Ok(PackValue::Array(items))
         }
         5 => {
             let len = read_cbor_argument(r, info)? as usize;
             let mut map = Vec::with_capacity(len);
             for _ in 0..len {
-                let k = match read_cbor_value(r)? { PackValue::Str(s) => s, _ => String::new() };
+                let k = match read_cbor_value(r)? {
+                    PackValue::Str(s) => s,
+                    _ => String::new(),
+                };
                 let v = read_cbor_value(r)?;
                 map.push((k, v));
             }
@@ -577,7 +658,9 @@ fn read_cbor_value(r: &mut CrdtReader) -> Result<PackValue, CborError> {
             23 => Ok(PackValue::Undefined),
             27 => {
                 let b = r.buf(8);
-                Ok(PackValue::Float(f64::from_be_bytes([b[0],b[1],b[2],b[3],b[4],b[5],b[6],b[7]])))
+                Ok(PackValue::Float(f64::from_be_bytes([
+                    b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7],
+                ])))
             }
             _ => Ok(PackValue::Null),
         },
@@ -589,9 +672,20 @@ fn read_cbor_argument(r: &mut CrdtReader, info: u8) -> Result<u64, CborError> {
     match info {
         n if n <= 23 => Ok(n as u64),
         24 => Ok(r.u8() as u64),
-        25 => { let b = r.buf(2); Ok(u16::from_be_bytes([b[0], b[1]]) as u64) }
-        26 => { let b = r.buf(4); Ok(u32::from_be_bytes([b[0], b[1], b[2], b[3]]) as u64) }
-        27 => { let b = r.buf(8); Ok(u64::from_be_bytes([b[0],b[1],b[2],b[3],b[4],b[5],b[6],b[7]])) }
+        25 => {
+            let b = r.buf(2);
+            Ok(u16::from_be_bytes([b[0], b[1]]) as u64)
+        }
+        26 => {
+            let b = r.buf(4);
+            Ok(u32::from_be_bytes([b[0], b[1], b[2], b[3]]) as u64)
+        }
+        27 => {
+            let b = r.buf(8);
+            Ok(u64::from_be_bytes([
+                b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7],
+            ]))
+        }
         _ => Err(CborError::Format(format!("unsupported info {}", info))),
     }
 }
@@ -638,7 +732,9 @@ mod tests {
     use crate::json_crdt_patch::operations::{ConValue, Op};
     use json_joy_json_pack::PackValue;
 
-    fn sid() -> u64 { 333444 }
+    fn sid() -> u64 {
+        333444
+    }
 
     #[test]
     fn base36_roundtrip() {

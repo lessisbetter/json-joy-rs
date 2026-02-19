@@ -36,20 +36,36 @@ impl Default for CrdtWriter {
 impl CrdtWriter {
     /// Creates a new `CrdtWriter` with the default 64 KB allocation.
     pub fn new() -> Self {
-        Self { inner: Writer::new() }
+        Self {
+            inner: Writer::new(),
+        }
     }
 
     /// Creates a new `CrdtWriter` with a custom initial allocation size.
     pub fn with_alloc_size(size: usize) -> Self {
-        Self { inner: Writer::with_alloc_size(size) }
+        Self {
+            inner: Writer::with_alloc_size(size),
+        }
     }
 
     // ── Delegation to inner Writer ─────────────────────────────────────────
 
-    #[inline] pub fn reset(&mut self) { self.inner.reset(); }
-    #[inline] pub fn flush(&mut self) -> Vec<u8> { self.inner.flush() }
-    #[inline] pub fn u8(&mut self, val: u8) { self.inner.u8(val); }
-    #[inline] pub fn ensure_capacity(&mut self, n: usize) { self.inner.ensure_capacity(n); }
+    #[inline]
+    pub fn reset(&mut self) {
+        self.inner.reset();
+    }
+    #[inline]
+    pub fn flush(&mut self) -> Vec<u8> {
+        self.inner.flush()
+    }
+    #[inline]
+    pub fn u8(&mut self, val: u8) {
+        self.inner.u8(val);
+    }
+    #[inline]
+    pub fn ensure_capacity(&mut self, n: usize) {
+        self.inner.ensure_capacity(n);
+    }
 
     /// Writes raw bytes.
     #[inline]
@@ -91,20 +107,20 @@ impl CrdtWriter {
         } else if num <= 0x3FFF {
             self.inner.ensure_capacity(2);
             let x = self.inner.x;
-            self.inner.uint8[x]     = 0x80 | (num & 0x7F) as u8;
+            self.inner.uint8[x] = 0x80 | (num & 0x7F) as u8;
             self.inner.uint8[x + 1] = (num >> 7) as u8;
             self.inner.x += 2;
         } else if num <= 0x1F_FFFF {
             self.inner.ensure_capacity(3);
             let x = self.inner.x;
-            self.inner.uint8[x]     = 0x80 | (num & 0x7F) as u8;
+            self.inner.uint8[x] = 0x80 | (num & 0x7F) as u8;
             self.inner.uint8[x + 1] = 0x80 | ((num >> 7) & 0x7F) as u8;
             self.inner.uint8[x + 2] = (num >> 14) as u8;
             self.inner.x += 3;
         } else if num <= 0xFFF_FFFF {
             self.inner.ensure_capacity(4);
             let x = self.inner.x;
-            self.inner.uint8[x]     = 0x80 | (num & 0x7F) as u8;
+            self.inner.uint8[x] = 0x80 | (num & 0x7F) as u8;
             self.inner.uint8[x + 1] = 0x80 | ((num >> 7) & 0x7F) as u8;
             self.inner.uint8[x + 2] = 0x80 | ((num >> 14) & 0x7F) as u8;
             self.inner.uint8[x + 3] = (num >> 21) as u8;
@@ -112,7 +128,7 @@ impl CrdtWriter {
         } else if num <= 0x7_FFFF_FFFF {
             self.inner.ensure_capacity(5);
             let x = self.inner.x;
-            self.inner.uint8[x]     = 0x80 | (num & 0x7F) as u8;
+            self.inner.uint8[x] = 0x80 | (num & 0x7F) as u8;
             self.inner.uint8[x + 1] = 0x80 | ((num >> 7) & 0x7F) as u8;
             self.inner.uint8[x + 2] = 0x80 | ((num >> 14) & 0x7F) as u8;
             self.inner.uint8[x + 3] = 0x80 | ((num >> 21) & 0x7F) as u8;
@@ -121,7 +137,7 @@ impl CrdtWriter {
         } else if num <= 0x3FF_FFFF_FFFF {
             self.inner.ensure_capacity(6);
             let x = self.inner.x;
-            self.inner.uint8[x]     = 0x80 | (num & 0x7F) as u8;
+            self.inner.uint8[x] = 0x80 | (num & 0x7F) as u8;
             self.inner.uint8[x + 1] = 0x80 | ((num >> 7) & 0x7F) as u8;
             self.inner.uint8[x + 2] = 0x80 | ((num >> 14) & 0x7F) as u8;
             self.inner.uint8[x + 3] = 0x80 | ((num >> 21) & 0x7F) as u8;
@@ -131,7 +147,7 @@ impl CrdtWriter {
         } else if num <= 0x1_FFFF_FFFF_FFFF {
             self.inner.ensure_capacity(7);
             let x = self.inner.x;
-            self.inner.uint8[x]     = 0x80 | (num & 0x7F) as u8;
+            self.inner.uint8[x] = 0x80 | (num & 0x7F) as u8;
             self.inner.uint8[x + 1] = 0x80 | ((num >> 7) & 0x7F) as u8;
             self.inner.uint8[x + 2] = 0x80 | ((num >> 14) & 0x7F) as u8;
             self.inner.uint8[x + 3] = 0x80 | ((num >> 21) & 0x7F) as u8;
@@ -143,7 +159,7 @@ impl CrdtWriter {
             // Up to 57 bits (8 bytes)
             self.inner.ensure_capacity(8);
             let x = self.inner.x;
-            self.inner.uint8[x]     = 0x80 | (num & 0x7F) as u8;
+            self.inner.uint8[x] = 0x80 | (num & 0x7F) as u8;
             self.inner.uint8[x + 1] = 0x80 | ((num >> 7) & 0x7F) as u8;
             self.inner.uint8[x + 2] = 0x80 | ((num >> 14) & 0x7F) as u8;
             self.inner.uint8[x + 3] = 0x80 | ((num >> 21) & 0x7F) as u8;
@@ -168,20 +184,20 @@ impl CrdtWriter {
             if num <= 0x1FFF {
                 self.inner.ensure_capacity(2);
                 let x = self.inner.x;
-                self.inner.uint8[x]     = first as u8;
+                self.inner.uint8[x] = first as u8;
                 self.inner.uint8[x + 1] = (num >> 6) as u8;
                 self.inner.x += 2;
             } else if num <= 0xF_FFFF {
                 self.inner.ensure_capacity(3);
                 let x = self.inner.x;
-                self.inner.uint8[x]     = first as u8;
+                self.inner.uint8[x] = first as u8;
                 self.inner.uint8[x + 1] = 0x80 | ((num >> 6) & 0x7F) as u8;
                 self.inner.uint8[x + 2] = (num >> 13) as u8;
                 self.inner.x += 3;
             } else if num <= 0x7FF_FFFF {
                 self.inner.ensure_capacity(4);
                 let x = self.inner.x;
-                self.inner.uint8[x]     = first as u8;
+                self.inner.uint8[x] = first as u8;
                 self.inner.uint8[x + 1] = 0x80 | ((num >> 6) & 0x7F) as u8;
                 self.inner.uint8[x + 2] = 0x80 | ((num >> 13) & 0x7F) as u8;
                 self.inner.uint8[x + 3] = (num >> 20) as u8;
@@ -189,7 +205,7 @@ impl CrdtWriter {
             } else if num <= 0x3F_FFFF_FFFF {
                 self.inner.ensure_capacity(5);
                 let x = self.inner.x;
-                self.inner.uint8[x]     = first as u8;
+                self.inner.uint8[x] = first as u8;
                 self.inner.uint8[x + 1] = 0x80 | ((num >> 6) & 0x7F) as u8;
                 self.inner.uint8[x + 2] = 0x80 | ((num >> 13) & 0x7F) as u8;
                 self.inner.uint8[x + 3] = 0x80 | ((num >> 20) & 0x7F) as u8;
@@ -198,7 +214,7 @@ impl CrdtWriter {
             } else if num <= 0x1FF_FFFF_FFFF {
                 self.inner.ensure_capacity(6);
                 let x = self.inner.x;
-                self.inner.uint8[x]     = first as u8;
+                self.inner.uint8[x] = first as u8;
                 self.inner.uint8[x + 1] = 0x80 | ((num >> 6) & 0x7F) as u8;
                 self.inner.uint8[x + 2] = 0x80 | ((num >> 13) & 0x7F) as u8;
                 self.inner.uint8[x + 3] = 0x80 | ((num >> 20) & 0x7F) as u8;
@@ -208,7 +224,7 @@ impl CrdtWriter {
             } else if num <= 0xFFFF_FFFF_FFFF {
                 self.inner.ensure_capacity(7);
                 let x = self.inner.x;
-                self.inner.uint8[x]     = first as u8;
+                self.inner.uint8[x] = first as u8;
                 self.inner.uint8[x + 1] = 0x80 | ((num >> 6) & 0x7F) as u8;
                 self.inner.uint8[x + 2] = 0x80 | ((num >> 13) & 0x7F) as u8;
                 self.inner.uint8[x + 3] = 0x80 | ((num >> 20) & 0x7F) as u8;
@@ -220,7 +236,7 @@ impl CrdtWriter {
                 // 56-bit max: 8 bytes
                 self.inner.ensure_capacity(8);
                 let x = self.inner.x;
-                self.inner.uint8[x]     = first as u8;
+                self.inner.uint8[x] = first as u8;
                 self.inner.uint8[x + 1] = 0x80 | ((num >> 6) & 0x7F) as u8;
                 self.inner.uint8[x + 2] = 0x80 | ((num >> 13) & 0x7F) as u8;
                 self.inner.uint8[x + 3] = 0x80 | ((num >> 20) & 0x7F) as u8;

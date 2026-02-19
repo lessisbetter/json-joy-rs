@@ -83,10 +83,7 @@ impl From<PackValue> for serde_json::Value {
             PackValue::Bytes(b) => {
                 use json_joy_base64::to_base64;
                 let b64 = to_base64(&b);
-                serde_json::Value::String(format!(
-                    "data:application/octet-stream;base64,{}",
-                    b64
-                ))
+                serde_json::Value::String(format!("data:application/octet-stream;base64,{}", b64))
             }
             PackValue::Str(s) => serde_json::Value::String(s),
             PackValue::Array(arr) => {

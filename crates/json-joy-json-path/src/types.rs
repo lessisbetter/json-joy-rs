@@ -10,7 +10,11 @@ pub enum Selector {
     /// Index selector for array element access: `[0]`, `[-1]`
     Index(isize),
     /// Slice selector for array slicing: `[start:end:step]`
-    Slice { start: Option<isize>, end: Option<isize>, step: Option<isize> },
+    Slice {
+        start: Option<isize>,
+        end: Option<isize>,
+        step: Option<isize>,
+    },
     /// Wildcard selector for selecting all elements: `.*`, `[*]`
     Wildcard,
     /// Filter expression for conditional selection: `[?(@.price < 10)]`
@@ -28,7 +32,10 @@ pub struct PathSegment {
 
 impl PathSegment {
     pub fn new(selectors: Vec<Selector>, recursive: bool) -> Self {
-        Self { selectors, recursive }
+        Self {
+            selectors,
+            recursive,
+        }
     }
 }
 
@@ -63,7 +70,10 @@ pub enum FilterExpression {
     /// Existence test: `@.name`
     Existence { path: JSONPath },
     /// Function call: `length(@)`
-    Function { name: String, args: Vec<FunctionArg> },
+    Function {
+        name: String,
+        args: Vec<FunctionArg>,
+    },
     /// Parenthesized expression: `(@.a || @.b)`
     Paren(Box<FilterExpression>),
     /// Negation: `!@.flag`
@@ -73,11 +83,11 @@ pub enum FilterExpression {
 /// Comparison operators.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ComparisonOperator {
-    Equal,       // ==
-    NotEqual,    // !=
-    Less,        // <
-    LessEqual,   // <=
-    Greater,     // >
+    Equal,        // ==
+    NotEqual,     // !=
+    Less,         // <
+    LessEqual,    // <=
+    Greater,      // >
     GreaterEqual, // >=
 }
 
@@ -100,7 +110,10 @@ pub enum ValueExpression {
     /// Path expression: `@.name`
     Path(JSONPath),
     /// Function call: `length(@)`
-    Function { name: String, args: Vec<FunctionArg> },
+    Function {
+        name: String,
+        args: Vec<FunctionArg>,
+    },
 }
 
 /// Function argument types.

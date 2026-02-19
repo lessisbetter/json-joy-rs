@@ -24,7 +24,19 @@ fn throw_eval(expr: &[Value], ctx: &mut EvalCtx<'_>) -> Result<JsValue, JsError>
 
 pub fn operators() -> Vec<Arc<OperatorDefinition>> {
     vec![
-        Arc::new(OperatorDefinition { name: "?", aliases: &["if"], arity: Arity::Fixed(3), eval_fn: if_eval, impure: false }),
-        Arc::new(OperatorDefinition { name: "throw", aliases: &[], arity: Arity::Fixed(1), eval_fn: throw_eval, impure: false }),
+        Arc::new(OperatorDefinition {
+            name: "?",
+            aliases: &["if"],
+            arity: Arity::Fixed(3),
+            eval_fn: if_eval,
+            impure: false,
+        }),
+        Arc::new(OperatorDefinition {
+            name: "throw",
+            aliases: &[],
+            arity: Arity::Fixed(1),
+            eval_fn: throw_eval,
+            impure: false,
+        }),
     ]
 }

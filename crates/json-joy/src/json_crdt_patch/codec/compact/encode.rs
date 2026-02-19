@@ -2,11 +2,11 @@
 //!
 //! Mirrors `packages/json-joy/src/json-crdt-patch/codec/compact/encode.ts`.
 
-use serde_json::{json, Value};
 use crate::json_crdt_patch::clock::{Ts, Tss};
 use crate::json_crdt_patch::enums::{JsonCrdtPatchOpcode, SESSION};
 use crate::json_crdt_patch::operations::{ConValue, Op};
 use crate::json_crdt_patch::patch::Patch;
+use serde_json::{json, Value};
 
 fn encode_ts(id: Ts, patch_sid: u64) -> Value {
     if id.sid == patch_sid {
@@ -40,7 +40,8 @@ fn pack_to_json(v: &json_joy_json_pack::PackValue) -> Value {
         }
         PackValue::Array(arr) => Value::Array(arr.iter().map(pack_to_json).collect()),
         PackValue::Object(obj) => {
-            let map: serde_json::Map<_, _> = obj.iter()
+            let map: serde_json::Map<_, _> = obj
+                .iter()
                 .map(|(k, v)| (k.clone(), pack_to_json(v)))
                 .collect();
             Value::Object(map)
@@ -70,7 +71,11 @@ pub fn encode(patch: &Patch) -> Vec<Value> {
     for op in &patch.ops {
         let op_val = match op {
             Op::NewCon { val, .. } => match val {
-                ConValue::Ref(ts_ref) => json!([JsonCrdtPatchOpcode::NewCon as u8, 1, encode_ts(*ts_ref, patch_sid)]),
+                ConValue::Ref(ts_ref) => json!([
+                    JsonCrdtPatchOpcode::NewCon as u8,
+                    1,
+                    encode_ts(*ts_ref, patch_sid)
+                ]),
                 ConValue::Val(v) => {
                     let encoded = pack_to_json(v);
                     if encoded == Value::Null {
@@ -93,28 +98,40 @@ pub fn encode(patch: &Patch) -> Vec<Value> {
                 encode_ts(*val, patch_sid),
             ]),
             Op::InsObj { obj, data, .. } => {
-                let pairs: Vec<Value> = data.iter()
+                let pairs: Vec<Value> = data
+                    .iter()
                     .flat_map(|(k, v)| vec![json!(k), encode_ts(*v, patch_sid)])
                     .collect();
-                let mut v = vec![json!(JsonCrdtPatchOpcode::InsObj as u8), encode_ts(*obj, patch_sid)];
+                let mut v = vec![
+                    json!(JsonCrdtPatchOpcode::InsObj as u8),
+                    encode_ts(*obj, patch_sid),
+                ];
                 v.extend(pairs);
                 Value::Array(v)
             }
             Op::InsVec { obj, data, .. } => {
-                let pairs: Vec<Value> = data.iter()
+                let pairs: Vec<Value> = data
+                    .iter()
                     .flat_map(|(k, v)| vec![json!(k), encode_ts(*v, patch_sid)])
                     .collect();
-                let mut v = vec![json!(JsonCrdtPatchOpcode::InsVec as u8), encode_ts(*obj, patch_sid)];
+                let mut v = vec![
+                    json!(JsonCrdtPatchOpcode::InsVec as u8),
+                    encode_ts(*obj, patch_sid),
+                ];
                 v.extend(pairs);
                 Value::Array(v)
             }
-            Op::InsStr { obj, after, data, .. } => json!([
+            Op::InsStr {
+                obj, after, data, ..
+            } => json!([
                 JsonCrdtPatchOpcode::InsStr as u8,
                 encode_ts(*obj, patch_sid),
                 encode_ts(*after, patch_sid),
                 data,
             ]),
-            Op::InsBin { obj, after, data, .. } => {
+            Op::InsBin {
+                obj, after, data, ..
+            } => {
                 use base64::Engine;
                 let b64 = base64::engine::general_purpose::STANDARD.encode(data);
                 json!([
@@ -124,7 +141,9 @@ pub fn encode(patch: &Patch) -> Vec<Value> {
                     b64,
                 ])
             }
-            Op::InsArr { obj, after, data, .. } => {
+            Op::InsArr {
+                obj, after, data, ..
+            } => {
                 let elems: Vec<Value> = data.iter().map(|e| encode_ts(*e, patch_sid)).collect();
                 let mut v = vec![
                     json!(JsonCrdtPatchOpcode::InsArr as u8),
@@ -134,7 +153,9 @@ pub fn encode(patch: &Patch) -> Vec<Value> {
                 v.extend(elems);
                 Value::Array(v)
             }
-            Op::UpdArr { obj, after, val, .. } => json!([
+            Op::UpdArr {
+                obj, after, val, ..
+            } => json!([
                 JsonCrdtPatchOpcode::UpdArr as u8,
                 encode_ts(*obj, patch_sid),
                 encode_ts(*after, patch_sid),
@@ -142,7 +163,10 @@ pub fn encode(patch: &Patch) -> Vec<Value> {
             ]),
             Op::Del { obj, what, .. } => {
                 let spans: Vec<Value> = what.iter().map(encode_tss).collect();
-                let mut v = vec![json!(JsonCrdtPatchOpcode::Del as u8), encode_ts(*obj, patch_sid)];
+                let mut v = vec![
+                    json!(JsonCrdtPatchOpcode::Del as u8),
+                    encode_ts(*obj, patch_sid),
+                ];
                 v.extend(spans);
                 Value::Array(v)
             }

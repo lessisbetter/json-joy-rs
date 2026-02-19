@@ -24,20 +24,20 @@ impl StringComponent {
     /// Length of this component (in chars) on the *source* string.
     pub fn src_len(&self) -> usize {
         match self {
-            StringComponent::Retain(n)     => *n,
-            StringComponent::Delete(n)     => *n,
-            StringComponent::DeleteStr(s)  => s.chars().count(),
-            StringComponent::Insert(_)     => 0,
+            StringComponent::Retain(n) => *n,
+            StringComponent::Delete(n) => *n,
+            StringComponent::DeleteStr(s) => s.chars().count(),
+            StringComponent::Insert(_) => 0,
         }
     }
 
     /// Length of this component (in chars) on the *destination* string.
     pub fn dst_len(&self) -> usize {
         match self {
-            StringComponent::Retain(n)     => *n,
-            StringComponent::Delete(_)     => 0,
-            StringComponent::DeleteStr(_)  => 0,
-            StringComponent::Insert(s)     => s.chars().count(),
+            StringComponent::Retain(n) => *n,
+            StringComponent::Delete(_) => 0,
+            StringComponent::DeleteStr(_) => 0,
+            StringComponent::Insert(s) => s.chars().count(),
         }
     }
 }
@@ -45,10 +45,22 @@ impl StringComponent {
 /// Append a component, merging with the last component if same type.
 fn append(op: &mut StringOp, comp: StringComponent) {
     match (op.last_mut(), &comp) {
-        (Some(StringComponent::Retain(n)),    StringComponent::Retain(m))    => { *n += m; return; }
-        (Some(StringComponent::Delete(n)),    StringComponent::Delete(m))    => { *n += m; return; }
-        (Some(StringComponent::DeleteStr(s)), StringComponent::DeleteStr(t)) => { s.push_str(t); return; }
-        (Some(StringComponent::Insert(s)),    StringComponent::Insert(t))    => { s.push_str(t); return; }
+        (Some(StringComponent::Retain(n)), StringComponent::Retain(m)) => {
+            *n += m;
+            return;
+        }
+        (Some(StringComponent::Delete(n)), StringComponent::Delete(m)) => {
+            *n += m;
+            return;
+        }
+        (Some(StringComponent::DeleteStr(s)), StringComponent::DeleteStr(t)) => {
+            s.push_str(t);
+            return;
+        }
+        (Some(StringComponent::Insert(s)), StringComponent::Insert(t)) => {
+            s.push_str(t);
+            return;
+        }
         _ => {}
     }
     op.push(comp);
@@ -58,8 +70,12 @@ fn append(op: &mut StringOp, comp: StringComponent) {
 pub fn trim(op: &mut StringOp) {
     while let Some(last) = op.last() {
         match last {
-            StringComponent::Retain(0) | StringComponent::Delete(0) => { op.pop(); }
-            StringComponent::Insert(s) | StringComponent::DeleteStr(s) if s.is_empty() => { op.pop(); }
+            StringComponent::Retain(0) | StringComponent::Delete(0) => {
+                op.pop();
+            }
+            StringComponent::Insert(s) | StringComponent::DeleteStr(s) if s.is_empty() => {
+                op.pop();
+            }
             _ => break,
         }
     }
@@ -151,23 +167,30 @@ pub fn compose(op1: &StringOp, op2: &StringOp) -> StringOp {
                     (StringComponent::Retain(n), StringComponent::Retain(m)) => {
                         let min = (*n).min(*m);
                         append(&mut result, StringComponent::Retain(min));
-                        if n > m { rem1 = Some(StringComponent::Retain(n - m)); }
-                        else if m > n { rem2 = Some(StringComponent::Retain(m - n)); }
+                        if n > m {
+                            rem1 = Some(StringComponent::Retain(n - m));
+                        } else if m > n {
+                            rem2 = Some(StringComponent::Retain(m - n));
+                        }
                     }
                     // Retain1 + Delete2
                     (StringComponent::Retain(n), StringComponent::Delete(m)) => {
                         let min = (*n).min(*m);
                         append(&mut result, StringComponent::Delete(min));
-                        if n > m { rem1 = Some(StringComponent::Retain(n - m)); }
-                        else if m > n { rem2 = Some(StringComponent::Delete(m - n)); }
+                        if n > m {
+                            rem1 = Some(StringComponent::Retain(n - m));
+                        } else if m > n {
+                            rem2 = Some(StringComponent::Delete(m - n));
+                        }
                     }
                     (StringComponent::Retain(n), StringComponent::DeleteStr(s)) => {
                         let s_len = s.chars().count();
                         let min = (*n).min(s_len);
                         let del_str: String = s.chars().take(min).collect();
                         append(&mut result, StringComponent::DeleteStr(del_str));
-                        if n > &s_len { rem1 = Some(StringComponent::Retain(n - s_len)); }
-                        else if s_len > *n {
+                        if n > &s_len {
+                            rem1 = Some(StringComponent::Retain(n - s_len));
+                        } else if s_len > *n {
                             let rest: String = s.chars().skip(*n).collect();
                             rem2 = Some(StringComponent::DeleteStr(rest));
                         }
@@ -178,20 +201,31 @@ pub fn compose(op1: &StringOp, op2: &StringOp) -> StringOp {
                         let min = s_len.min(*m);
                         let kept: String = s.chars().take(min).collect();
                         append(&mut result, StringComponent::Insert(kept));
-                        if s_len > *m { rem1 = Some(StringComponent::Insert(s.chars().skip(*m).collect())); }
-                        else if m > &s_len { rem2 = Some(StringComponent::Retain(m - s_len)); }
+                        if s_len > *m {
+                            rem1 = Some(StringComponent::Insert(s.chars().skip(*m).collect()));
+                        } else if m > &s_len {
+                            rem2 = Some(StringComponent::Retain(m - s_len));
+                        }
                     }
                     // Insert1 + Delete2: cancel out
                     (StringComponent::Insert(s), StringComponent::Delete(m)) => {
                         let s_len = s.chars().count();
-                        if s_len > *m { rem1 = Some(StringComponent::Insert(s.chars().skip(*m).collect())); }
-                        else if m > &s_len { rem2 = Some(StringComponent::Delete(m - s_len)); }
+                        if s_len > *m {
+                            rem1 = Some(StringComponent::Insert(s.chars().skip(*m).collect()));
+                        } else if m > &s_len {
+                            rem2 = Some(StringComponent::Delete(m - s_len));
+                        }
                     }
                     (StringComponent::Insert(s), StringComponent::DeleteStr(del)) => {
                         let s_len = s.chars().count();
                         let del_len = del.chars().count();
-                        if s_len > del_len { rem1 = Some(StringComponent::Insert(s.chars().skip(del_len).collect())); }
-                        else if del_len > s_len { rem2 = Some(StringComponent::DeleteStr(del.chars().skip(s_len).collect())); }
+                        if s_len > del_len {
+                            rem1 = Some(StringComponent::Insert(s.chars().skip(del_len).collect()));
+                        } else if del_len > s_len {
+                            rem2 = Some(StringComponent::DeleteStr(
+                                del.chars().skip(s_len).collect(),
+                            ));
+                        }
                     }
                 }
             }
@@ -238,57 +272,88 @@ pub fn transform(op: &StringOp, against: &StringOp, left_wins: bool) -> StringOp
                     (StringComponent::Retain(n), StringComponent::Retain(m)) => {
                         let min = (*n).min(*m);
                         append(&mut result, StringComponent::Retain(min));
-                        if n > m { rem_op = Some(StringComponent::Retain(n - m)); }
-                        else if m > n { rem_ag = Some(StringComponent::Retain(m - n)); }
+                        if n > m {
+                            rem_op = Some(StringComponent::Retain(n - m));
+                        } else if m > n {
+                            rem_ag = Some(StringComponent::Retain(m - n));
+                        }
                     }
                     // Retain vs delete: skip the retained chars (they'll be gone)
                     (StringComponent::Retain(n), StringComponent::Delete(m)) => {
                         let del_len = *m;
-                        if n > m { rem_op = Some(StringComponent::Retain(n - del_len)); }
-                        else if del_len > *n { rem_ag = Some(StringComponent::Delete(del_len - n)); }
+                        if n > m {
+                            rem_op = Some(StringComponent::Retain(n - del_len));
+                        } else if del_len > *n {
+                            rem_ag = Some(StringComponent::Delete(del_len - n));
+                        }
                     }
                     (StringComponent::Retain(n), StringComponent::DeleteStr(s)) => {
                         let del_len = s.chars().count();
-                        if *n > del_len { rem_op = Some(StringComponent::Retain(n - del_len)); }
-                        else if del_len > *n { rem_ag = Some(StringComponent::Delete(del_len - n)); }
+                        if *n > del_len {
+                            rem_op = Some(StringComponent::Retain(n - del_len));
+                        } else if del_len > *n {
+                            rem_ag = Some(StringComponent::Delete(del_len - n));
+                        }
                     }
                     // Delete vs retain: delete passes through
                     (StringComponent::Delete(n), StringComponent::Retain(m)) => {
                         let min = (*n).min(*m);
                         append(&mut result, StringComponent::Delete(min));
-                        if n > m { rem_op = Some(StringComponent::Delete(n - m)); }
-                        else if m > n { rem_ag = Some(StringComponent::Retain(m - n)); }
+                        if n > m {
+                            rem_op = Some(StringComponent::Delete(n - m));
+                        } else if m > n {
+                            rem_ag = Some(StringComponent::Retain(m - n));
+                        }
                     }
                     (StringComponent::DeleteStr(s), StringComponent::Retain(m)) => {
                         let s_len = s.chars().count();
                         let min = s_len.min(*m);
                         let del_str: String = s.chars().take(min).collect();
                         append(&mut result, StringComponent::DeleteStr(del_str));
-                        if s_len > *m { rem_op = Some(StringComponent::DeleteStr(s.chars().skip(*m).collect())); }
-                        else if m > &s_len { rem_ag = Some(StringComponent::Retain(m - s_len)); }
+                        if s_len > *m {
+                            rem_op = Some(StringComponent::DeleteStr(s.chars().skip(*m).collect()));
+                        } else if m > &s_len {
+                            rem_ag = Some(StringComponent::Retain(m - s_len));
+                        }
                     }
                     // Delete vs delete: both deleted the same range — op delete is redundant
                     (StringComponent::Delete(n), StringComponent::Delete(m)) => {
                         let del_len = *m;
-                        if n > m { rem_op = Some(StringComponent::Delete(n - del_len)); }
-                        else if del_len > *n { rem_ag = Some(StringComponent::Delete(del_len - n)); }
+                        if n > m {
+                            rem_op = Some(StringComponent::Delete(n - del_len));
+                        } else if del_len > *n {
+                            rem_ag = Some(StringComponent::Delete(del_len - n));
+                        }
                     }
                     (StringComponent::Delete(n), StringComponent::DeleteStr(s)) => {
                         let del_len = s.chars().count();
-                        if *n > del_len { rem_op = Some(StringComponent::Delete(n - del_len)); }
-                        else if del_len > *n { rem_ag = Some(StringComponent::Delete(del_len - n)); }
+                        if *n > del_len {
+                            rem_op = Some(StringComponent::Delete(n - del_len));
+                        } else if del_len > *n {
+                            rem_ag = Some(StringComponent::Delete(del_len - n));
+                        }
                     }
                     (StringComponent::DeleteStr(s), StringComponent::Delete(m)) => {
                         let s_len = s.chars().count();
                         let del_len = *m;
-                        if s_len > del_len { rem_op = Some(StringComponent::DeleteStr(s.chars().skip(del_len).collect())); }
-                        else if del_len > s_len { rem_ag = Some(StringComponent::Delete(del_len - s_len)); }
+                        if s_len > del_len {
+                            rem_op = Some(StringComponent::DeleteStr(
+                                s.chars().skip(del_len).collect(),
+                            ));
+                        } else if del_len > s_len {
+                            rem_ag = Some(StringComponent::Delete(del_len - s_len));
+                        }
                     }
                     (StringComponent::DeleteStr(s), StringComponent::DeleteStr(t)) => {
                         let s_len = s.chars().count();
                         let del_len = t.chars().count();
-                        if s_len > del_len { rem_op = Some(StringComponent::DeleteStr(s.chars().skip(del_len).collect())); }
-                        else if del_len > s_len { rem_ag = Some(StringComponent::Delete(del_len - s_len)); }
+                        if s_len > del_len {
+                            rem_op = Some(StringComponent::DeleteStr(
+                                s.chars().skip(del_len).collect(),
+                            ));
+                        } else if del_len > s_len {
+                            rem_ag = Some(StringComponent::Delete(del_len - s_len));
+                        }
                     }
                 }
             }
@@ -318,20 +383,14 @@ mod tests {
 
     #[test]
     fn apply_delete() {
-        let op = vec![
-            StringComponent::Retain(5),
-            StringComponent::Delete(6),
-        ];
+        let op = vec![StringComponent::Retain(5), StringComponent::Delete(6)];
         assert_eq!(apply("hello world", &op), "hello");
     }
 
     #[test]
     fn normalize_coalesces_and_strips_trailing_retain() {
         // Two adjacent retains merge; trailing retains are stripped (they're implicit)
-        let op = vec![
-            StringComponent::Retain(2),
-            StringComponent::Retain(3),
-        ];
+        let op = vec![StringComponent::Retain(2), StringComponent::Retain(3)];
         let n = normalize(op);
         // Trailing retains are stripped — result is empty (identity op)
         assert_eq!(n, vec![]);
@@ -345,7 +404,13 @@ mod tests {
             StringComponent::Insert("x".to_string()),
         ];
         let n = normalize(op);
-        assert_eq!(n, vec![StringComponent::Retain(5), StringComponent::Insert("x".to_string())]);
+        assert_eq!(
+            n,
+            vec![
+                StringComponent::Retain(5),
+                StringComponent::Insert("x".to_string())
+            ]
+        );
     }
 
     #[test]

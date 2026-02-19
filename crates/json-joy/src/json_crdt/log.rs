@@ -34,7 +34,10 @@ pub struct PatchKey {
 
 impl PatchKey {
     pub fn from_ts(ts: Ts) -> Self {
-        Self { time: ts.time, sid: ts.sid }
+        Self {
+            time: ts.time,
+            sid: ts.sid,
+        }
     }
 }
 
@@ -91,7 +94,8 @@ impl Log {
     pub fn from_model(model: Model) -> Self {
         // Freeze the starting state as a binary snapshot.
         let frozen: Vec<u8> = model.to_binary();
-        let start_fn = move || Model::from_binary(&frozen).expect("Log::from_model: corrupt snapshot");
+        let start_fn =
+            move || Model::from_binary(&frozen).expect("Log::from_model: corrupt snapshot");
         Self {
             start_fn: Box::new(start_fn),
             patches: BTreeMap::new(),
@@ -156,7 +160,10 @@ impl Log {
     pub fn replay_to(&self, ts: Ts, inclusive: bool) -> Model {
         let mut model = self.start();
         for (key, patch) in &self.patches {
-            let patch_ts = Ts { sid: key.sid, time: key.time };
+            let patch_ts = Ts {
+                sid: key.sid,
+                time: key.time,
+            };
             let cmp = compare(ts, patch_ts);
             if cmp < 0 {
                 break;
@@ -182,7 +189,10 @@ impl Log {
         // Collect patches to bake into the new baseline.
         let mut to_bake: Vec<(PatchKey, Patch)> = Vec::new();
         for (key, _) in &self.patches {
-            let patch_ts = Ts { sid: key.sid, time: key.time };
+            let patch_ts = Ts {
+                sid: key.sid,
+                time: key.time,
+            };
             if compare(ts, patch_ts) >= 0 {
                 to_bake.push((*key, Patch::new())); // placeholder
             } else {
@@ -196,10 +206,7 @@ impl Log {
             .collect();
 
         // Build new start factory from old factory + baked patches.
-        let old_start = std::mem::replace(
-            &mut self.start_fn,
-            Box::new(|| unreachable!()),
-        );
+        let old_start = std::mem::replace(&mut self.start_fn, Box::new(|| unreachable!()));
         let new_start: Box<dyn Fn() -> Model + Send + Sync> = Box::new(move || {
             let mut model = old_start();
             for patch in &baked {
@@ -410,7 +417,9 @@ impl Model {
             let p_sid = u64::from_le_bytes(data[offset..offset + 8].try_into().unwrap());
             let p_time = u64::from_le_bytes(data[offset + 8..offset + 16].try_into().unwrap());
             // observe the peer clock: use span=1 so that observe(ts(p_sid, p_time), 1) records p_time.
-            model.clock.observe(crate::json_crdt_patch::clock::Ts::new(p_sid, p_time), 1);
+            model
+                .clock
+                .observe(crate::json_crdt_patch::clock::Ts::new(p_sid, p_time), 1);
             offset += 16;
         }
         Ok(model)
@@ -429,7 +438,9 @@ mod tests {
     use json_joy_json_pack::PackValue;
     use serde_json::json;
 
-    fn sid() -> u64 { 111_111 }
+    fn sid() -> u64 {
+        111_111
+    }
 
     /// Build a simple model with a string value set.
     fn make_model() -> Model {
@@ -535,8 +546,17 @@ mod tests {
         let p1 = Patch {
             ops: vec![
                 Op::NewStr { id: ts(s, 1) },
-                Op::InsStr { id: ts(s, 2), obj: ts(s, 1), after: crate::json_crdt::constants::ORIGIN, data: "abc".into() },
-                Op::InsVal { id: ts(s, 7), obj: crate::json_crdt::constants::ORIGIN, val: ts(s, 1) },
+                Op::InsStr {
+                    id: ts(s, 2),
+                    obj: ts(s, 1),
+                    after: crate::json_crdt::constants::ORIGIN,
+                    data: "abc".into(),
+                },
+                Op::InsVal {
+                    id: ts(s, 7),
+                    obj: crate::json_crdt::constants::ORIGIN,
+                    val: ts(s, 1),
+                },
             ],
             meta: None,
         };
@@ -555,15 +575,27 @@ mod tests {
         let p1 = Patch {
             ops: vec![
                 Op::NewStr { id: ts(s, 1) },
-                Op::InsStr { id: ts(s, 2), obj: ts(s, 1), after: crate::json_crdt::constants::ORIGIN, data: "a".into() },
-                Op::InsVal { id: ts(s, 7), obj: crate::json_crdt::constants::ORIGIN, val: ts(s, 1) },
+                Op::InsStr {
+                    id: ts(s, 2),
+                    obj: ts(s, 1),
+                    after: crate::json_crdt::constants::ORIGIN,
+                    data: "a".into(),
+                },
+                Op::InsVal {
+                    id: ts(s, 7),
+                    obj: crate::json_crdt::constants::ORIGIN,
+                    val: ts(s, 1),
+                },
             ],
             meta: None,
         };
         let p2 = Patch {
-            ops: vec![
-                Op::InsStr { id: ts(s, 10), obj: ts(s, 1), after: ts(s, 2), data: "b".into() },
-            ],
+            ops: vec![Op::InsStr {
+                id: ts(s, 10),
+                obj: ts(s, 1),
+                after: ts(s, 2),
+                data: "b".into(),
+            }],
             meta: None,
         };
         let p2_id = p2.get_id().unwrap();
@@ -583,15 +615,27 @@ mod tests {
         let p1 = Patch {
             ops: vec![
                 Op::NewStr { id: ts(s, 1) },
-                Op::InsStr { id: ts(s, 2), obj: ts(s, 1), after: crate::json_crdt::constants::ORIGIN, data: "a".into() },
-                Op::InsVal { id: ts(s, 7), obj: crate::json_crdt::constants::ORIGIN, val: ts(s, 1) },
+                Op::InsStr {
+                    id: ts(s, 2),
+                    obj: ts(s, 1),
+                    after: crate::json_crdt::constants::ORIGIN,
+                    data: "a".into(),
+                },
+                Op::InsVal {
+                    id: ts(s, 7),
+                    obj: crate::json_crdt::constants::ORIGIN,
+                    val: ts(s, 1),
+                },
             ],
             meta: None,
         };
         let p2 = Patch {
-            ops: vec![
-                Op::InsStr { id: ts(s, 10), obj: ts(s, 1), after: ts(s, 2), data: "b".into() },
-            ],
+            ops: vec![Op::InsStr {
+                id: ts(s, 10),
+                obj: ts(s, 1),
+                after: ts(s, 2),
+                data: "b".into(),
+            }],
             meta: None,
         };
         let p2_id = p2.get_id().unwrap();
@@ -631,7 +675,10 @@ mod tests {
     fn find_max_returns_none_for_unknown_sid() {
         let s = sid();
         let mut log = Log::from_new_model(Model::new(s));
-        let p = Patch { ops: vec![Op::NewStr { id: ts(s, 1) }], meta: None };
+        let p = Patch {
+            ops: vec![Op::NewStr { id: ts(s, 1) }],
+            meta: None,
+        };
         log.record(p);
         assert!(log.find_max(999_999).is_none());
     }
@@ -642,7 +689,10 @@ mod tests {
     fn rebase_batch_returns_input_when_no_history() {
         let s = sid();
         let log = Log::from_new_model(Model::new(s));
-        let p = Patch { ops: vec![Op::NewStr { id: ts(s, 1) }], meta: None };
+        let p = Patch {
+            ops: vec![Op::NewStr { id: ts(s, 1) }],
+            meta: None,
+        };
         let result = log.rebase_batch(&[p.clone()], None);
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].get_id().unwrap().time, 1);
@@ -653,11 +703,17 @@ mod tests {
         let s = sid();
         let mut log = Log::from_new_model(Model::new(s));
         // Record a patch at time=1, span=1.
-        let history_patch = Patch { ops: vec![Op::NewStr { id: ts(s, 1) }], meta: None };
+        let history_patch = Patch {
+            ops: vec![Op::NewStr { id: ts(s, 1) }],
+            meta: None,
+        };
         log.record(history_patch);
 
         // Batch patch also starts at time=1 — should be rebased to time=2.
-        let batch_patch = Patch { ops: vec![Op::NewObj { id: ts(s, 1) }], meta: None };
+        let batch_patch = Patch {
+            ops: vec![Op::NewObj { id: ts(s, 1) }],
+            meta: None,
+        };
         let result = log.rebase_batch(&[batch_patch], None);
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].get_id().unwrap().time, 2);
@@ -674,7 +730,12 @@ mod tests {
 
         // Modifying the clone's end should not affect the original.
         clone.apply(Patch {
-            ops: vec![Op::InsStr { id: ts(s, 20), obj: ts(s, 1), after: crate::json_crdt::constants::ORIGIN, data: "x".into() }],
+            ops: vec![Op::InsStr {
+                id: ts(s, 20),
+                obj: ts(s, 1),
+                after: crate::json_crdt::constants::ORIGIN,
+                data: "x".into(),
+            }],
             meta: None,
         });
         assert_eq!(log.end.view(), json!("hello"));

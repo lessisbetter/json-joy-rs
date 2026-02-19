@@ -12,7 +12,10 @@ fn test_find_by_pointer_empty_component() {
     // "/foo/" means key "" inside the value of "foo" ("bar" is a string, not an object).
     // RFC 6901: traversing into a scalar is an error.
     let result = find_by_pointer("/foo/", &doc);
-    assert!(result.is_err(), "Trailing slash into a string should return an error");
+    assert!(
+        result.is_err(),
+        "Trailing slash into a string should return an error"
+    );
 }
 
 #[test]
@@ -30,9 +33,15 @@ fn test_find_by_pointer_multiple_slashes() {
     // so doc["foo"][""][""] cannot exist → should be an error.
     let doc = json!({"foo": {"": "value"}});
     let result = find_by_pointer("/foo//", &doc);
-    assert!(result.is_err(), "Double slash traversing into a string should return an error");
+    assert!(
+        result.is_err(),
+        "Double slash traversing into a string should return an error"
+    );
 
     // But "/foo/" → doc["foo"][""] = "value" → should succeed.
     let result = find_by_pointer("/foo/", &doc);
-    assert!(result.is_ok(), "Single trailing slash into nested empty key should succeed");
+    assert!(
+        result.is_ok(),
+        "Single trailing slash into nested empty key should succeed"
+    );
 }

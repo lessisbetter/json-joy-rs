@@ -36,8 +36,26 @@ fn not_eval(expr: &[Value], ctx: &mut EvalCtx<'_>) -> Result<JsValue, JsError> {
 
 pub fn operators() -> Vec<Arc<OperatorDefinition>> {
     vec![
-        Arc::new(OperatorDefinition { name: "&&", aliases: &["and"], arity: Arity::Variadic, eval_fn: and_eval, impure: false }),
-        Arc::new(OperatorDefinition { name: "||", aliases: &["or"], arity: Arity::Variadic, eval_fn: or_eval, impure: false }),
-        Arc::new(OperatorDefinition { name: "!", aliases: &["not"], arity: Arity::Fixed(1), eval_fn: not_eval, impure: false }),
+        Arc::new(OperatorDefinition {
+            name: "&&",
+            aliases: &["and"],
+            arity: Arity::Variadic,
+            eval_fn: and_eval,
+            impure: false,
+        }),
+        Arc::new(OperatorDefinition {
+            name: "||",
+            aliases: &["or"],
+            arity: Arity::Variadic,
+            eval_fn: or_eval,
+            impure: false,
+        }),
+        Arc::new(OperatorDefinition {
+            name: "!",
+            aliases: &["not"],
+            arity: Arity::Fixed(1),
+            eval_fn: not_eval,
+            impure: false,
+        }),
     ]
 }

@@ -47,7 +47,13 @@ impl WsFrameEncoder {
     }
 
     /// Encodes just a frame header.
-    pub fn encode_hdr(&mut self, fin: bool, opcode: WsFrameOpcode, length: usize, mask: u32) -> Vec<u8> {
+    pub fn encode_hdr(
+        &mut self,
+        fin: bool,
+        opcode: WsFrameOpcode,
+        length: usize,
+        mask: u32,
+    ) -> Vec<u8> {
         self.write_hdr(fin, opcode, length, mask);
         self.writer.flush()
     }

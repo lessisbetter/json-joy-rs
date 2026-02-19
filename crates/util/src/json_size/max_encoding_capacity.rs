@@ -25,7 +25,8 @@ pub fn max_encoding_capacity(value: &Value) -> usize {
             MaxEncodingOverhead::STRING + s.len() * MaxEncodingOverhead::STRING_LENGTH_MULTIPLIER
         }
         Value::Array(arr) => {
-            let mut size = MaxEncodingOverhead::ARRAY + arr.len() * MaxEncodingOverhead::ARRAY_ELEMENT;
+            let mut size =
+                MaxEncodingOverhead::ARRAY + arr.len() * MaxEncodingOverhead::ARRAY_ELEMENT;
             for elem in arr {
                 size += max_encoding_capacity(elem);
             }

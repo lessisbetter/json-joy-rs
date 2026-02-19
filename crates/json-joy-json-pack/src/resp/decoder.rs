@@ -201,7 +201,9 @@ impl RespDecoder {
                 "inf" => f64::INFINITY,
                 "-inf" => f64::NEG_INFINITY,
                 "nan" => f64::NAN,
-                other => other.parse::<f64>().map_err(|_| RespDecodeError::InvalidUtf8)?,
+                other => other
+                    .parse::<f64>()
+                    .map_err(|_| RespDecodeError::InvalidUtf8)?,
             };
             return Ok(PackValue::Float(f));
         }

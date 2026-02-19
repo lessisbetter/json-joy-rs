@@ -6,9 +6,9 @@
 //! MongoDB Extended JSON v2 `$`-prefixed type wrapper objects.
 
 use crate::bson::{
-    BsonBinary, BsonDbPointer, BsonDecimal128, BsonFloat, BsonInt32, BsonInt64,
-    BsonJavascriptCode, BsonJavascriptCodeWithScope, BsonMaxKey, BsonMinKey,
-    BsonObjectId, BsonSymbol, BsonTimestamp, BsonValue,
+    BsonBinary, BsonDbPointer, BsonDecimal128, BsonFloat, BsonInt32, BsonInt64, BsonJavascriptCode,
+    BsonJavascriptCodeWithScope, BsonMaxKey, BsonMinKey, BsonObjectId, BsonSymbol, BsonTimestamp,
+    BsonValue,
 };
 
 use super::error::EjsonDecodeError;
@@ -31,7 +31,10 @@ impl Default for EjsonDecoder {
 
 impl EjsonDecoder {
     pub fn new() -> Self {
-        Self { data: Vec::new(), x: 0 }
+        Self {
+            data: Vec::new(),
+            x: 0,
+        }
     }
 
     /// Decode from bytes.
@@ -107,25 +110,37 @@ impl EjsonDecoder {
         let start = self.x;
         let len = self.data.len();
         let mut x = self.x;
-        if x < len && self.data[x] == b'-' { x += 1; }
-        while x < len && self.data[x] >= b'0' && self.data[x] <= b'9' { x += 1; }
+        if x < len && self.data[x] == b'-' {
+            x += 1;
+        }
+        while x < len && self.data[x] >= b'0' && self.data[x] <= b'9' {
+            x += 1;
+        }
         let mut is_float = false;
         if x < len && self.data[x] == b'.' {
             is_float = true;
             x += 1;
-            while x < len && self.data[x] >= b'0' && self.data[x] <= b'9' { x += 1; }
+            while x < len && self.data[x] >= b'0' && self.data[x] <= b'9' {
+                x += 1;
+            }
         }
         if x < len && (self.data[x] == b'e' || self.data[x] == b'E') {
             is_float = true;
             x += 1;
-            if x < len && (self.data[x] == b'+' || self.data[x] == b'-') { x += 1; }
-            while x < len && self.data[x] >= b'0' && self.data[x] <= b'9' { x += 1; }
+            if x < len && (self.data[x] == b'+' || self.data[x] == b'-') {
+                x += 1;
+            }
+            while x < len && self.data[x] >= b'0' && self.data[x] <= b'9' {
+                x += 1;
+            }
         }
         self.x = x;
-        let s = std::str::from_utf8(&self.data[start..x])
-            .map_err(|_| EjsonDecodeError::InvalidUtf8)?;
+        let s =
+            std::str::from_utf8(&self.data[start..x]).map_err(|_| EjsonDecodeError::InvalidUtf8)?;
         if is_float {
-            let f: f64 = s.parse().map_err(|_| EjsonDecodeError::InvalidJson(start))?;
+            let f: f64 = s
+                .parse()
+                .map_err(|_| EjsonDecodeError::InvalidJson(start))?;
             Ok(EjsonValue::Float(f))
         } else if let Ok(i) = s.parse::<i64>() {
             Ok(EjsonValue::Integer(i))
@@ -252,7 +267,8 @@ impl EjsonDecoder {
         pairs: Vec<(String, EjsonValue)>,
     ) -> Result<EjsonValue, EjsonDecodeError> {
         // Find $ keys
-        let dollar_keys: Vec<&str> = pairs.iter()
+        let dollar_keys: Vec<&str> = pairs
+            .iter()
             .filter(|(k, _)| k.starts_with('$'))
             .map(|(k, _)| k.as_str())
             .collect();
@@ -260,7 +276,9 @@ impl EjsonDecoder {
         if !dollar_keys.is_empty() {
             // Helper: get single value for key, error if not exactly the right keys
             let has_exact = |expected: &[&str]| -> bool {
-                if pairs.len() != expected.len() { return false; }
+                if pairs.len() != expected.len() {
+                    return false;
+                }
                 expected.iter().all(|k| pairs.iter().any(|(pk, _)| pk == k))
             };
             let get = |key: &str| -> Option<&EjsonValue> {
@@ -273,7 +291,10 @@ impl EjsonDecoder {
                     return Err(EjsonDecodeError::ExtraKeys("ObjectId"));
                 }
                 if let Some(EjsonValue::Str(s)) = get("$oid") {
-                    if s.len() == 24 && s.bytes().all(|b| matches!(b, b'0'..=b'9' | b'a'..=b'f' | b'A'..=b'F')) {
+                    if s.len() == 24
+                        && s.bytes()
+                            .all(|b| matches!(b, b'0'..=b'9' | b'a'..=b'f' | b'A'..=b'F'))
+                    {
                         return Ok(EjsonValue::ObjectId(parse_object_id(s)));
                     }
                 }
@@ -320,8 +341,11 @@ impl EjsonDecoder {
                         "-Infinity" => f64::NEG_INFINITY,
                         "NaN" => f64::NAN,
                         other => {
-                            let parsed: f64 = other.parse().map_err(|_| EjsonDecodeError::InvalidDouble)?;
-                            if parsed.is_nan() { return Err(EjsonDecodeError::InvalidDouble); }
+                            let parsed: f64 =
+                                other.parse().map_err(|_| EjsonDecodeError::InvalidDouble)?;
+                            if parsed.is_nan() {
+                                return Err(EjsonDecodeError::InvalidDouble);
+                            }
                             parsed
                         }
                     };
@@ -337,7 +361,9 @@ impl EjsonDecoder {
                 }
                 if let Some(EjsonValue::Str(_)) = get("$numberDecimal") {
                     // Return a zero 16-byte Decimal128 (same stub as upstream)
-                    return Ok(EjsonValue::Decimal128(BsonDecimal128 { data: vec![0u8; 16] }));
+                    return Ok(EjsonValue::Decimal128(BsonDecimal128 {
+                        data: vec![0u8; 16],
+                    }));
                 }
                 return Err(EjsonDecodeError::InvalidDecimal128);
             }
@@ -353,8 +379,11 @@ impl EjsonDecoder {
                     if inner.len() == 2 && has_b64 && has_sub {
                         let b64 = inner.iter().find(|(k, _)| k == "base64").map(|(_, v)| v);
                         let sub = inner.iter().find(|(k, _)| k == "subType").map(|(_, v)| v);
-                        if let (Some(EjsonValue::Str(b64s)), Some(EjsonValue::Str(subs))) = (b64, sub) {
-                            let data = base64_to_bytes(b64s).ok_or(EjsonDecodeError::InvalidBinary)?;
+                        if let (Some(EjsonValue::Str(b64s)), Some(EjsonValue::Str(subs))) =
+                            (b64, sub)
+                        {
+                            let data =
+                                base64_to_bytes(b64s).ok_or(EjsonDecodeError::InvalidBinary)?;
                             let subtype = u8::from_str_radix(subs, 16)
                                 .map_err(|_| EjsonDecodeError::InvalidBinary)?;
                             return Ok(EjsonValue::Binary(BsonBinary { subtype, data }));
@@ -403,7 +432,8 @@ impl EjsonDecoder {
                     _ => return Err(EjsonDecodeError::InvalidCodeWithScope),
                 };
                 // Convert scope EjsonValue pairs to BsonValue pairs
-                let bson_scope: Vec<(String, BsonValue)> = scope_pairs.into_iter()
+                let bson_scope: Vec<(String, BsonValue)> = scope_pairs
+                    .into_iter()
                     .map(|(k, v)| Ok((k, ejson_to_bson_value(v)?)))
                     .collect::<Result<_, EjsonDecodeError>>()?;
                 return Ok(EjsonValue::CodeWithScope(BsonJavascriptCodeWithScope {
@@ -480,7 +510,9 @@ impl EjsonDecoder {
                     if inner.len() == 2 && has_ref && has_id {
                         let ref_val = inner.iter().find(|(k, _)| k == "$ref").map(|(_, v)| v);
                         let id_val = inner.iter().find(|(k, _)| k == "$id").map(|(_, v)| v);
-                        if let (Some(EjsonValue::Str(name)), Some(EjsonValue::ObjectId(oid))) = (ref_val, id_val) {
+                        if let (Some(EjsonValue::Str(name)), Some(EjsonValue::ObjectId(oid))) =
+                            (ref_val, id_val)
+                        {
                             return Ok(EjsonValue::DbPointer(BsonDbPointer {
                                 name: name.clone(),
                                 id: oid.clone(),
@@ -500,16 +532,27 @@ impl EjsonDecoder {
                     Some(EjsonValue::Str(s)) => {
                         // ISO-8601 string (relaxed mode)
                         match parse_iso_date(s) {
-                            Some(ms) => return Ok(EjsonValue::Date { timestamp_ms: ms, iso: None }),
+                            Some(ms) => {
+                                return Ok(EjsonValue::Date {
+                                    timestamp_ms: ms,
+                                    iso: None,
+                                })
+                            }
                             None => return Err(EjsonDecodeError::InvalidDate),
                         }
                     }
                     // Canonical: {"$numberLong":"timestamp"} was already decoded to Int64
                     Some(EjsonValue::Int64(v)) => {
-                        return Ok(EjsonValue::Date { timestamp_ms: v.value, iso: None });
+                        return Ok(EjsonValue::Date {
+                            timestamp_ms: v.value,
+                            iso: None,
+                        });
                     }
                     Some(EjsonValue::Integer(ms)) => {
-                        return Ok(EjsonValue::Date { timestamp_ms: *ms, iso: None });
+                        return Ok(EjsonValue::Date {
+                            timestamp_ms: *ms,
+                            iso: None,
+                        });
                     }
                     Some(EjsonValue::Object(inner)) => {
                         // Canonical: {"$numberLong":"timestamp"} (not yet transformed)
@@ -518,7 +561,10 @@ impl EjsonDecoder {
                                 if k == "$numberLong" {
                                     if let Ok(ms) = s.parse::<f64>() {
                                         if !ms.is_nan() {
-                                            return Ok(EjsonValue::Date { timestamp_ms: ms as i64, iso: None });
+                                            return Ok(EjsonValue::Date {
+                                                timestamp_ms: ms as i64,
+                                                iso: None,
+                                            });
                                         }
                                     }
                                 }
@@ -615,7 +661,11 @@ fn parse_object_id(hex: &str) -> BsonObjectId {
     let timestamp = u32::from_str_radix(&hex[0..8], 16).unwrap_or(0);
     let process = u64::from_str_radix(&hex[8..18], 16).unwrap_or(0);
     let counter = u32::from_str_radix(&hex[18..24], 16).unwrap_or(0);
-    BsonObjectId { timestamp, process, counter }
+    BsonObjectId {
+        timestamp,
+        process,
+        counter,
+    }
 }
 
 fn base64_to_bytes(b64: &str) -> Option<Vec<u8>> {
@@ -625,11 +675,15 @@ fn base64_to_bytes(b64: &str) -> Option<Vec<u8>> {
 fn is_valid_uuid(s: &str) -> bool {
     // xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
     let bytes = s.as_bytes();
-    if bytes.len() != 36 { return false; }
+    if bytes.len() != 36 {
+        return false;
+    }
     let dashes = [8, 13, 18, 23];
     for (i, &b) in bytes.iter().enumerate() {
         if dashes.contains(&i) {
-            if b != b'-' { return false; }
+            if b != b'-' {
+                return false;
+            }
         } else if !b.is_ascii_hexdigit() {
             return false;
         }
@@ -656,9 +710,15 @@ fn parse_iso_date(s: &str) -> Option<i64> {
 fn parse_iso_to_ms(s: &str) -> Option<i64> {
     // Support: "YYYY-MM-DDTHH:MM:SS.mmmZ" and "YYYY-MM-DDTHH:MM:SSZ"
     let bytes = s.as_bytes();
-    if bytes.len() < 20 { return None; }
-    if bytes[4] != b'-' || bytes[7] != b'-' || bytes[10] != b'T' { return None; }
-    if bytes[13] != b':' || bytes[16] != b':' { return None; }
+    if bytes.len() < 20 {
+        return None;
+    }
+    if bytes[4] != b'-' || bytes[7] != b'-' || bytes[10] != b'T' {
+        return None;
+    }
+    if bytes[13] != b':' || bytes[16] != b':' {
+        return None;
+    }
 
     let year: i64 = parse_digits(s, 0, 4)?;
     let month: i64 = parse_digits(s, 5, 7)?;
@@ -670,7 +730,9 @@ fn parse_iso_to_ms(s: &str) -> Option<i64> {
     // ms
     let ms: i64 = if bytes.len() > 20 && bytes[19] == b'.' {
         let ms_start = 20;
-        let ms_end = bytes[ms_start..].iter().position(|&b| !b.is_ascii_digit())
+        let ms_end = bytes[ms_start..]
+            .iter()
+            .position(|&b| !b.is_ascii_digit())
             .map(|p| ms_start + p)
             .unwrap_or(bytes.len());
         let ms_str = &s[ms_start..ms_end];
@@ -700,7 +762,9 @@ fn parse_digits(s: &str, start: usize, end: usize) -> Option<i64> {
 /// Convert civil date to number of days since Unix epoch (1970-01-01).
 /// Algorithm from Howard Hinnant's date library.
 fn days_from_civil(y: i64, m: i64, d: i64) -> Option<i64> {
-    if m < 1 || m > 12 || d < 1 || d > 31 { return None; }
+    if m < 1 || m > 12 || d < 1 || d > 31 {
+        return None;
+    }
     let yy = if m <= 2 { y - 1 } else { y };
     let mm = if m <= 2 { m + 9 } else { m - 3 };
     let era = yy.div_euclid(400);
@@ -723,8 +787,8 @@ fn decode_json_string(bytes: &[u8]) -> Result<String, EjsonDecodeError> {
     quoted.push(b'"');
     quoted.extend_from_slice(bytes);
     quoted.push(b'"');
-    let s: String = serde_json::from_slice(&quoted)
-        .map_err(|_| EjsonDecodeError::InvalidJson(0))?;
+    let s: String =
+        serde_json::from_slice(&quoted).map_err(|_| EjsonDecodeError::InvalidJson(0))?;
     Ok(s)
 }
 
@@ -760,7 +824,9 @@ fn ejson_to_bson_value(v: EjsonValue) -> Result<BsonValue, EjsonDecodeError> {
         EjsonValue::BsonFloat(v) => Ok(BsonValue::Float(v.value)),
         EjsonValue::ObjectId(v) => Ok(BsonValue::ObjectId(v)),
         EjsonValue::Binary(v) => Ok(BsonValue::Binary(v)),
-        EjsonValue::Date { timestamp_ms: ms, .. } => Ok(BsonValue::DateTime(ms)),
+        EjsonValue::Date {
+            timestamp_ms: ms, ..
+        } => Ok(BsonValue::DateTime(ms)),
         EjsonValue::Symbol(v) => Ok(BsonValue::Symbol(v)),
         EjsonValue::Timestamp(v) => Ok(BsonValue::Timestamp(v)),
         // Fall back to null for types that don't map cleanly

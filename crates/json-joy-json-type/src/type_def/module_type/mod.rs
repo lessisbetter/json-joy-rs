@@ -50,7 +50,10 @@ impl ModuleType {
                 return existing.clone();
             }
         }
-        let entry = AliasEntry { id: id.clone(), schema };
+        let entry = AliasEntry {
+            id: id.clone(),
+            schema,
+        };
         let mut inner = self.inner.write().unwrap();
         inner.aliases.insert(id, entry.clone());
         entry
@@ -59,7 +62,11 @@ impl ModuleType {
     /// Look up an alias by ID.
     pub fn unalias(&self, id: &str) -> Result<AliasEntry, String> {
         let inner = self.inner.read().unwrap();
-        inner.aliases.get(id).cloned().ok_or_else(|| format!("Alias not found: {}", id))
+        inner
+            .aliases
+            .get(id)
+            .cloned()
+            .ok_or_else(|| format!("Alias not found: {}", id))
     }
 
     /// Check if an alias exists.
@@ -114,7 +121,11 @@ impl ModuleType {
     /// Export all aliases as a map of schemas.
     pub fn export_types(&self) -> HashMap<String, Schema> {
         let inner = self.inner.read().unwrap();
-        inner.aliases.iter().map(|(k, v)| (k.clone(), v.schema.clone())).collect()
+        inner
+            .aliases
+            .iter()
+            .map(|(k, v)| (k.clone(), v.schema.clone()))
+            .collect()
     }
 }
 
@@ -123,14 +134,15 @@ fn expand_obj_extends(obj: &ObjSchema, type_map: &HashMap<String, Schema>) -> Ob
     let mut result_keys: Vec<KeySchema> = Vec::new();
     let mut seen: HashMap<String, usize> = HashMap::new();
 
-    let add_key = |result_keys: &mut Vec<KeySchema>, seen: &mut HashMap<String, usize>, key: KeySchema| {
-        if let Some(&idx) = seen.get(&key.key) {
-            result_keys[idx] = key;
-        } else {
-            seen.insert(key.key.clone(), result_keys.len());
-            result_keys.push(key);
-        }
-    };
+    let add_key =
+        |result_keys: &mut Vec<KeySchema>, seen: &mut HashMap<String, usize>, key: KeySchema| {
+            if let Some(&idx) = seen.get(&key.key) {
+                result_keys[idx] = key;
+            } else {
+                seen.insert(key.key.clone(), result_keys.len());
+                result_keys.push(key);
+            }
+        };
 
     if let Some(extends) = &obj.extends {
         for parent_id in extends {

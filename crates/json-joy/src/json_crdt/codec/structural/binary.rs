@@ -25,8 +25,8 @@
 use crate::json_crdt::constants::UNDEFINED_TS;
 use crate::json_crdt::model::Model;
 use crate::json_crdt::nodes::{
-    ArrNode, BinNode, ConNode, CrdtNode, IndexExt, NodeIndex, ObjNode, StrNode, TsKey,
-    ValNode, VecNode,
+    ArrNode, BinNode, ConNode, CrdtNode, IndexExt, NodeIndex, ObjNode, StrNode, TsKey, ValNode,
+    VecNode,
 };
 use crate::json_crdt_patch::clock::{ts as mk_ts, ClockVector, Ts};
 use crate::json_crdt_patch::codec::clock::{ClockDecoder, ClockEncoder};
@@ -93,7 +93,7 @@ fn encode_logical(model: &Model, w: &mut CrdtWriter) {
     w.vu57(n as u64);
     let mut i = 0;
     while i + 1 < flat.len() {
-        w.vu57(flat[i]);     // sid
+        w.vu57(flat[i]); // sid
         w.vu57(flat[i + 1]); // time
         i += 2;
     }
@@ -376,7 +376,7 @@ fn encode_arr_logical(model: &Model, node: &ArrNode, w: &mut CrdtWriter, enc: &m
 fn write_cbor_value(w: &mut CrdtWriter, pv: &PackValue) {
     use json_joy_json_pack::PackValue as PV;
     match pv {
-        PV::Null => w.u8(0xF6),     // CBOR null
+        PV::Null => w.u8(0xF6),      // CBOR null
         PV::Undefined => w.u8(0xF7), // CBOR undefined
         PV::Bool(true) => w.u8(0xF5),
         PV::Bool(false) => w.u8(0xF4),
@@ -560,7 +560,12 @@ fn decode_logical(data: &[u8]) -> Result<Model, DecodeError> {
         return Err(DecodeError::EndOfInput);
     }
     let offset_bytes = r.buf(4);
-    let clock_table_offset = u32::from_be_bytes([offset_bytes[0], offset_bytes[1], offset_bytes[2], offset_bytes[3]]) as usize;
+    let clock_table_offset = u32::from_be_bytes([
+        offset_bytes[0],
+        offset_bytes[1],
+        offset_bytes[2],
+        offset_bytes[3],
+    ]) as usize;
 
     // Save tree start position
     let tree_start = r.x;
@@ -592,7 +597,11 @@ fn decode_logical(data: &[u8]) -> Result<Model, DecodeError> {
     Ok(model)
 }
 
-fn decode_root_server(r: &mut CrdtReader, model: &mut Model, server_time: u64) -> Result<Ts, DecodeError> {
+fn decode_root_server(
+    r: &mut CrdtReader,
+    model: &mut Model,
+    server_time: u64,
+) -> Result<Ts, DecodeError> {
     if r.x >= r.data.len() {
         return Ok(UNDEFINED_TS);
     }
@@ -605,7 +614,11 @@ fn decode_root_server(r: &mut CrdtReader, model: &mut Model, server_time: u64) -
     }
 }
 
-fn decode_root_logical(r: &mut CrdtReader, model: &mut Model, cd: &ClockDecoder) -> Result<Ts, DecodeError> {
+fn decode_root_logical(
+    r: &mut CrdtReader,
+    model: &mut Model,
+    cd: &ClockDecoder,
+) -> Result<Ts, DecodeError> {
     if r.x >= r.data.len() {
         return Ok(UNDEFINED_TS);
     }
@@ -625,15 +638,26 @@ fn read_ts_server(r: &mut CrdtReader) -> Ts {
 fn read_ts_logical(r: &mut CrdtReader, cd: &ClockDecoder) -> Result<Ts, DecodeError> {
     let (session_index, time_diff) = r.id();
     cd.decode_id(session_index as u32, time_diff)
-        .ok_or(DecodeError::Format(format!("invalid session index {}", session_index)))
+        .ok_or(DecodeError::Format(format!(
+            "invalid session index {}",
+            session_index
+        )))
 }
 
-fn decode_node_server(r: &mut CrdtReader, model: &mut Model, server_time: u64) -> Result<Ts, DecodeError> {
+fn decode_node_server(
+    r: &mut CrdtReader,
+    model: &mut Model,
+    server_time: u64,
+) -> Result<Ts, DecodeError> {
     let id = read_ts_server(r);
     let octet = r.u8();
     let major = octet >> 5;
     let minor = octet & 0x1F;
-    let length = if minor < 31 { minor as usize } else { r.vu57() as usize };
+    let length = if minor < 31 {
+        minor as usize
+    } else {
+        r.vu57() as usize
+    };
 
     match major {
         0 => decode_con_server(r, model, id, length),
@@ -647,7 +671,12 @@ fn decode_node_server(r: &mut CrdtReader, model: &mut Model, server_time: u64) -
     }
 }
 
-fn decode_con_server(r: &mut CrdtReader, model: &mut Model, id: Ts, length: usize) -> Result<Ts, DecodeError> {
+fn decode_con_server(
+    r: &mut CrdtReader,
+    model: &mut Model,
+    id: Ts,
+    length: usize,
+) -> Result<Ts, DecodeError> {
     let con_val = if length == 0 {
         let pv = read_cbor_value(r)?;
         ConValue::Val(pv)
@@ -656,11 +685,18 @@ fn decode_con_server(r: &mut CrdtReader, model: &mut Model, id: Ts, length: usiz
         ConValue::Ref(ref_ts)
     };
     use crate::json_crdt::nodes::ConNode;
-    model.index.insert(TsKey::from(id), CrdtNode::Con(ConNode::new(id, con_val)));
+    model
+        .index
+        .insert(TsKey::from(id), CrdtNode::Con(ConNode::new(id, con_val)));
     Ok(id)
 }
 
-fn decode_val_server(r: &mut CrdtReader, model: &mut Model, id: Ts, server_time: u64) -> Result<Ts, DecodeError> {
+fn decode_val_server(
+    r: &mut CrdtReader,
+    model: &mut Model,
+    id: Ts,
+    server_time: u64,
+) -> Result<Ts, DecodeError> {
     let child_id = decode_node_server(r, model, server_time)?;
     use crate::json_crdt::nodes::ValNode;
     let mut node = ValNode::new(id);
@@ -669,7 +705,13 @@ fn decode_val_server(r: &mut CrdtReader, model: &mut Model, id: Ts, server_time:
     Ok(id)
 }
 
-fn decode_obj_server(r: &mut CrdtReader, model: &mut Model, id: Ts, length: usize, server_time: u64) -> Result<Ts, DecodeError> {
+fn decode_obj_server(
+    r: &mut CrdtReader,
+    model: &mut Model,
+    id: Ts,
+    length: usize,
+    server_time: u64,
+) -> Result<Ts, DecodeError> {
     use crate::json_crdt::nodes::ObjNode;
     let mut node = ObjNode::new(id);
     for _ in 0..length {
@@ -681,7 +723,13 @@ fn decode_obj_server(r: &mut CrdtReader, model: &mut Model, id: Ts, length: usiz
     Ok(id)
 }
 
-fn decode_vec_server(r: &mut CrdtReader, model: &mut Model, id: Ts, length: usize, server_time: u64) -> Result<Ts, DecodeError> {
+fn decode_vec_server(
+    r: &mut CrdtReader,
+    model: &mut Model,
+    id: Ts,
+    length: usize,
+    server_time: u64,
+) -> Result<Ts, DecodeError> {
     use crate::json_crdt::nodes::VecNode;
     let mut node = VecNode::new(id);
     for _ in 0..length {
@@ -698,9 +746,14 @@ fn decode_vec_server(r: &mut CrdtReader, model: &mut Model, id: Ts, length: usiz
     Ok(id)
 }
 
-fn decode_str_server(r: &mut CrdtReader, model: &mut Model, id: Ts, count: usize) -> Result<Ts, DecodeError> {
-    use crate::json_crdt::nodes::StrNode;
+fn decode_str_server(
+    r: &mut CrdtReader,
+    model: &mut Model,
+    id: Ts,
+    count: usize,
+) -> Result<Ts, DecodeError> {
     use crate::json_crdt::nodes::rga::Chunk;
+    use crate::json_crdt::nodes::StrNode;
     let mut node = StrNode::new(id);
     for _ in 0..count {
         let chunk_id = read_ts_server(r);
@@ -720,9 +773,14 @@ fn decode_str_server(r: &mut CrdtReader, model: &mut Model, id: Ts, count: usize
     Ok(id)
 }
 
-fn decode_bin_server(r: &mut CrdtReader, model: &mut Model, id: Ts, count: usize) -> Result<Ts, DecodeError> {
-    use crate::json_crdt::nodes::BinNode;
+fn decode_bin_server(
+    r: &mut CrdtReader,
+    model: &mut Model,
+    id: Ts,
+    count: usize,
+) -> Result<Ts, DecodeError> {
     use crate::json_crdt::nodes::rga::Chunk;
+    use crate::json_crdt::nodes::BinNode;
     let mut node = BinNode::new(id);
     for _ in 0..count {
         let chunk_id = read_ts_server(r);
@@ -738,9 +796,15 @@ fn decode_bin_server(r: &mut CrdtReader, model: &mut Model, id: Ts, count: usize
     Ok(id)
 }
 
-fn decode_arr_server(r: &mut CrdtReader, model: &mut Model, id: Ts, count: usize, server_time: u64) -> Result<Ts, DecodeError> {
-    use crate::json_crdt::nodes::ArrNode;
+fn decode_arr_server(
+    r: &mut CrdtReader,
+    model: &mut Model,
+    id: Ts,
+    count: usize,
+    server_time: u64,
+) -> Result<Ts, DecodeError> {
     use crate::json_crdt::nodes::rga::Chunk;
+    use crate::json_crdt::nodes::ArrNode;
     let mut node = ArrNode::new(id);
     for _ in 0..count {
         let chunk_id = read_ts_server(r);
@@ -762,12 +826,20 @@ fn decode_arr_server(r: &mut CrdtReader, model: &mut Model, id: Ts, count: usize
 
 // ── Logical clock decode helpers ───────────────────────────────────────────
 
-fn decode_node_logical(r: &mut CrdtReader, model: &mut Model, cd: &ClockDecoder) -> Result<Ts, DecodeError> {
+fn decode_node_logical(
+    r: &mut CrdtReader,
+    model: &mut Model,
+    cd: &ClockDecoder,
+) -> Result<Ts, DecodeError> {
     let id = read_ts_logical(r, cd)?;
     let octet = r.u8();
     let major = octet >> 5;
     let minor = octet & 0x1F;
-    let length = if minor < 31 { minor as usize } else { r.vu57() as usize };
+    let length = if minor < 31 {
+        minor as usize
+    } else {
+        r.vu57() as usize
+    };
 
     match major {
         0 => decode_con_logical(r, model, id, length, cd),
@@ -781,7 +853,13 @@ fn decode_node_logical(r: &mut CrdtReader, model: &mut Model, cd: &ClockDecoder)
     }
 }
 
-fn decode_con_logical(r: &mut CrdtReader, model: &mut Model, id: Ts, length: usize, cd: &ClockDecoder) -> Result<Ts, DecodeError> {
+fn decode_con_logical(
+    r: &mut CrdtReader,
+    model: &mut Model,
+    id: Ts,
+    length: usize,
+    cd: &ClockDecoder,
+) -> Result<Ts, DecodeError> {
     let con_val = if length == 0 {
         let pv = read_cbor_value(r)?;
         ConValue::Val(pv)
@@ -790,11 +868,18 @@ fn decode_con_logical(r: &mut CrdtReader, model: &mut Model, id: Ts, length: usi
         ConValue::Ref(ref_ts)
     };
     use crate::json_crdt::nodes::ConNode;
-    model.index.insert(TsKey::from(id), CrdtNode::Con(ConNode::new(id, con_val)));
+    model
+        .index
+        .insert(TsKey::from(id), CrdtNode::Con(ConNode::new(id, con_val)));
     Ok(id)
 }
 
-fn decode_val_logical(r: &mut CrdtReader, model: &mut Model, id: Ts, cd: &ClockDecoder) -> Result<Ts, DecodeError> {
+fn decode_val_logical(
+    r: &mut CrdtReader,
+    model: &mut Model,
+    id: Ts,
+    cd: &ClockDecoder,
+) -> Result<Ts, DecodeError> {
     let child_id = decode_node_logical(r, model, cd)?;
     use crate::json_crdt::nodes::ValNode;
     let mut node = ValNode::new(id);
@@ -803,7 +888,13 @@ fn decode_val_logical(r: &mut CrdtReader, model: &mut Model, id: Ts, cd: &ClockD
     Ok(id)
 }
 
-fn decode_obj_logical(r: &mut CrdtReader, model: &mut Model, id: Ts, length: usize, cd: &ClockDecoder) -> Result<Ts, DecodeError> {
+fn decode_obj_logical(
+    r: &mut CrdtReader,
+    model: &mut Model,
+    id: Ts,
+    length: usize,
+    cd: &ClockDecoder,
+) -> Result<Ts, DecodeError> {
     use crate::json_crdt::nodes::ObjNode;
     let mut node = ObjNode::new(id);
     for _ in 0..length {
@@ -815,7 +906,13 @@ fn decode_obj_logical(r: &mut CrdtReader, model: &mut Model, id: Ts, length: usi
     Ok(id)
 }
 
-fn decode_vec_logical(r: &mut CrdtReader, model: &mut Model, id: Ts, length: usize, cd: &ClockDecoder) -> Result<Ts, DecodeError> {
+fn decode_vec_logical(
+    r: &mut CrdtReader,
+    model: &mut Model,
+    id: Ts,
+    length: usize,
+    cd: &ClockDecoder,
+) -> Result<Ts, DecodeError> {
     use crate::json_crdt::nodes::VecNode;
     let mut node = VecNode::new(id);
     for _ in 0..length {
@@ -832,9 +929,15 @@ fn decode_vec_logical(r: &mut CrdtReader, model: &mut Model, id: Ts, length: usi
     Ok(id)
 }
 
-fn decode_str_logical(r: &mut CrdtReader, model: &mut Model, id: Ts, count: usize, cd: &ClockDecoder) -> Result<Ts, DecodeError> {
-    use crate::json_crdt::nodes::StrNode;
+fn decode_str_logical(
+    r: &mut CrdtReader,
+    model: &mut Model,
+    id: Ts,
+    count: usize,
+    cd: &ClockDecoder,
+) -> Result<Ts, DecodeError> {
     use crate::json_crdt::nodes::rga::Chunk;
+    use crate::json_crdt::nodes::StrNode;
     let mut node = StrNode::new(id);
     for _ in 0..count {
         let chunk_id = read_ts_logical(r, cd)?;
@@ -854,9 +957,15 @@ fn decode_str_logical(r: &mut CrdtReader, model: &mut Model, id: Ts, count: usiz
     Ok(id)
 }
 
-fn decode_bin_logical(r: &mut CrdtReader, model: &mut Model, id: Ts, count: usize, cd: &ClockDecoder) -> Result<Ts, DecodeError> {
-    use crate::json_crdt::nodes::BinNode;
+fn decode_bin_logical(
+    r: &mut CrdtReader,
+    model: &mut Model,
+    id: Ts,
+    count: usize,
+    cd: &ClockDecoder,
+) -> Result<Ts, DecodeError> {
     use crate::json_crdt::nodes::rga::Chunk;
+    use crate::json_crdt::nodes::BinNode;
     let mut node = BinNode::new(id);
     for _ in 0..count {
         let chunk_id = read_ts_logical(r, cd)?;
@@ -872,9 +981,15 @@ fn decode_bin_logical(r: &mut CrdtReader, model: &mut Model, id: Ts, count: usiz
     Ok(id)
 }
 
-fn decode_arr_logical(r: &mut CrdtReader, model: &mut Model, id: Ts, count: usize, cd: &ClockDecoder) -> Result<Ts, DecodeError> {
-    use crate::json_crdt::nodes::ArrNode;
+fn decode_arr_logical(
+    r: &mut CrdtReader,
+    model: &mut Model,
+    id: Ts,
+    count: usize,
+    cd: &ClockDecoder,
+) -> Result<Ts, DecodeError> {
     use crate::json_crdt::nodes::rga::Chunk;
+    use crate::json_crdt::nodes::ArrNode;
     let mut node = ArrNode::new(id);
     for _ in 0..count {
         let chunk_id = read_ts_logical(r, cd)?;
@@ -956,7 +1071,10 @@ fn read_cbor_value(r: &mut CrdtReader) -> Result<PackValue, DecodeError> {
                 23 => Ok(PackValue::Undefined),
                 27 => {
                     let bytes = r.buf(8);
-                    let f = f64::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7]]);
+                    let f = f64::from_be_bytes([
+                        bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6],
+                        bytes[7],
+                    ]);
                     Ok(PackValue::Float(f))
                 }
                 _ => Ok(PackValue::Null),
@@ -980,9 +1098,14 @@ fn read_cbor_argument(r: &mut CrdtReader, info: u8) -> Result<u64, DecodeError> 
         }
         27 => {
             let b = r.buf(8);
-            Ok(u64::from_be_bytes([b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7]]))
+            Ok(u64::from_be_bytes([
+                b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7],
+            ]))
         }
-        _ => Err(DecodeError::Format(format!("unsupported CBOR additional info {}", info))),
+        _ => Err(DecodeError::Format(format!(
+            "unsupported CBOR additional info {}",
+            info
+        ))),
     }
 }
 
@@ -1003,7 +1126,9 @@ mod tests {
     use crate::json_crdt_patch::operations::{ConValue, Op};
     use json_joy_json_pack::PackValue;
 
-    fn sid() -> u64 { 789012 }
+    fn sid() -> u64 {
+        789012
+    }
 
     #[test]
     fn roundtrip_empty() {

@@ -2,8 +2,8 @@
 //!
 //! Mirrors `packages/json-joy/src/json-crdt-extensions/mval/`.
 
-use serde_json::Value;
 use json_joy_json_pack::PackValue;
+use serde_json::Value;
 
 use crate::json_crdt::constants::ORIGIN;
 use crate::json_crdt::model::Model;
@@ -50,31 +50,35 @@ impl MvalNode {
                 return;
             };
             let size = arr.size();
-            let spans = if size > 0 { arr.find_interval(0, size) } else { Vec::new() };
+            let spans = if size > 0 {
+                arr.find_interval(0, size)
+            } else {
+                Vec::new()
+            };
             (size, spans)
         };
 
         if size > 0 {
             let del_id = model.next_ts();
             model.apply_operation(&Op::Del {
-                id:   del_id,
-                obj:  self.arr_id,
+                id: del_id,
+                obj: self.arr_id,
                 what: spans,
             });
         }
 
         let con_id = model.next_ts();
         model.apply_operation(&Op::NewCon {
-            id:  con_id,
+            id: con_id,
             val: ConValue::Val(PackValue::from(value)),
         });
 
         let ins_id = model.next_ts();
         model.apply_operation(&Op::InsArr {
-            id:    ins_id,
-            obj:   self.arr_id,
+            id: ins_id,
+            obj: self.arr_id,
             after: ORIGIN,
-            data:  vec![con_id],
+            data: vec![con_id],
         });
     }
 }
@@ -90,7 +94,9 @@ mod tests {
     use json_joy_json_pack::PackValue;
     use serde_json::json;
 
-    fn sid1() -> u64 { 100 }
+    fn sid1() -> u64 {
+        100
+    }
 
     fn setup(sid: u64) -> (Model, MvalNode) {
         let mut model = Model::new(sid);
@@ -133,15 +139,15 @@ mod tests {
         // Inject a second item to simulate a surviving concurrent write.
         let con_extra = model.next_ts();
         model.apply_operation(&Op::NewCon {
-            id:  con_extra,
+            id: con_extra,
             val: ConValue::Val(PackValue::Integer(3)),
         });
         let ins_extra = model.next_ts();
         model.apply_operation(&Op::InsArr {
-            id:    ins_extra,
-            obj:   mval.arr_id,
+            id: ins_extra,
+            obj: mval.arr_id,
             after: ORIGIN,
-            data:  vec![con_extra],
+            data: vec![con_extra],
         });
         assert_eq!(mval.view(&model).len(), 2);
 

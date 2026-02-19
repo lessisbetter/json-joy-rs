@@ -9,7 +9,9 @@ use std::sync::Arc;
 
 fn validate_set_operand_count(count: usize) -> Result<(), JsError> {
     if count < 3 {
-        return Err(JsError::Other("Not enough operands for \"o.set\".".to_string()));
+        return Err(JsError::Other(
+            "Not enough operands for \"o.set\".".to_string(),
+        ));
     }
     if count % 2 != 0 {
         return Err(JsError::Other(
@@ -21,7 +23,9 @@ fn validate_set_operand_count(count: usize) -> Result<(), JsError> {
 
 fn validate_del_operand_count(count: usize) -> Result<(), JsError> {
     if count < 3 {
-        return Err(JsError::Other("Not enough operands for \"o.del\".".to_string()));
+        return Err(JsError::Other(
+            "Not enough operands for \"o.del\".".to_string(),
+        ));
     }
     Ok(())
 }
@@ -78,10 +82,40 @@ fn o_del_eval(expr: &[Value], ctx: &mut EvalCtx<'_>) -> Result<JsValue, JsError>
 
 pub fn operators() -> Vec<Arc<OperatorDefinition>> {
     vec![
-        Arc::new(OperatorDefinition { name: "keys", aliases: &[], arity: Arity::Fixed(1), eval_fn: keys_eval, impure: false }),
-        Arc::new(OperatorDefinition { name: "values", aliases: &[], arity: Arity::Fixed(1), eval_fn: values_eval, impure: false }),
-        Arc::new(OperatorDefinition { name: "entries", aliases: &[], arity: Arity::Fixed(1), eval_fn: entries_eval, impure: false }),
-        Arc::new(OperatorDefinition { name: "o.set", aliases: &[], arity: Arity::Variadic, eval_fn: o_set_eval, impure: false }),
-        Arc::new(OperatorDefinition { name: "o.del", aliases: &[], arity: Arity::Variadic, eval_fn: o_del_eval, impure: false }),
+        Arc::new(OperatorDefinition {
+            name: "keys",
+            aliases: &[],
+            arity: Arity::Fixed(1),
+            eval_fn: keys_eval,
+            impure: false,
+        }),
+        Arc::new(OperatorDefinition {
+            name: "values",
+            aliases: &[],
+            arity: Arity::Fixed(1),
+            eval_fn: values_eval,
+            impure: false,
+        }),
+        Arc::new(OperatorDefinition {
+            name: "entries",
+            aliases: &[],
+            arity: Arity::Fixed(1),
+            eval_fn: entries_eval,
+            impure: false,
+        }),
+        Arc::new(OperatorDefinition {
+            name: "o.set",
+            aliases: &[],
+            arity: Arity::Variadic,
+            eval_fn: o_set_eval,
+            impure: false,
+        }),
+        Arc::new(OperatorDefinition {
+            name: "o.del",
+            aliases: &[],
+            arity: Arity::Variadic,
+            eval_fn: o_del_eval,
+            impure: false,
+        }),
     ]
 }

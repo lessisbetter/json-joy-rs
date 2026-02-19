@@ -13,17 +13,29 @@ use crate::types::Node;
 // ── helpers ───────────────────────────────────────────────────────────────
 
 #[inline]
-fn get_p<N: Node>(arena: &[N], idx: u32) -> Option<u32>  { arena[idx as usize].p() }
+fn get_p<N: Node>(arena: &[N], idx: u32) -> Option<u32> {
+    arena[idx as usize].p()
+}
 #[inline]
-fn get_l<N: Node>(arena: &[N], idx: u32) -> Option<u32>  { arena[idx as usize].l() }
+fn get_l<N: Node>(arena: &[N], idx: u32) -> Option<u32> {
+    arena[idx as usize].l()
+}
 #[inline]
-fn get_r<N: Node>(arena: &[N], idx: u32) -> Option<u32>  { arena[idx as usize].r() }
+fn get_r<N: Node>(arena: &[N], idx: u32) -> Option<u32> {
+    arena[idx as usize].r()
+}
 #[inline]
-fn set_p<N: Node>(arena: &mut Vec<N>, idx: u32, v: Option<u32>) { arena[idx as usize].set_p(v); }
+fn set_p<N: Node>(arena: &mut Vec<N>, idx: u32, v: Option<u32>) {
+    arena[idx as usize].set_p(v);
+}
 #[inline]
-fn set_l<N: Node>(arena: &mut Vec<N>, idx: u32, v: Option<u32>) { arena[idx as usize].set_l(v); }
+fn set_l<N: Node>(arena: &mut Vec<N>, idx: u32, v: Option<u32>) {
+    arena[idx as usize].set_l(v);
+}
 #[inline]
-fn set_r<N: Node>(arena: &mut Vec<N>, idx: u32, v: Option<u32>) { arena[idx as usize].set_r(v); }
+fn set_r<N: Node>(arena: &mut Vec<N>, idx: u32, v: Option<u32>) {
+    arena[idx as usize].set_r(v);
+}
 
 // ── single-level rotations ────────────────────────────────────────────────
 
@@ -44,7 +56,9 @@ pub fn r_splay<N: Node>(arena: &mut Vec<N>, c2: u32, c1: u32) {
     set_r(arena, c2, Some(c1));
     set_p(arena, c1, Some(c2));
     set_l(arena, c1, b);
-    if let Some(b) = b { set_p(arena, b, Some(c1)); }
+    if let Some(b) = b {
+        set_p(arena, b, Some(c1));
+    }
 }
 
 /// Left-splay: promote `c2` over `c1` (c2 was right child of c1).
@@ -56,7 +70,9 @@ pub fn l_splay<N: Node>(arena: &mut Vec<N>, c2: u32, c1: u32) {
     set_l(arena, c2, Some(c1));
     set_p(arena, c1, Some(c2));
     set_r(arena, c1, b);
-    if let Some(b) = b { set_p(arena, b, Some(c1)); }
+    if let Some(b) = b {
+        set_p(arena, b, Some(c1));
+    }
 }
 
 // ── double-level rotations ────────────────────────────────────────────────
@@ -65,7 +81,13 @@ pub fn l_splay<N: Node>(arena: &mut Vec<N>, c2: u32, c1: u32) {
 /// Promotes c3 two levels up (zig-zig right).
 ///
 /// Mirrors `rrSplay` in `splay/util.ts`.
-pub fn rr_splay<N: Node>(arena: &mut Vec<N>, root: Option<u32>, c3: u32, c2: u32, c1: u32) -> Option<u32> {
+pub fn rr_splay<N: Node>(
+    arena: &mut Vec<N>,
+    root: Option<u32>,
+    c3: u32,
+    c2: u32,
+    c1: u32,
+) -> Option<u32> {
     let b = get_l(arena, c2);
     let c = get_l(arena, c3);
     let p = get_p(arena, c1);
@@ -76,8 +98,12 @@ pub fn rr_splay<N: Node>(arena: &mut Vec<N>, root: Option<u32>, c3: u32, c2: u32
     set_r(arena, c2, c);
     set_p(arena, c1, Some(c2));
     set_r(arena, c1, b);
-    if let Some(b) = b { set_p(arena, b, Some(c1)); }
-    if let Some(c) = c { set_p(arena, c, Some(c2)); }
+    if let Some(b) = b {
+        set_p(arena, b, Some(c1));
+    }
+    if let Some(c) = c {
+        set_p(arena, c, Some(c2));
+    }
     update_parent(arena, root, p, c1, c3)
 }
 
@@ -85,7 +111,13 @@ pub fn rr_splay<N: Node>(arena: &mut Vec<N>, root: Option<u32>, c3: u32, c2: u32
 /// Promotes c3 two levels up (zig-zig left).
 ///
 /// Mirrors `llSplay` in `splay/util.ts`.
-pub fn ll_splay<N: Node>(arena: &mut Vec<N>, root: Option<u32>, c3: u32, c2: u32, c1: u32) -> Option<u32> {
+pub fn ll_splay<N: Node>(
+    arena: &mut Vec<N>,
+    root: Option<u32>,
+    c3: u32,
+    c2: u32,
+    c1: u32,
+) -> Option<u32> {
     let b = get_r(arena, c2);
     let c = get_r(arena, c3);
     let p = get_p(arena, c1);
@@ -96,8 +128,12 @@ pub fn ll_splay<N: Node>(arena: &mut Vec<N>, root: Option<u32>, c3: u32, c2: u32
     set_r(arena, c2, Some(c1));
     set_p(arena, c1, Some(c2));
     set_l(arena, c1, b);
-    if let Some(b) = b { set_p(arena, b, Some(c1)); }
-    if let Some(c) = c { set_p(arena, c, Some(c2)); }
+    if let Some(b) = b {
+        set_p(arena, b, Some(c1));
+    }
+    if let Some(c) = c {
+        set_p(arena, c, Some(c2));
+    }
     update_parent(arena, root, p, c1, c3)
 }
 
@@ -105,7 +141,13 @@ pub fn ll_splay<N: Node>(arena: &mut Vec<N>, root: Option<u32>, c3: u32, c2: u32
 /// Promotes c3 two levels up (zig-zag left-right).
 ///
 /// Mirrors `lrSplay` in `splay/util.ts`.
-pub fn lr_splay<N: Node>(arena: &mut Vec<N>, root: Option<u32>, c3: u32, c2: u32, c1: u32) -> Option<u32> {
+pub fn lr_splay<N: Node>(
+    arena: &mut Vec<N>,
+    root: Option<u32>,
+    c3: u32,
+    c2: u32,
+    c1: u32,
+) -> Option<u32> {
     let c = get_l(arena, c3);
     let d = get_r(arena, c3);
     let p = get_p(arena, c1);
@@ -116,8 +158,12 @@ pub fn lr_splay<N: Node>(arena: &mut Vec<N>, root: Option<u32>, c3: u32, c2: u32
     set_r(arena, c2, c);
     set_p(arena, c1, Some(c3));
     set_l(arena, c1, d);
-    if let Some(c) = c { set_p(arena, c, Some(c2)); }
-    if let Some(d) = d { set_p(arena, d, Some(c1)); }
+    if let Some(c) = c {
+        set_p(arena, c, Some(c2));
+    }
+    if let Some(d) = d {
+        set_p(arena, d, Some(c1));
+    }
     update_parent(arena, root, p, c1, c3)
 }
 
@@ -125,7 +171,13 @@ pub fn lr_splay<N: Node>(arena: &mut Vec<N>, root: Option<u32>, c3: u32, c2: u32
 /// Promotes c3 two levels up (zig-zag right-left).
 ///
 /// Mirrors `rlSplay` in `splay/util.ts`.
-pub fn rl_splay<N: Node>(arena: &mut Vec<N>, root: Option<u32>, c3: u32, c2: u32, c1: u32) -> Option<u32> {
+pub fn rl_splay<N: Node>(
+    arena: &mut Vec<N>,
+    root: Option<u32>,
+    c3: u32,
+    c2: u32,
+    c1: u32,
+) -> Option<u32> {
     let c = get_r(arena, c3);
     let d = get_l(arena, c3);
     let p = get_p(arena, c1);
@@ -136,8 +188,12 @@ pub fn rl_splay<N: Node>(arena: &mut Vec<N>, root: Option<u32>, c3: u32, c2: u32
     set_l(arena, c2, c);
     set_p(arena, c1, Some(c3));
     set_r(arena, c1, d);
-    if let Some(c) = c { set_p(arena, c, Some(c2)); }
-    if let Some(d) = d { set_p(arena, d, Some(c1)); }
+    if let Some(c) = c {
+        set_p(arena, c, Some(c2));
+    }
+    if let Some(d) = d {
+        set_p(arena, d, Some(c1));
+    }
     update_parent(arena, root, p, c1, c3)
 }
 
@@ -146,35 +202,58 @@ pub fn rl_splay<N: Node>(arena: &mut Vec<N>, root: Option<u32>, c3: u32, c2: u32
 /// Splay `node` toward the root, repeating `repeat` times.
 ///
 /// Mirrors `splay` in `splay/util.ts`.
-pub fn splay<N: Node>(arena: &mut Vec<N>, root: Option<u32>, node: u32, repeat: usize) -> Option<u32> {
+pub fn splay<N: Node>(
+    arena: &mut Vec<N>,
+    root: Option<u32>,
+    node: u32,
+    repeat: usize,
+) -> Option<u32> {
     let p = get_p(arena, node);
-    let Some(p) = p else { return root; };
+    let Some(p) = p else {
+        return root;
+    };
     let pp = get_p(arena, p);
     let l2 = get_l(arena, p) == Some(node);
     let root = if let Some(pp) = pp {
         let l1 = get_l(arena, pp) == Some(p);
         match (l1, l2) {
-            (true,  true)  => ll_splay(arena, root, node, p, pp),
-            (true,  false) => lr_splay(arena, root, node, p, pp),
-            (false, true)  => rl_splay(arena, root, node, p, pp),
+            (true, true) => ll_splay(arena, root, node, p, pp),
+            (true, false) => lr_splay(arena, root, node, p, pp),
+            (false, true) => rl_splay(arena, root, node, p, pp),
             (false, false) => rr_splay(arena, root, node, p, pp),
         }
     } else {
-        if l2 { r_splay(arena, node, p); }
-        else  { l_splay(arena, node, p); }
+        if l2 {
+            r_splay(arena, node, p);
+        } else {
+            l_splay(arena, node, p);
+        }
         Some(node)
     };
-    if repeat > 1 { splay(arena, root, node, repeat - 1) } else { root }
+    if repeat > 1 {
+        splay(arena, root, node, repeat - 1)
+    } else {
+        root
+    }
 }
 
 // ── internal helper ───────────────────────────────────────────────────────
 
 /// After a double rotation that moved `c3` into the slot previously occupied
 /// by `c1`, wire `c3` into c1's old parent `p`.
-fn update_parent<N: Node>(arena: &mut Vec<N>, root: Option<u32>, p: Option<u32>, c1: u32, c3: u32) -> Option<u32> {
+fn update_parent<N: Node>(
+    arena: &mut Vec<N>,
+    root: Option<u32>,
+    p: Option<u32>,
+    c1: u32,
+    c3: u32,
+) -> Option<u32> {
     if let Some(p) = p {
-        if get_l(arena, p) == Some(c1) { set_l(arena, p, Some(c3)); }
-        else                            { set_r(arena, p, Some(c3)); }
+        if get_l(arena, p) == Some(c1) {
+            set_l(arena, p, Some(c3));
+        } else {
+            set_r(arena, p, Some(c3));
+        }
         root
     } else {
         Some(c3)

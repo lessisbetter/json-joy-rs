@@ -35,7 +35,11 @@ fn needs_quotes(name: &str) -> bool {
         || name
             .chars()
             .any(|c| !c.is_alphanumeric() && c != '_' && c != '$')
-        || name.chars().next().map(|c| c.is_ascii_digit()).unwrap_or(false)
+        || name
+            .chars()
+            .next()
+            .map(|c| c.is_ascii_digit())
+            .unwrap_or(false)
 }
 
 fn normalize_key(name: &str) -> String {
@@ -115,12 +119,17 @@ pub fn ts_type_to_text(t: &TsType, indent: &str) -> String {
             if type_args.is_empty() {
                 name.clone()
             } else {
-                let args: Vec<String> =
-                    type_args.iter().map(|a| ts_type_to_text(a, indent)).collect();
+                let args: Vec<String> = type_args
+                    .iter()
+                    .map(|a| ts_type_to_text(a, indent))
+                    .collect();
                 format!("{}<{}>", name, args.join(", "))
             }
         }
-        TsType::FnType { params, return_type } => {
+        TsType::FnType {
+            params,
+            return_type,
+        } => {
             let param_strs: Vec<String> = params.iter().map(|p| param_to_text(p, indent)).collect();
             format!(
                 "({}) => {}",
@@ -137,7 +146,12 @@ fn param_to_text(p: &TsParam, indent: &str) -> String {
 
 fn member_to_text(member: &TsMember, indent: &str) -> String {
     match member {
-        TsMember::Property { name, type_, optional, comment } => {
+        TsMember::Property {
+            name,
+            type_,
+            optional,
+            comment,
+        } => {
             let mut out = String::new();
             if let Some(c) = comment {
                 out.push_str(&format_comment(c, indent));
@@ -154,7 +168,11 @@ fn member_to_text(member: &TsMember, indent: &str) -> String {
             out
         }
         TsMember::Index { type_ } => {
-            format!("{}[key: string]: {};\n", indent, ts_type_to_text(type_, indent))
+            format!(
+                "{}[key: string]: {};\n",
+                indent,
+                ts_type_to_text(type_, indent)
+            )
         }
     }
 }
@@ -162,7 +180,11 @@ fn member_to_text(member: &TsMember, indent: &str) -> String {
 /// Convert a top-level `TsDeclaration` to TypeScript source text.
 pub fn declaration_to_text(decl: &TsDeclaration, indent: &str) -> String {
     match decl {
-        TsDeclaration::Interface { name, members, comment } => {
+        TsDeclaration::Interface {
+            name,
+            members,
+            comment,
+        } => {
             let inner_indent = format!("{}{}", indent, TAB);
             let mut out = String::new();
             if let Some(c) = comment {
@@ -175,7 +197,11 @@ pub fn declaration_to_text(decl: &TsDeclaration, indent: &str) -> String {
             out.push_str(&format!("{}}}\n", indent));
             out
         }
-        TsDeclaration::TypeAlias { name, type_, comment } => {
+        TsDeclaration::TypeAlias {
+            name,
+            type_,
+            comment,
+        } => {
             let mut out = String::new();
             if let Some(c) = comment {
                 out.push_str(&format_comment(c, indent));

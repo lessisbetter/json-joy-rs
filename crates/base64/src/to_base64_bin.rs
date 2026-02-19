@@ -26,7 +26,13 @@ use crate::create_to_base64_bin;
 /// let len = to_base64_bin(data, 0, data.len(), &mut dest, 0);
 /// assert_eq!(&dest[..len], b"aGVsbG8=");
 /// ```
-pub fn to_base64_bin(uint8: &[u8], start: usize, length: usize, dest: &mut [u8], offset: usize) -> usize {
+pub fn to_base64_bin(
+    uint8: &[u8],
+    start: usize,
+    length: usize,
+    dest: &mut [u8],
+    offset: usize,
+) -> usize {
     let encoder = create_to_base64_bin(None, None).unwrap();
     encoder(uint8, start, length, dest, offset)
 }

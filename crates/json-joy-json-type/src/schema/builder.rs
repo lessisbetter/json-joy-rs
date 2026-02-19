@@ -73,26 +73,44 @@ impl SchemaBuilder {
     // Named constructors
 
     pub fn Boolean(&self, base: Option<SchemaBase>) -> Schema {
-        Schema::Bool(BoolSchema { base: base.unwrap_or_default() })
+        Schema::Bool(BoolSchema {
+            base: base.unwrap_or_default(),
+        })
     }
 
     pub fn Number(&self, base: Option<SchemaBase>) -> Schema {
-        Schema::Num(NumSchema { base: base.unwrap_or_default(), ..Default::default() })
+        Schema::Num(NumSchema {
+            base: base.unwrap_or_default(),
+            ..Default::default()
+        })
     }
 
     pub fn String(&self, base: Option<SchemaBase>) -> Schema {
-        Schema::Str(StrSchema { base: base.unwrap_or_default(), ..Default::default() })
+        Schema::Str(StrSchema {
+            base: base.unwrap_or_default(),
+            ..Default::default()
+        })
     }
 
     pub fn Any(&self, base: Option<SchemaBase>) -> Schema {
-        Schema::Any(AnySchema { base: base.unwrap_or_default() })
+        Schema::Any(AnySchema {
+            base: base.unwrap_or_default(),
+        })
     }
 
     pub fn Const(&self, value: Value, base: Option<SchemaBase>) -> Schema {
-        Schema::Con(ConSchema { base: base.unwrap_or_default(), value })
+        Schema::Con(ConSchema {
+            base: base.unwrap_or_default(),
+            value,
+        })
     }
 
-    pub fn Binary(&self, type_: Schema, format: Option<BinFormat>, base: Option<SchemaBase>) -> Schema {
+    pub fn Binary(
+        &self,
+        type_: Schema,
+        format: Option<BinFormat>,
+        base: Option<SchemaBase>,
+    ) -> Schema {
         Schema::Bin(BinSchema {
             base: base.unwrap_or_default(),
             type_: Box::new(type_),

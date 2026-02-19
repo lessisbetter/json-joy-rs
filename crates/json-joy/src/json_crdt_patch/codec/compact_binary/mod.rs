@@ -32,13 +32,21 @@ fn json_val_to_pack(v: serde_json::Value) -> json_joy_json_pack::PackValue {
         Value::Null => PackValue::Null,
         Value::Bool(b) => PackValue::Bool(b),
         Value::Number(n) => {
-            if let Some(i) = n.as_i64() { PackValue::Integer(i) }
-            else if let Some(u) = n.as_u64() { PackValue::UInteger(u) }
-            else { PackValue::Float(n.as_f64().unwrap_or(0.0)) }
+            if let Some(i) = n.as_i64() {
+                PackValue::Integer(i)
+            } else if let Some(u) = n.as_u64() {
+                PackValue::UInteger(u)
+            } else {
+                PackValue::Float(n.as_f64().unwrap_or(0.0))
+            }
         }
         Value::String(s) => PackValue::Str(s),
         Value::Array(arr) => PackValue::Array(arr.into_iter().map(json_val_to_pack).collect()),
-        Value::Object(obj) => PackValue::Object(obj.into_iter().map(|(k, v)| (k, json_val_to_pack(v))).collect()),
+        Value::Object(obj) => PackValue::Object(
+            obj.into_iter()
+                .map(|(k, v)| (k, json_val_to_pack(v)))
+                .collect(),
+        ),
     }
 }
 
@@ -50,7 +58,9 @@ fn pack_to_json_value(v: json_joy_json_pack::PackValue) -> serde_json::Value {
         PackValue::Bool(b) => Value::Bool(b),
         PackValue::Integer(i) => serde_json::json!(i),
         PackValue::UInteger(u) => serde_json::json!(u),
-        PackValue::Float(f) => serde_json::Number::from_f64(f).map(Value::Number).unwrap_or(Value::Null),
+        PackValue::Float(f) => serde_json::Number::from_f64(f)
+            .map(Value::Number)
+            .unwrap_or(Value::Null),
         PackValue::BigInt(i) => serde_json::json!(i),
         PackValue::Str(s) => Value::String(s),
         PackValue::Bytes(b) => {
@@ -59,7 +69,8 @@ fn pack_to_json_value(v: json_joy_json_pack::PackValue) -> serde_json::Value {
         }
         PackValue::Array(arr) => Value::Array(arr.into_iter().map(pack_to_json_value).collect()),
         PackValue::Object(obj) => {
-            let map: serde_json::Map<_, _> = obj.into_iter()
+            let map: serde_json::Map<_, _> = obj
+                .into_iter()
                 .map(|(k, v)| (k, pack_to_json_value(v)))
                 .collect();
             Value::Object(map)

@@ -187,7 +187,11 @@ mod tests {
         let path = JsonPathParser::parse(r#"$[?(@.field == "value")]"#).unwrap();
         let seg = &path.segments[0];
         match &seg.selectors[0] {
-            Selector::Filter(FilterExpression::Comparison { operator, left, right }) => {
+            Selector::Filter(FilterExpression::Comparison {
+                operator,
+                left,
+                right,
+            }) => {
                 assert_eq!(*operator, ComparisonOperator::Equal);
                 match left {
                     ValueExpression::Path(p) => assert_eq!(p.segments.len(), 1),
@@ -228,9 +232,8 @@ mod tests {
             (">=", ComparisonOperator::GreaterEqual),
         ] {
             let expr = format!("$[?(@.n {} 1)]", op_str);
-            let path = JsonPathParser::parse(&expr).unwrap_or_else(|e| {
-                panic!("Failed to parse '{}': {:?}", expr, e)
-            });
+            let path = JsonPathParser::parse(&expr)
+                .unwrap_or_else(|e| panic!("Failed to parse '{}': {:?}", expr, e));
             match &path.segments[0].selectors[0] {
                 Selector::Filter(FilterExpression::Comparison { operator, .. }) => {
                     assert_eq!(operator, expected_op, "operator mismatch for '{}'", op_str);
@@ -245,10 +248,26 @@ mod tests {
         // ?(@.field > 5 && @.other == "x")
         let path = JsonPathParser::parse(r#"$[?(@.field > 5 && @.other == "x")]"#).unwrap();
         match &path.segments[0].selectors[0] {
-            Selector::Filter(FilterExpression::Logical { operator, left, right }) => {
+            Selector::Filter(FilterExpression::Logical {
+                operator,
+                left,
+                right,
+            }) => {
                 assert_eq!(*operator, LogicalOperator::And);
-                assert!(matches!(left.as_ref(), FilterExpression::Comparison { operator: ComparisonOperator::Greater, .. }));
-                assert!(matches!(right.as_ref(), FilterExpression::Comparison { operator: ComparisonOperator::Equal, .. }));
+                assert!(matches!(
+                    left.as_ref(),
+                    FilterExpression::Comparison {
+                        operator: ComparisonOperator::Greater,
+                        ..
+                    }
+                ));
+                assert!(matches!(
+                    right.as_ref(),
+                    FilterExpression::Comparison {
+                        operator: ComparisonOperator::Equal,
+                        ..
+                    }
+                ));
             }
             other => panic!("Expected logical AND, got {:?}", other),
         }
@@ -283,13 +302,23 @@ mod tests {
         // ?(@.a == 1 && (@.b == 2 || @.c == 3))
         let path = JsonPathParser::parse("$[?(@.a == 1 && (@.b == 2 || @.c == 3))]").unwrap();
         match &path.segments[0].selectors[0] {
-            Selector::Filter(FilterExpression::Logical { operator, left, right }) => {
+            Selector::Filter(FilterExpression::Logical {
+                operator,
+                left,
+                right,
+            }) => {
                 assert_eq!(*operator, LogicalOperator::And);
                 assert!(matches!(left.as_ref(), FilterExpression::Comparison { .. }));
                 // The right side should be a paren wrapping an OR
                 match right.as_ref() {
                     FilterExpression::Paren(inner) => {
-                        assert!(matches!(inner.as_ref(), FilterExpression::Logical { operator: LogicalOperator::Or, .. }));
+                        assert!(matches!(
+                            inner.as_ref(),
+                            FilterExpression::Logical {
+                                operator: LogicalOperator::Or,
+                                ..
+                            }
+                        ));
                     }
                     other => panic!("Expected paren on right, got {:?}", other),
                 }
@@ -324,15 +353,13 @@ mod tests {
     fn test_parse_filter_float_literal() {
         let path = JsonPathParser::parse("$[?(@.price > 9.99)]").unwrap();
         match &path.segments[0].selectors[0] {
-            Selector::Filter(FilterExpression::Comparison { right, .. }) => {
-                match right {
-                    ValueExpression::Literal(serde_json::Value::Number(n)) => {
-                        let v = n.as_f64().unwrap();
-                        assert!((v - 9.99).abs() < 1e-9, "expected 9.99, got {}", v);
-                    }
-                    other => panic!("Expected number literal, got {:?}", other),
+            Selector::Filter(FilterExpression::Comparison { right, .. }) => match right {
+                ValueExpression::Literal(serde_json::Value::Number(n)) => {
+                    let v = n.as_f64().unwrap();
+                    assert!((v - 9.99).abs() < 1e-9, "expected 9.99, got {}", v);
                 }
-            }
+                other => panic!("Expected number literal, got {:?}", other),
+            },
             other => panic!("Expected comparison, got {:?}", other),
         }
     }

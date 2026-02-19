@@ -106,7 +106,8 @@ impl AvroDecoder {
         if self.pos + 8 > self.data.len() {
             return Err(AvroDecodeError::EndOfInput);
         }
-        let bytes: [u8; 8] = self.data[self.pos..self.pos + 8].try_into()
+        let bytes: [u8; 8] = self.data[self.pos..self.pos + 8]
+            .try_into()
             .map_err(|_| AvroDecodeError::EndOfInput)?;
         self.pos += 8;
         Ok(f64::from_le_bytes(bytes))

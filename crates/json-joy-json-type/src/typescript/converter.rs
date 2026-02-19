@@ -4,8 +4,8 @@
 
 use serde_json::Value;
 
-use crate::type_def::TypeNode;
 use super::types::{TsDeclaration, TsMember, TsParam, TsType};
+use crate::type_def::TypeNode;
 
 /// Convert a `TypeNode` to a TypeScript AST type node.
 ///
@@ -60,7 +60,8 @@ pub fn to_typescript_ast(type_: &TypeNode) -> TsType {
                 .keys
                 .iter()
                 .map(|key| {
-                    let comment = build_comment(key.base.title.as_deref(), key.base.description.as_deref());
+                    let comment =
+                        build_comment(key.base.title.as_deref(), key.base.description.as_deref());
                     TsMember::Property {
                         name: key.key.clone(),
                         type_: to_typescript_ast(&key.val),
@@ -92,9 +93,7 @@ pub fn to_typescript_ast(type_: &TypeNode) -> TsType {
             type_args: vec![TsType::String, to_typescript_ast(&t.value)],
         },
 
-        TypeNode::Or(t) => {
-            TsType::Union(t.types.iter().map(to_typescript_ast).collect())
-        }
+        TypeNode::Or(t) => TsType::Union(t.types.iter().map(to_typescript_ast).collect()),
 
         TypeNode::Ref(t) => TsType::TypeReference {
             name: t.ref_.clone(),
@@ -152,7 +151,8 @@ pub fn alias_to_ts(type_: &TypeNode, name: &str) -> TsDeclaration {
                 .keys
                 .iter()
                 .map(|key| {
-                    let comment = build_comment(key.base.title.as_deref(), key.base.description.as_deref());
+                    let comment =
+                        build_comment(key.base.title.as_deref(), key.base.description.as_deref());
                     TsMember::Property {
                         name: key.key.clone(),
                         type_: to_typescript_ast(&key.val),

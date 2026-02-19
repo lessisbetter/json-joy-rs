@@ -8,6 +8,6 @@
 //! - [`indexed`] — each node separately in a field map
 //! - [`sidecar`] — view bytes + metadata bytes split
 
-pub mod structural;
 pub mod indexed;
 pub mod sidecar;
+pub mod structural;

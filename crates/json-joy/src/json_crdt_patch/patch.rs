@@ -2,9 +2,9 @@
 //!
 //! Mirrors `packages/json-joy/src/json-crdt-patch/Patch.ts`.
 
-use json_joy_json_pack::PackValue;
 use crate::json_crdt_patch::clock::{ts, Ts};
 use crate::json_crdt_patch::operations::{ConValue, Op};
+use json_joy_json_pack::PackValue;
 
 /// A JSON CRDT Patch: an ordered list of operations with optional metadata.
 ///
@@ -27,7 +27,10 @@ impl Default for Patch {
 impl Patch {
     /// Creates an empty patch with no operations.
     pub fn new() -> Self {
-        Self { ops: Vec::new(), meta: None }
+        Self {
+            ops: Vec::new(),
+            meta: None,
+        }
     }
 
     /// Returns the ID of the first operation, if any.
@@ -59,7 +62,10 @@ impl Patch {
         for op in &self.ops {
             new_ops.push(rewrite_op(op, f));
         }
-        Patch { ops: new_ops, meta: self.meta.clone() }
+        Patch {
+            ops: new_ops,
+            meta: self.meta.clone(),
+        }
     }
 
     /// Rebases the patch so that the first operation begins at `new_time`.
@@ -78,8 +84,12 @@ impl Patch {
         }
         let delta = new_time as i64 - patch_start_time as i64;
         self.rewrite_time(&|id: Ts| -> Ts {
-            if id.sid != sid { return id; }
-            if id.time < transform_after { return id; }
+            if id.sid != sid {
+                return id;
+            }
+            if id.time < transform_after {
+                return id;
+            }
             ts(sid, (id.time as i64 + delta) as u64)
         })
     }
@@ -95,7 +105,9 @@ impl Patch {
     }
 
     /// Decodes a patch from binary (binary codec).
-    pub fn from_binary(data: &[u8]) -> Result<Patch, crate::json_crdt_patch::codec::binary::DecodeError> {
+    pub fn from_binary(
+        data: &[u8],
+    ) -> Result<Patch, crate::json_crdt_patch::codec::binary::DecodeError> {
         crate::json_crdt_patch::codec::binary::decode(data)
     }
 }
@@ -133,7 +145,11 @@ where
         Op::NewStr { id } => Op::NewStr { id: f(*id) },
         Op::NewBin { id } => Op::NewBin { id: f(*id) },
         Op::NewArr { id } => Op::NewArr { id: f(*id) },
-        Op::InsVal { id, obj, val } => Op::InsVal { id: f(*id), obj: f(*obj), val: f(*val) },
+        Op::InsVal { id, obj, val } => Op::InsVal {
+            id: f(*id),
+            obj: f(*obj),
+            val: f(*val),
+        },
         Op::InsObj { id, obj, data } => Op::InsObj {
             id: f(*id),
             obj: f(*obj),
@@ -144,25 +160,45 @@ where
             obj: f(*obj),
             data: data.iter().map(|(k, v)| (*k, f(*v))).collect(),
         },
-        Op::InsStr { id, obj, after, data } => Op::InsStr {
+        Op::InsStr {
+            id,
+            obj,
+            after,
+            data,
+        } => Op::InsStr {
             id: f(*id),
             obj: f(*obj),
             after: f(*after),
             data: data.clone(),
         },
-        Op::InsBin { id, obj, after, data } => Op::InsBin {
+        Op::InsBin {
+            id,
+            obj,
+            after,
+            data,
+        } => Op::InsBin {
             id: f(*id),
             obj: f(*obj),
             after: f(*after),
             data: data.clone(),
         },
-        Op::InsArr { id, obj, after, data } => Op::InsArr {
+        Op::InsArr {
+            id,
+            obj,
+            after,
+            data,
+        } => Op::InsArr {
             id: f(*id),
             obj: f(*obj),
             after: f(*after),
             data: data.iter().map(|v| f(*v)).collect(),
         },
-        Op::UpdArr { id, obj, after, val } => Op::UpdArr {
+        Op::UpdArr {
+            id,
+            obj,
+            after,
+            val,
+        } => Op::UpdArr {
             id: f(*id),
             obj: f(*obj),
             after: f(*after),
@@ -171,12 +207,18 @@ where
         Op::Del { id, obj, what } => Op::Del {
             id: f(*id),
             obj: f(*obj),
-            what: what.iter().map(|s| {
-                let new_ts = f(s.ts());
-                crate::json_crdt_patch::clock::Tss::new(new_ts.sid, new_ts.time, s.span)
-            }).collect(),
+            what: what
+                .iter()
+                .map(|s| {
+                    let new_ts = f(s.ts());
+                    crate::json_crdt_patch::clock::Tss::new(new_ts.sid, new_ts.time, s.span)
+                })
+                .collect(),
         },
-        Op::Nop { id, len } => Op::Nop { id: f(*id), len: *len },
+        Op::Nop { id, len } => Op::Nop {
+            id: f(*id),
+            len: *len,
+        },
     }
 }
 
@@ -207,7 +249,12 @@ mod tests {
     fn patch_rebase() {
         let mut p = Patch::new();
         p.ops.push(Op::NewStr { id: ts(1, 10) });
-        p.ops.push(Op::InsStr { id: ts(1, 11), obj: ts(1, 10), after: ts(1, 10), data: "hi".into() });
+        p.ops.push(Op::InsStr {
+            id: ts(1, 11),
+            obj: ts(1, 10),
+            after: ts(1, 10),
+            data: "hi".into(),
+        });
         let rebased = p.rebase(20, None);
         assert_eq!(rebased.get_id(), Some(ts(1, 20)));
         assert_eq!(rebased.ops[1].id(), ts(1, 21));
@@ -216,7 +263,11 @@ mod tests {
     #[test]
     fn patch_rewrite_time_leaves_foreign_sid_alone() {
         let mut p = Patch::new();
-        p.ops.push(Op::InsVal { id: ts(1, 5), obj: ts(2, 100), val: ts(1, 5) });
+        p.ops.push(Op::InsVal {
+            id: ts(1, 5),
+            obj: ts(2, 100),
+            val: ts(1, 5),
+        });
         let rebased = p.rebase(10, None);
         // obj belongs to sid=2, should be untouched
         if let Op::InsVal { obj, .. } = &rebased.ops[0] {

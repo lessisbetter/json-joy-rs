@@ -2,8 +2,8 @@
 //!
 //! Upstream reference: json-type/src/value/ObjValue.ts
 
-use std::collections::HashMap;
 use serde_json::Value as JsonValue;
+use std::collections::HashMap;
 
 /// A typed object value (key → JSON value map).
 #[derive(Debug, Clone, Default)]
@@ -12,7 +12,9 @@ pub struct ObjValue {
 }
 
 impl ObjValue {
-    pub fn new() -> Self { Self::default() }
+    pub fn new() -> Self {
+        Self::default()
+    }
 
     pub fn get(&self, key: &str) -> Option<&JsonValue> {
         self.fields.get(key)

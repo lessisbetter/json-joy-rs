@@ -28,4 +28,3 @@ impl CborJsonValueCodec {
         decode_json_from_cbor_bytes(bytes)
     }
 }
-

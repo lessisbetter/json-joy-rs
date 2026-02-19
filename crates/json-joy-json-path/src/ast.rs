@@ -47,7 +47,11 @@ impl Ast {
         left: ValueExpression,
         right: ValueExpression,
     ) -> FilterExpression {
-        FilterExpression::Comparison { operator, left, right }
+        FilterExpression::Comparison {
+            operator,
+            left,
+            right,
+        }
     }
 
     /// Create a logical expression.

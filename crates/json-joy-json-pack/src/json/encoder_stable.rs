@@ -17,7 +17,9 @@ impl Default for JsonEncoderStable {
 
 impl JsonEncoderStable {
     pub fn new() -> Self {
-        Self { inner: JsonEncoder::new() }
+        Self {
+            inner: JsonEncoder::new(),
+        }
     }
 
     pub fn encode(&mut self, value: &PackValue) -> Vec<u8> {
@@ -71,7 +73,11 @@ impl JsonEncoderStable {
             let kb = &obj[b].0;
             let la = ka.chars().count();
             let lb = kb.chars().count();
-            if la == lb { ka.cmp(kb) } else { la.cmp(&lb) }
+            if la == lb {
+                ka.cmp(kb)
+            } else {
+                la.cmp(&lb)
+            }
         });
 
         self.inner.writer.u8(b'{');

@@ -29,7 +29,10 @@ impl Default for JsonDecoder {
 
 impl JsonDecoder {
     pub fn new() -> Self {
-        Self { data: Vec::new(), x: 0 }
+        Self {
+            data: Vec::new(),
+            x: 0,
+        }
     }
 
     pub fn decode(&mut self, input: &[u8]) -> Result<PackValue, JsonError> {
@@ -81,9 +84,7 @@ impl JsonDecoder {
     }
 
     pub fn read_null(&mut self) -> Result<PackValue, JsonError> {
-        if self.x + 4 > self.data.len()
-            || &self.data[self.x..self.x + 4] != b"null"
-        {
+        if self.x + 4 > self.data.len() || &self.data[self.x..self.x + 4] != b"null" {
             return Err(JsonError::Invalid(self.x));
         }
         self.x += 4;
@@ -91,9 +92,7 @@ impl JsonDecoder {
     }
 
     pub fn read_true(&mut self) -> Result<PackValue, JsonError> {
-        if self.x + 4 > self.data.len()
-            || &self.data[self.x..self.x + 4] != b"true"
-        {
+        if self.x + 4 > self.data.len() || &self.data[self.x..self.x + 4] != b"true" {
             return Err(JsonError::Invalid(self.x));
         }
         self.x += 4;
@@ -101,9 +100,7 @@ impl JsonDecoder {
     }
 
     pub fn read_false(&mut self) -> Result<PackValue, JsonError> {
-        if self.x + 5 > self.data.len()
-            || &self.data[self.x..self.x + 5] != b"false"
-        {
+        if self.x + 5 > self.data.len() || &self.data[self.x..self.x + 5] != b"false" {
             return Err(JsonError::Invalid(self.x));
         }
         self.x += 5;

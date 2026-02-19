@@ -6,8 +6,8 @@
 //! Each extension wraps one or more underlying CRDT nodes and exposes a
 //! domain-specific API (counters, multi-value registers, rich text, …).
 
-pub mod mval;
 pub mod cnt;
+pub mod mval;
 pub mod peritext;
 
 /// Numeric IDs for each registered extension.
@@ -16,10 +16,10 @@ pub mod peritext;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(u8)]
 pub enum ExtensionId {
-    Mval      = 0,
-    Cnt       = 1,
-    Peritext  = 2,
-    Quill     = 3,
+    Mval = 0,
+    Cnt = 1,
+    Peritext = 2,
+    Quill = 3,
     Prosemirror = 4,
-    Slate     = 5,
+    Slate = 5,
 }

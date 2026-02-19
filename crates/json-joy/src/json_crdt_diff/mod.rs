@@ -12,13 +12,15 @@
 use serde_json::Value;
 
 use crate::json_crdt::constants::ORIGIN;
-use crate::json_crdt::nodes::{ArrNode, BinNode, CrdtNode, NodeIndex, ObjNode, StrNode, TsKey, ValNode, VecNode};
+use crate::json_crdt::nodes::{
+    ArrNode, BinNode, CrdtNode, NodeIndex, ObjNode, StrNode, TsKey, ValNode, VecNode,
+};
 use crate::json_crdt_patch::clock::{Ts, Tss};
 use crate::json_crdt_patch::operations::ConValue;
 use crate::json_crdt_patch::patch::Patch;
 use crate::json_crdt_patch::patch_builder::PatchBuilder;
-use crate::util_inner::diff::str as str_diff;
 use crate::util_inner::diff::bin as bin_diff;
+use crate::util_inner::diff::str as str_diff;
 use json_joy_json_pack::PackValue;
 
 /// Error produced when diffing two incompatible node types.
@@ -43,7 +45,10 @@ pub struct JsonCrdtDiff<'a> {
 
 impl<'a> JsonCrdtDiff<'a> {
     pub fn new(clock_sid: u64, clock_time: u64, index: &'a NodeIndex) -> Self {
-        Self { builder: PatchBuilder::new(clock_sid, clock_time), index }
+        Self {
+            builder: PatchBuilder::new(clock_sid, clock_time),
+            index,
+        }
     }
 
     // ── Str ──────────────────────────────────────────────────────────────
@@ -67,7 +72,11 @@ impl<'a> JsonCrdtDiff<'a> {
             |pos, text| {
                 // For pos=0, use the StrNode's own ID as the head sentinel.
                 // Mirrors upstream TS: `!pos ? src.id : src.find(pos - 1)!`
-                let after = if pos == 0 { src_id } else { src.find(pos - 1).unwrap_or(src_id) };
+                let after = if pos == 0 {
+                    src_id
+                } else {
+                    src.find(pos - 1).unwrap_or(src_id)
+                };
                 inserts.push((after, text.to_string()));
             },
             |pos, len, _| {
@@ -104,7 +113,11 @@ impl<'a> JsonCrdtDiff<'a> {
             &patch,
             view.len(),
             |pos, bytes| {
-                let after = if pos == 0 { src_id } else { find_bin_ts(src, pos - 1).unwrap_or(src_id) };
+                let after = if pos == 0 {
+                    src_id
+                } else {
+                    find_bin_ts(src, pos - 1).unwrap_or(src_id)
+                };
                 inserts.push((after, bytes));
             },
             |pos, len| {
@@ -243,7 +256,11 @@ impl<'a> JsonCrdtDiff<'a> {
         match src {
             CrdtNode::Con(node) => {
                 let src_val = con_to_json(&node.val);
-                if src_val == *dst { Ok(()) } else { Err(DiffError("CON_MISMATCH")) }
+                if src_val == *dst {
+                    Ok(())
+                } else {
+                    Err(DiffError("CON_MISMATCH"))
+                }
             }
             CrdtNode::Str(node) => {
                 let node = node.clone();
@@ -396,7 +413,11 @@ fn find_bin_interval(src: &BinNode, pos: usize, len: usize) -> Vec<Tss> {
             let chunk_start = count;
             let chunk_end = count + chunk_len;
             if chunk_end > pos && chunk_start < end {
-                let local_start = if chunk_start >= pos { 0 } else { pos - chunk_start };
+                let local_start = if chunk_start >= pos {
+                    0
+                } else {
+                    pos - chunk_start
+                };
                 let local_end = (end - chunk_start).min(chunk_len);
                 result.push(Tss::new(
                     chunk.id.sid,
@@ -424,20 +445,26 @@ pub fn diff_node(
 ) -> Option<Patch> {
     let mut d = JsonCrdtDiff::new(clock_sid, clock_time, index);
     let patch = d.diff(src, dst);
-    if patch.ops.is_empty() { None } else { Some(patch) }
+    if patch.ops.is_empty() {
+        None
+    } else {
+        Some(patch)
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::json_crdt::constants::ORIGIN;
     use crate::json_crdt::model::Model;
     use crate::json_crdt::nodes::TsKey;
-    use crate::json_crdt::constants::ORIGIN;
-    use crate::json_crdt_patch::operations::{ConValue, Op};
     use crate::json_crdt_patch::clock::ts;
+    use crate::json_crdt_patch::operations::{ConValue, Op};
     use serde_json::json;
 
-    fn sid() -> u64 { 123456 }
+    fn sid() -> u64 {
+        123456
+    }
 
     fn model_with_str(s: &str) -> (Model, TsKey) {
         let sid = sid();
@@ -465,7 +492,13 @@ mod tests {
     fn diff_str_no_change() {
         let (model, key) = model_with_str("hello");
         let src_node = model.index.get(&key).unwrap().clone();
-        let result = diff_node(&src_node, &model.index, model.clock.sid, model.clock.time, &json!("hello"));
+        let result = diff_node(
+            &src_node,
+            &model.index,
+            model.clock.sid,
+            model.clock.time,
+            &json!("hello"),
+        );
         assert!(result.is_none());
     }
 
@@ -473,7 +506,14 @@ mod tests {
     fn diff_str_change() {
         let (mut model, key) = model_with_str("hello");
         let src_node = model.index.get(&key).unwrap().clone();
-        let patch = diff_node(&src_node, &model.index, model.clock.sid, model.clock.time, &json!("world")).unwrap();
+        let patch = diff_node(
+            &src_node,
+            &model.index,
+            model.clock.sid,
+            model.clock.time,
+            &json!("world"),
+        )
+        .unwrap();
         model.apply_patch(&patch);
         assert_eq!(model.view(), json!("world"));
     }
@@ -482,7 +522,14 @@ mod tests {
     fn diff_str_append() {
         let (mut model, key) = model_with_str("hello");
         let src_node = model.index.get(&key).unwrap().clone();
-        let patch = diff_node(&src_node, &model.index, model.clock.sid, model.clock.time, &json!("hello world")).unwrap();
+        let patch = diff_node(
+            &src_node,
+            &model.index,
+            model.clock.sid,
+            model.clock.time,
+            &json!("hello world"),
+        )
+        .unwrap();
         model.apply_patch(&patch);
         assert_eq!(model.view(), json!("hello world"));
     }
@@ -491,7 +538,14 @@ mod tests {
     fn diff_str_delete_prefix() {
         let (mut model, key) = model_with_str("hello world");
         let src_node = model.index.get(&key).unwrap().clone();
-        let patch = diff_node(&src_node, &model.index, model.clock.sid, model.clock.time, &json!("world")).unwrap();
+        let patch = diff_node(
+            &src_node,
+            &model.index,
+            model.clock.sid,
+            model.clock.time,
+            &json!("world"),
+        )
+        .unwrap();
         model.apply_patch(&patch);
         assert_eq!(model.view(), json!("world"));
     }
@@ -519,9 +573,13 @@ mod tests {
         let key = TsKey { sid, time: 1 };
         let src_node = model.index.get(&key).unwrap().clone();
         let patch = diff_node(
-            &src_node, &model.index, model.clock.sid, model.clock.time,
+            &src_node,
+            &model.index,
+            model.clock.sid,
+            model.clock.time,
             &json!({"a": 1, "b": 2}),
-        ).unwrap();
+        )
+        .unwrap();
         model.apply_patch(&patch);
         assert_eq!(model.view(), json!({"a": 1, "b": 2}));
     }
@@ -530,7 +588,14 @@ mod tests {
     fn diff_empty_string() {
         let (mut model, key) = model_with_str("");
         let src_node = model.index.get(&key).unwrap().clone();
-        let patch = diff_node(&src_node, &model.index, model.clock.sid, model.clock.time, &json!("hi")).unwrap();
+        let patch = diff_node(
+            &src_node,
+            &model.index,
+            model.clock.sid,
+            model.clock.time,
+            &json!("hi"),
+        )
+        .unwrap();
         model.apply_patch(&patch);
         assert_eq!(model.view(), json!("hi"));
     }
@@ -559,9 +624,13 @@ mod tests {
         let key = TsKey { sid, time: 1 };
         let src_node = model.index.get(&key).unwrap().clone();
         let patch = diff_node(
-            &src_node, &model.index, model.clock.sid, model.clock.time,
+            &src_node,
+            &model.index,
+            model.clock.sid,
+            model.clock.time,
             &json!([10, 20]),
-        ).unwrap();
+        )
+        .unwrap();
         model.apply_patch(&patch);
         assert_eq!(model.view(), json!([10, 20]));
     }

@@ -1,6 +1,6 @@
 //! Tests for binary base64 decoding (from_base64_bin).
 
-use json_joy_base64::{to_base64_bin, from_base64_bin};
+use json_joy_base64::{from_base64_bin, to_base64_bin};
 use rand::Rng;
 
 fn generate_blob() -> Vec<u8> {
@@ -22,8 +22,15 @@ fn works() {
         assert_eq!(decoded, blob);
 
         // Decode with missing padding (if there was padding)
-        let padding = if length > 0 && dest[length - 1] == b'=' { 1 } else { 0 }
-            + if length > 1 && dest[length - 2] == b'=' { 1 } else { 0 };
+        let padding = if length > 0 && dest[length - 1] == b'=' {
+            1
+        } else {
+            0
+        } + if length > 1 && dest[length - 2] == b'=' {
+            1
+        } else {
+            0
+        };
 
         if padding > 0 {
             let decoded2 = from_base64_bin(encoded, 0, length - padding).unwrap();

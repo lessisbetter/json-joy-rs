@@ -76,11 +76,14 @@ fn main() {
             let x = b.con_val(PackValue::Integer(1));
             let y = b.con_val(PackValue::Integer(2));
             let active = b.con_val(PackValue::Bool(false));
-            b.ins_obj(obj_id, vec![
-                ("x".to_string(), x),
-                ("y".to_string(), y),
-                ("active".to_string(), active),
-            ]);
+            b.ins_obj(
+                obj_id,
+                vec![
+                    ("x".to_string(), x),
+                    ("y".to_string(), y),
+                    ("active".to_string(), active),
+                ],
+            );
             b.root(obj_id);
             let p = b.flush();
             m.apply_patch(&p);
@@ -140,11 +143,14 @@ fn main() {
             let nested = b.obj();
             let x_con = b.con_val(PackValue::Integer(0));
             b.ins_obj(nested, vec![("x".to_string(), x_con)]);
-            b.ins_obj(obj_id, vec![
-                ("name".to_string(), name_str),
-                ("items".to_string(), items_arr),
-                ("nested".to_string(), nested),
-            ]);
+            b.ins_obj(
+                obj_id,
+                vec![
+                    ("name".to_string(), name_str),
+                    ("items".to_string(), items_arr),
+                    ("nested".to_string(), nested),
+                ],
+            );
             b.root(obj_id);
             b.flush()
         };
@@ -175,11 +181,14 @@ fn main() {
                 b.con_val(PackValue::Str("c".to_string())),
             ];
             b.ins_arr(tags_arr, tags_arr, tag_ids);
-            b.ins_obj(obj_id, vec![
-                ("title".to_string(), title_str),
-                ("count".to_string(), count_con),
-                ("tags".to_string(), tags_arr),
-            ]);
+            b.ins_obj(
+                obj_id,
+                vec![
+                    ("title".to_string(), title_str),
+                    ("count".to_string(), count_con),
+                    ("tags".to_string(), tags_arr),
+                ],
+            );
             b.root(obj_id);
             b.flush()
         };
@@ -212,12 +221,15 @@ fn main() {
             let y = b.con_val(PackValue::Integer(2));
             let label = b.con_val(PackValue::Str("point".to_string()));
             let active = b.con_val(PackValue::Bool(true));
-            b.ins_obj(obj_id, vec![
-                ("x".to_string(), x),
-                ("y".to_string(), y),
-                ("label".to_string(), label),
-                ("active".to_string(), active),
-            ]);
+            b.ins_obj(
+                obj_id,
+                vec![
+                    ("x".to_string(), x),
+                    ("y".to_string(), y),
+                    ("label".to_string(), label),
+                    ("active".to_string(), active),
+                ],
+            );
             let p = b.flush();
             m.apply_patch(&p);
             let _ = p.to_binary();
@@ -263,12 +275,15 @@ fn main() {
             ];
             b.ins_arr(items_arr, items_arr, item_ids);
             let active_con = b.con_val(PackValue::Bool(true));
-            b.ins_obj(obj_id, vec![
-                ("name".to_string(), name_str),
-                ("age".to_string(), age_con),
-                ("items".to_string(), items_arr),
-                ("active".to_string(), active_con),
-            ]);
+            b.ins_obj(
+                obj_id,
+                vec![
+                    ("name".to_string(), name_str),
+                    ("age".to_string(), age_con),
+                    ("items".to_string(), items_arr),
+                    ("active".to_string(), active_con),
+                ],
+            );
             b.root(obj_id);
             b.flush()
         };

@@ -8,7 +8,7 @@
 
 use crate::json_crdt::codec::structural::compact;
 use crate::json_crdt::model::Model;
-use json_joy_json_pack::msgpack::{MsgPackEncoderFast, MsgPackDecoderFast};
+use json_joy_json_pack::msgpack::{MsgPackDecoderFast, MsgPackEncoderFast};
 use json_joy_json_pack::PackValue;
 
 /// Errors that can occur during compact-binary decode.
@@ -31,7 +31,8 @@ pub fn encode(model: &Model) -> Vec<u8> {
 /// Decode a compact-binary document back into a [`Model`].
 pub fn decode(data: &[u8]) -> Result<Model, DecodeError> {
     let mut dec = MsgPackDecoderFast::new();
-    let pack_val = dec.decode(data)
+    let pack_val = dec
+        .decode(data)
         .map_err(|e| DecodeError::MsgPack(format!("{:?}", e)))?;
     let json_val = serde_json::Value::from(pack_val);
     let model = compact::decode(&json_val)?;
@@ -45,7 +46,9 @@ mod tests {
     use crate::json_crdt_patch::operations::{ConValue, Op};
     use json_joy_json_pack::PackValue;
 
-    fn sid() -> u64 { 111222 }
+    fn sid() -> u64 {
+        111222
+    }
 
     #[test]
     fn roundtrip_string() {

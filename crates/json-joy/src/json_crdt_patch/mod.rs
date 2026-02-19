@@ -10,26 +10,28 @@
 //!
 //! Mirrors `packages/json-joy/src/json-crdt-patch/`.
 
+pub mod batch;
 pub mod clock;
-pub mod enums;
+pub mod codec;
+pub mod compaction;
 pub mod constants;
+pub mod enums;
 pub mod operations;
 pub mod patch;
 pub mod patch_builder;
-pub mod batch;
-pub mod compaction;
 pub mod schema;
 pub mod util;
-pub mod codec;
 
 // ── Re-exports ─────────────────────────────────────────────────────────────
 
-pub use clock::{ts, tss, tick, equal, compare, contains, contains_id, interval, print_ts};
-pub use clock::{Ts, Tss, LogicalClock, ClockVector, ServerClockVector};
+pub use batch::Batch;
+pub use clock::{compare, contains, contains_id, equal, interval, print_ts, tick, ts, tss};
+pub use clock::{ClockVector, LogicalClock, ServerClockVector, Ts, Tss};
+pub use compaction::{combine, compact};
 pub use constants::ORIGIN;
-pub use enums::{JsonCrdtDataType, JsonCrdtPatchOpcode, OpcodeOverlay, SESSION, SYSTEM_SESSION_TIME};
+pub use enums::{
+    JsonCrdtDataType, JsonCrdtPatchOpcode, OpcodeOverlay, SESSION, SYSTEM_SESSION_TIME,
+};
 pub use operations::{ConValue, Op};
 pub use patch::Patch;
 pub use patch_builder::PatchBuilder;
-pub use batch::Batch;
-pub use compaction::{combine, compact};

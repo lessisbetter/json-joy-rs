@@ -2,11 +2,11 @@
 //!
 //! Mirrors `packages/json-joy/src/json-crdt-patch/PatchBuilder.ts`.
 
-use json_joy_json_pack::PackValue;
 use crate::json_crdt_patch::clock::{ts, ClockVector, LogicalClock, ServerClockVector, Ts, Tss};
 use crate::json_crdt_patch::constants::ORIGIN;
 use crate::json_crdt_patch::operations::{ConValue, Op};
 use crate::json_crdt_patch::patch::Patch;
+use json_joy_json_pack::PackValue;
 
 // ── Clock variants ─────────────────────────────────────────────────────────
 
@@ -83,7 +83,11 @@ impl PatchBuilder {
     /// Returns the sequence number of the next operation's timestamp.
     pub fn next_time(&self) -> u64 {
         let patch_next = self.patch.next_time();
-        if patch_next == 0 { self.clock.time() } else { patch_next }
+        if patch_next == 0 {
+            self.clock.time()
+        } else {
+            patch_next
+        }
     }
 
     /// Inserts a `Nop` to fill any gap between the clock time and the patch's
@@ -98,7 +102,9 @@ impl PatchBuilder {
     /// Adds a `Nop` if the clock has drifted ahead of the patch's last op.
     pub fn pad(&mut self) {
         let next_time = self.patch.next_time();
-        if next_time == 0 { return; }
+        if next_time == 0 {
+            return;
+        }
         let drift = self.clock.time().saturating_sub(next_time);
         if drift > 0 {
             let id = ts(self.clock.sid(), next_time);
@@ -112,7 +118,10 @@ impl PatchBuilder {
     pub fn con_val(&mut self, val: PackValue) -> Ts {
         self.pad();
         let id = self.clock.tick(1);
-        self.patch.ops.push(Op::NewCon { id, val: ConValue::Val(val) });
+        self.patch.ops.push(Op::NewCon {
+            id,
+            val: ConValue::Val(val),
+        });
         id
     }
 
@@ -120,7 +129,10 @@ impl PatchBuilder {
     pub fn con_ref(&mut self, ref_id: Ts) -> Ts {
         self.pad();
         let id = self.clock.tick(1);
-        self.patch.ops.push(Op::NewCon { id, val: ConValue::Ref(ref_id) });
+        self.patch.ops.push(Op::NewCon {
+            id,
+            val: ConValue::Ref(ref_id),
+        });
         id
     }
 
@@ -186,7 +198,9 @@ impl PatchBuilder {
         let id = self.clock.tick(1);
         let op = Op::InsObj { id, obj, data };
         let span = op.span();
-        if span > 1 { self.clock.tick(span - 1); }
+        if span > 1 {
+            self.clock.tick(span - 1);
+        }
         self.patch.ops.push(op);
         id
     }
@@ -198,7 +212,9 @@ impl PatchBuilder {
         let id = self.clock.tick(1);
         let op = Op::InsVec { id, obj, data };
         let span = op.span();
-        if span > 1 { self.clock.tick(span - 1); }
+        if span > 1 {
+            self.clock.tick(span - 1);
+        }
         self.patch.ops.push(op);
         id
     }
@@ -216,9 +232,16 @@ impl PatchBuilder {
         assert!(!data.is_empty(), "EMPTY_STRING");
         self.pad();
         let id = self.clock.tick(1);
-        let op = Op::InsStr { id, obj, after, data };
+        let op = Op::InsStr {
+            id,
+            obj,
+            after,
+            data,
+        };
         let span = op.span();
-        if span > 1 { self.clock.tick(span - 1); }
+        if span > 1 {
+            self.clock.tick(span - 1);
+        }
         self.patch.ops.push(op);
         id
     }
@@ -228,9 +251,16 @@ impl PatchBuilder {
         assert!(!data.is_empty(), "EMPTY_BINARY");
         self.pad();
         let id = self.clock.tick(1);
-        let op = Op::InsBin { id, obj, after, data };
+        let op = Op::InsBin {
+            id,
+            obj,
+            after,
+            data,
+        };
         let span = op.span();
-        if span > 1 { self.clock.tick(span - 1); }
+        if span > 1 {
+            self.clock.tick(span - 1);
+        }
         self.patch.ops.push(op);
         id
     }
@@ -239,9 +269,16 @@ impl PatchBuilder {
     pub fn ins_arr(&mut self, arr: Ts, after: Ts, data: Vec<Ts>) -> Ts {
         self.pad();
         let id = self.clock.tick(1);
-        let op = Op::InsArr { id, obj: arr, after, data };
+        let op = Op::InsArr {
+            id,
+            obj: arr,
+            after,
+            data,
+        };
         let span = op.span();
-        if span > 1 { self.clock.tick(span - 1); }
+        if span > 1 {
+            self.clock.tick(span - 1);
+        }
         self.patch.ops.push(op);
         id
     }
@@ -250,7 +287,12 @@ impl PatchBuilder {
     pub fn upd_arr(&mut self, arr: Ts, after: Ts, val: Ts) -> Ts {
         self.pad();
         let id = self.clock.tick(1);
-        self.patch.ops.push(Op::UpdArr { id, obj: arr, after, val });
+        self.patch.ops.push(Op::UpdArr {
+            id,
+            obj: arr,
+            after,
+            val,
+        });
         id
     }
 
@@ -288,7 +330,7 @@ mod tests {
     fn builder_pads_on_drift() {
         let mut b = PatchBuilder::new(1, 0);
         b.obj(); // time = 1
-        // advance clock externally (simulating external tick)
+                 // advance clock externally (simulating external tick)
         b.clock.tick(2); // time = 3
         b.obj(); // should insert nop(2) then new_obj at time=3
         assert_eq!(b.patch.ops.len(), 3); // NewObj, Nop, NewObj

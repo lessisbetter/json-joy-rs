@@ -17,14 +17,14 @@
 
 pub mod rga;
 
-use std::collections::{BTreeMap, HashMap};
 use indexmap::IndexMap;
-use serde_json::Value;
 use json_joy_json_pack::PackValue;
+use serde_json::Value;
+use std::collections::{BTreeMap, HashMap};
 
-use crate::json_crdt_patch::clock::{Ts, Tss, compare};
-use crate::json_crdt_patch::operations::ConValue;
 use super::constants::{ORIGIN, UNDEFINED_TS};
+use crate::json_crdt_patch::clock::{compare, Ts, Tss};
+use crate::json_crdt_patch::operations::ConValue;
 use rga::Rga;
 
 // ── ConNode ───────────────────────────────────────────────────────────────
@@ -102,7 +102,10 @@ pub struct ObjNode {
 
 impl ObjNode {
     pub fn new(id: Ts) -> Self {
-        Self { id, keys: IndexMap::new() }
+        Self {
+            id,
+            keys: IndexMap::new(),
+        }
     }
 
     /// Insert a key, keeping it only if `new_id` is newer than existing.
@@ -145,7 +148,10 @@ pub struct VecNode {
 
 impl VecNode {
     pub fn new(id: Ts) -> Self {
-        Self { id, elements: Vec::new() }
+        Self {
+            id,
+            elements: Vec::new(),
+        }
     }
 
     /// Set element at `index`, keeping it only if `new_id` is newer.
@@ -158,20 +164,24 @@ impl VecNode {
             Some(old) if compare(new_id, old) <= 0 => None,
             old => {
                 self.elements[index] = Some(new_id);
-                old  // old: Option<Ts>, already the right type
+                old // old: Option<Ts>, already the right type
             }
         }
     }
 
     /// View: build a JSON array by resolving each element.
     pub fn view(&self, index: &NodeIndex) -> Value {
-        let items: Vec<Value> = self.elements.iter().map(|e| match e {
-            Some(id) => match index.get(&TsKey::from(*id)) {
-                Some(node) => node.view(index),
+        let items: Vec<Value> = self
+            .elements
+            .iter()
+            .map(|e| match e {
+                Some(id) => match index.get(&TsKey::from(*id)) {
+                    Some(node) => node.view(index),
+                    None => Value::Null,
+                },
                 None => Value::Null,
-            },
-            None => Value::Null,
-        }).collect();
+            })
+            .collect();
         Value::Array(items)
     }
 }
@@ -187,7 +197,10 @@ pub struct StrNode {
 
 impl StrNode {
     pub fn new(id: Ts) -> Self {
-        Self { id, rga: Rga::new() }
+        Self {
+            id,
+            rga: Rga::new(),
+        }
     }
 
     pub fn ins(&mut self, after: Ts, id: Ts, data: String) {
@@ -200,13 +213,20 @@ impl StrNode {
     }
 
     pub fn view(&self) -> Value {
-        let s: String = self.rga.iter_live().filter_map(|c| c.data.as_deref()).collect();
+        let s: String = self
+            .rga
+            .iter_live()
+            .filter_map(|c| c.data.as_deref())
+            .collect();
         Value::String(s)
     }
 
     /// Return the string content as a plain `String`.
     pub fn view_str(&self) -> String {
-        self.rga.iter_live().filter_map(|c| c.data.as_deref()).collect()
+        self.rga
+            .iter_live()
+            .filter_map(|c| c.data.as_deref())
+            .collect()
     }
 
     /// Number of live characters in this string.
@@ -242,7 +262,11 @@ impl StrNode {
             let chunk_start = count;
             let chunk_end = count + chunk_len;
             if chunk_end > pos && chunk_start < end {
-                let local_start = if chunk_start >= pos { 0 } else { pos - chunk_start };
+                let local_start = if chunk_start >= pos {
+                    0
+                } else {
+                    pos - chunk_start
+                };
                 let local_end = (end - chunk_start).min(chunk_len);
                 result.push(Tss::new(
                     chunk.id.sid,
@@ -267,7 +291,10 @@ pub struct BinNode {
 
 impl BinNode {
     pub fn new(id: Ts) -> Self {
-        Self { id, rga: Rga::new() }
+        Self {
+            id,
+            rga: Rga::new(),
+        }
     }
 
     pub fn ins(&mut self, after: Ts, id: Ts, data: Vec<u8>) {
@@ -280,7 +307,8 @@ impl BinNode {
     }
 
     pub fn view(&self) -> Vec<u8> {
-        self.rga.iter_live()
+        self.rga
+            .iter_live()
             .flat_map(|c| c.data.as_deref().unwrap_or(&[]))
             .copied()
             .collect()
@@ -304,7 +332,10 @@ pub struct ArrNode {
 
 impl ArrNode {
     pub fn new(id: Ts) -> Self {
-        Self { id, rga: Rga::new() }
+        Self {
+            id,
+            rga: Rga::new(),
+        }
     }
 
     /// Insert node IDs after `after`.
@@ -352,7 +383,11 @@ impl ArrNode {
 
     /// Number of live elements in this array.
     pub fn size(&self) -> usize {
-        self.rga.iter_live().filter_map(|c| c.data.as_ref()).map(|v| v.len()).sum()
+        self.rga
+            .iter_live()
+            .filter_map(|c| c.data.as_ref())
+            .map(|v| v.len())
+            .sum()
     }
 
     /// Return the slot-ID timestamp of the element at live position `pos`.
@@ -385,7 +420,11 @@ impl ArrNode {
                 let chunk_start = count;
                 let chunk_end = count + chunk_len;
                 if chunk_end > pos && chunk_start < end {
-                    let local_start = if chunk_start >= pos { 0 } else { pos - chunk_start };
+                    let local_start = if chunk_start >= pos {
+                        0
+                    } else {
+                        pos - chunk_start
+                    };
                     let local_end = (end - chunk_start).min(chunk_len);
                     result.extend_from_slice(&data[local_start..local_end]);
                 }
@@ -406,7 +445,11 @@ impl ArrNode {
                 let chunk_start = count;
                 let chunk_end = count + chunk_len;
                 if chunk_end > pos && chunk_start < end {
-                    let local_start = if chunk_start >= pos { 0 } else { pos - chunk_start };
+                    let local_start = if chunk_start >= pos {
+                        0
+                    } else {
+                        pos - chunk_start
+                    };
                     let local_end = (end - chunk_start).min(chunk_len);
                     result.push(Tss::new(
                         chunk.id.sid,
@@ -485,7 +528,9 @@ impl RootNode {
 }
 
 impl Default for RootNode {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 // ── CrdtNode enum ─────────────────────────────────────────────────────────
@@ -553,7 +598,12 @@ pub struct TsKey {
 }
 
 impl From<Ts> for TsKey {
-    fn from(ts: Ts) -> Self { Self { sid: ts.sid, time: ts.time } }
+    fn from(ts: Ts) -> Self {
+        Self {
+            sid: ts.sid,
+            time: ts.time,
+        }
+    }
 }
 
 /// Convenience trait to look up nodes using `&Ts`.
@@ -592,4 +642,3 @@ impl IndexExt for NodeIndex {
 pub fn pack_to_json(pv: &PackValue) -> Value {
     Value::from(pv.clone())
 }
-

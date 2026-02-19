@@ -11,7 +11,9 @@ use super::types::{JsonPatchType, Op, OpResult, PatchError, PatchResult};
 
 /// Convert a `Path` (Vec<String>) to a JSON Pointer string (RFC 6901).
 fn path_to_pointer(path: &[String]) -> String {
-    if path.is_empty() { return String::new(); }
+    if path.is_empty() {
+        return String::new();
+    }
     let mut ptr = String::with_capacity(path.len() * 8);
     for key in path {
         ptr.push('/');
@@ -53,7 +55,9 @@ fn apply_add(doc: &mut Value, path: &[String], value: Value) -> Result<Option<Va
                 Ok(None)
             } else {
                 let idx: usize = key.parse().map_err(|_| PatchError::InvalidIndex)?;
-                if idx > arr.len() { return Err(PatchError::InvalidIndex); }
+                if idx > arr.len() {
+                    return Err(PatchError::InvalidIndex);
+                }
                 arr.insert(idx, value);
                 Ok(None)
             }
@@ -63,24 +67,30 @@ fn apply_add(doc: &mut Value, path: &[String], value: Value) -> Result<Option<Va
 }
 
 fn apply_remove(doc: &mut Value, path: &[String]) -> Result<Option<Value>, PatchError> {
-    if path.is_empty() { return Err(PatchError::InvalidTarget); }
+    if path.is_empty() {
+        return Err(PatchError::InvalidTarget);
+    }
     let (parent_path, key) = path.split_at(path.len() - 1);
     let key = &key[0];
     let parent = get_mut_at(doc, parent_path)?;
     match parent {
-        Value::Object(map) => {
-            map.remove(key).ok_or(PatchError::NotFound).map(Some)
-        }
+        Value::Object(map) => map.remove(key).ok_or(PatchError::NotFound).map(Some),
         Value::Array(arr) => {
             let idx: usize = key.parse().map_err(|_| PatchError::InvalidIndex)?;
-            if idx >= arr.len() { return Err(PatchError::NotFound); }
+            if idx >= arr.len() {
+                return Err(PatchError::NotFound);
+            }
             Ok(Some(arr.remove(idx)))
         }
         _ => Err(PatchError::InvalidTarget),
     }
 }
 
-fn apply_replace(doc: &mut Value, path: &[String], value: Value) -> Result<Option<Value>, PatchError> {
+fn apply_replace(
+    doc: &mut Value,
+    path: &[String],
+    value: Value,
+) -> Result<Option<Value>, PatchError> {
     if path.is_empty() {
         let old = std::mem::replace(doc, value);
         return Ok(Some(old));
@@ -95,7 +105,9 @@ fn apply_replace(doc: &mut Value, path: &[String], value: Value) -> Result<Optio
         }
         Value::Array(arr) => {
             let idx: usize = key.parse().map_err(|_| PatchError::InvalidIndex)?;
-            if idx >= arr.len() { return Err(PatchError::NotFound); }
+            if idx >= arr.len() {
+                return Err(PatchError::NotFound);
+            }
             let old = std::mem::replace(&mut arr[idx], value);
             Ok(Some(old))
         }
@@ -103,12 +115,20 @@ fn apply_replace(doc: &mut Value, path: &[String], value: Value) -> Result<Optio
     }
 }
 
-fn apply_copy(doc: &mut Value, path: &[String], from: &[String]) -> Result<Option<Value>, PatchError> {
+fn apply_copy(
+    doc: &mut Value,
+    path: &[String],
+    from: &[String],
+) -> Result<Option<Value>, PatchError> {
     let src = get_at(doc, from).ok_or(PatchError::NotFound)?.clone();
     apply_add(doc, path, src)
 }
 
-fn apply_move(doc: &mut Value, path: &[String], from: &[String]) -> Result<Option<Value>, PatchError> {
+fn apply_move(
+    doc: &mut Value,
+    path: &[String],
+    from: &[String],
+) -> Result<Option<Value>, PatchError> {
     // Validate: path must not be a child of from
     if path.len() >= from.len() && path[..from.len()] == from[..] {
         return Err(PatchError::InvalidTarget);
@@ -120,10 +140,19 @@ fn apply_move(doc: &mut Value, path: &[String], from: &[String]) -> Result<Optio
 fn apply_test_op(doc: &Value, path: &[String], value: &Value, not: bool) -> Result<(), PatchError> {
     let actual = get_at(doc, path).ok_or(PatchError::NotFound)?;
     let equal = actual == value;
-    if equal == not { Err(PatchError::Test) } else { Ok(()) }
+    if equal == not {
+        Err(PatchError::Test)
+    } else {
+        Ok(())
+    }
 }
 
-fn apply_str_ins(doc: &mut Value, path: &[String], pos: usize, str_val: &str) -> Result<(), PatchError> {
+fn apply_str_ins(
+    doc: &mut Value,
+    path: &[String],
+    pos: usize,
+    str_val: &str,
+) -> Result<(), PatchError> {
     let target = get_mut_at(doc, path)?;
     match target {
         Value::String(s) => {
@@ -148,8 +177,13 @@ fn apply_str_del(
         Value::String(s) => {
             let delete_len = str_val.map(|sv| sv.chars().count()).or(len).unwrap_or(0);
             let chars: Vec<char> = s.chars().collect();
-            if pos + delete_len > chars.len() { return Err(PatchError::InvalidIndex); }
-            let new_str: String = chars[..pos].iter().chain(chars[pos + delete_len..].iter()).collect();
+            if pos + delete_len > chars.len() {
+                return Err(PatchError::InvalidIndex);
+            }
+            let new_str: String = chars[..pos]
+                .iter()
+                .chain(chars[pos + delete_len..].iter())
+                .collect();
             *s = new_str;
             Ok(())
         }
@@ -160,7 +194,10 @@ fn apply_str_del(
 fn apply_flip(doc: &mut Value, path: &[String]) -> Result<(), PatchError> {
     let target = get_mut_at(doc, path)?;
     match target {
-        Value::Bool(b) => { *b = !*b; Ok(()) }
+        Value::Bool(b) => {
+            *b = !*b;
+            Ok(())
+        }
         _ => Err(PatchError::InvalidTarget),
     }
 }
@@ -180,7 +217,12 @@ fn apply_inc(doc: &mut Value, path: &[String], inc: f64) -> Result<(), PatchErro
     }
 }
 
-fn apply_extend(doc: &mut Value, path: &[String], props: &Map<String, Value>, delete_null: bool) -> Result<(), PatchError> {
+fn apply_extend(
+    doc: &mut Value,
+    path: &[String],
+    props: &Map<String, Value>,
+    delete_null: bool,
+) -> Result<(), PatchError> {
     let target = get_mut_at(doc, path)?;
     match target {
         Value::Object(map) => {
@@ -197,15 +239,24 @@ fn apply_extend(doc: &mut Value, path: &[String], props: &Map<String, Value>, de
     }
 }
 
-fn apply_split(doc: &mut Value, path: &[String], pos: usize, props: Option<&Value>) -> Result<(), PatchError> {
-    if path.is_empty() { return Err(PatchError::InvalidTarget); }
+fn apply_split(
+    doc: &mut Value,
+    path: &[String],
+    pos: usize,
+    props: Option<&Value>,
+) -> Result<(), PatchError> {
+    if path.is_empty() {
+        return Err(PatchError::InvalidTarget);
+    }
     let (parent_path, key) = path.split_at(path.len() - 1);
     let key = &key[0];
     let parent = get_mut_at(doc, parent_path)?;
     match parent {
         Value::Array(arr) => {
             let idx: usize = key.parse().map_err(|_| PatchError::InvalidIndex)?;
-            if idx >= arr.len() { return Err(PatchError::NotFound); }
+            if idx >= arr.len() {
+                return Err(PatchError::NotFound);
+            }
             let node = arr[idx].clone();
             // Handle string split
             if let Value::String(s) = &node {
@@ -219,7 +270,9 @@ fn apply_split(doc: &mut Value, path: &[String], pos: usize, props: Option<&Valu
                     // If props are provided and right is still a string, wrap in object
                     let mut map = serde_json::Map::new();
                     map.insert("text".to_string(), right_val);
-                    for (k, v) in extra { map.insert(k.clone(), v.clone()); }
+                    for (k, v) in extra {
+                        map.insert(k.clone(), v.clone());
+                    }
                     right_val = Value::Object(map);
                 }
                 arr.insert(idx + 1, right_val);
@@ -229,7 +282,9 @@ fn apply_split(doc: &mut Value, path: &[String], pos: usize, props: Option<&Valu
             if let Value::Object(_) = &node {
                 let mut right = node.clone();
                 if let (Value::Object(r), Some(Value::Object(extra))) = (&mut right, props) {
-                    for (k, v) in extra { r.insert(k.clone(), v.clone()); }
+                    for (k, v) in extra {
+                        r.insert(k.clone(), v.clone());
+                    }
                 }
                 arr.insert(idx + 1, right);
                 return Ok(());
@@ -240,15 +295,24 @@ fn apply_split(doc: &mut Value, path: &[String], pos: usize, props: Option<&Valu
     }
 }
 
-fn apply_merge(doc: &mut Value, path: &[String], pos: usize, _props: Option<&Value>) -> Result<(), PatchError> {
-    if path.is_empty() { return Err(PatchError::InvalidTarget); }
+fn apply_merge(
+    doc: &mut Value,
+    path: &[String],
+    pos: usize,
+    _props: Option<&Value>,
+) -> Result<(), PatchError> {
+    if path.is_empty() {
+        return Err(PatchError::InvalidTarget);
+    }
     let (parent_path, key) = path.split_at(path.len() - 1);
     let key = &key[0];
     let parent = get_mut_at(doc, parent_path)?;
     match parent {
         Value::Array(arr) => {
             let idx: usize = key.parse().map_err(|_| PatchError::InvalidIndex)?;
-            if idx + 1 >= arr.len() { return Err(PatchError::NotFound); }
+            if idx + 1 >= arr.len() {
+                return Err(PatchError::NotFound);
+            }
             let right = arr.remove(idx + 1);
             // Merge based on node types
             match (&mut arr[idx], right) {
@@ -256,7 +320,9 @@ fn apply_merge(doc: &mut Value, path: &[String], pos: usize, _props: Option<&Val
                     left_str.push_str(&right_str);
                 }
                 (Value::Object(left_obj), Value::Object(right_obj)) => {
-                    for (k, v) in right_obj { left_obj.insert(k, v); }
+                    for (k, v) in right_obj {
+                        left_obj.insert(k, v);
+                    }
                 }
                 _ => return Err(PatchError::InvalidTarget),
             }
@@ -271,29 +337,53 @@ fn apply_merge(doc: &mut Value, path: &[String], pos: usize, _props: Option<&Val
 fn test_predicate(doc: &Value, op: &Op) -> bool {
     match op {
         Op::Test { path, value, not } => {
-            let actual = match get_at(doc, path) { Some(v) => v, None => return false };
+            let actual = match get_at(doc, path) {
+                Some(v) => v,
+                None => return false,
+            };
             (actual == value) != *not
         }
         Op::Defined { path } => get_at(doc, path).is_some(),
         Op::Undefined { path } => get_at(doc, path).is_none(),
-        Op::Contains { path, value, ignore_case } => {
-            let actual = match get_at(doc, path).and_then(|v| v.as_str()) { Some(s) => s, None => return false };
+        Op::Contains {
+            path,
+            value,
+            ignore_case,
+        } => {
+            let actual = match get_at(doc, path).and_then(|v| v.as_str()) {
+                Some(s) => s,
+                None => return false,
+            };
             if *ignore_case {
                 actual.to_lowercase().contains(&value.to_lowercase())
             } else {
                 actual.contains(value.as_str())
             }
         }
-        Op::Ends { path, value, ignore_case } => {
-            let actual = match get_at(doc, path).and_then(|v| v.as_str()) { Some(s) => s, None => return false };
+        Op::Ends {
+            path,
+            value,
+            ignore_case,
+        } => {
+            let actual = match get_at(doc, path).and_then(|v| v.as_str()) {
+                Some(s) => s,
+                None => return false,
+            };
             if *ignore_case {
                 actual.to_lowercase().ends_with(&value.to_lowercase())
             } else {
                 actual.ends_with(value.as_str())
             }
         }
-        Op::Starts { path, value, ignore_case } => {
-            let actual = match get_at(doc, path).and_then(|v| v.as_str()) { Some(s) => s, None => return false };
+        Op::Starts {
+            path,
+            value,
+            ignore_case,
+        } => {
+            let actual = match get_at(doc, path).and_then(|v| v.as_str()) {
+                Some(s) => s,
+                None => return false,
+            };
             if *ignore_case {
                 actual.to_lowercase().starts_with(&value.to_lowercase())
             } else {
@@ -301,35 +391,67 @@ fn test_predicate(doc: &Value, op: &Op) -> bool {
             }
         }
         Op::In { path, value } => {
-            let actual = match get_at(doc, path) { Some(v) => v, None => return false };
+            let actual = match get_at(doc, path) {
+                Some(v) => v,
+                None => return false,
+            };
             value.iter().any(|v| v == actual)
         }
         Op::Less { path, value } => {
-            let actual = match get_at(doc, path).and_then(|v| v.as_f64()) { Some(n) => n, None => return false };
+            let actual = match get_at(doc, path).and_then(|v| v.as_f64()) {
+                Some(n) => n,
+                None => return false,
+            };
             actual < *value
         }
         Op::More { path, value } => {
-            let actual = match get_at(doc, path).and_then(|v| v.as_f64()) { Some(n) => n, None => return false };
+            let actual = match get_at(doc, path).and_then(|v| v.as_f64()) {
+                Some(n) => n,
+                None => return false,
+            };
             actual > *value
         }
-        Op::Matches { path, value, ignore_case } => {
-            let actual = match get_at(doc, path).and_then(|v| v.as_str()) { Some(s) => s, None => return false };
-            match RegexBuilder::new(value).case_insensitive(*ignore_case).build() {
+        Op::Matches {
+            path,
+            value,
+            ignore_case,
+        } => {
+            let actual = match get_at(doc, path).and_then(|v| v.as_str()) {
+                Some(s) => s,
+                None => return false,
+            };
+            match RegexBuilder::new(value)
+                .case_insensitive(*ignore_case)
+                .build()
+            {
                 Ok(re) => re.is_match(actual),
                 // If the pattern is invalid, fall back to contains-based matching
-                Err(_) => if *ignore_case {
-                    actual.to_lowercase().contains(&value.to_lowercase())
-                } else {
-                    actual.contains(value.as_str())
-                },
+                Err(_) => {
+                    if *ignore_case {
+                        actual.to_lowercase().contains(&value.to_lowercase())
+                    } else {
+                        actual.contains(value.as_str())
+                    }
+                }
             }
         }
         Op::TestType { path, type_vals } => {
-            let actual = match get_at(doc, path) { Some(v) => v, None => return false };
+            let actual = match get_at(doc, path) {
+                Some(v) => v,
+                None => return false,
+            };
             type_vals.iter().any(|t| t.matches_value(actual))
         }
-        Op::TestString { path, pos, str_val, not } => {
-            let actual = match get_at(doc, path).and_then(|v| v.as_str()) { Some(s) => s, None => return false };
+        Op::TestString {
+            path,
+            pos,
+            str_val,
+            not,
+        } => {
+            let actual = match get_at(doc, path).and_then(|v| v.as_str()) {
+                Some(s) => s,
+                None => return false,
+            };
             let chars: Vec<char> = actual.chars().collect();
             let needle: Vec<char> = str_val.chars().collect();
             let matched = chars.len() >= *pos + needle.len()
@@ -337,26 +459,44 @@ fn test_predicate(doc: &Value, op: &Op) -> bool {
             matched != *not
         }
         Op::TestStringLen { path, len, not } => {
-            let actual = match get_at(doc, path).and_then(|v| v.as_str()) { Some(s) => s, None => return false };
+            let actual = match get_at(doc, path).and_then(|v| v.as_str()) {
+                Some(s) => s,
+                None => return false,
+            };
             let char_len = actual.chars().count();
             (char_len >= *len) != *not
         }
         Op::Type { path, value } => {
-            let actual = match get_at(doc, path) { Some(v) => v, None => return false };
+            let actual = match get_at(doc, path) {
+                Some(v) => v,
+                None => return false,
+            };
             value.matches_value(actual)
         }
         Op::And { path, ops } => {
             // Ops are relative to path; for simplicity, pass the sub-document
-            let sub = match get_at(doc, path) { Some(v) => v, None => return false };
-            ops.iter().all(|op| test_predicate_relative(sub, doc, op, path))
+            let sub = match get_at(doc, path) {
+                Some(v) => v,
+                None => return false,
+            };
+            ops.iter()
+                .all(|op| test_predicate_relative(sub, doc, op, path))
         }
         Op::Or { path, ops } => {
-            let sub = match get_at(doc, path) { Some(v) => v, None => return false };
-            ops.iter().any(|op| test_predicate_relative(sub, doc, op, path))
+            let sub = match get_at(doc, path) {
+                Some(v) => v,
+                None => return false,
+            };
+            ops.iter()
+                .any(|op| test_predicate_relative(sub, doc, op, path))
         }
         Op::Not { path, ops } => {
-            let sub = match get_at(doc, path) { Some(v) => v, None => return false };
-            ops.iter().all(|op| !test_predicate_relative(sub, doc, op, path))
+            let sub = match get_at(doc, path) {
+                Some(v) => v,
+                None => return false,
+            };
+            ops.iter()
+                .all(|op| !test_predicate_relative(sub, doc, op, path))
         }
         _ => false,
     }
@@ -377,16 +517,11 @@ fn test_predicate_relative(sub: &Value, _doc: &Value, op: &Op, _base_path: &[Str
 /// Returns the old value at the path for mutating ops, or `None` for predicates.
 pub fn apply_op(doc: &mut Value, op: &Op) -> Result<Option<Value>, PatchError> {
     match op {
-        Op::Add { path, value } =>
-            apply_add(doc, path, value.clone()),
-        Op::Remove { path, .. } =>
-            apply_remove(doc, path),
-        Op::Replace { path, value, .. } =>
-            apply_replace(doc, path, value.clone()),
-        Op::Copy { path, from } =>
-            apply_copy(doc, path, from),
-        Op::Move { path, from } =>
-            apply_move(doc, path, from),
+        Op::Add { path, value } => apply_add(doc, path, value.clone()),
+        Op::Remove { path, .. } => apply_remove(doc, path),
+        Op::Replace { path, value, .. } => apply_replace(doc, path, value.clone()),
+        Op::Copy { path, from } => apply_copy(doc, path, from),
+        Op::Move { path, from } => apply_move(doc, path, from),
         Op::Test { path, value, not } => {
             apply_test_op(doc, path, value, *not)?;
             Ok(None)
@@ -395,7 +530,12 @@ pub fn apply_op(doc: &mut Value, op: &Op) -> Result<Option<Value>, PatchError> {
             apply_str_ins(doc, path, *pos, str_val)?;
             Ok(None)
         }
-        Op::StrDel { path, pos, str_val, len } => {
+        Op::StrDel {
+            path,
+            pos,
+            str_val,
+            len,
+        } => {
             apply_str_del(doc, path, *pos, str_val.as_deref(), *len)?;
             Ok(None)
         }
@@ -407,7 +547,11 @@ pub fn apply_op(doc: &mut Value, op: &Op) -> Result<Option<Value>, PatchError> {
             apply_inc(doc, path, *inc)?;
             Ok(None)
         }
-        Op::Extend { path, props, delete_null } => {
+        Op::Extend {
+            path,
+            props,
+            delete_null,
+        } => {
             apply_extend(doc, path, props, *delete_null)?;
             Ok(None)
         }
@@ -435,7 +579,10 @@ pub fn apply_ops(mut doc: Value, ops: &[Op]) -> Result<PatchResult, PatchError> 
     let mut results = Vec::with_capacity(ops.len());
     for op in ops {
         let old = apply_op(&mut doc, op)?;
-        results.push(OpResult { doc: doc.clone(), old });
+        results.push(OpResult {
+            doc: doc.clone(),
+            old,
+        });
     }
     Ok(PatchResult { doc, res: results })
 }
@@ -445,13 +592,20 @@ pub fn apply_ops(mut doc: Value, ops: &[Op]) -> Result<PatchResult, PatchError> 
 /// When `mutate: true`, ops are applied without capturing per-op intermediate
 /// snapshots (efficient in-place semantics). When `mutate: false`, the full
 /// `apply_ops` path is used, which captures the doc state after each op.
-pub fn apply_patch(doc: Value, ops: &[Op], options: &super::types::ApplyPatchOptions) -> Result<PatchResult, PatchError> {
+pub fn apply_patch(
+    doc: Value,
+    ops: &[Op],
+    options: &super::types::ApplyPatchOptions,
+) -> Result<PatchResult, PatchError> {
     if options.mutate {
         let mut working = doc;
         for op in ops {
             apply_op(&mut working, op)?;
         }
-        Ok(PatchResult { doc: working, res: vec![] })
+        Ok(PatchResult {
+            doc: working,
+            res: vec![],
+        })
     } else {
         apply_ops(doc, ops)
     }
@@ -462,39 +616,72 @@ pub fn apply_patch(doc: Value, ops: &[Op], options: &super::types::ApplyPatchOpt
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json::json;
     use crate::json_patch::types::Op;
+    use serde_json::json;
 
     fn path(s: &str) -> Vec<String> {
-        if s.is_empty() { return vec![]; }
-        s.split('/').filter(|p| !p.is_empty()).map(|s| s.to_string()).collect()
+        if s.is_empty() {
+            return vec![];
+        }
+        s.split('/')
+            .filter(|p| !p.is_empty())
+            .map(|s| s.to_string())
+            .collect()
     }
 
     #[test]
     fn add_to_object() {
         let mut doc = json!({"a": 1});
-        apply_op(&mut doc, &Op::Add { path: path("b"), value: json!(2) }).unwrap();
+        apply_op(
+            &mut doc,
+            &Op::Add {
+                path: path("b"),
+                value: json!(2),
+            },
+        )
+        .unwrap();
         assert_eq!(doc, json!({"a": 1, "b": 2}));
     }
 
     #[test]
     fn add_to_array() {
         let mut doc = json!([1, 2, 3]);
-        apply_op(&mut doc, &Op::Add { path: path("1"), value: json!(99) }).unwrap();
+        apply_op(
+            &mut doc,
+            &Op::Add {
+                path: path("1"),
+                value: json!(99),
+            },
+        )
+        .unwrap();
         assert_eq!(doc, json!([1, 99, 2, 3]));
     }
 
     #[test]
     fn add_append_array() {
         let mut doc = json!([1, 2]);
-        apply_op(&mut doc, &Op::Add { path: path("-"), value: json!(3) }).unwrap();
+        apply_op(
+            &mut doc,
+            &Op::Add {
+                path: path("-"),
+                value: json!(3),
+            },
+        )
+        .unwrap();
         assert_eq!(doc, json!([1, 2, 3]));
     }
 
     #[test]
     fn remove_from_object() {
         let mut doc = json!({"a": 1, "b": 2});
-        let old = apply_op(&mut doc, &Op::Remove { path: path("a"), old_value: None }).unwrap();
+        let old = apply_op(
+            &mut doc,
+            &Op::Remove {
+                path: path("a"),
+                old_value: None,
+            },
+        )
+        .unwrap();
         assert_eq!(doc, json!({"b": 2}));
         assert_eq!(old, Some(json!(1)));
     }
@@ -502,48 +689,102 @@ mod tests {
     #[test]
     fn replace_value() {
         let mut doc = json!({"a": 1});
-        apply_op(&mut doc, &Op::Replace { path: path("a"), value: json!(99), old_value: None }).unwrap();
+        apply_op(
+            &mut doc,
+            &Op::Replace {
+                path: path("a"),
+                value: json!(99),
+                old_value: None,
+            },
+        )
+        .unwrap();
         assert_eq!(doc, json!({"a": 99}));
     }
 
     #[test]
     fn copy_op() {
         let mut doc = json!({"a": {"x": 1}, "b": {}});
-        apply_op(&mut doc, &Op::Copy { path: path("b/x"), from: path("a/x") }).unwrap();
+        apply_op(
+            &mut doc,
+            &Op::Copy {
+                path: path("b/x"),
+                from: path("a/x"),
+            },
+        )
+        .unwrap();
         assert_eq!(doc["b"]["x"], json!(1));
     }
 
     #[test]
     fn move_op() {
         let mut doc = json!({"a": 1, "b": 2});
-        apply_op(&mut doc, &Op::Move { path: path("c"), from: path("a") }).unwrap();
+        apply_op(
+            &mut doc,
+            &Op::Move {
+                path: path("c"),
+                from: path("a"),
+            },
+        )
+        .unwrap();
         assert_eq!(doc, json!({"b": 2, "c": 1}));
     }
 
     #[test]
     fn test_pass() {
         let mut doc = json!({"a": 42});
-        apply_op(&mut doc, &Op::Test { path: path("a"), value: json!(42), not: false }).unwrap();
+        apply_op(
+            &mut doc,
+            &Op::Test {
+                path: path("a"),
+                value: json!(42),
+                not: false,
+            },
+        )
+        .unwrap();
     }
 
     #[test]
     fn test_fail() {
         let mut doc = json!({"a": 42});
-        let result = apply_op(&mut doc, &Op::Test { path: path("a"), value: json!(99), not: false });
+        let result = apply_op(
+            &mut doc,
+            &Op::Test {
+                path: path("a"),
+                value: json!(99),
+                not: false,
+            },
+        );
         assert_eq!(result, Err(PatchError::Test));
     }
 
     #[test]
     fn str_ins_op() {
         let mut doc = json!({"s": "helo"});
-        apply_op(&mut doc, &Op::StrIns { path: path("s"), pos: 3, str_val: "l".to_string() }).unwrap();
+        apply_op(
+            &mut doc,
+            &Op::StrIns {
+                path: path("s"),
+                pos: 3,
+                str_val: "l".to_string(),
+            },
+        )
+        .unwrap();
         assert_eq!(doc["s"], json!("hello"));
     }
 
     #[test]
     fn str_del_op() {
         let mut doc = json!({"s": "hello world"});
-        apply_op(&mut doc, &Op::StrDel { path: path("s"), pos: 5, str_val: Some(" world".to_string()), len: None }).unwrap();
+        apply_op(
+            &mut doc,
+            &Op::StrDel {
+                path: path("s"),
+                pos: 5,
+                str_val: Some(" world".to_string()),
+                len: None,
+            },
+        )
+        .unwrap();
         assert_eq!(doc["s"], json!("hello"));
     }
 
@@ -557,7 +798,14 @@ mod tests {
     #[test]
     fn inc_op() {
         let mut doc = json!({"n": 10});
-        apply_op(&mut doc, &Op::Inc { path: path("n"), inc: 5.0 }).unwrap();
+        apply_op(
+            &mut doc,
+            &Op::Inc {
+                path: path("n"),
+                inc: 5.0,
+            },
+        )
+        .unwrap();
         assert_eq!(doc["n"], json!(15.0));
     }
 
@@ -566,7 +814,15 @@ mod tests {
         let mut doc = json!({"a": 1});
         let mut props = serde_json::Map::new();
         props.insert("b".to_string(), json!(2));
-        apply_op(&mut doc, &Op::Extend { path: path(""), props, delete_null: false }).unwrap();
+        apply_op(
+            &mut doc,
+            &Op::Extend {
+                path: path(""),
+                props,
+                delete_null: false,
+            },
+        )
+        .unwrap();
         assert_eq!(doc["b"], json!(2));
     }
 
@@ -581,21 +837,55 @@ mod tests {
     #[test]
     fn predicate_less_more() {
         let mut doc = json!({"n": 5});
-        apply_op(&mut doc, &Op::Less { path: path("n"), value: 10.0 }).unwrap();
-        apply_op(&mut doc, &Op::More { path: path("n"), value: 2.0 }).unwrap();
+        apply_op(
+            &mut doc,
+            &Op::Less {
+                path: path("n"),
+                value: 10.0,
+            },
+        )
+        .unwrap();
+        apply_op(
+            &mut doc,
+            &Op::More {
+                path: path("n"),
+                value: 2.0,
+            },
+        )
+        .unwrap();
     }
 
     #[test]
     fn predicate_in() {
         let mut doc = json!({"x": "b"});
-        apply_op(&mut doc, &Op::In { path: path("x"), value: vec![json!("a"), json!("b"), json!("c")] }).unwrap();
+        apply_op(
+            &mut doc,
+            &Op::In {
+                path: path("x"),
+                value: vec![json!("a"), json!("b"), json!("c")],
+            },
+        )
+        .unwrap();
     }
 
     #[test]
     fn predicate_test_type() {
         let mut doc = json!({"n": 42});
-        apply_op(&mut doc, &Op::TestType { path: path("n"), type_vals: vec![JsonPatchType::Number] }).unwrap();
-        let r = apply_op(&mut doc, &Op::TestType { path: path("n"), type_vals: vec![JsonPatchType::String] });
+        apply_op(
+            &mut doc,
+            &Op::TestType {
+                path: path("n"),
+                type_vals: vec![JsonPatchType::Number],
+            },
+        )
+        .unwrap();
+        let r = apply_op(
+            &mut doc,
+            &Op::TestType {
+                path: path("n"),
+                type_vals: vec![JsonPatchType::String],
+            },
+        );
         assert_eq!(r, Err(PatchError::Test));
     }
 
@@ -603,8 +893,15 @@ mod tests {
     fn apply_ops_sequence() {
         let doc = json!({"a": 1});
         let ops = vec![
-            Op::Add { path: vec!["b".to_string()], value: json!(2) },
-            Op::Replace { path: vec!["a".to_string()], value: json!(10), old_value: None },
+            Op::Add {
+                path: vec!["b".to_string()],
+                value: json!(2),
+            },
+            Op::Replace {
+                path: vec!["a".to_string()],
+                value: json!(10),
+                old_value: None,
+            },
         ];
         let result = apply_ops(doc, &ops).unwrap();
         assert_eq!(result.doc["a"], json!(10));

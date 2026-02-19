@@ -4,9 +4,8 @@
 //! `EjsonEncoder.writeAny` / `EjsonDecoder.readAny` implementations.
 
 use crate::bson::{
-    BsonBinary, BsonDbPointer, BsonDecimal128, BsonFloat, BsonInt32, BsonInt64,
-    BsonJavascriptCode, BsonJavascriptCodeWithScope, BsonMaxKey, BsonMinKey,
-    BsonObjectId, BsonSymbol, BsonTimestamp,
+    BsonBinary, BsonDbPointer, BsonDecimal128, BsonFloat, BsonInt32, BsonInt64, BsonJavascriptCode,
+    BsonJavascriptCodeWithScope, BsonMaxKey, BsonMinKey, BsonObjectId, BsonSymbol, BsonTimestamp,
 };
 
 /// A value that the EJSON codec knows how to encode and decode.

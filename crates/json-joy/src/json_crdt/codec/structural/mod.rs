@@ -2,7 +2,7 @@
 //!
 //! Mirrors `packages/json-joy/src/json-crdt/codec/structural/`.
 
-pub mod compact;
-pub mod verbose;
 pub mod binary;
+pub mod compact;
 pub mod compact_binary;
+pub mod verbose;

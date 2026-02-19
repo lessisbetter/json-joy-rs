@@ -36,12 +36,16 @@ impl Batch {
             new_patches.push(patch.rebase(t, Some(transform_horizon)));
             t += patch.span();
         }
-        Batch { patches: new_patches }
+        Batch {
+            patches: new_patches,
+        }
     }
 
     /// Deep-clones the batch.
     pub fn clone_batch(&self) -> Batch {
-        Batch { patches: self.patches.iter().map(|p| p.clone_patch()).collect() }
+        Batch {
+            patches: self.patches.iter().map(|p| p.clone_patch()).collect(),
+        }
     }
 }
 

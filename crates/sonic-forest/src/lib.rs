@@ -22,13 +22,13 @@
 //! [`util`] | `util/index.ts` | `first`, `next`, `remove` for position tree |
 //! [`util2`] | `util2.ts` | `insert2`, `remove2`, `next2` … for ID tree |
 
-pub mod types;
 pub mod splay;
+pub mod types;
 pub mod util;
 pub mod util2;
 
+pub use splay::util2::splay2;
+pub use splay::{l_splay, ll_splay, lr_splay, r_splay, rl_splay, rr_splay, splay};
 pub use types::{Node, Node2};
-pub use splay::{splay, r_splay, l_splay, ll_splay, rr_splay, lr_splay, rl_splay};
-pub use splay::util2::{splay2};
 pub use util::{first, next, remove};
-pub use util2::{first2, last2, next2, prev2, insert2, remove2};
+pub use util2::{first2, insert2, last2, next2, prev2, remove2};

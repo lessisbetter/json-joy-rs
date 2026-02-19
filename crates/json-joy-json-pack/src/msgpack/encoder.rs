@@ -17,7 +17,9 @@ impl Default for MsgPackEncoder {
 
 impl MsgPackEncoder {
     pub fn new() -> Self {
-        Self { inner: MsgPackEncoderFast::new() }
+        Self {
+            inner: MsgPackEncoderFast::new(),
+        }
     }
 
     pub fn encode(&mut self, value: &PackValue) -> Vec<u8> {

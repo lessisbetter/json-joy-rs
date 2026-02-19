@@ -99,7 +99,9 @@ mod tests {
     use json_joy_json_pack::PackValue;
     use serde_json::json;
 
-    fn sid() -> u64 { 222_222 }
+    fn sid() -> u64 {
+        222_222
+    }
 
     /// Build a model with `{foo: "bar"}`.
     fn make_base() -> Model {

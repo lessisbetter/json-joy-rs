@@ -117,7 +117,10 @@ pub fn clone_value_with_binary(value: &Value) -> Value {
         Value::String(s) => Value::String(s.clone()),
         Value::Array(arr) => {
             // Check if this looks like binary data (array of small integers)
-            if arr.iter().all(|v| matches!(v, Value::Number(n) if n.as_u64().map_or(false, |n| n <= 255))) {
+            if arr
+                .iter()
+                .all(|v| matches!(v, Value::Number(n) if n.as_u64().map_or(false, |n| n <= 255)))
+            {
                 Value::Array(arr.clone())
             } else {
                 Value::Array(arr.iter().map(clone_value_with_binary).collect())
@@ -195,10 +198,7 @@ mod tests {
     #[test]
     fn test_clone_binary_nested() {
         let mut obj = BTreeMap::new();
-        obj.insert(
-            "binary".to_string(),
-            JsonBinary::Binary(vec![1, 2, 3]),
-        );
+        obj.insert("binary".to_string(), JsonBinary::Binary(vec![1, 2, 3]));
         obj.insert(
             "nested".to_string(),
             JsonBinary::Object({

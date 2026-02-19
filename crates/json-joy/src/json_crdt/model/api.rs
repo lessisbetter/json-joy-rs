@@ -19,14 +19,14 @@
 
 use serde_json::Value;
 
+use crate::json_crdt::constants::ORIGIN;
+use crate::json_crdt::model::Model;
 use crate::json_crdt::nodes::{
     ArrNode, BinNode, ConNode, CrdtNode, IndexExt, ObjNode, StrNode, ValNode, VecNode,
 };
-use crate::json_crdt::model::Model;
 use crate::json_crdt_patch::clock::Ts;
 use crate::json_crdt_patch::patch::Patch;
 use crate::json_crdt_patch::patch_builder::PatchBuilder;
-use crate::json_crdt::constants::ORIGIN;
 use json_joy_json_pack::PackValue;
 
 // ── Error type ─────────────────────────────────────────────────────────────
@@ -47,10 +47,10 @@ pub enum ApiError {
 impl std::fmt::Display for ApiError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ApiError::NotFound    => write!(f, "NOT_FOUND"),
-            ApiError::WrongType   => write!(f, "WRONG_TYPE"),
+            ApiError::NotFound => write!(f, "NOT_FOUND"),
+            ApiError::WrongType => write!(f, "WRONG_TYPE"),
             ApiError::OutOfBounds => write!(f, "OUT_OF_BOUNDS"),
-            ApiError::EmptyWrite  => write!(f, "EMPTY_WRITE"),
+            ApiError::EmptyWrite => write!(f, "EMPTY_WRITE"),
         }
     }
 }
@@ -61,9 +61,9 @@ impl std::error::Error for ApiError {}
 
 fn json_to_pack(v: &Value) -> PackValue {
     match v {
-        Value::Null            => PackValue::Null,
-        Value::Bool(b)         => PackValue::Bool(*b),
-        Value::Number(n)       => {
+        Value::Null => PackValue::Null,
+        Value::Bool(b) => PackValue::Bool(*b),
+        Value::Number(n) => {
             if let Some(i) = n.as_i64() {
                 PackValue::Integer(i)
             } else if let Some(f) = n.as_f64() {
@@ -72,9 +72,9 @@ fn json_to_pack(v: &Value) -> PackValue {
                 PackValue::Null
             }
         }
-        Value::String(s)       => PackValue::Str(s.clone()),
-        Value::Array(_)        => PackValue::Null, // complex — caller should use json()
-        Value::Object(_)       => PackValue::Null,
+        Value::String(s) => PackValue::Str(s.clone()),
+        Value::Array(_) => PackValue::Null, // complex — caller should use json()
+        Value::Object(_) => PackValue::Null,
     }
 }
 
@@ -97,7 +97,7 @@ impl<'a> ModelApi<'a> {
     /// The builder's clock starts at the model's current clock position so all
     /// newly allocated timestamps are ahead of any existing operations.
     pub fn new(model: &'a mut Model) -> Self {
-        let sid  = model.clock.sid;
+        let sid = model.clock.sid;
         let time = model.clock.time;
         Self {
             model,
@@ -127,7 +127,10 @@ impl<'a> ModelApi<'a> {
     /// Return a read-only view of the node identified by `id`, if it exists.
     pub fn node(&self, id: Ts) -> Option<NodeView<'_>> {
         if self.model.index.contains_ts(&id) {
-            Some(NodeView { id, model: self.model })
+            Some(NodeView {
+                id,
+                model: self.model,
+            })
         } else {
             None
         }
@@ -135,7 +138,10 @@ impl<'a> ModelApi<'a> {
 
     /// Return a view of the document root's current value node.
     pub fn root_view(&self) -> NodeView<'_> {
-        NodeView { id: self.model.root.val, model: self.model }
+        NodeView {
+            id: self.model.root.val,
+            model: self.model,
+        }
     }
 
     /// Traverse `path` starting from `start` and return the target node ID.
@@ -500,7 +506,7 @@ impl<'a> ModelApi<'a> {
     /// Mirrors `PatchBuilder.json()` from the upstream TypeScript.
     pub fn json(&mut self, v: &Value) -> Result<Ts, ApiError> {
         match v {
-            Value::Null    => Ok(self.builder.con_val(PackValue::Null)),
+            Value::Null => Ok(self.builder.con_val(PackValue::Null)),
             Value::Bool(b) => Ok(self.builder.con_val(PackValue::Bool(*b))),
             Value::Number(n) => {
                 let pv = if let Some(i) = n.as_i64() {
@@ -564,7 +570,7 @@ impl<'a> NodeView<'a> {
     pub fn view(&self) -> Value {
         match self.crdt_node() {
             Some(n) => n.view(&self.model.index),
-            None    => Value::Null,
+            None => Value::Null,
         }
     }
 
@@ -629,7 +635,10 @@ impl<'a> NodeView<'a> {
     /// Mirrors `NodeApi.find()` in the upstream TypeScript.
     pub fn find(&self, path: &[Value]) -> Result<NodeView<'a>, ApiError> {
         let id = find_path(self.model, self.id, path)?;
-        Ok(NodeView { id, model: self.model })
+        Ok(NodeView {
+            id,
+            model: self.model,
+        })
     }
 }
 
@@ -695,7 +704,9 @@ pub fn find_path(model: &Model, start_id: Ts, path: &[Value]) -> Result<Ts, ApiE
                     Value::String(s) => s.parse::<usize>().map_err(|_| ApiError::NotFound)?,
                     _ => return Err(ApiError::NotFound),
                 };
-                current_id = n.elements.get(idx)
+                current_id = n
+                    .elements
+                    .get(idx)
                     .and_then(|e| *e)
                     .ok_or(ApiError::OutOfBounds)?;
             }
@@ -710,7 +721,8 @@ pub fn find_path(model: &Model, start_id: Ts, path: &[Value]) -> Result<Ts, ApiE
 
 /// Return the number of live bytes in a `BinNode`.
 fn bin_size(node: &BinNode) -> usize {
-    node.rga.iter_live()
+    node.rga
+        .iter_live()
         .filter_map(|c| c.data.as_deref())
         .map(|b| b.len())
         .sum()
@@ -733,7 +745,11 @@ fn bin_find(node: &BinNode, pos: usize) -> Option<Ts> {
 }
 
 /// Return the timestamp spans covering live positions `[pos, pos + len)` in a `BinNode`.
-fn bin_find_interval(node: &BinNode, pos: usize, len: usize) -> Vec<crate::json_crdt_patch::clock::Tss> {
+fn bin_find_interval(
+    node: &BinNode,
+    pos: usize,
+    len: usize,
+) -> Vec<crate::json_crdt_patch::clock::Tss> {
     use crate::json_crdt_patch::clock::Tss;
     let mut result = Vec::new();
     let mut count = 0usize;
@@ -744,7 +760,11 @@ fn bin_find_interval(node: &BinNode, pos: usize, len: usize) -> Vec<crate::json_
             let chunk_start = count;
             let chunk_end = count + chunk_len;
             if chunk_end > pos && chunk_start < end {
-                let local_start = if chunk_start >= pos { 0 } else { pos - chunk_start };
+                let local_start = if chunk_start >= pos {
+                    0
+                } else {
+                    pos - chunk_start
+                };
                 let local_end = (end - chunk_start).min(chunk_len);
                 result.push(Tss::new(
                     chunk.id.sid,
@@ -843,7 +863,8 @@ mod tests {
         };
         {
             let mut api = ModelApi::new(&mut model);
-            api.obj_set(obj_id, &[("x".to_string(), json!(99))]).unwrap();
+            api.obj_set(obj_id, &[("x".to_string(), json!(99))])
+                .unwrap();
         }
         assert_eq!(model.view()["x"], json!(99));
     }
@@ -1047,7 +1068,8 @@ mod tests {
         };
         {
             let mut api = ModelApi::new(&mut model);
-            api.arr_ins(arr_id, 0, &[json!(1), json!(2), json!(3)]).unwrap();
+            api.arr_ins(arr_id, 0, &[json!(1), json!(2), json!(3)])
+                .unwrap();
         }
         assert_eq!(model.view(), json!([1, 2, 3]));
         {
@@ -1089,7 +1111,8 @@ mod tests {
         };
         {
             let mut api = ModelApi::new(&mut model);
-            api.vec_set(vec_id, &[(0, json!(true)), (1, json!(42))]).unwrap();
+            api.vec_set(vec_id, &[(0, json!(true)), (1, json!(42))])
+                .unwrap();
         }
         assert_eq!(model.view(), json!([true, 42]));
     }
@@ -1106,7 +1129,10 @@ mod tests {
         let root_id = model.root.val;
         let api = ModelApi::new(&mut model);
         let b_id = api.find(root_id, &[json!("a"), json!("b")]).unwrap();
-        let view = NodeView { id: b_id, model: api.model };
+        let view = NodeView {
+            id: b_id,
+            model: api.model,
+        };
         assert_eq!(view.view(), json!(99));
     }
 
@@ -1120,7 +1146,10 @@ mod tests {
         let root_id = model.root.val;
         let api = ModelApi::new(&mut model);
         let elem_id = api.find(root_id, &[json!(1)]).unwrap();
-        let view = NodeView { id: elem_id, model: api.model };
+        let view = NodeView {
+            id: elem_id,
+            model: api.model,
+        };
         assert_eq!(view.view(), json!(20));
     }
 

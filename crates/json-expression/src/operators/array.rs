@@ -64,7 +64,11 @@ fn index_of_eval(expr: &[Value], ctx: &mut EvalCtx<'_>) -> Result<JsValue, JsErr
 }
 
 fn normalize_slice_index(idx: i32, len: i32) -> usize {
-    if idx < 0 { (len + idx).max(0) as usize } else { idx.min(len) as usize }
+    if idx < 0 {
+        (len + idx).max(0) as usize
+    } else {
+        idx.min(len) as usize
+    }
 }
 
 fn slice_eval(expr: &[Value], ctx: &mut EvalCtx<'_>) -> Result<JsValue, JsError> {
@@ -134,32 +138,117 @@ fn reduce_eval(expr: &[Value], ctx: &mut EvalCtx<'_>) -> Result<JsValue, JsError
     let sub_expr = expr[5].clone();
     let operators = Arc::clone(&ctx.operators);
     let create_pattern = ctx.create_pattern.clone();
-    util::reduce_arr(&arr, initial_value, &accname, &varname, ctx.vars, &mut |vars| {
-        let mut inner_ctx = EvalCtx {
-            vars,
-            operators: Arc::clone(&operators),
-            create_pattern: create_pattern.clone(),
-        };
-        crate::evaluate(&sub_expr, &mut inner_ctx)
-    })
+    util::reduce_arr(
+        &arr,
+        initial_value,
+        &accname,
+        &varname,
+        ctx.vars,
+        &mut |vars| {
+            let mut inner_ctx = EvalCtx {
+                vars,
+                operators: Arc::clone(&operators),
+                create_pattern: create_pattern.clone(),
+            };
+            crate::evaluate(&sub_expr, &mut inner_ctx)
+        },
+    )
 }
 
 use std::sync::Arc;
 
 pub fn operators() -> Vec<Arc<OperatorDefinition>> {
     vec![
-        Arc::new(OperatorDefinition { name: "concat", aliases: &["++"], arity: Arity::Variadic, eval_fn: concat_eval, impure: false }),
-        Arc::new(OperatorDefinition { name: "push", aliases: &[], arity: Arity::Variadic, eval_fn: push_eval, impure: false }),
-        Arc::new(OperatorDefinition { name: "head", aliases: &[], arity: Arity::Fixed(2), eval_fn: head_eval, impure: false }),
-        Arc::new(OperatorDefinition { name: "sort", aliases: &[], arity: Arity::Fixed(1), eval_fn: sort_eval, impure: false }),
-        Arc::new(OperatorDefinition { name: "reverse", aliases: &[], arity: Arity::Fixed(1), eval_fn: reverse_eval, impure: false }),
-        Arc::new(OperatorDefinition { name: "in", aliases: &[], arity: Arity::Fixed(2), eval_fn: in_eval, impure: false }),
-        Arc::new(OperatorDefinition { name: "fromEntries", aliases: &[], arity: Arity::Fixed(1), eval_fn: from_entries_eval, impure: false }),
-        Arc::new(OperatorDefinition { name: "indexOf", aliases: &[], arity: Arity::Fixed(2), eval_fn: index_of_eval, impure: false }),
-        Arc::new(OperatorDefinition { name: "slice", aliases: &[], arity: Arity::Fixed(3), eval_fn: slice_eval, impure: false }),
-        Arc::new(OperatorDefinition { name: "zip", aliases: &[], arity: Arity::Fixed(2), eval_fn: zip_eval, impure: false }),
-        Arc::new(OperatorDefinition { name: "filter", aliases: &[], arity: Arity::Fixed(3), eval_fn: filter_eval, impure: true }),
-        Arc::new(OperatorDefinition { name: "map", aliases: &[], arity: Arity::Fixed(3), eval_fn: map_eval, impure: true }),
-        Arc::new(OperatorDefinition { name: "reduce", aliases: &[], arity: Arity::Fixed(5), eval_fn: reduce_eval, impure: true }),
+        Arc::new(OperatorDefinition {
+            name: "concat",
+            aliases: &["++"],
+            arity: Arity::Variadic,
+            eval_fn: concat_eval,
+            impure: false,
+        }),
+        Arc::new(OperatorDefinition {
+            name: "push",
+            aliases: &[],
+            arity: Arity::Variadic,
+            eval_fn: push_eval,
+            impure: false,
+        }),
+        Arc::new(OperatorDefinition {
+            name: "head",
+            aliases: &[],
+            arity: Arity::Fixed(2),
+            eval_fn: head_eval,
+            impure: false,
+        }),
+        Arc::new(OperatorDefinition {
+            name: "sort",
+            aliases: &[],
+            arity: Arity::Fixed(1),
+            eval_fn: sort_eval,
+            impure: false,
+        }),
+        Arc::new(OperatorDefinition {
+            name: "reverse",
+            aliases: &[],
+            arity: Arity::Fixed(1),
+            eval_fn: reverse_eval,
+            impure: false,
+        }),
+        Arc::new(OperatorDefinition {
+            name: "in",
+            aliases: &[],
+            arity: Arity::Fixed(2),
+            eval_fn: in_eval,
+            impure: false,
+        }),
+        Arc::new(OperatorDefinition {
+            name: "fromEntries",
+            aliases: &[],
+            arity: Arity::Fixed(1),
+            eval_fn: from_entries_eval,
+            impure: false,
+        }),
+        Arc::new(OperatorDefinition {
+            name: "indexOf",
+            aliases: &[],
+            arity: Arity::Fixed(2),
+            eval_fn: index_of_eval,
+            impure: false,
+        }),
+        Arc::new(OperatorDefinition {
+            name: "slice",
+            aliases: &[],
+            arity: Arity::Fixed(3),
+            eval_fn: slice_eval,
+            impure: false,
+        }),
+        Arc::new(OperatorDefinition {
+            name: "zip",
+            aliases: &[],
+            arity: Arity::Fixed(2),
+            eval_fn: zip_eval,
+            impure: false,
+        }),
+        Arc::new(OperatorDefinition {
+            name: "filter",
+            aliases: &[],
+            arity: Arity::Fixed(3),
+            eval_fn: filter_eval,
+            impure: true,
+        }),
+        Arc::new(OperatorDefinition {
+            name: "map",
+            aliases: &[],
+            arity: Arity::Fixed(3),
+            eval_fn: map_eval,
+            impure: true,
+        }),
+        Arc::new(OperatorDefinition {
+            name: "reduce",
+            aliases: &[],
+            arity: Arity::Fixed(5),
+            eval_fn: reduce_eval,
+            impure: true,
+        }),
     ]
 }

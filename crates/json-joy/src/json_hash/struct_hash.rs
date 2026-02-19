@@ -50,7 +50,13 @@ pub fn struct_hash(val: &Value) -> String {
                 }
             }
         }
-        Value::Bool(b) => if *b { "T".to_string() } else { "F".to_string() },
+        Value::Bool(b) => {
+            if *b {
+                "T".to_string()
+            } else {
+                "F".to_string()
+            }
+        }
         Value::Null => "N".to_string(),
         Value::Array(arr) => {
             let mut res = String::from("[");
@@ -80,7 +86,9 @@ pub fn struct_hash(val: &Value) -> String {
 
 /// Encode a u64 in base-36 using lowercase letters (matches JS `.toString(36)`).
 fn radix_36(mut n: u64) -> String {
-    if n == 0 { return "0".to_string(); }
+    if n == 0 {
+        return "0".to_string();
+    }
     const DIGITS: &[u8] = b"0123456789abcdefghijklmnopqrstuvwxyz";
     let mut buf = Vec::new();
     while n > 0 {

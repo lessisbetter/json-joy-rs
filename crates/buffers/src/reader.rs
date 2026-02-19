@@ -33,11 +33,7 @@ impl<'a> Reader<'a> {
     /// Creates a new reader for the given byte slice.
     pub fn new(uint8: &'a [u8]) -> Self {
         let end = uint8.len();
-        Self {
-            uint8,
-            x: 0,
-            end,
-        }
+        Self { uint8, x: 0, end }
     }
 
     /// Creates a reader from a slice with custom start and end positions.

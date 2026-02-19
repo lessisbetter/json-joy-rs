@@ -5,7 +5,9 @@
 /// Counts the number of non-overlapping occurrences of `needle` in `haystack`,
 /// starting from byte offset `offset`.
 pub fn str_cnt(needle: &str, haystack: &str, offset: usize) -> usize {
-    if needle.is_empty() { return 0; }
+    if needle.is_empty() {
+        return 0;
+    }
     let mut count = 0;
     let mut pos = offset;
     while let Some(found) = haystack[pos..].find(needle) {

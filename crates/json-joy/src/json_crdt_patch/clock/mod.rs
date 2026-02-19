@@ -2,9 +2,9 @@
 //!
 //! Mirrors `packages/json-joy/src/json-crdt-patch/clock/`.
 
+use crate::json_crdt_patch::enums::SESSION;
 use std::collections::HashMap;
 use std::fmt;
-use crate::json_crdt_patch::enums::SESSION;
 
 // ── Core structs ───────────────────────────────────────────────────────────
 
@@ -73,26 +73,46 @@ pub fn equal(a: Ts, b: Ts) -> bool {
 /// Returns `1`, `0`, or `-1`.
 #[inline]
 pub fn compare(a: Ts, b: Ts) -> i8 {
-    if a.time > b.time { return 1; }
-    if a.time < b.time { return -1; }
-    if a.sid > b.sid { return 1; }
-    if a.sid < b.sid { return -1; }
+    if a.time > b.time {
+        return 1;
+    }
+    if a.time < b.time {
+        return -1;
+    }
+    if a.sid > b.sid {
+        return 1;
+    }
+    if a.sid < b.sid {
+        return -1;
+    }
     0
 }
 
 /// Returns `true` if `[ts1, span1)` completely contains `[ts2, span2)`.
 pub fn contains(ts1: Ts, span1: u64, ts2: Ts, span2: u64) -> bool {
-    if ts1.sid != ts2.sid { return false; }
-    if ts1.time > ts2.time { return false; }
-    if ts1.time + span1 < ts2.time + span2 { return false; }
+    if ts1.sid != ts2.sid {
+        return false;
+    }
+    if ts1.time > ts2.time {
+        return false;
+    }
+    if ts1.time + span1 < ts2.time + span2 {
+        return false;
+    }
     true
 }
 
 /// Returns `true` if the timespan `[ts1, span1)` contains point `ts2`.
 pub fn contains_id(ts1: Ts, span1: u64, ts2: Ts) -> bool {
-    if ts1.sid != ts2.sid { return false; }
-    if ts1.time > ts2.time { return false; }
-    if ts1.time + span1 < ts2.time + 1 { return false; }
+    if ts1.sid != ts2.sid {
+        return false;
+    }
+    if ts1.time > ts2.time {
+        return false;
+    }
+    if ts1.time + span1 < ts2.time + 1 {
+        return false;
+    }
     true
 }
 
@@ -157,7 +177,11 @@ pub struct ClockVector {
 
 impl ClockVector {
     pub fn new(sid: u64, time: u64) -> Self {
-        Self { sid, time, peers: HashMap::new() }
+        Self {
+            sid,
+            time,
+            peers: HashMap::new(),
+        }
     }
 
     pub fn ts(&self) -> Ts {
@@ -179,7 +203,11 @@ impl ClockVector {
         if sid != self.sid {
             self.peers
                 .entry(sid)
-                .and_modify(|e| { if edge > e.time { e.time = edge; } })
+                .and_modify(|e| {
+                    if edge > e.time {
+                        e.time = edge;
+                    }
+                })
                 .or_insert_with(|| Ts::new(sid, edge));
         }
         if edge >= self.time {
@@ -215,7 +243,13 @@ impl fmt::Display for ClockVector {
         let peers: Vec<_> = self.peers.values().collect();
         for (i, peer) in peers.iter().enumerate() {
             let is_last = i == peers.len() - 1;
-            write!(f, "\n{} {}.{}", if is_last { "└─" } else { "├─" }, peer.sid, peer.time)?;
+            write!(
+                f,
+                "\n{} {}.{}",
+                if is_last { "└─" } else { "├─" },
+                peer.sid,
+                peer.time
+            )?;
         }
         Ok(())
     }
@@ -235,7 +269,10 @@ pub struct ServerClockVector {
 
 impl ServerClockVector {
     pub fn new(time: u64) -> Self {
-        Self { sid: SESSION::SERVER, time }
+        Self {
+            sid: SESSION::SERVER,
+            time,
+        }
     }
 
     pub fn ts(&self) -> Ts {
@@ -252,10 +289,16 @@ impl ServerClockVector {
     ///
     /// Panics if `id.sid > 8` or if `id.time > self.time` (time-travel).
     pub fn observe(&mut self, id: Ts, span: u64) -> Result<(), String> {
-        if id.sid > 8 { return Err("INVALID_SERVER_SESSION".into()); }
-        if self.time < id.time { return Err("TIME_TRAVEL".into()); }
+        if id.sid > 8 {
+            return Err("INVALID_SERVER_SESSION".into());
+        }
+        if self.time < id.time {
+            return Err("TIME_TRAVEL".into());
+        }
         let time = id.time + span;
-        if time > self.time { self.time = time; }
+        if time > self.time {
+            self.time = time;
+        }
         Ok(())
     }
 

@@ -23,11 +23,11 @@
 
 use serde_json::Value;
 
-use crate::json_crdt::model::{Model, ModelApi};
-use crate::json_crdt::model::api::find_path;
-use crate::json_crdt::nodes::{CrdtNode, IndexExt};
 use crate::json_crdt::constants::ORIGIN;
-use json_joy_json_pointer::{parse_json_pointer, is_child};
+use crate::json_crdt::model::api::find_path;
+use crate::json_crdt::model::{Model, ModelApi};
+use crate::json_crdt::nodes::{CrdtNode, IndexExt};
+use json_joy_json_pointer::{is_child, parse_json_pointer};
 
 // ── Error ───────────────────────────────────────────────────────────────────
 
@@ -53,13 +53,13 @@ pub enum JsonPatchError {
 impl std::fmt::Display for JsonPatchError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            JsonPatchError::InvalidOp(s)  => write!(f, "INVALID_OP: {s}"),
-            JsonPatchError::NotFound      => write!(f, "NOT_FOUND"),
-            JsonPatchError::InvalidIndex  => write!(f, "INVALID_INDEX"),
-            JsonPatchError::OutOfBounds   => write!(f, "OUT_OF_BOUNDS"),
-            JsonPatchError::Test          => write!(f, "TEST"),
-            JsonPatchError::InvalidChild  => write!(f, "INVALID_CHILD"),
-            JsonPatchError::Api(e)        => write!(f, "API: {e}"),
+            JsonPatchError::InvalidOp(s) => write!(f, "INVALID_OP: {s}"),
+            JsonPatchError::NotFound => write!(f, "NOT_FOUND"),
+            JsonPatchError::InvalidIndex => write!(f, "INVALID_INDEX"),
+            JsonPatchError::OutOfBounds => write!(f, "OUT_OF_BOUNDS"),
+            JsonPatchError::Test => write!(f, "TEST"),
+            JsonPatchError::InvalidChild => write!(f, "INVALID_CHILD"),
+            JsonPatchError::Api(e) => write!(f, "API: {e}"),
         }
     }
 }
@@ -98,7 +98,10 @@ pub struct JsonPatch<'a> {
 impl<'a> JsonPatch<'a> {
     /// Create a new `JsonPatch` targeting the document root.
     pub fn new(model: &'a mut Model) -> Self {
-        Self { model, pfx: Vec::new() }
+        Self {
+            model,
+            pfx: Vec::new(),
+        }
     }
 
     /// Create a new `JsonPatch` with a path prefix.
@@ -125,14 +128,16 @@ impl<'a> JsonPatch<'a> {
     ///
     /// Mirrors `JsonPatch.applyOp()`.
     pub fn apply_op(&mut self, op: &Value) -> Result<(), JsonPatchError> {
-        let op_name = op.get("op")
+        let op_name = op
+            .get("op")
             .and_then(Value::as_str)
             .ok_or_else(|| JsonPatchError::InvalidOp("missing 'op' field".to_string()))?;
 
         match op_name {
             "add" => {
-                let path  = get_path(op)?;
-                let value = op.get("value")
+                let path = get_path(op)?;
+                let value = op
+                    .get("value")
                     .ok_or_else(|| JsonPatchError::InvalidOp("add: missing 'value'".to_string()))?
                     .clone();
                 self.add(&path, &value)
@@ -142,9 +147,12 @@ impl<'a> JsonPatch<'a> {
                 self.remove(&path)
             }
             "replace" => {
-                let path  = get_path(op)?;
-                let value = op.get("value")
-                    .ok_or_else(|| JsonPatchError::InvalidOp("replace: missing 'value'".to_string()))?
+                let path = get_path(op)?;
+                let value = op
+                    .get("value")
+                    .ok_or_else(|| {
+                        JsonPatchError::InvalidOp("replace: missing 'value'".to_string())
+                    })?
                     .clone();
                 self.replace(&path, &value)
             }
@@ -159,18 +167,20 @@ impl<'a> JsonPatch<'a> {
                 self.copy_op(&path, &from)
             }
             "test" => {
-                let path  = get_path(op)?;
-                let value = op.get("value")
+                let path = get_path(op)?;
+                let value = op
+                    .get("value")
                     .ok_or_else(|| JsonPatchError::InvalidOp("test: missing 'value'".to_string()))?
                     .clone();
                 self.test(&path, &value)
             }
             "str_ins" => {
                 let path = get_path(op)?;
-                let pos  = op.get("pos")
-                    .and_then(Value::as_u64)
-                    .ok_or_else(|| JsonPatchError::InvalidOp("str_ins: missing 'pos'".to_string()))? as usize;
-                let str_val = op.get("str")
+                let pos = op.get("pos").and_then(Value::as_u64).ok_or_else(|| {
+                    JsonPatchError::InvalidOp("str_ins: missing 'pos'".to_string())
+                })? as usize;
+                let str_val = op
+                    .get("str")
                     .and_then(Value::as_str)
                     .ok_or_else(|| JsonPatchError::InvalidOp("str_ins: missing 'str'".to_string()))?
                     .to_string();
@@ -178,10 +188,10 @@ impl<'a> JsonPatch<'a> {
             }
             "str_del" => {
                 let path = get_path(op)?;
-                let pos  = op.get("pos")
-                    .and_then(Value::as_u64)
-                    .ok_or_else(|| JsonPatchError::InvalidOp("str_del: missing 'pos'".to_string()))? as usize;
-                let len  = op.get("len").and_then(Value::as_u64).map(|v| v as usize);
+                let pos = op.get("pos").and_then(Value::as_u64).ok_or_else(|| {
+                    JsonPatchError::InvalidOp("str_del: missing 'pos'".to_string())
+                })? as usize;
+                let len = op.get("len").and_then(Value::as_u64).map(|v| v as usize);
                 let str_val = op.get("str").and_then(Value::as_str).map(|s| s.to_string());
                 self.str_del(&path, pos, len, str_val.as_deref())
             }
@@ -208,8 +218,8 @@ impl<'a> JsonPatch<'a> {
         let key = &steps[steps.len() - 1];
 
         let root_id = self.model.root.val;
-        let parent_id = find_path(self.model, root_id, &parent_steps)
-            .map_err(|_| JsonPatchError::NotFound)?;
+        let parent_id =
+            find_path(self.model, root_id, &parent_steps).map_err(|_| JsonPatchError::NotFound)?;
 
         // Unwrap any ValNode wrapper at the parent
         let parent_id = unwrap_val(self.model, parent_id);
@@ -228,7 +238,8 @@ impl<'a> JsonPatch<'a> {
                     api.arr_ins(parent_id, length, &[value.clone()])
                         .map_err(JsonPatchError::from)
                 } else {
-                    let index = key.parse::<usize>()
+                    let index = key
+                        .parse::<usize>()
                         .map_err(|_| JsonPatchError::InvalidIndex)?;
                     let mut api = ModelApi::new(self.model);
                     api.arr_ins(parent_id, index, &[value.clone()])
@@ -256,8 +267,8 @@ impl<'a> JsonPatch<'a> {
         let key = &steps[steps.len() - 1];
 
         let root_id = self.model.root.val;
-        let parent_id = find_path(self.model, root_id, &parent_steps)
-            .map_err(|_| JsonPatchError::NotFound)?;
+        let parent_id =
+            find_path(self.model, root_id, &parent_steps).map_err(|_| JsonPatchError::NotFound)?;
 
         let parent_id = unwrap_val(self.model, parent_id);
 
@@ -271,7 +282,8 @@ impl<'a> JsonPatch<'a> {
                         // Check if it's a ConNode with undefined value
                         if let Some(CrdtNode::Con(c)) = IndexExt::get(&self.model.index, &vid) {
                             use crate::json_crdt_patch::operations::ConValue;
-                            if matches!(c.val, ConValue::Val(ref pv) if matches!(pv, json_joy_json_pack::PackValue::Null)) {
+                            if matches!(c.val, ConValue::Val(ref pv) if matches!(pv, json_joy_json_pack::PackValue::Null))
+                            {
                                 // Already null — upstream treats this as NOT_FOUND for explicit undefined
                                 // However, since we map undefined→null, be lenient and allow remove.
                                 // Let it proceed to set null (idempotent).
@@ -285,14 +297,14 @@ impl<'a> JsonPatch<'a> {
                     .map_err(JsonPatchError::from)
             }
             Some(CrdtNode::Arr(_)) => {
-                let index = key.parse::<usize>()
+                let index = key
+                    .parse::<usize>()
                     .map_err(|_| JsonPatchError::InvalidIndex)?;
                 let mut api = ModelApi::new(self.model);
-                api.arr_del(parent_id, index, 1)
-                    .map_err(|e| match e {
-                        crate::json_crdt::model::api::ApiError::OutOfBounds => JsonPatchError::NotFound,
-                        other => JsonPatchError::Api(other),
-                    })
+                api.arr_del(parent_id, index, 1).map_err(|e| match e {
+                    crate::json_crdt::model::api::ApiError::OutOfBounds => JsonPatchError::NotFound,
+                    other => JsonPatchError::Api(other),
+                })
             }
             _ => Err(JsonPatchError::NotFound),
         }
@@ -310,8 +322,8 @@ impl<'a> JsonPatch<'a> {
     ///
     /// Mirrors `JsonPatch.move()`.
     pub fn move_op(&mut self, path: &str, from: &str) -> Result<(), JsonPatchError> {
-        let path_steps  = self.to_path(path);
-        let from_steps  = self.to_path(from);
+        let path_steps = self.to_path(path);
+        let from_steps = self.to_path(from);
 
         // Reject if path is a child of from (would move into itself)
         if is_child(&from_steps, &path_steps) {
@@ -350,19 +362,20 @@ impl<'a> JsonPatch<'a> {
         let steps = self.to_path(path);
         let value_path: Vec<Value> = steps.iter().map(|s| Value::String(s.clone())).collect();
 
-        let root_id  = self.model.root.val;
-        let node_id  = find_path(self.model, root_id, &value_path)
-            .map_err(|_| JsonPatchError::NotFound)?;
-        let node_id  = unwrap_val(self.model, node_id);
+        let root_id = self.model.root.val;
+        let node_id =
+            find_path(self.model, root_id, &value_path).map_err(|_| JsonPatchError::NotFound)?;
+        let node_id = unwrap_val(self.model, node_id);
 
         match IndexExt::get(&self.model.index, &node_id) {
             Some(CrdtNode::Str(_)) => {
                 let mut api = ModelApi::new(self.model);
-                api.str_ins(node_id, pos, str_val)
-                    .map_err(|e| match e {
-                        crate::json_crdt::model::api::ApiError::OutOfBounds => JsonPatchError::OutOfBounds,
-                        other => JsonPatchError::Api(other),
-                    })
+                api.str_ins(node_id, pos, str_val).map_err(|e| match e {
+                    crate::json_crdt::model::api::ApiError::OutOfBounds => {
+                        JsonPatchError::OutOfBounds
+                    }
+                    other => JsonPatchError::Api(other),
+                })
             }
             _ => Err(JsonPatchError::NotFound),
         }
@@ -382,8 +395,8 @@ impl<'a> JsonPatch<'a> {
         let value_path: Vec<Value> = steps.iter().map(|s| Value::String(s.clone())).collect();
 
         let root_id = self.model.root.val;
-        let node_id = find_path(self.model, root_id, &value_path)
-            .map_err(|_| JsonPatchError::NotFound)?;
+        let node_id =
+            find_path(self.model, root_id, &value_path).map_err(|_| JsonPatchError::NotFound)?;
         let node_id = unwrap_val(self.model, node_id);
 
         let current_len = match IndexExt::get(&self.model.index, &node_id) {
@@ -435,12 +448,12 @@ impl<'a> JsonPatch<'a> {
         let steps = self.to_path(path);
         let value_path: Vec<Value> = steps.iter().map(|s| Value::String(s.clone())).collect();
         let root_id = self.model.root.val;
-        let node_id = find_path(self.model, root_id, &value_path)
-            .map_err(|_| JsonPatchError::NotFound)?;
+        let node_id =
+            find_path(self.model, root_id, &value_path).map_err(|_| JsonPatchError::NotFound)?;
         let node_id = unwrap_val(self.model, node_id);
         match IndexExt::get(&self.model.index, &node_id) {
             Some(n) => Ok(n.view(&self.model.index)),
-            None    => Err(JsonPatchError::NotFound),
+            None => Err(JsonPatchError::NotFound),
         }
     }
 
@@ -454,7 +467,10 @@ impl<'a> JsonPatch<'a> {
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
 /// Unwrap any chain of `ValNode` wrappers, returning the final data-node ID.
-fn unwrap_val(model: &Model, mut id: crate::json_crdt_patch::clock::Ts) -> crate::json_crdt_patch::clock::Ts {
+fn unwrap_val(
+    model: &Model,
+    mut id: crate::json_crdt_patch::clock::Ts,
+) -> crate::json_crdt_patch::clock::Ts {
     loop {
         match IndexExt::get(&model.index, &id) {
             Some(CrdtNode::Val(v)) => id = v.val,
@@ -495,7 +511,10 @@ pub struct JsonPatchStore {
 impl JsonPatchStore {
     /// Create a store wrapping `model`, rooted at the document root.
     pub fn new(model: Model) -> Self {
-        Self { model, path: Vec::new() }
+        Self {
+            model,
+            path: Vec::new(),
+        }
     }
 
     /// Create a store wrapping `model`, rooted at `path`.
@@ -541,24 +560,20 @@ impl JsonPatchStore {
         };
         let value_path: Vec<Value> = steps.iter().map(|s| Value::String(s.clone())).collect();
         let root_id = self.model.root.val;
-        find_path(&self.model, root_id, &value_path)
-            .ok()
-            .map(|id| {
-                let id = unwrap_val(&self.model, id);
-                match IndexExt::get(&self.model.index, &id) {
-                    Some(n) => n.view(&self.model.index),
-                    None    => Value::Null,
-                }
-            })
+        find_path(&self.model, root_id, &value_path).ok().map(|id| {
+            let id = unwrap_val(&self.model, id);
+            match IndexExt::get(&self.model.index, &id) {
+                Some(n) => n.view(&self.model.index),
+                None => Value::Null,
+            }
+        })
     }
 
     /// Return a new `JsonPatchStore` rooted at `self.path + path`.
     pub fn bind(&self, path: &str) -> JsonPatchStoreBound {
         let mut new_path = self.path.clone();
         new_path.extend(parse_json_pointer(path));
-        JsonPatchStoreBound {
-            path: new_path,
-        }
+        JsonPatchStoreBound { path: new_path }
     }
 }
 
@@ -785,13 +800,15 @@ mod tests {
     fn apply_batch_operations() {
         let mut model = make_obj_model();
         let mut patcher = JsonPatch::new(&mut model);
-        patcher.apply(&[
-            json!({ "op": "add",     "path": "/city",  "value": "NYC" }),
-            json!({ "op": "replace", "path": "/age",   "value": 31 }),
-        ]).unwrap();
+        patcher
+            .apply(&[
+                json!({ "op": "add",     "path": "/city",  "value": "NYC" }),
+                json!({ "op": "replace", "path": "/age",   "value": 31 }),
+            ])
+            .unwrap();
         let v = model.view();
         assert_eq!(v["city"], json!("NYC"));
-        assert_eq!(v["age"],  json!(31));
+        assert_eq!(v["age"], json!(31));
     }
 
     #[test]
@@ -847,7 +864,7 @@ mod tests {
         let mut store = JsonPatchStore::with_path(model, vec!["user".to_string()]);
         // Operations on the store are relative to /user
         store.add("/email", json!("eve@example.com")).unwrap();
-        assert_eq!(store.get("/name"),  Some(json!("Eve")));
+        assert_eq!(store.get("/name"), Some(json!("Eve")));
         assert_eq!(store.get("/email"), Some(json!("eve@example.com")));
     }
 }

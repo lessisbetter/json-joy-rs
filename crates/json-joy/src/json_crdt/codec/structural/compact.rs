@@ -179,64 +179,82 @@ fn encode_obj(model: &Model, node: &ObjNode, state: &mut EncodeState) -> Value {
 
 fn encode_vec(model: &Model, node: &VecNode, state: &mut EncodeState) -> Value {
     let id = state.encode_ts(node.id);
-    let elements: Vec<Value> = node.elements.iter().map(|e| {
-        match e {
+    let elements: Vec<Value> = node
+        .elements
+        .iter()
+        .map(|e| match e {
             None => json!(0),
-            Some(child_ts) => {
-                match model.index.get(&TsKey::from(*child_ts)) {
-                    Some(child) => encode_node(model, child, state),
-                    None => json!(0),
-                }
-            }
-        }
-    }).collect();
+            Some(child_ts) => match model.index.get(&TsKey::from(*child_ts)) {
+                Some(child) => encode_node(model, child, state),
+                None => json!(0),
+            },
+        })
+        .collect();
     json!([VEC, id, elements])
 }
 
 fn encode_str(node: &StrNode, state: &mut EncodeState) -> Value {
     let id = state.encode_ts(node.id);
-    let chunks: Vec<Value> = node.rga.iter().map(|chunk| {
-        let chunk_id = state.encode_ts(chunk.id);
-        if chunk.deleted {
-            json!([chunk_id, chunk.span])
-        } else {
-            let data = chunk.data.as_deref().unwrap_or("");
-            json!([chunk_id, data])
-        }
-    }).collect();
+    let chunks: Vec<Value> = node
+        .rga
+        .iter()
+        .map(|chunk| {
+            let chunk_id = state.encode_ts(chunk.id);
+            if chunk.deleted {
+                json!([chunk_id, chunk.span])
+            } else {
+                let data = chunk.data.as_deref().unwrap_or("");
+                json!([chunk_id, data])
+            }
+        })
+        .collect();
     json!([STR, id, chunks])
 }
 
 fn encode_bin(node: &BinNode, state: &mut EncodeState) -> Value {
     let id = state.encode_ts(node.id);
-    let chunks: Vec<Value> = node.rga.iter().map(|chunk| {
-        let chunk_id = state.encode_ts(chunk.id);
-        if chunk.deleted {
-            json!([chunk_id, chunk.span])
-        } else {
-            let data = chunk.data.as_deref().unwrap_or(&[]);
-            // Encode binary as array of byte values (JSON-safe)
-            let bytes: Vec<Value> = data.iter().map(|&b| json!(b)).collect();
-            json!([chunk_id, bytes])
-        }
-    }).collect();
+    let chunks: Vec<Value> = node
+        .rga
+        .iter()
+        .map(|chunk| {
+            let chunk_id = state.encode_ts(chunk.id);
+            if chunk.deleted {
+                json!([chunk_id, chunk.span])
+            } else {
+                let data = chunk.data.as_deref().unwrap_or(&[]);
+                // Encode binary as array of byte values (JSON-safe)
+                let bytes: Vec<Value> = data.iter().map(|&b| json!(b)).collect();
+                json!([chunk_id, bytes])
+            }
+        })
+        .collect();
     json!([BIN, id, chunks])
 }
 
 fn encode_arr(model: &Model, node: &ArrNode, state: &mut EncodeState) -> Value {
     let id = state.encode_ts(node.id);
-    let chunks: Vec<Value> = node.rga.iter().map(|chunk| {
-        let chunk_id = state.encode_ts(chunk.id);
-        if chunk.deleted {
-            json!([chunk_id, chunk.span])
-        } else {
-            let node_ids = chunk.data.as_ref().map(|ids| ids.as_slice()).unwrap_or(&[]);
-            let nodes: Vec<Value> = node_ids.iter().filter_map(|id| {
-                model.index.get(&TsKey::from(*id)).map(|n| encode_node(model, n, state))
-            }).collect();
-            json!([chunk_id, nodes])
-        }
-    }).collect();
+    let chunks: Vec<Value> = node
+        .rga
+        .iter()
+        .map(|chunk| {
+            let chunk_id = state.encode_ts(chunk.id);
+            if chunk.deleted {
+                json!([chunk_id, chunk.span])
+            } else {
+                let node_ids = chunk.data.as_ref().map(|ids| ids.as_slice()).unwrap_or(&[]);
+                let nodes: Vec<Value> = node_ids
+                    .iter()
+                    .filter_map(|id| {
+                        model
+                            .index
+                            .get(&TsKey::from(*id))
+                            .map(|n| encode_node(model, n, state))
+                    })
+                    .collect();
+                json!([chunk_id, nodes])
+            }
+        })
+        .collect();
     json!([ARR, id, chunks])
 }
 
@@ -259,7 +277,9 @@ pub enum DecodeError {
 
 /// Decode a compact JSON document back into a [`Model`].
 pub fn decode(data: &Value) -> Result<Model, DecodeError> {
-    let arr = data.as_array().ok_or_else(|| DecodeError::Format("expected array".into()))?;
+    let arr = data
+        .as_array()
+        .ok_or_else(|| DecodeError::Format("expected array".into()))?;
     if arr.len() < 2 {
         return Err(DecodeError::Format("expected 2-element array".into()));
     }
@@ -271,12 +291,14 @@ pub fn decode(data: &Value) -> Result<Model, DecodeError> {
     let mut dec = DecodeState::new_empty();
 
     let model = if is_server {
-        let server_time = clock_val.as_u64()
+        let server_time = clock_val
+            .as_u64()
             .ok_or_else(|| DecodeError::Format("server time must be u64".into()))?;
         dec = DecodeState::Server(server_time);
         Model::new_server(server_time)
     } else {
-        let flat_arr = clock_val.as_array()
+        let flat_arr = clock_val
+            .as_array()
             .ok_or_else(|| DecodeError::Format("clock table must be array".into()))?;
         let flat: Vec<u64> = flat_arr.iter().map(|v| v.as_u64().unwrap_or(0)).collect();
         let cd = ClockDecoder::from_arr(&flat)
@@ -332,7 +354,9 @@ impl DecodeState {
                         // but handle gracefully
                         Ok(mk_ts(SESSION::SERVER, n as u64))
                     } else {
-                        Err(DecodeError::Format("negative scalar in logical mode".into()))
+                        Err(DecodeError::Format(
+                            "negative scalar in logical mode".into(),
+                        ))
                     }
                 } else if let Some(arr) = val.as_array() {
                     if arr.len() < 2 {
@@ -350,7 +374,9 @@ impl DecodeState {
                         Ok(mk_ts(first as u64, second))
                     }
                 } else {
-                    Err(DecodeError::Format("invalid timestamp in logical mode".into()))
+                    Err(DecodeError::Format(
+                        "invalid timestamp in logical mode".into(),
+                    ))
                 }
             }
             DecodeState::Empty => Err(DecodeError::NoClockDecoder),
@@ -363,12 +389,14 @@ fn decode_node_into(
     model: &mut Model,
     state: &mut DecodeState,
 ) -> Result<Ts, DecodeError> {
-    let arr = val.as_array()
+    let arr = val
+        .as_array()
         .ok_or_else(|| DecodeError::Format("node must be array".into()))?;
     if arr.is_empty() {
         return Err(DecodeError::Format("empty node array".into()));
     }
-    let type_code = arr[0].as_u64()
+    let type_code = arr[0]
+        .as_u64()
         .ok_or_else(|| DecodeError::Format("node type must be integer".into()))?;
 
     match type_code {
@@ -441,7 +469,8 @@ fn decode_obj(
         return Err(DecodeError::MissingField);
     }
     let id = state.decode_ts(&arr[1])?;
-    let map = arr[2].as_object()
+    let map = arr[2]
+        .as_object()
         .ok_or_else(|| DecodeError::Format("obj map must be object".into()))?;
 
     use crate::json_crdt::nodes::ObjNode;
@@ -465,7 +494,8 @@ fn decode_vec(
         return Err(DecodeError::MissingField);
     }
     let id = state.decode_ts(&arr[1])?;
-    let elements_arr = arr[2].as_array()
+    let elements_arr = arr[2]
+        .as_array()
         .ok_or_else(|| DecodeError::Format("vec elements must be array".into()))?
         .clone();
 
@@ -492,16 +522,18 @@ fn decode_str(
         return Err(DecodeError::MissingField);
     }
     let id = state.decode_ts(&arr[1])?;
-    let chunks_arr = arr[2].as_array()
+    let chunks_arr = arr[2]
+        .as_array()
         .ok_or_else(|| DecodeError::Format("str chunks must be array".into()))?
         .clone();
 
-    use crate::json_crdt::nodes::StrNode;
     use crate::json_crdt::nodes::rga::Chunk;
+    use crate::json_crdt::nodes::StrNode;
 
     let mut node = StrNode::new(id);
     for chunk_val in &chunks_arr {
-        let chunk_arr = chunk_val.as_array()
+        let chunk_arr = chunk_val
+            .as_array()
             .ok_or_else(|| DecodeError::Format("str chunk must be array".into()))?;
         if chunk_arr.len() < 2 {
             return Err(DecodeError::Format("str chunk too short".into()));
@@ -513,9 +545,12 @@ fn decode_str(
             node.rga.push_chunk(Chunk::new_deleted(chunk_id, span));
         } else if let Some(s) = content.as_str() {
             let span = s.chars().count() as u64;
-            node.rga.push_chunk(Chunk::new(chunk_id, span, s.to_string()));
+            node.rga
+                .push_chunk(Chunk::new(chunk_id, span, s.to_string()));
         } else {
-            return Err(DecodeError::Format("str chunk content must be string or number".into()));
+            return Err(DecodeError::Format(
+                "str chunk content must be string or number".into(),
+            ));
         }
     }
     model.index.insert(TsKey::from(id), CrdtNode::Str(node));
@@ -531,16 +566,18 @@ fn decode_bin(
         return Err(DecodeError::MissingField);
     }
     let id = state.decode_ts(&arr[1])?;
-    let chunks_arr = arr[2].as_array()
+    let chunks_arr = arr[2]
+        .as_array()
         .ok_or_else(|| DecodeError::Format("bin chunks must be array".into()))?
         .clone();
 
-    use crate::json_crdt::nodes::BinNode;
     use crate::json_crdt::nodes::rga::Chunk;
+    use crate::json_crdt::nodes::BinNode;
 
     let mut node = BinNode::new(id);
     for chunk_val in &chunks_arr {
-        let chunk_arr = chunk_val.as_array()
+        let chunk_arr = chunk_val
+            .as_array()
             .ok_or_else(|| DecodeError::Format("bin chunk must be array".into()))?;
         if chunk_arr.len() < 2 {
             return Err(DecodeError::Format("bin chunk too short".into()));
@@ -551,13 +588,16 @@ fn decode_bin(
             // Tombstone
             node.rga.push_chunk(Chunk::new_deleted(chunk_id, span));
         } else if let Some(bytes_arr) = content.as_array() {
-            let data: Vec<u8> = bytes_arr.iter()
+            let data: Vec<u8> = bytes_arr
+                .iter()
                 .map(|b| b.as_u64().unwrap_or(0) as u8)
                 .collect();
             let span = data.len() as u64;
             node.rga.push_chunk(Chunk::new(chunk_id, span, data));
         } else {
-            return Err(DecodeError::Format("bin chunk content must be array or number".into()));
+            return Err(DecodeError::Format(
+                "bin chunk content must be array or number".into(),
+            ));
         }
     }
     model.index.insert(TsKey::from(id), CrdtNode::Bin(node));
@@ -573,16 +613,18 @@ fn decode_arr(
         return Err(DecodeError::MissingField);
     }
     let id = state.decode_ts(&arr[1])?;
-    let chunks_arr = arr[2].as_array()
+    let chunks_arr = arr[2]
+        .as_array()
         .ok_or_else(|| DecodeError::Format("arr chunks must be array".into()))?
         .clone();
 
-    use crate::json_crdt::nodes::ArrNode;
     use crate::json_crdt::nodes::rga::Chunk;
+    use crate::json_crdt::nodes::ArrNode;
 
     let mut node = ArrNode::new(id);
     for chunk_val in &chunks_arr {
-        let chunk_arr = chunk_val.as_array()
+        let chunk_arr = chunk_val
+            .as_array()
             .ok_or_else(|| DecodeError::Format("arr chunk must be array".into()))?;
         if chunk_arr.len() < 2 {
             return Err(DecodeError::Format("arr chunk too short".into()));
@@ -602,7 +644,9 @@ fn decode_arr(
             let span = ids.len() as u64;
             node.rga.push_chunk(Chunk::new(chunk_id, span, ids));
         } else {
-            return Err(DecodeError::Format("arr chunk content must be array or number".into()));
+            return Err(DecodeError::Format(
+                "arr chunk content must be array or number".into(),
+            ));
         }
     }
     model.index.insert(TsKey::from(id), CrdtNode::Arr(node));
@@ -625,7 +669,9 @@ mod tests {
     use json_joy_json_pack::PackValue;
     use serde_json::json;
 
-    fn sid() -> u64 { 123456 }
+    fn sid() -> u64 {
+        123456
+    }
 
     fn make_simple_model() -> Model {
         let mut model = Model::new(sid());

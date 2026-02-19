@@ -40,8 +40,16 @@ impl NumFormat {
     pub fn is_integer(self) -> bool {
         matches!(
             self,
-            Self::I | Self::I8 | Self::I16 | Self::I32 | Self::I64
-                | Self::U | Self::U8 | Self::U16 | Self::U32 | Self::U64
+            Self::I
+                | Self::I8
+                | Self::I16
+                | Self::I32
+                | Self::I64
+                | Self::U
+                | Self::U8
+                | Self::U16
+                | Self::U32
+                | Self::U64
         )
     }
 

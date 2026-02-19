@@ -8,9 +8,9 @@
 //! of integer offsets means points remain valid even as surrounding text is
 //! inserted or deleted.
 
+use super::constants::Anchor;
 use crate::json_crdt::nodes::StrNode;
 use crate::json_crdt_patch::clock::Ts;
-use super::constants::Anchor;
 
 // ── Point ─────────────────────────────────────────────────────────────────
 
@@ -67,7 +67,7 @@ impl Point {
                 let char_offset = (self.id.time - chunk.id.time) as usize;
                 return match self.anchor {
                     Anchor::Before => live + char_offset,
-                    Anchor::After  => live + char_offset + 1,
+                    Anchor::After => live + char_offset + 1,
                 };
             }
             // Accumulate live characters from this chunk.
@@ -81,11 +81,7 @@ impl Point {
     /// Compare two points by their visual position in `str_node`.
     ///
     /// Returns `Ordering::Less` if `self` appears before `other`, etc.
-    pub fn cmp_spatial(
-        &self,
-        other: &Point,
-        str_node: &StrNode,
-    ) -> std::cmp::Ordering {
+    pub fn cmp_spatial(&self, other: &Point, str_node: &StrNode) -> std::cmp::Ordering {
         self.view_pos(str_node).cmp(&other.view_pos(str_node))
     }
 }

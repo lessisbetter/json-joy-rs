@@ -22,7 +22,9 @@ pub type LinePatch = Vec<LinePatchOp>;
 
 /// Push to a patch line, merging consecutive same-type ops.
 fn push_to_line(line: &mut Patch, op_type: PatchOpType, text: &str) {
-    if text.is_empty() { return; }
+    if text.is_empty() {
+        return;
+    }
     if let Some(last) = line.last_mut() {
         if last.0 == op_type {
             last.1.push_str(text);
@@ -58,7 +60,9 @@ pub fn agg(patch: &Patch) -> Vec<Patch> {
             }
         }
     }
-    if !line.is_empty() { lines.push(line); }
+    if !line.is_empty() {
+        lines.push(line);
+    }
 
     // Normalize each line
     for i in 0..lines.len() {
@@ -71,19 +75,25 @@ pub fn agg(patch: &Patch) -> Vec<Patch> {
 /// Compute a line-level diff between `src` and `dst` string arrays.
 pub fn diff(src: &[&str], dst: &[&str]) -> LinePatch {
     if dst.is_empty() {
-        return src.iter().enumerate()
+        return src
+            .iter()
+            .enumerate()
             .map(|(i, _)| (LinePatchOpType::Del, i as i64, -1))
             .collect();
     }
     if src.is_empty() {
-        return dst.iter().enumerate()
+        return dst
+            .iter()
+            .enumerate()
             .map(|(i, _)| (LinePatchOpType::Ins, -1, i as i64))
             .collect();
     }
 
     let src_txt = src.join("\n") + "\n";
     let dst_txt = dst.join("\n") + "\n";
-    if src_txt == dst_txt { return vec![]; }
+    if src_txt == dst_txt {
+        return vec![];
+    }
 
     let str_patch = str::diff(&src_txt, &dst_txt);
     let lines = agg(&str_patch);
@@ -98,7 +108,9 @@ pub fn diff(src: &[&str], dst: &[&str]) -> LinePatch {
         let mut line_work = line.clone();
         let line_len = line_work.len();
 
-        if line_len == 0 { continue; }
+        if line_len == 0 {
+            continue;
+        }
 
         // Determine line type by inspecting the last op
         let last_op_type = line_work[line_len - 1].0;
@@ -109,7 +121,9 @@ pub fn diff(src: &[&str], dst: &[&str]) -> LinePatch {
             line_work.pop();
         } else if last_txt.ends_with('\n') {
             let trimmed = last_txt[..last_txt.len() - 1].to_string();
-            if let Some(last) = line_work.last_mut() { last.1 = trimmed; }
+            if let Some(last) = line_work.last_mut() {
+                last.1 = trimmed;
+            }
         }
 
         let line_len2 = line_work.len();
@@ -202,8 +216,7 @@ pub fn apply<FDel, FIns, FMix>(
     mut on_delete: FDel,
     mut on_insert: FIns,
     mut on_mix: FMix,
-)
-where
+) where
     FDel: FnMut(usize),
     FIns: FnMut(i64, usize),
     FMix: FnMut(usize, usize),

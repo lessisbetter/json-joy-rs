@@ -74,13 +74,21 @@ impl<'a> CrdtReader<'a> {
     /// Decodes a 57-bit variable-length unsigned integer.
     pub fn vu57(&mut self) -> u64 {
         let o1 = self.u8() as u64;
-        if o1 <= 0x7F { return o1; }
+        if o1 <= 0x7F {
+            return o1;
+        }
         let o2 = self.u8() as u64;
-        if o2 <= 0x7F { return (o2 << 7) | (o1 & 0x7F); }
+        if o2 <= 0x7F {
+            return (o2 << 7) | (o1 & 0x7F);
+        }
         let o3 = self.u8() as u64;
-        if o3 <= 0x7F { return (o3 << 14) | ((o2 & 0x7F) << 7) | (o1 & 0x7F); }
+        if o3 <= 0x7F {
+            return (o3 << 14) | ((o2 & 0x7F) << 7) | (o1 & 0x7F);
+        }
         let o4 = self.u8() as u64;
-        if o4 <= 0x7F { return (o4 << 21) | ((o3 & 0x7F) << 14) | ((o2 & 0x7F) << 7) | (o1 & 0x7F); }
+        if o4 <= 0x7F {
+            return (o4 << 21) | ((o3 & 0x7F) << 14) | ((o2 & 0x7F) << 7) | (o1 & 0x7F);
+        }
         let o5 = self.u8() as u64;
         if o5 <= 0x7F {
             return (o5 << 28)
@@ -123,7 +131,9 @@ impl<'a> CrdtReader<'a> {
     pub fn vu57_skip(&mut self) {
         loop {
             let b = self.u8();
-            if b <= 0x7F { return; }
+            if b <= 0x7F {
+                return;
+            }
         }
     }
 
@@ -134,18 +144,25 @@ impl<'a> CrdtReader<'a> {
         let byte = self.u8() as u64;
         let flag = ((byte >> 7) & 1) as u8;
         let o1 = byte & 0x7F; // strip the top bit (flag)
-        // continuation bit is bit 6 of the masked byte (bit 6 of 0b0_?_zzzzzz)
+                              // continuation bit is bit 6 of the masked byte (bit 6 of 0b0_?_zzzzzz)
         if o1 <= 0x3F {
             // no continuation: 6 payload bits
             return (flag, o1);
         }
         let o2 = self.u8() as u64;
-        if o2 <= 0x7F { return (flag, (o2 << 6) | (o1 & 0x3F)); }
+        if o2 <= 0x7F {
+            return (flag, (o2 << 6) | (o1 & 0x3F));
+        }
         let o3 = self.u8() as u64;
-        if o3 <= 0x7F { return (flag, (o3 << 13) | ((o2 & 0x7F) << 6) | (o1 & 0x3F)); }
+        if o3 <= 0x7F {
+            return (flag, (o3 << 13) | ((o2 & 0x7F) << 6) | (o1 & 0x3F));
+        }
         let o4 = self.u8() as u64;
         if o4 <= 0x7F {
-            return (flag, (o4 << 20) | ((o3 & 0x7F) << 13) | ((o2 & 0x7F) << 6) | (o1 & 0x3F));
+            return (
+                flag,
+                (o4 << 20) | ((o3 & 0x7F) << 13) | ((o2 & 0x7F) << 6) | (o1 & 0x3F),
+            );
         }
         let o5 = self.u8() as u64;
         if o5 <= 0x7F {
@@ -277,7 +294,7 @@ mod tests {
     fn id_single_byte() {
         use crate::json_crdt_patch::util::binary::CrdtWriter;
         let mut w = CrdtWriter::new();
-        w.id(3, 7);  // x=3 (fits in 3 bits), y=7 (fits in 4 bits)
+        w.id(3, 7); // x=3 (fits in 3 bits), y=7 (fits in 4 bits)
         let data = w.flush();
         assert_eq!(data.len(), 1);
         let mut r = CrdtReader::new(&data);
@@ -290,7 +307,7 @@ mod tests {
     fn id_multi_byte() {
         use crate::json_crdt_patch::util::binary::CrdtWriter;
         let mut w = CrdtWriter::new();
-        w.id(10, 100);  // x > 7, needs multi-byte
+        w.id(10, 100); // x > 7, needs multi-byte
         let data = w.flush();
         assert!(data.len() > 1);
         let mut r = CrdtReader::new(&data);

@@ -34,15 +34,27 @@ fn struct_hash_json(val: &serde_json::Value) -> String {
                 radix36(u)
             } else {
                 let f = n.as_f64().unwrap_or(0.0);
-                if f < 0.0 { format!("-{}", radix36((-f) as u64)) }
-                else { radix36(f as u64) }
+                if f < 0.0 {
+                    format!("-{}", radix36((-f) as u64))
+                } else {
+                    radix36(f as u64)
+                }
             }
         }
-        Value::Bool(b) => if *b { "T".to_string() } else { "F".to_string() },
+        Value::Bool(b) => {
+            if *b {
+                "T".to_string()
+            } else {
+                "F".to_string()
+            }
+        }
         Value::Null => "N".to_string(),
         Value::Array(arr) => {
             let mut res = String::from("[");
-            for v in arr { res.push_str(&struct_hash_json(v)); res.push(';'); }
+            for v in arr {
+                res.push_str(&struct_hash_json(v));
+                res.push(';');
+            }
             res.push(']');
             res
         }
@@ -76,7 +88,9 @@ fn hash_str_for_schema(s: &str) -> u32 {
         let length = utf16.len() as i32;
         state = update_num(state, STRING_CONST);
         state = update_num(state, length);
-        for &cu in utf16.iter().rev() { state = update_num(state, cu as i32); }
+        for &cu in utf16.iter().rev() {
+            state = update_num(state, cu as i32);
+        }
         state
     }
     let state = update_num(START_STATE, STRING_CONST);
@@ -92,15 +106,22 @@ fn hash_bin_for_schema(bytes: &[u8]) -> u32 {
     let mut state = update_num(START_STATE, BINARY_CONST);
     let length = bytes.len() as i32;
     state = update_num(state, length);
-    for &b in bytes.iter().rev() { state = update_num(state, b as i32); }
+    for &b in bytes.iter().rev() {
+        state = update_num(state, b as i32);
+    }
     state as u32
 }
 
 fn radix36(mut n: u64) -> String {
-    if n == 0 { return "0".to_string(); }
+    if n == 0 {
+        return "0".to_string();
+    }
     const DIGITS: &[u8] = b"0123456789abcdefghijklmnopqrstuvwxyz";
     let mut buf = Vec::new();
-    while n > 0 { buf.push(DIGITS[(n % 36) as usize]); n /= 36; }
+    while n > 0 {
+        buf.push(DIGITS[(n % 36) as usize]);
+        n /= 36;
+    }
     buf.reverse();
     String::from_utf8(buf).unwrap()
 }
@@ -305,13 +326,29 @@ pub mod s {
     use super::*;
     use json_joy_json_pack::PackValue;
 
-    pub fn con(raw: PackValue) -> ConNode { ConNode { raw } }
-    pub fn str_node(raw: &str) -> StrNode { StrNode { raw: raw.to_owned() } }
-    pub fn bin(raw: Vec<u8>) -> BinNode { BinNode { raw } }
-    pub fn val(value: Box<dyn NodeBuilder>) -> ValNode { ValNode { value } }
-    pub fn vec(slots: Vec<Option<Box<dyn NodeBuilder>>>) -> VecNode { VecNode { value: slots } }
-    pub fn obj(entries: Vec<(String, Box<dyn NodeBuilder>)>) -> ObjNode { ObjNode { entries } }
-    pub fn arr(items: Vec<Box<dyn NodeBuilder>>) -> ArrNode { ArrNode { items } }
+    pub fn con(raw: PackValue) -> ConNode {
+        ConNode { raw }
+    }
+    pub fn str_node(raw: &str) -> StrNode {
+        StrNode {
+            raw: raw.to_owned(),
+        }
+    }
+    pub fn bin(raw: Vec<u8>) -> BinNode {
+        BinNode { raw }
+    }
+    pub fn val(value: Box<dyn NodeBuilder>) -> ValNode {
+        ValNode { value }
+    }
+    pub fn vec(slots: Vec<Option<Box<dyn NodeBuilder>>>) -> VecNode {
+        VecNode { value: slots }
+    }
+    pub fn obj(entries: Vec<(String, Box<dyn NodeBuilder>)>) -> ObjNode {
+        ObjNode { entries }
+    }
+    pub fn arr(items: Vec<Box<dyn NodeBuilder>>) -> ArrNode {
+        ArrNode { items }
+    }
 }
 
 #[cfg(test)]
@@ -340,9 +377,10 @@ mod tests {
     #[test]
     fn obj_node_builds() {
         let mut builder = PatchBuilder::new(1, 0);
-        let node = s::obj(vec![
-            ("name".into(), Box::new(s::str_node("Alice")) as Box<dyn NodeBuilder>),
-        ]);
+        let node = s::obj(vec![(
+            "name".into(),
+            Box::new(s::str_node("Alice")) as Box<dyn NodeBuilder>,
+        )]);
         node.build(&mut builder);
         // NewObj + NewStr + InsStr + InsObj
         assert!(builder.patch.ops.len() >= 3);

@@ -20,11 +20,13 @@ pub fn diff(src: &Value, dst: &Value) -> Vec<Op> {
 // ── Core recursive differ ─────────────────────────────────────────────────
 
 fn diff_at_path(ops: &mut Vec<Op>, path: &[String], src: &Value, dst: &Value) {
-    if src == dst { return; }
+    if src == dst {
+        return;
+    }
     match (src, dst) {
         (Value::String(s), Value::String(d)) => diff_str(ops, path, s, d),
         (Value::Object(s), Value::Object(d)) => diff_obj(ops, path, s, d),
-        (Value::Array(s),  Value::Array(d))  => diff_arr(ops, path, s, d),
+        (Value::Array(s), Value::Array(d)) => diff_arr(ops, path, s, d),
         _ => diff_val(ops, path, src, dst),
     }
 }
@@ -38,7 +40,9 @@ fn diff_val(ops: &mut Vec<Op>, path: &[String], _src: &Value, dst: &Value) {
 }
 
 fn diff_str(ops: &mut Vec<Op>, path: &[String], src: &str, dst: &str) {
-    if src == dst { return; }
+    if src == dst {
+        return;
+    }
     let patch = str_diff(src, dst);
     // Count characters to track char positions
     let mut pos = 0usize;
@@ -88,7 +92,10 @@ fn diff_obj(
         if !dst.contains_key(key) {
             let mut p = path.to_vec();
             p.push(key.clone());
-            ops.push(Op::Remove { path: p, old_value: None });
+            ops.push(Op::Remove {
+                path: p,
+                old_value: None,
+            });
         }
     }
     // Add/replace keys in dst
@@ -96,19 +103,27 @@ fn diff_obj(
         let mut p = path.to_vec();
         p.push(key.clone());
         match src.get(key) {
-            None => ops.push(Op::Add { path: p, value: dst_val.clone() }),
+            None => ops.push(Op::Add {
+                path: p,
+                value: dst_val.clone(),
+            }),
             Some(src_val) => diff_at_path(ops, &p, src_val, dst_val),
         }
     }
 }
 
 fn diff_arr(ops: &mut Vec<Op>, path: &[String], src: &[Value], dst: &[Value]) {
-    if src.is_empty() && dst.is_empty() { return; }
+    if src.is_empty() && dst.is_empty() {
+        return;
+    }
     if src.is_empty() {
         for (i, v) in dst.iter().enumerate() {
             let mut p = path.to_vec();
             p.push(i.to_string());
-            ops.push(Op::Add { path: p, value: v.clone() });
+            ops.push(Op::Add {
+                path: p,
+                value: v.clone(),
+            });
         }
         return;
     }
@@ -117,7 +132,10 @@ fn diff_arr(ops: &mut Vec<Op>, path: &[String], src: &[Value], dst: &[Value]) {
         for i in (0..src.len()).rev() {
             let mut p = path.to_vec();
             p.push(i.to_string());
-            ops.push(Op::Remove { path: p, old_value: None });
+            ops.push(Op::Remove {
+                path: p,
+                old_value: None,
+            });
         }
         return;
     }
@@ -140,7 +158,10 @@ fn diff_arr(ops: &mut Vec<Op>, path: &[String], src: &[Value], dst: &[Value]) {
                 let actual_idx = (*src_idx as i64 + offset) as usize;
                 let mut p = path.to_vec();
                 p.push(actual_idx.to_string());
-                ops.push(Op::Remove { path: p, old_value: None });
+                ops.push(Op::Remove {
+                    path: p,
+                    old_value: None,
+                });
                 offset -= 1;
             }
             LinePatchOpType::Ins => {
@@ -148,7 +169,10 @@ fn diff_arr(ops: &mut Vec<Op>, path: &[String], src: &[Value], dst: &[Value]) {
                 let mut p = path.to_vec();
                 p.push(actual_idx.to_string());
                 let dst_i = *dst_idx as usize;
-                ops.push(Op::Add { path: p, value: dst[dst_i].clone() });
+                ops.push(Op::Add {
+                    path: p,
+                    value: dst[dst_i].clone(),
+                });
                 offset += 1;
             }
             LinePatchOpType::Mix => {
@@ -244,7 +268,9 @@ mod tests {
         let dst = json!("hello rust");
         let ops = diff(&src, &dst);
         // Should use str_del and str_ins ops
-        let has_str_ops = ops.iter().any(|op| matches!(op, Op::StrDel { .. } | Op::StrIns { .. }));
+        let has_str_ops = ops
+            .iter()
+            .any(|op| matches!(op, Op::StrDel { .. } | Op::StrIns { .. }));
         assert!(has_str_ops || !ops.is_empty()); // At minimum something should be generated
     }
 

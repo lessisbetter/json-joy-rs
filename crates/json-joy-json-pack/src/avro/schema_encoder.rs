@@ -92,7 +92,11 @@ impl AvroSchemaEncoder {
         }
     }
 
-    fn write_value(&mut self, value: &AvroValue, schema: &AvroSchema) -> Result<(), AvroEncodeError> {
+    fn write_value(
+        &mut self,
+        value: &AvroValue,
+        schema: &AvroSchema,
+    ) -> Result<(), AvroEncodeError> {
         let schema = self.resolve(schema)?.clone();
         match (&schema, value) {
             (AvroSchema::Null, AvroValue::Null) => Ok(()),

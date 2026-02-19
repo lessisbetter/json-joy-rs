@@ -2,8 +2,8 @@
 //!
 //! Upstream reference: json-type/src/type/classes/AbsType.ts
 
-use std::sync::Arc;
 use serde_json::Value;
+use std::sync::Arc;
 
 use super::module_type::ModuleType;
 

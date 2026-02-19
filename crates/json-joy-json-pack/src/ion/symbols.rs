@@ -69,7 +69,10 @@ impl SymbolTable {
     /// before this table's range (i.e., `offset - 1`), which callers use to
     /// compute the next layer's offset via `SymbolTable::user(end)`.
     pub fn end(&self) -> u32 {
-        debug_assert!(!self.symbols.is_empty(), "end() called on empty SymbolTable");
+        debug_assert!(
+            !self.symbols.is_empty(),
+            "end() called on empty SymbolTable"
+        );
         self.offset + self.symbols.len() as u32 - 1
     }
 
@@ -112,9 +115,7 @@ impl IonSymbols {
     }
 
     pub fn get_text(&self, id: u32) -> Option<&str> {
-        self.system
-            .get_text(id)
-            .or_else(|| self.user.get_text(id))
+        self.system.get_text(id).or_else(|| self.user.get_text(id))
     }
 
     pub fn add(&mut self, text: &str) -> u32 {

@@ -1,6 +1,6 @@
 //! Tests for base64 encoding (to_base64).
 
-use json_joy_base64::{to_base64, create_to_base64};
+use json_joy_base64::{create_to_base64, to_base64};
 use rand::Rng;
 
 fn generate_blob() -> Vec<u8> {
@@ -21,7 +21,12 @@ fn works() {
         // Verify against known-good encoding using the base64 crate
         let expected = base64_encode(&blob);
         assert_eq!(result, expected, "Failed for blob of length {}", blob.len());
-        assert_eq!(result2, expected, "Failed for blob of length {}", blob.len());
+        assert_eq!(
+            result2,
+            expected,
+            "Failed for blob of length {}",
+            blob.len()
+        );
     }
 }
 

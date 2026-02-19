@@ -162,10 +162,10 @@ impl Peritext {
         match model.index.get(&TsKey::from(self.str_id)) {
             Some(CrdtNode::Str(s)) => {
                 let start_id = s.find(start)?;
-                let end_id   = s.find(start + len - 1)?;
+                let end_id = s.find(start + len - 1)?;
                 Some(Range::new(
                     Point::new(start_id, Anchor::Before),
-                    Point::new(end_id,   Anchor::After),
+                    Point::new(end_id, Anchor::After),
                 ))
             }
             _ => None,
@@ -183,7 +183,8 @@ impl Peritext {
         slice_type: impl Into<SliceType>,
         data: Option<Value>,
     ) -> Ts {
-        self.saved_slices.ins(model, range, stacking, slice_type, data)
+        self.saved_slices
+            .ins(model, range, stacking, slice_type, data)
     }
 }
 
@@ -194,11 +195,13 @@ mod tests {
     use super::*;
     use crate::json_crdt::constants::ORIGIN as ORIG;
     use crate::json_crdt::model::Model;
+    use crate::json_crdt_extensions::peritext::slice::constants::*;
     use crate::json_crdt_patch::clock::ts;
     use crate::json_crdt_patch::operations::Op;
-    use crate::json_crdt_extensions::peritext::slice::constants::*;
 
-    fn sid() -> u64 { 42 }
+    fn sid() -> u64 {
+        42
+    }
 
     /// Build a Model with a StrNode and ArrNode, return (model, peritext).
     fn setup() -> (Model, Peritext) {
@@ -230,7 +233,7 @@ mod tests {
     fn insert_at_position() {
         let (mut model, pt) = setup();
         pt.ins_at(&mut model, 0, "helo");
-        pt.ins_at(&mut model, 2, "l");       // "hello"
+        pt.ins_at(&mut model, 2, "l"); // "hello"
         assert_eq!(pt.text(&model), "hello");
     }
 
@@ -246,7 +249,7 @@ mod tests {
     fn delete_characters() {
         let (mut model, pt) = setup();
         pt.ins_at(&mut model, 0, "hello world");
-        pt.del_at(&mut model, 5, 6);          // delete " world"
+        pt.del_at(&mut model, 5, 6); // delete " world"
         assert_eq!(pt.text(&model), "hello");
     }
 
@@ -254,7 +257,7 @@ mod tests {
     fn delete_from_middle() {
         let (mut model, pt) = setup();
         pt.ins_at(&mut model, 0, "hello world");
-        pt.del_at(&mut model, 2, 3);          // delete "llo"
+        pt.del_at(&mut model, 2, 3); // delete "llo"
         assert_eq!(pt.text(&model), "he world");
     }
 
@@ -274,10 +277,13 @@ mod tests {
         let (mut model, pt) = setup();
         pt.ins_at(&mut model, 0, "hello");
         let p = pt.point_at(&model, 0, Anchor::Before).unwrap();
-        assert_eq!(p.view_pos(match model.index.get(&TsKey::from(pt.str_id)) {
-            Some(CrdtNode::Str(s)) => s,
-            _ => panic!("expected StrNode"),
-        }), 0);
+        assert_eq!(
+            p.view_pos(match model.index.get(&TsKey::from(pt.str_id)) {
+                Some(CrdtNode::Str(s)) => s,
+                _ => panic!("expected StrNode"),
+            }),
+            0
+        );
     }
 
     #[test]
@@ -464,15 +470,15 @@ mod tests {
             _ => panic!(),
         };
         let start_id = str_node.find(1).unwrap();
-        let end_id   = str_node.find(3).unwrap();
+        let end_id = str_node.find(3).unwrap();
         let range = Range::new(
             Point::new(start_id, Anchor::Before),
-            Point::new(end_id,   Anchor::Before),
+            Point::new(end_id, Anchor::Before),
         );
         let slice_id = pt.ins_slice(&mut model, &range, SliceStacking::Many, "x", None);
         let slice = pt.saved_slices.get(&model, slice_id).unwrap();
         assert_eq!(slice.start.anchor, Anchor::Before);
-        assert_eq!(slice.end.anchor,   Anchor::Before);
+        assert_eq!(slice.end.anchor, Anchor::Before);
     }
 
     #[test]
@@ -484,7 +490,7 @@ mod tests {
         let slice_id = pt.ins_slice(&mut model, &range, SliceStacking::Many, "bold", None);
         let slice = pt.saved_slices.get(&model, slice_id).unwrap();
         assert_eq!(slice.start.anchor, Anchor::Before);
-        assert_eq!(slice.end.anchor,   Anchor::After);
+        assert_eq!(slice.end.anchor, Anchor::After);
     }
 
     #[test]
@@ -497,15 +503,15 @@ mod tests {
             _ => panic!(),
         };
         let start_id = str_node.find(1).unwrap();
-        let end_id   = str_node.find(3).unwrap();
+        let end_id = str_node.find(3).unwrap();
         let range = Range::new(
             Point::new(start_id, Anchor::After),
-            Point::new(end_id,   Anchor::Before),
+            Point::new(end_id, Anchor::Before),
         );
         let slice_id = pt.ins_slice(&mut model, &range, SliceStacking::Many, "x", None);
         let slice = pt.saved_slices.get(&model, slice_id).unwrap();
         assert_eq!(slice.start.anchor, Anchor::After);
-        assert_eq!(slice.end.anchor,   Anchor::Before);
+        assert_eq!(slice.end.anchor, Anchor::Before);
     }
 
     #[test]
@@ -518,15 +524,15 @@ mod tests {
             _ => panic!(),
         };
         let start_id = str_node.find(1).unwrap();
-        let end_id   = str_node.find(3).unwrap();
+        let end_id = str_node.find(3).unwrap();
         let range = Range::new(
             Point::new(start_id, Anchor::After),
-            Point::new(end_id,   Anchor::After),
+            Point::new(end_id, Anchor::After),
         );
         let slice_id = pt.ins_slice(&mut model, &range, SliceStacking::Many, "x", None);
         let slice = pt.saved_slices.get(&model, slice_id).unwrap();
         assert_eq!(slice.start.anchor, Anchor::After);
-        assert_eq!(slice.end.anchor,   Anchor::After);
+        assert_eq!(slice.end.anchor, Anchor::After);
     }
 
     // ── SliceType::Steps roundtrip ────────────────────────────────────────
@@ -544,7 +550,10 @@ mod tests {
     #[test]
     fn steps_slice_type_str_roundtrip() {
         use crate::json_crdt_extensions::peritext::slice::types::{SliceType, TypeTag};
-        let st = SliceType::Steps(vec![TypeTag::Str("ul".to_string()), TypeTag::Str("li".to_string())]);
+        let st = SliceType::Steps(vec![
+            TypeTag::Str("ul".to_string()),
+            TypeTag::Str("li".to_string()),
+        ]);
         let packed = st.to_pack();
         let rt = SliceType::from_pack(&packed).unwrap();
         assert_eq!(rt, st);
@@ -557,7 +566,13 @@ mod tests {
         pt.ins_at(&mut model, 0, "hello world");
         let range = pt.range_at(&model, 0, 5).unwrap();
         let steps = SliceType::Steps(vec![TypeTag::Int(TYPE_UL), TypeTag::Int(TYPE_LI)]);
-        let slice_id = pt.ins_slice(&mut model, &range, SliceStacking::Marker, steps.clone(), None);
+        let slice_id = pt.ins_slice(
+            &mut model,
+            &range,
+            SliceStacking::Marker,
+            steps.clone(),
+            None,
+        );
         let slice = pt.saved_slices.get(&model, slice_id).unwrap();
         assert_eq!(slice.slice_type, steps);
     }
@@ -591,14 +606,14 @@ mod tests {
     fn view_pos_unicode_multibyte() {
         // view_pos counts Unicode scalar values, not bytes.
         let (mut model, pt) = setup();
-        pt.ins_at(&mut model, 0, "héllo");  // 'é' is 2 bytes (U+00E9)
+        pt.ins_at(&mut model, 0, "héllo"); // 'é' is 2 bytes (U+00E9)
         let str_node = match model.index.get(&TsKey::from(pt.str_id)) {
             Some(CrdtNode::Str(s)) => s.clone(),
             _ => panic!(),
         };
         assert_eq!(str_node.view_str(), "héllo");
         assert_eq!(str_node.size(), 5); // 5 chars, not 6 bytes
-        // The point After the 'é' (index 1) should be at view position 2.
+                                        // The point After the 'é' (index 1) should be at view position 2.
         let e_id = str_node.find(1).unwrap();
         let after_e = Point::new(e_id, Anchor::After);
         assert_eq!(after_e.view_pos(&str_node), 2);
@@ -608,7 +623,7 @@ mod tests {
     fn view_pos_emoji_unicode() {
         // Emoji are single scalar values.
         let (mut model, pt) = setup();
-        pt.ins_at(&mut model, 0, "a😀b");  // emoji is 4 bytes
+        pt.ins_at(&mut model, 0, "a😀b"); // emoji is 4 bytes
         let str_node = match model.index.get(&TsKey::from(pt.str_id)) {
             Some(CrdtNode::Str(s)) => s.clone(),
             _ => panic!(),

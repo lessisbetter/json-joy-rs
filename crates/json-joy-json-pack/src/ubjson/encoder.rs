@@ -35,7 +35,9 @@ impl Default for UbjsonEncoder {
 
 impl UbjsonEncoder {
     pub fn new() -> Self {
-        Self { writer: Writer::new() }
+        Self {
+            writer: Writer::new(),
+        }
     }
 
     pub fn encode(&mut self, value: &PackValue) -> Vec<u8> {

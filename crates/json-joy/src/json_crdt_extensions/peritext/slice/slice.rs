@@ -6,10 +6,10 @@
 //! header, endpoint IDs, type, and optional data) referenced by the slices
 //! `ArrNode`.
 
-use serde_json::Value;
-use crate::json_crdt_patch::clock::Ts;
-use crate::json_crdt_extensions::peritext::rga::{Anchor, Point, Range};
 use super::{SliceStacking, SliceType};
+use crate::json_crdt_extensions::peritext::rga::{Anchor, Point, Range};
+use crate::json_crdt_patch::clock::Ts;
+use serde_json::Value;
 
 // ── Slice ─────────────────────────────────────────────────────────────────
 
@@ -50,7 +50,14 @@ impl Slice {
         end: Point,
         data: Option<Value>,
     ) -> Self {
-        Self { id, stacking, slice_type, start, end, data }
+        Self {
+            id,
+            stacking,
+            slice_type,
+            start,
+            end,
+            data,
+        }
     }
 
     /// The range this slice covers.
