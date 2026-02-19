@@ -52,9 +52,11 @@ make parity-live
 make wasm-bench-realistic
 ```
 
-`parity-live` validates mixed upstream/wasm compatibility:
+`parity-live` validates core mixed upstream/wasm compatibility:
 - upstream patch -> wasm apply
 - wasm patch -> upstream apply
+
+It does not validate JS editor adapter formats (Slate/ProseMirror/Quill).
 
 `wasm-bench-realistic` runs a less-db-like end-to-end scenario benchmark:
 - local update flow (`load -> diff/apply -> export -> append patch log`)

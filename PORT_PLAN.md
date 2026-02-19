@@ -49,7 +49,7 @@ Checkpoint gates before marking a slice complete:
 
 Parity verification commands:
 1. `make parity-fixtures` (fixture corpus replay + inventory contract checks)
-2. `make parity-live` (manual TS<->WASM differential check)
+2. `make parity-live` (manual TS<->WASM core differential check)
 3. `make parity` (runs both; not part of default `test-gates`)
 
 Parity policy:

@@ -1,4 +1,4 @@
-.PHONY: check fmt test test-smoke test-suite test-suite-filter test-crate test-gates port-slice bindings-python compat-fixtures parity-fixtures parity-live parity wasm-build wasm-bench wasm-bench-one wasm-bench-engine-one wasm-bench-realistic
+.PHONY: check fmt test test-smoke test-suite test-suite-filter test-crate test-gates port-slice bindings-python compat-fixtures parity-fixtures parity-live-core parity-live parity wasm-build wasm-bench wasm-bench-one wasm-bench-engine-one wasm-bench-realistic
 
 check:
 	mise x -- cargo check
@@ -58,10 +58,12 @@ compat-fixtures:
 parity-fixtures:
 	mise x -- cargo test -p json-joy --test compat_inventory --test compat_fixtures --offline
 
-parity-live: wasm-build
+parity-live-core: wasm-build
 	node bench/interop.cjs
 
-parity: parity-fixtures parity-live
+parity-live: parity-live-core
+
+parity: parity-fixtures parity-live-core
 
 wasm-build:
 	CARGO_NET_OFFLINE=true wasm-pack build crates/json-joy-wasm --target nodejs --release

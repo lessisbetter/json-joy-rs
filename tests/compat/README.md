@@ -58,7 +58,7 @@ Harness rules:
 
 ## Live differential check
 
-Live TS<->WASM differential checks are manual-only and run via:
+Live TS<->WASM core differential checks are manual-only and run via:
 
 ```bash
 make parity-live

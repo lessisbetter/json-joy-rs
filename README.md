@@ -42,7 +42,7 @@ Run fixture parity checks against the pinned compatibility corpus:
 make parity-fixtures
 ```
 
-Run the live TS<->WASM differential check (manual only, not in `test-gates`):
+Run the live TS<->WASM core differential check (manual only, not in `test-gates`):
 
 ```bash
 make parity-live
