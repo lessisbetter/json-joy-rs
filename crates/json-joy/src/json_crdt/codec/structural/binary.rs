@@ -177,10 +177,7 @@ fn encode_val_server(model: &Model, node: &ValNode, w: &mut CrdtWriter, server_t
 fn encode_obj_server(model: &Model, node: &ObjNode, w: &mut CrdtWriter, server_time: u64) {
     ts_server(w, node.id);
     write_tl(w, MAJOR_OBJ, node.keys.len());
-    let mut sorted_keys: Vec<&String> = node.keys.keys().collect();
-    sorted_keys.sort();
-    for key in &sorted_keys {
-        let child_ts = node.keys[key.as_str()];
+    for (key, &child_ts) in &node.keys {
         write_cbor_str(w, key);
         if let Some(child) = model.index.get(&TsKey::from(child_ts)) {
             encode_node_server(model, child, w, server_time);
@@ -300,10 +297,7 @@ fn encode_val_logical(model: &Model, node: &ValNode, w: &mut CrdtWriter, enc: &m
 fn encode_obj_logical(model: &Model, node: &ObjNode, w: &mut CrdtWriter, enc: &mut ClockEncoder) {
     ts_logical(w, node.id, enc);
     write_tl(w, MAJOR_OBJ, node.keys.len());
-    let mut sorted_keys: Vec<&String> = node.keys.keys().collect();
-    sorted_keys.sort();
-    for key in &sorted_keys {
-        let child_ts = node.keys[key.as_str()];
+    for (key, &child_ts) in &node.keys {
         write_cbor_str(w, key);
         if let Some(child) = model.index.get(&TsKey::from(child_ts)) {
             encode_node_logical(model, child, w, enc);
