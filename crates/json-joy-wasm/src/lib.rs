@@ -118,9 +118,15 @@ fn parse_path(path_json: &str) -> Result<Vec<Value>, String> {
 }
 
 /// Merge a collection of patches into a single `Patch` by concatenating ops.
-fn merge_patches(patches: &[Patch]) -> Patch {
-    let ops: Vec<Op> = patches.iter().flat_map(|p| p.ops.clone()).collect();
-    Patch { ops, meta: None }
+fn merge_patches(patches: Vec<Patch>) -> Patch {
+    match patches.len() {
+        0 => Patch { ops: vec![], meta: None },
+        1 => patches.into_iter().next().unwrap(),
+        _ => {
+            let ops: Vec<Op> = patches.into_iter().flat_map(|p| p.ops).collect();
+            Patch { ops, meta: None }
+        }
+    }
 }
 
 // ── Model ────────────────────────────────────────────────────────────────────
@@ -144,11 +150,18 @@ pub struct Model {
     /// Tracks ops applied since the last `apiFlush()` so we can return a
     /// single binary patch representing all local changes.
     local_changes: Vec<Patch>,
+    /// Cached JS view and the `tick` it was computed at.
+    ///
+    /// Mirrors the per-node `_tick`/`_view` cache in the upstream TypeScript:
+    /// each `apply_patch` increments `inner.tick`; if the tick hasn't changed
+    /// since the last `view()` call we can return the cached `JsValue` in O(1)
+    /// (a single reference-count bump) instead of rebuilding the full tree.
+    view_cache: Option<(u64, JsValue)>,
 }
 
 impl Model {
     fn from_inner(inner: CrdtModel) -> Self {
-        Self { inner, local_changes: Vec::new() }
+        Self { inner, local_changes: Vec::new(), view_cache: None }
     }
 
     /// Execute `f` with a fresh `PatchBuilder` seeded from the model clock,
@@ -166,6 +179,7 @@ impl Model {
         if !patch.ops.is_empty() {
             self.inner.apply_patch(&patch);
             self.local_changes.push(patch);
+            self.view_cache = None;
         }
         Ok(())
     }
@@ -224,11 +238,24 @@ impl Model {
     /// objects come back as plain JS objects (not Maps), compatible with
     /// `JSON.stringify` and standard property access.
     ///
+    /// The result is cached by `inner.tick` (which increments on every
+    /// `apply_patch`).  Repeated calls on an unchanged document are O(1) —
+    /// a single `JsValue` reference-count bump — mirroring the tick-based
+    /// `_view` cache in the upstream TypeScript nodes.
+    ///
     /// Mirrors `model.view()`.
-    pub fn view(&self) -> JsValue {
-        let v = self.inner.view();
+    pub fn view(&mut self) -> JsValue {
+        let tick = self.inner.tick;
+        if let Some((cached_tick, ref v)) = self.view_cache {
+            if cached_tick == tick {
+                return v.clone();
+            }
+        }
+        let val = self.inner.view();
         let ser = serde_wasm_bindgen::Serializer::json_compatible();
-        v.serialize(&ser).unwrap_or(JsValue::NULL)
+        let js = val.serialize(&ser).unwrap_or(JsValue::NULL);
+        self.view_cache = Some((tick, js.clone()));
+        js
     }
 
     /// Return the current JSON view of this document as a JSON string.
@@ -278,6 +305,7 @@ impl Model {
         let patch = Patch::from_binary(patch_bytes)
             .map_err(|e| JsValue::from_str(&format!("patch decode error: {e:?}")))?;
         self.inner.apply_patch(&patch);
+        self.view_cache = None;
         Ok(())
     }
 
@@ -753,9 +781,8 @@ impl Model {
         if self.local_changes.is_empty() {
             return Vec::new();
         }
-        let merged = merge_patches(&self.local_changes);
-        self.local_changes.clear();
-        merged.to_binary()
+        let patches = std::mem::take(&mut self.local_changes);
+        merge_patches(patches).to_binary()
     }
 
     /// Apply all pending local changes to the model and discard them.

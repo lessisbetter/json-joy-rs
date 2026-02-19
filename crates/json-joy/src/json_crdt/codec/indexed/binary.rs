@@ -326,6 +326,7 @@ pub fn decode(fields: &IndexedFields) -> Result<Model, DecodeError> {
         root: crate::json_crdt::nodes::RootNode::new(),
         index: NodeIndex::default(),
         clock,
+        tick: 0,
     };
 
     // Decode root reference

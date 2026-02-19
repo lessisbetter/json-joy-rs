@@ -33,6 +33,10 @@ use super::nodes::{
 ///
 /// Tracks all CRDT nodes in an index and advances a logical clock as patches
 /// are applied.
+///
+/// `tick` mirrors `Model.tick` in the upstream TypeScript: it increments once
+/// per `apply_patch` call and is used by callers (e.g. the WASM layer) as a
+/// cheap mutation counter to decide when a cached view needs to be rebuilt.
 #[derive(Debug, Clone)]
 pub struct Model {
     /// Document root — a LWW register pointing at the top-level JSON value.
@@ -41,6 +45,10 @@ pub struct Model {
     pub index: NodeIndex,
     /// Logical clock — tracks local time and the times of all peers.
     pub clock: ClockVector,
+    /// Mutation counter — incremented once per `apply_patch` call.
+    ///
+    /// Mirrors `Model.tick` in the upstream TypeScript.
+    pub tick: u64,
 }
 
 impl Model {
@@ -53,6 +61,7 @@ impl Model {
             root: RootNode::new(),
             index: NodeIndex::default(),
             clock: ClockVector::new(sid, 1),
+            tick: 0,
         }
     }
 
@@ -69,10 +78,15 @@ impl Model {
     }
 
     /// Apply all operations in `patch` to this model.
+    ///
+    /// Increments `self.tick` after all operations are applied, mirroring
+    /// `Model.applyPatch` in the upstream TypeScript which does `this.tick++`
+    /// at the end of each patch application.
     pub fn apply_patch(&mut self, patch: &Patch) {
         for op in &patch.ops {
             self.apply_operation(op);
         }
+        self.tick += 1;
     }
 
     /// Apply a single operation.
@@ -223,6 +237,7 @@ impl Model {
             root: super::nodes::RootNode::new(),
             index: super::nodes::NodeIndex::default(),
             clock: ClockVector::new(SESSION::SERVER, server_time),
+            tick: 0,
         }
     }
 
@@ -234,6 +249,7 @@ impl Model {
             root: super::nodes::RootNode::new(),
             index: super::nodes::NodeIndex::default(),
             clock,
+            tick: 0,
         }
     }
 }
