@@ -146,19 +146,16 @@ fn encode_val(model: &Model, node: &ValNode, view_w: &mut CrdtWriter, meta_w: &m
 
 fn encode_obj(model: &Model, node: &ObjNode, view_w: &mut CrdtWriter, meta_w: &mut CrdtWriter, enc: &mut ClockEncoder) {
     ts_logical(meta_w, node.id, enc);
-    let mut keys: Vec<&String> = node.keys.keys().collect();
-    keys.sort();
-    let n = keys.len();
+    let n = node.keys.len();
     write_tl(meta_w, MAJOR_OBJ, n);
 
-    // View: CBOR map header + key strings
+    // View: CBOR map header + key strings (BTreeMap iterates in sorted order)
     write_cbor_map_hdr(view_w, n);
-    for key in &keys {
+    for key in node.keys.keys() {
         write_cbor_str(view_w, key);
     }
 
-    for key in &keys {
-        let child_ts = node.keys[*key];
+    for (_, &child_ts) in &node.keys {
         if let Some(child) = model.index.get(&TsKey::from(child_ts)) {
             encode_node(model, child, view_w, meta_w, enc);
         }

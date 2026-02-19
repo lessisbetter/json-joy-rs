@@ -141,10 +141,7 @@ fn encode_val(model: &Model, node: &ValNode) -> Value {
 fn encode_obj(model: &Model, node: &ObjNode) -> Value {
     let id = encode_ts(node.id);
     let mut map = serde_json::Map::new();
-    let mut keys: Vec<&String> = node.keys.keys().collect();
-    keys.sort();
-    for key in keys {
-        let child_ts = node.keys[key];
+    for (key, &child_ts) in &node.keys {
         if let Some(child) = model.index.get(&TsKey::from(child_ts)) {
             map.insert(key.clone(), encode_node(model, child));
         }
