@@ -27,13 +27,14 @@ It is a review checkpoint artifact and should be updated as gaps are closed.
 | `json-joy` | `json-joy` | 1044 | 107 |
 | `json-pack` | `json-joy-json-pack` | 398 | 97 |
 | `json-path` | `json-joy-json-path` | 24 | 5 |
-| `json-pointer` | `json-joy-json-pointer` | 31 | 3 |
+| `json-pointer` | `json-joy-json-pointer` | 31 | 34 |
 | `json-random` | `json-joy-json-random` | 18 | 10 |
 | `json-type` | `json-joy-json-type` | 123 | 39 |
 | `util` | `util` | 71 | 23 |
 
 Notes:
 
+- `json-pointer` local `src` count is +3 vs upstream because Rust requires crate/module scaffolding files (`lib.rs`, `codegen/mod.rs`, `findByPointer/mod.rs`) that have no direct TS counterparts.
 - Structural crate-name divergence from AGENTS target layout is still present:
   - expected: `crates/json-pack`, `crates/json-path`, `crates/json-pointer`, `crates/json-random`, `crates/json-type`
   - current: `crates/json-joy-json-pack`, `crates/json-joy-json-path`, `crates/json-joy-json-pointer`, `crates/json-joy-json-random`, `crates/json-joy-json-type`
@@ -78,6 +79,8 @@ Current xfail scenarios:
 - `crates/json-joy-json-pack/src/ejson/encoder.rs`: Decimal128 encoder keeps upstream "return 0" stub behavior.
 - `crates/json-joy-json-pack/src/ejson/decoder.rs`: Decimal128 decoder returns zero 16-byte stub (matching upstream stub behavior).
 - `crates/json-joy-json-random/src/examples.rs`: symbol family is mirrored, but many example templates are currently placeholder `Template::nil()` constructors until full data-template catalog is ported.
+- `crates/json-joy-json-pointer/src/findByPointer/v1.rs`..`v5.rs`: variants are mirrored for path/layout parity, but delegate to `v6` implementation.
+- `crates/json-joy-json-pointer/src/codegen/find.rs` and `crates/json-joy-json-pointer/src/codegen/findRef.rs`: upstream emits specialized JS code; Rust uses closure wrappers over runtime traversal.
 
 ## sonic-forest parity status
 
@@ -103,7 +106,7 @@ Implication:
 ## Recommended next review slices
 
 1. `sonic-forest`: `red-black`, `avl`, `llrb-tree` families (highest structural gap).
-2. `json-path` and `json-pointer`: complete module-family parity with upstream package layout.
+2. `json-path`: complete module-family parity with upstream package layout.
 3. `json-random`: complete full `examples.ts` catalog parity (replace placeholder templates with full upstream mappings).
 4. `json-type`: close codegen stub modules first (`binary`, `json`, `discriminator`, `capacity`).
 5. Revisit xfail scenarios one family at a time and remove wildcard entries as cases are fixed.
