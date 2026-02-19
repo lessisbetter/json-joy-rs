@@ -30,14 +30,6 @@ export interface WasmModelClass {
   fromBinary(data: Uint8Array): WasmModel;
   /** Generate a random session ID (static on the WASM class). */
   rndSid(): bigint;
-  /** Convert Slate document JSON to Peritext view-range JSON. */
-  convertSlateToViewRange(docJson: string): string;
-  /** Convert ProseMirror node JSON to Peritext view-range JSON. */
-  convertProseMirrorToViewRange(nodeJson: string): string;
-  /** Compute Quill attribute diff; returns JSON object or null as string. */
-  diffQuillAttributes(oldJson: string, newJson: string): string;
-  /** Remove Quill erase markers (null attributes). */
-  removeQuillErasures(attrJson: string): string;
 }
 
 /**
@@ -102,47 +94,6 @@ export class Model {
    */
   static sid(): number {
     return Number(Model.requireWasm().rndSid());
-  }
-
-  /**
-   * Convert a Slate document to Peritext view-range tuple.
-   */
-  static convertSlateToViewRange(doc: unknown): unknown {
-    const json = JSON.stringify(doc);
-    return JSON.parse(Model.requireWasm().convertSlateToViewRange(json));
-  }
-
-  /**
-   * Convert a ProseMirror node to Peritext view-range tuple.
-   */
-  static convertProseMirrorToViewRange(node: unknown): unknown {
-    const json = JSON.stringify(node);
-    return JSON.parse(Model.requireWasm().convertProseMirrorToViewRange(json));
-  }
-
-  /**
-   * Compute Quill attribute diff (`new - old`) using upstream-compatible
-   * semantics. Returns `undefined` when there is no diff.
-   */
-  static diffQuillAttributes(
-    oldAttributes: Record<string, unknown> | undefined,
-    newAttributes: Record<string, unknown> | undefined,
-  ): Record<string, unknown> | undefined {
-    const oldJson = JSON.stringify(oldAttributes ?? {});
-    const newJson = JSON.stringify(newAttributes ?? {});
-    const diff = JSON.parse(Model.requireWasm().diffQuillAttributes(oldJson, newJson));
-    return diff ?? undefined;
-  }
-
-  /**
-   * Remove `null` erase markers from Quill attributes.
-   */
-  static removeQuillErasures(
-    attributes: Record<string, unknown> | undefined,
-  ): Record<string, unknown> | undefined {
-    const json = JSON.stringify(attributes ?? {});
-    const cleaned = JSON.parse(Model.requireWasm().removeQuillErasures(json));
-    return cleaned ?? undefined;
   }
 
   /**

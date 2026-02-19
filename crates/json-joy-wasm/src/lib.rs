@@ -27,8 +27,6 @@ use json_joy::json_crdt_patch::patch_builder::PatchBuilder;
 use json_joy_json_pack::PackValue;
 use serde_json::Value;
 
-mod extensions;
-
 // ── Internal helpers ─────────────────────────────────────────────────────────
 
 /// Convert a plain JSON value to its `PackValue` equivalent for `con` nodes.
@@ -285,63 +283,6 @@ impl Model {
     #[wasm_bindgen(js_name = "rndSid")]
     pub fn rnd_sid() -> u64 {
         random_session_id()
-    }
-
-    /// Convert a Slate document JSON payload to Peritext view-range JSON.
-    ///
-    /// Input and output are JSON strings to avoid extra JS<->WASM object
-    /// marshaling on hot paths.
-    #[wasm_bindgen(js_name = "convertSlateToViewRange")]
-    pub fn convert_slate_to_view_range(doc_json: &str) -> Result<String, JsValue> {
-        let doc: Value = serde_json::from_str(doc_json)
-            .map_err(|e| JsValue::from_str(&format!("invalid Slate JSON: {e}")))?;
-        let view = extensions::from_slate_to_view_range(&doc);
-        serde_json::to_string(&view)
-            .map_err(|e| JsValue::from_str(&format!("failed to encode view-range JSON: {e}")))
-    }
-
-    /// Convert a ProseMirror node JSON payload to Peritext view-range JSON.
-    ///
-    /// Input and output are JSON strings to avoid extra JS<->WASM object
-    /// marshaling on hot paths.
-    #[wasm_bindgen(js_name = "convertProseMirrorToViewRange")]
-    pub fn convert_prosemirror_to_view_range(node_json: &str) -> Result<String, JsValue> {
-        let node: Value = serde_json::from_str(node_json)
-            .map_err(|e| JsValue::from_str(&format!("invalid ProseMirror JSON: {e}")))?;
-        let view = extensions::from_prosemirror_to_view_range(&node);
-        serde_json::to_string(&view)
-            .map_err(|e| JsValue::from_str(&format!("failed to encode view-range JSON: {e}")))
-    }
-
-    /// Compute Quill Delta attribute diff compatible with upstream semantics.
-    ///
-    /// Inputs and output are JSON object strings; output is `null` when there
-    /// is no effective diff.
-    #[wasm_bindgen(js_name = "diffQuillAttributes")]
-    pub fn diff_quill_attributes(old_json: &str, new_json: &str) -> Result<String, JsValue> {
-        let old: Value = serde_json::from_str(old_json)
-            .map_err(|e| JsValue::from_str(&format!("invalid old attributes JSON: {e}")))?;
-        let new: Value = serde_json::from_str(new_json)
-            .map_err(|e| JsValue::from_str(&format!("invalid new attributes JSON: {e}")))?;
-
-        let old_map = old.as_object();
-        let new_map = new.as_object();
-        let diff = extensions::diff_quill_attributes(old_map, new_map);
-        serde_json::to_string(&diff)
-            .map_err(|e| JsValue::from_str(&format!("failed to encode diff JSON: {e}")))
-    }
-
-    /// Remove Quill attribute erase markers (`null` values).
-    ///
-    /// Input and output are JSON object strings; output is `null` when all
-    /// attributes are erased.
-    #[wasm_bindgen(js_name = "removeQuillErasures")]
-    pub fn remove_quill_erasures(attr_json: &str) -> Result<String, JsValue> {
-        let attrs: Value = serde_json::from_str(attr_json)
-            .map_err(|e| JsValue::from_str(&format!("invalid attributes JSON: {e}")))?;
-        let out = extensions::remove_quill_erasures(attrs.as_object());
-        serde_json::to_string(&out)
-            .map_err(|e| JsValue::from_str(&format!("failed to encode cleaned JSON: {e}")))
     }
 
     // ── Patch application ─────────────────────────────────────────────────
@@ -1099,45 +1040,4 @@ mod tests {
         assert_eq!(m.inner.view(), json!({"a": "hello", "b": [1, 2]}));
     }
 
-    #[test]
-    fn convert_slate_to_view_range_static_helper() {
-        let doc = r#"[{"type":"paragraph","children":[{"text":"hi","bold":true}]}]"#;
-        let out = Model::convert_slate_to_view_range(doc).unwrap();
-        let v: Value = serde_json::from_str(&out).unwrap();
-        assert!(v.is_array());
-        assert_eq!(v[0], json!("\nhi"));
-    }
-
-    #[test]
-    fn convert_prosemirror_to_view_range_static_helper() {
-        let node = r#"{
-          "type": {"name": "doc"},
-          "content": {"content": [
-            {"type":{"name":"paragraph"},"attrs":{},"content":{"content":[
-              {"type":{"name":"text"},"text":"abc","marks":[]}
-            ]}}
-          ]}
-        }"#;
-        let out = Model::convert_prosemirror_to_view_range(node).unwrap();
-        let v: Value = serde_json::from_str(&out).unwrap();
-        assert!(v.is_array());
-        assert_eq!(v[0], json!("\nabc"));
-    }
-
-    #[test]
-    fn diff_quill_attributes_static_helper() {
-        let old = r#"{"bold":true,"size":"12px"}"#;
-        let new = r#"{"bold":true,"size":"14px","color":"red"}"#;
-        let out = Model::diff_quill_attributes(old, new).unwrap();
-        let v: Value = serde_json::from_str(&out).unwrap();
-        assert_eq!(v, json!({"size":"14px","color":"red"}));
-    }
-
-    #[test]
-    fn remove_quill_erasures_static_helper() {
-        let attrs = r#"{"bold":true,"color":null}"#;
-        let out = Model::remove_quill_erasures(attrs).unwrap();
-        let v: Value = serde_json::from_str(&out).unwrap();
-        assert_eq!(v, json!({"bold":true}));
-    }
 }

@@ -6,7 +6,7 @@ Rust-first JSON CRDT implementation with Python bindings.
 
 - `crates/json-joy`: core Rust library (CRDT engine and upstream package parity target).
 - `crates/json-joy-ffi`: UniFFI bridge crate exported as `cdylib` for other languages.
-- `crates/json-joy-wasm`: coarse-grained WASM bridge crate for JS.
+- `crates/json-joy-wasm`: coarse-grained WASM bridge crate for core model/patch JS interop.
 - `tools/embedded-uniffi-bindgen`: pinned local bindgen CLI wrapper.
 - `bindings/python`: generated Python package artifacts.
 - `bindings/wasm`: wasm benchmark harness and scripts.
@@ -47,6 +47,10 @@ Run the live TS<->WASM differential check (manual only, not in `test-gates`):
 ```bash
 make parity-live
 ```
+
+Note: JS editor ecosystem adapters (Slate/ProseMirror/Quill-specific helpers)
+are intentionally out of scope here. For those integrations, use upstream JS
+`json-joy` directly.
 
 Run both:
 
