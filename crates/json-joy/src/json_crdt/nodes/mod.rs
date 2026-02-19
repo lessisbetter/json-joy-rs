@@ -17,7 +17,7 @@
 
 pub mod rga;
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use serde_json::Value;
 use json_joy_json_pack::PackValue;
 
@@ -95,13 +95,13 @@ impl ValNode {
 #[derive(Debug, Clone)]
 pub struct ObjNode {
     pub id: Ts,
-    /// key → winning node ID
-    pub keys: HashMap<String, Ts>,
+    /// key → winning node ID (BTreeMap keeps keys sorted for deterministic view())
+    pub keys: BTreeMap<String, Ts>,
 }
 
 impl ObjNode {
     pub fn new(id: Ts) -> Self {
-        Self { id, keys: HashMap::new() }
+        Self { id, keys: BTreeMap::new() }
     }
 
     /// Insert a key, keeping it only if `new_id` is newer than existing.
@@ -117,12 +117,11 @@ impl ObjNode {
     }
 
     /// View: build a JSON object by resolving each value from the index.
+    ///
+    /// BTreeMap iterates in sorted key order, so no extra sort is needed.
     pub fn view(&self, index: &NodeIndex) -> Value {
         let mut map = serde_json::Map::new();
-        let mut keys: Vec<&String> = self.keys.keys().collect();
-        keys.sort();
-        for key in keys {
-            let id = self.keys[key];
+        for (key, &id) in &self.keys {
             let val = match index.get(&TsKey::from(id)) {
                 Some(node) => node.view(index),
                 None => Value::Null,
@@ -211,10 +210,9 @@ impl StrNode {
 
     /// Number of live characters in this string.
     pub fn size(&self) -> usize {
-        self.rga.iter_live()
-            .filter_map(|c| c.data.as_deref())
-            .map(|s| s.chars().count())
-            .sum()
+        // chunk.span is set to chars().count() at insert/decode time, so it is
+        // always the correct Unicode code-point length — no need to re-scan bytes.
+        self.rga.iter_live().map(|c| c.span as usize).sum()
     }
 
     /// Find the chunk-ID timestamp of the character at live position `pos`.
@@ -223,14 +221,12 @@ impl StrNode {
     pub fn find(&self, pos: usize) -> Option<Ts> {
         let mut count = 0usize;
         for chunk in self.rga.iter_live() {
-            if let Some(data) = &chunk.data {
-                let chunk_len = data.chars().count();
-                if pos < count + chunk_len {
-                    let offset = pos - count;
-                    return Some(Ts::new(chunk.id.sid, chunk.id.time + offset as u64));
-                }
-                count += chunk_len;
+            let chunk_len = chunk.span as usize;
+            if pos < count + chunk_len {
+                let offset = pos - count;
+                return Some(Ts::new(chunk.id.sid, chunk.id.time + offset as u64));
             }
+            count += chunk_len;
         }
         None
     }
@@ -241,21 +237,19 @@ impl StrNode {
         let mut count = 0usize;
         let end = pos + len;
         for chunk in self.rga.iter_live() {
-            if let Some(data) = &chunk.data {
-                let chunk_len = data.chars().count();
-                let chunk_start = count;
-                let chunk_end = count + chunk_len;
-                if chunk_end > pos && chunk_start < end {
-                    let local_start = if chunk_start >= pos { 0 } else { pos - chunk_start };
-                    let local_end = (end - chunk_start).min(chunk_len);
-                    result.push(Tss::new(
-                        chunk.id.sid,
-                        chunk.id.time + local_start as u64,
-                        (local_end - local_start) as u64,
-                    ));
-                }
-                count = chunk_end;
+            let chunk_len = chunk.span as usize;
+            let chunk_start = count;
+            let chunk_end = count + chunk_len;
+            if chunk_end > pos && chunk_start < end {
+                let local_start = if chunk_start >= pos { 0 } else { pos - chunk_start };
+                let local_end = (end - chunk_start).min(chunk_len);
+                result.push(Tss::new(
+                    chunk.id.sid,
+                    chunk.id.time + local_start as u64,
+                    (local_end - local_start) as u64,
+                ));
             }
+            count = chunk_end;
         }
         result
     }
