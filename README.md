@@ -36,6 +36,27 @@ Generate compatibility fixtures from upstream `json-joy@17.67.0`:
 make compat-fixtures
 ```
 
+Run fixture parity checks against the pinned compatibility corpus:
+
+```bash
+make parity-fixtures
+```
+
+Run the live TS<->WASM differential check (manual only, not in `test-gates`):
+
+```bash
+make parity-live
+```
+
+Run both:
+
+```bash
+make parity
+```
+
+Parity command aliases:
+- `make wasm-interop` -> `make parity-live`
+
 If you call Rust tooling directly, prefer `mise` to ensure the pinned toolchain:
 
 ```bash

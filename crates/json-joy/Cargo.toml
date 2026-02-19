@@ -36,3 +36,5 @@ name = "json-pointer"
 path = "src/bin/json_pointer.rs"
 
 [dev-dependencies]
+serde = { version = "1.0", features = ["derive"] }
+toml = "0.8"

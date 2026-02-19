@@ -48,13 +48,15 @@ Patch log format (less-db style):
 ```bash
 make wasm-build
 make wasm-bench-engine-one
-make wasm-interop
+make parity-live
 make wasm-bench-realistic
 ```
 
-`wasm-interop` validates mixed upstream/wasm compatibility:
+`parity-live` validates mixed upstream/wasm compatibility:
 - upstream patch -> wasm apply
 - wasm patch -> upstream apply
+
+`make wasm-interop` is kept as an alias to `make parity-live`.
 
 `wasm-bench-realistic` runs a less-db-like end-to-end scenario benchmark:
 - local update flow (`load -> diff/apply -> export -> append patch log`)

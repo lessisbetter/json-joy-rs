@@ -47,6 +47,16 @@ Checkpoint gates before marking a slice complete:
 1. `make test-gates`
 2. `make test`
 
+Parity verification commands:
+1. `make parity-fixtures` (fixture corpus replay + inventory contract checks)
+2. `make parity-live` (manual TS<->WASM differential check)
+3. `make parity` (runs both; not part of default `test-gates`)
+
+Parity policy:
+- Fixture parity requires byte + semantic matching per expected field.
+- Known divergences are tracked explicitly in `tests/compat/xfail.toml`.
+- Live differential checks remain manual-only.
+
 Workspace note:
 - Legacy `crates/json-joy-core` has been retired.
 - Gate commands now target the active `crates/json-joy` + bridge crates in workspace.

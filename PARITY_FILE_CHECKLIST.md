@@ -7,6 +7,10 @@ Rules:
 - Keep upstream package and path structure mirrored under `crates/<package>/`.
 - Check a row only when implementation + tests + fixture parity + differential parity are complete.
 - Legacy `crates/json-joy-core` is retired; parity tracking is against the mirrored upstream package crates listed in `PORT_PLAN.md`.
+- Compatibility parity is enforced via:
+  - `crates/json-joy/tests/compat_inventory.rs`
+  - `crates/json-joy/tests/compat_fixtures.rs`
+  - `tests/compat/xfail.toml` (explicit known-delta allowlist)
 
 ## Package: base64
 

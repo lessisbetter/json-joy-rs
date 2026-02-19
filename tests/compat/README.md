@@ -13,3 +13,53 @@ Regenerate fixtures from repo root:
 ```bash
 bin/generate-compat-fixtures.sh
 ```
+
+## Parity harness
+
+Integration tests live in:
+
+- `crates/json-joy/tests/compat_inventory.rs`
+- `crates/json-joy/tests/compat_fixtures.rs`
+
+Run them with:
+
+```bash
+make parity-fixtures
+```
+
+The inventory test enforces the pinned fixture contract:
+
+- `fixture_version = 1`
+- `upstream_package = "json-joy"`
+- `upstream_version = "17.67.0"`
+- `fixture_count = 1398`
+- exact per-scenario counts
+
+## XFail policy
+
+Known divergences are tracked in:
+
+- `tests/compat/xfail.toml`
+
+Each entry must define:
+
+- `scenario`
+- `name`
+- `reason`
+- `source_file`
+- `issue`
+
+Harness rules:
+
+- failing fixture not in xfail => test failure
+- failing fixture in xfail => allowed
+- xfail entry that now passes exactly (non-wildcard) => unexpected pass failure
+- xfail entry that matches no current fixture => stale xfail failure
+
+## Live differential check
+
+Live TS<->WASM differential checks are manual-only and run via:
+
+```bash
+make parity-live
+```

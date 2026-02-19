@@ -1,4 +1,4 @@
-.PHONY: check fmt test test-smoke test-suite test-suite-filter test-crate test-gates port-slice bindings-python compat-fixtures wasm-build wasm-bench wasm-bench-one wasm-bench-engine-one wasm-interop wasm-bench-realistic
+.PHONY: check fmt test test-smoke test-suite test-suite-filter test-crate test-gates port-slice bindings-python compat-fixtures parity-fixtures parity-live parity wasm-build wasm-bench wasm-bench-one wasm-bench-engine-one wasm-interop wasm-bench-realistic
 
 check:
 	mise x -- cargo check
@@ -55,6 +55,14 @@ bindings-python:
 compat-fixtures:
 	bin/generate-compat-fixtures.sh
 
+parity-fixtures:
+	mise x -- cargo test -p json-joy --test compat_inventory --test compat_fixtures --offline
+
+parity-live: wasm-build
+	node bench/interop.cjs
+
+parity: parity-fixtures parity-live
+
 wasm-build:
 	CARGO_NET_OFFLINE=true wasm-pack build crates/json-joy-wasm --target nodejs --release
 
@@ -67,8 +75,7 @@ wasm-bench-one: wasm-build
 wasm-bench-engine-one: wasm-build
 	node bindings/wasm/bench/replay-engine-one.cjs
 
-wasm-interop: wasm-build
-	node bindings/wasm/bench/interop-mixed.cjs
+wasm-interop: parity-live
 
 wasm-bench-realistic: wasm-build
 	node bindings/wasm/bench/lessdb-realistic.cjs
