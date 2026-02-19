@@ -4,6 +4,8 @@ use json_joy::json_crdt_extensions::peritext::slice::constants::{
 };
 use serde_json::{json, Value};
 
+use crate::extensions::types::PmNode;
+
 fn header(stacking: SliceStacking, x1: Anchor, x2: Anchor) -> u64 {
     ((stacking as u64) << HEADER_STACKING_SHIFT) | ((x1 as u64) << 0) | ((x2 as u64) << 1)
 }
@@ -29,31 +31,25 @@ impl ProseMirrorConverter {
         }
     }
 
-    fn node_type_name(node: &Value) -> Option<String> {
-        node.get("type")
-            .and_then(|t| t.get("name"))
-            .and_then(Value::as_str)
-            .map(ToString::to_string)
+    fn node_type_name(node: &PmNode) -> String {
+        node.node_type.name.clone()
     }
 
-    fn content(node: &Value) -> Vec<Value> {
-        node.get("content")
-            .and_then(|c| c.get("content"))
-            .and_then(Value::as_array)
-            .cloned()
+    fn content(node: &PmNode) -> Vec<PmNode> {
+        node.content
+            .as_ref()
+            .map(|f| f.content.clone())
             .unwrap_or_default()
     }
 
-    fn conv(&mut self, node: &Value, path: &[Value], node_discriminator: usize) {
-        let Some(type_name) = Self::node_type_name(node) else {
-            return;
-        };
+    fn conv(&mut self, node: &PmNode, path: &[Value], node_discriminator: usize) {
+        let type_name = Self::node_type_name(node);
 
         let start = self.text.chars().count();
         let mut inline_text = String::new();
 
         if type_name == "text" {
-            if let Some(text) = node.get("text").and_then(Value::as_str) {
+            if let Some(text) = &node.text {
                 inline_text.push_str(text);
                 if !inline_text.is_empty() {
                     self.text.push_str(&inline_text);
@@ -63,7 +59,10 @@ impl ProseMirrorConverter {
 
         if inline_text.is_empty() {
             let content = Self::content(node);
-            let data = node.get("attrs").cloned();
+            let data = node
+                .attrs
+                .as_ref()
+                .map(|m| serde_json::to_value(m).unwrap_or(Value::Null));
 
             let step = if node_discriminator != 0 || data.is_some() {
                 Value::Array(vec![
@@ -78,7 +77,7 @@ impl ProseMirrorConverter {
             let has_no_children = content.is_empty();
             let first_is_inline = content
                 .first()
-                .and_then(Self::node_type_name)
+                .map(Self::node_type_name)
                 .map(|t| t == "text")
                 .unwrap_or(false);
 
@@ -101,19 +100,17 @@ impl ProseMirrorConverter {
             }
         }
 
-        if let Some(marks) = node.get("marks").and_then(Value::as_array) {
+        if let Some(marks) = &node.marks {
             let end = start + inline_text.chars().count();
             for mark in marks {
-                let Some(mark_type) = mark
-                    .get("type")
-                    .and_then(|t| t.get("name"))
-                    .and_then(Value::as_str)
-                else {
-                    continue;
-                };
+                let mark_type = &mark.mark_type.name;
 
-                let attrs = mark.get("attrs").cloned().unwrap_or_else(|| json!({}));
-                let data_empty = attrs.as_object().map(|m| m.is_empty()).unwrap_or(true);
+                let attrs = mark
+                    .attrs
+                    .as_ref()
+                    .map(|m| serde_json::to_value(m).unwrap_or_else(|_| json!({})))
+                    .unwrap_or_else(|| json!({}));
+                let data_empty = mark.attrs.as_ref().map(|m| m.is_empty()).unwrap_or(true);
                 let stacking = if data_empty {
                     SliceStacking::One
                 } else {
@@ -134,12 +131,12 @@ impl ProseMirrorConverter {
         }
     }
 
-    fn cont(&mut self, path: &[Value], content: &[Value]) {
+    fn cont(&mut self, path: &[Value], content: &[PmNode]) {
         let mut prev_tag = String::new();
         let mut discriminator = 0usize;
 
         for child in content {
-            let tag = Self::node_type_name(child).unwrap_or_default();
+            let tag = Self::node_type_name(child);
             discriminator = if tag == prev_tag {
                 discriminator + 1
             } else {
@@ -150,7 +147,7 @@ impl ProseMirrorConverter {
         }
     }
 
-    fn convert(mut self, node: &Value) -> Value {
+    fn convert(mut self, node: &PmNode) -> Value {
         let content = Self::content(node);
         if !content.is_empty() {
             self.cont(&[], &content);
@@ -160,7 +157,10 @@ impl ProseMirrorConverter {
 }
 
 pub fn from_prosemirror_to_view_range(node: &Value) -> Value {
-    ProseMirrorConverter::new().convert(node)
+    match serde_json::from_value::<PmNode>(node.clone()) {
+        Ok(parsed) => ProseMirrorConverter::new().convert(&parsed),
+        Err(_) => json!(["", 0, []]),
+    }
 }
 
 #[cfg(test)]
