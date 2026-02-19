@@ -114,7 +114,7 @@ thin export surface in `crates/json-joy-wasm/src/lib.rs`.
 | WASM Slice | Scope | Status |
 |---|---|---|
 | W0 | Adapter scaffold + converter entry points | IN PROGRESS |
-| W1 | `slate/FromSlate` + `prosemirror/FromPm` view-range conversion parity | STARTED |
+| W1 | `slate/FromSlate` + `prosemirror/FromPm` view-range conversion parity | DONE |
 | W2 | Peritext `editor` and `block` core (Rust, non-DOM) | PENDING |
 | W3 | `quill-delta` node/api parity | PENDING |
 | W4 | `prosemirror` node/api parity | PENDING |

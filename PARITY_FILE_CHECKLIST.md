@@ -1952,7 +1952,7 @@ Rules:
 ### WASM Adapter Slices — json-crdt-extensions deferred editor interop
 
 - [x] `W0` Create mirrored adapter scaffold under `crates/json-joy-wasm/src/extensions/**` and wire export points in `crates/json-joy-wasm/src/lib.rs`.
-- [ ] `W1` Port converter family: `prosemirror/FromPm.ts` and `slate/FromSlate.ts` to Rust with fixture tests.
+- [x] `W1` Port converter family: `prosemirror/FromPm.ts` and `slate/FromSlate.ts` to Rust with fixture tests.
 - [ ] `W2` Port Peritext editor/block core (`peritext/editor/**`, `peritext/block/**`) to Rust (non-DOM).
 - [ ] `W3` Port Quill adapter core (`quill-delta/*.ts`) to Rust and expose WASM entry points.
 - [ ] `W4` Port ProseMirror adapter core (`prosemirror/*.ts`) to Rust and expose WASM entry points.
