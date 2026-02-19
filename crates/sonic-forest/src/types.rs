@@ -32,3 +32,20 @@ pub trait Node2 {
     fn set_l2(&mut self, v: Option<u32>);
     fn set_r2(&mut self, v: Option<u32>);
 }
+
+/// Comparator used by map/tree structures.
+///
+/// Mirrors `Comparator<T>` in upstream `types.ts`.
+pub type Comparator<K> = dyn Fn(&K, &K) -> i32;
+
+/// Key/value node interface used by map-like structures.
+///
+/// Rust divergence: upstream accesses node fields directly (`k`, `v`), while
+/// Rust uses trait methods to support arena-indexed generic nodes.
+pub trait KvNode<K, V>: Node {
+    fn key(&self) -> &K;
+    fn value(&self) -> &V;
+    fn value_mut(&mut self) -> &mut V;
+    fn set_key(&mut self, key: K);
+    fn set_value(&mut self, value: V);
+}

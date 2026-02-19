@@ -22,11 +22,16 @@
 //! [`util`] | `util/*` | Position-tree traversal, search, insert/remove/swap helpers |
 //! [`util2`] | `util2.ts` | `insert2`, `remove2`, `next2` … for ID tree |
 
+#[path = "data-types/mod.rs"]
+pub mod data_types;
+#[path = "red-black/mod.rs"]
+pub mod red_black;
 pub mod splay;
 pub mod types;
 pub mod util;
 pub mod util2;
 
+pub use red_black::RbMap;
 pub use splay::util2::splay2;
 pub use splay::{l_splay, ll_splay, lr_splay, r_splay, rl_splay, rr_splay, splay};
 pub use types::{Node, Node2};
