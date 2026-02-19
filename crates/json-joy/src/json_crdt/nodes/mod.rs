@@ -541,6 +541,9 @@ impl CrdtNode {
 
 // ── NodeIndex ─────────────────────────────────────────────────────────────
 
+/// Map from timestamp ID to CRDT node.
+pub type NodeIndex = HashMap<TsKey, CrdtNode>;
+
 /// Hashable key for Ts (since Ts doesn't implement Hash by default).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct TsKey {
@@ -550,105 +553,6 @@ pub struct TsKey {
 
 impl From<Ts> for TsKey {
     fn from(ts: Ts) -> Self { Self { sid: ts.sid, time: ts.time } }
-}
-
-/// Arena-backed index: nodes stored contiguously in a `Vec`, keyed by a small
-/// `HashMap<TsKey, u32>`.  Compared to `HashMap<TsKey, CrdtNode>`, HashMap
-/// bucket resizes are cheaper (copying 4-byte indices vs ~80-byte nodes), and
-/// the node vec is more cache-friendly during sequential traversal.
-///
-/// Mirrors the public API of `HashMap<TsKey, CrdtNode>` so all existing call
-/// sites work unchanged.
-#[derive(Debug, Clone)]
-pub struct NodeIndex {
-    nodes: Vec<CrdtNode>,
-    map:   HashMap<TsKey, u32>,
-}
-
-impl Default for NodeIndex {
-    fn default() -> Self { Self::new() }
-}
-
-impl NodeIndex {
-    pub fn new() -> Self {
-        Self { nodes: Vec::new(), map: HashMap::new() }
-    }
-
-    pub fn with_capacity(n: usize) -> Self {
-        Self { nodes: Vec::with_capacity(n), map: HashMap::with_capacity(n) }
-    }
-
-    /// Mirror `HashMap::get(&TsKey)`.
-    #[inline]
-    pub fn get(&self, key: &TsKey) -> Option<&CrdtNode> {
-        let &idx = self.map.get(key)?;
-        self.nodes.get(idx as usize)
-    }
-
-    /// Mirror `HashMap::get_mut(&TsKey)`.
-    #[inline]
-    pub fn get_mut(&mut self, key: &TsKey) -> Option<&mut CrdtNode> {
-        let idx = *self.map.get(key)?;
-        self.nodes.get_mut(idx as usize)
-    }
-
-    /// Mirror `HashMap::insert(TsKey, CrdtNode)`.
-    #[inline]
-    pub fn insert(&mut self, key: TsKey, node: CrdtNode) {
-        if let Some(&idx) = self.map.get(&key) {
-            self.nodes[idx as usize] = node;
-        } else {
-            let idx = self.nodes.len() as u32;
-            self.nodes.push(node);
-            self.map.insert(key, idx);
-        }
-    }
-
-    /// Mirror `HashMap::remove(&TsKey)`.
-    ///
-    /// The slot in `nodes` becomes a tombstone (zombie node left in place to
-    /// keep all other indices stable).  `remove_node` is never called on
-    /// production paths; this is provided only for completeness.
-    pub fn remove(&mut self, key: &TsKey) -> Option<CrdtNode> {
-        let idx = self.map.remove(key)? as usize;
-        Some(self.nodes[idx].clone())
-    }
-
-    /// Mirror `HashMap::contains_key(&TsKey)`.
-    #[inline]
-    pub fn contains_key(&self, key: &TsKey) -> bool {
-        self.map.contains_key(key)
-    }
-
-    pub fn len(&self) -> usize { self.map.len() }
-    pub fn is_empty(&self) -> bool { self.map.is_empty() }
-
-    /// Iterate (key, node) pairs, mirroring `HashMap::iter()`.
-    pub fn iter(&self) -> NodeIndexIter<'_> {
-        NodeIndexIter { inner: self.map.iter(), nodes: &self.nodes }
-    }
-}
-
-/// Iterator yielding `(&TsKey, &CrdtNode)` pairs from a [`NodeIndex`].
-pub struct NodeIndexIter<'a> {
-    inner: std::collections::hash_map::Iter<'a, TsKey, u32>,
-    nodes: &'a Vec<CrdtNode>,
-}
-
-impl<'a> Iterator for NodeIndexIter<'a> {
-    type Item = (&'a TsKey, &'a CrdtNode);
-    fn next(&mut self) -> Option<Self::Item> {
-        let (k, &idx) = self.inner.next()?;
-        Some((k, &self.nodes[idx as usize]))
-    }
-}
-
-impl<'a> IntoIterator for &'a NodeIndex {
-    type Item = (&'a TsKey, &'a CrdtNode);
-    type IntoIter = NodeIndexIter<'a>;
-    fn into_iter(self) -> Self::IntoIter {
-        self.iter()
-    }
 }
 
 /// Convenience trait to look up nodes using `&Ts`.
@@ -661,17 +565,14 @@ pub trait IndexExt {
 }
 
 impl IndexExt for NodeIndex {
-    #[inline]
     fn get(&self, ts: &Ts) -> Option<&CrdtNode> {
         self.get(&TsKey::from(*ts))
     }
 
-    #[inline]
     fn get_mut_ts(&mut self, ts: &Ts) -> Option<&mut CrdtNode> {
         self.get_mut(&TsKey::from(*ts))
     }
 
-    #[inline]
     fn insert_node(&mut self, ts: Ts, node: CrdtNode) {
         self.insert(TsKey::from(ts), node);
     }
@@ -680,7 +581,6 @@ impl IndexExt for NodeIndex {
         self.remove(&TsKey::from(*ts))
     }
 
-    #[inline]
     fn contains_ts(&self, ts: &Ts) -> bool {
         self.contains_key(&TsKey::from(*ts))
     }

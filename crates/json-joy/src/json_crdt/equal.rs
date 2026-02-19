@@ -261,7 +261,7 @@ mod tests {
     use crate::json_crdt_patch::clock::ts;
     use crate::json_crdt_patch::operations::ConValue;
     use json_joy_json_pack::PackValue;
-    use crate::json_crdt::nodes::NodeIndex;
+    use std::collections::HashMap;
 
     fn sid() -> u64 { 999 }
 
@@ -269,7 +269,7 @@ mod tests {
 
     #[test]
     fn cmp_con_same_value() {
-        let index = NodeIndex::default();
+        let index = HashMap::default();
         let a = CrdtNode::Con(ConNode::new(ts(sid(), 1), ConValue::Val(PackValue::Integer(42))));
         let b = CrdtNode::Con(ConNode::new(ts(sid(), 2), ConValue::Val(PackValue::Integer(42))));
         assert!(cmp(&a, &b, true, &index));
@@ -277,7 +277,7 @@ mod tests {
 
     #[test]
     fn cmp_con_different_value() {
-        let index = NodeIndex::default();
+        let index = HashMap::default();
         let a = CrdtNode::Con(ConNode::new(ts(sid(), 1), ConValue::Val(PackValue::Integer(1))));
         let b = CrdtNode::Con(ConNode::new(ts(sid(), 2), ConValue::Val(PackValue::Integer(2))));
         assert!(!cmp(&a, &b, true, &index));
@@ -286,7 +286,7 @@ mod tests {
     #[test]
     fn cmp_con_no_content() {
         // With compareContent=false, different values should be "equal".
-        let index = NodeIndex::default();
+        let index = HashMap::default();
         let a = CrdtNode::Con(ConNode::new(ts(sid(), 1), ConValue::Val(PackValue::Integer(1))));
         let b = CrdtNode::Con(ConNode::new(ts(sid(), 2), ConValue::Val(PackValue::Integer(2))));
         assert!(cmp(&a, &b, false, &index));
@@ -294,7 +294,7 @@ mod tests {
 
     #[test]
     fn cmp_different_types_false() {
-        let index = NodeIndex::default();
+        let index = HashMap::default();
         let a = CrdtNode::Con(ConNode::new(ts(sid(), 1), ConValue::Val(PackValue::Integer(1))));
         let b = CrdtNode::Str(StrNode::new(ts(sid(), 1)));
         assert!(!cmp(&a, &b, false, &index));
