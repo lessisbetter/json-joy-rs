@@ -313,6 +313,37 @@ impl Model {
             .map_err(|e| JsValue::from_str(&format!("failed to encode view-range JSON: {e}")))
     }
 
+    /// Compute Quill Delta attribute diff compatible with upstream semantics.
+    ///
+    /// Inputs and output are JSON object strings; output is `null` when there
+    /// is no effective diff.
+    #[wasm_bindgen(js_name = "diffQuillAttributes")]
+    pub fn diff_quill_attributes(old_json: &str, new_json: &str) -> Result<String, JsValue> {
+        let old: Value = serde_json::from_str(old_json)
+            .map_err(|e| JsValue::from_str(&format!("invalid old attributes JSON: {e}")))?;
+        let new: Value = serde_json::from_str(new_json)
+            .map_err(|e| JsValue::from_str(&format!("invalid new attributes JSON: {e}")))?;
+
+        let old_map = old.as_object();
+        let new_map = new.as_object();
+        let diff = extensions::diff_quill_attributes(old_map, new_map);
+        serde_json::to_string(&diff)
+            .map_err(|e| JsValue::from_str(&format!("failed to encode diff JSON: {e}")))
+    }
+
+    /// Remove Quill attribute erase markers (`null` values).
+    ///
+    /// Input and output are JSON object strings; output is `null` when all
+    /// attributes are erased.
+    #[wasm_bindgen(js_name = "removeQuillErasures")]
+    pub fn remove_quill_erasures(attr_json: &str) -> Result<String, JsValue> {
+        let attrs: Value = serde_json::from_str(attr_json)
+            .map_err(|e| JsValue::from_str(&format!("invalid attributes JSON: {e}")))?;
+        let out = extensions::remove_quill_erasures(attrs.as_object());
+        serde_json::to_string(&out)
+            .map_err(|e| JsValue::from_str(&format!("failed to encode cleaned JSON: {e}")))
+    }
+
     // ── Patch application ─────────────────────────────────────────────────
 
     /// Apply a remote patch (received from a peer).
