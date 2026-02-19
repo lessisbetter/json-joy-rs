@@ -27,6 +27,8 @@ use json_joy::json_crdt_patch::patch_builder::PatchBuilder;
 use json_joy_json_pack::PackValue;
 use serde_json::Value;
 
+mod extensions;
+
 // ── Internal helpers ─────────────────────────────────────────────────────────
 
 /// Convert a plain JSON value to its `PackValue` equivalent for `con` nodes.
@@ -283,6 +285,32 @@ impl Model {
     #[wasm_bindgen(js_name = "rndSid")]
     pub fn rnd_sid() -> u64 {
         random_session_id()
+    }
+
+    /// Convert a Slate document JSON payload to Peritext view-range JSON.
+    ///
+    /// Input and output are JSON strings to avoid extra JS<->WASM object
+    /// marshaling on hot paths.
+    #[wasm_bindgen(js_name = "convertSlateToViewRange")]
+    pub fn convert_slate_to_view_range(doc_json: &str) -> Result<String, JsValue> {
+        let doc: Value = serde_json::from_str(doc_json)
+            .map_err(|e| JsValue::from_str(&format!("invalid Slate JSON: {e}")))?;
+        let view = extensions::from_slate_to_view_range(&doc);
+        serde_json::to_string(&view)
+            .map_err(|e| JsValue::from_str(&format!("failed to encode view-range JSON: {e}")))
+    }
+
+    /// Convert a ProseMirror node JSON payload to Peritext view-range JSON.
+    ///
+    /// Input and output are JSON strings to avoid extra JS<->WASM object
+    /// marshaling on hot paths.
+    #[wasm_bindgen(js_name = "convertProseMirrorToViewRange")]
+    pub fn convert_prosemirror_to_view_range(node_json: &str) -> Result<String, JsValue> {
+        let node: Value = serde_json::from_str(node_json)
+            .map_err(|e| JsValue::from_str(&format!("invalid ProseMirror JSON: {e}")))?;
+        let view = extensions::from_prosemirror_to_view_range(&node);
+        serde_json::to_string(&view)
+            .map_err(|e| JsValue::from_str(&format!("failed to encode view-range JSON: {e}")))
     }
 
     // ── Patch application ─────────────────────────────────────────────────
