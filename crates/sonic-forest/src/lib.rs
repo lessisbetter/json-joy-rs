@@ -30,6 +30,8 @@ pub mod data_types;
 pub mod llrb_tree;
 #[path = "print/mod.rs"]
 pub mod print;
+#[path = "radix/mod.rs"]
+pub mod radix;
 #[path = "red-black/mod.rs"]
 pub mod red_black;
 pub mod splay;
@@ -40,6 +42,7 @@ pub mod util2;
 pub use avl::{AvlBstNumNumMap, AvlMap, AvlMapOld, AvlSet};
 pub use llrb_tree::{LlrbNode, LlrbTree};
 pub use print::{printBinary, printTree, print_binary, print_tree, PrintChild, Printable};
+pub use radix::Slice as RadixSlice;
 pub use red_black::RbMap;
 pub use splay::util2::splay2;
 pub use splay::{l_splay, ll_splay, lr_splay, r_splay, rl_splay, rr_splay, splay};

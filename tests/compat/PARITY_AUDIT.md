@@ -83,6 +83,7 @@ Current xfail scenarios:
 - `crates/json-joy-json-pointer/src/codegen/find.rs` and `crates/json-joy-json-pointer/src/codegen/findRef.rs`: upstream emits specialized JS code; Rust uses closure wrappers over runtime traversal.
 - `crates/sonic-forest/src/util/mod.rs`: key-based helpers (`find`, `insert`, `find_or_next_lower`) take a `key_of` closure instead of direct node-field access to fit arena-indexed Rust nodes.
 - `crates/sonic-forest/src/llrb-tree/LlrbTree.rs`: `get_or_next_lower`, `for_each`, `iterator0`, and `iterator` intentionally panic with "Method not implemented." to match upstream stubs; `clear()` intentionally mirrors upstream and only clears `root`.
+- `crates/sonic-forest/src/radix/mod.rs`: currently ports `Slice.ts` only; remaining upstream radix files are explicitly listed as pending in-module until full family parity is completed.
 
 ## sonic-forest parity status
 
@@ -93,22 +94,23 @@ Upstream reference:
 Current local status:
 
 - upstream source files: 82
-- local source files: 36
+- local source files: 39
 
 Top-level families:
 
 - upstream: `SortedMap`, `Tree.ts`, `TreeNode.ts`, `avl`, `data-types`, `llrb-tree`, `print`, `radix`, `red-black`, `splay`, `trie`, `types.ts`, `types2.ts`, `util`, `util2.ts`
-- local: `lib.rs`, `avl`, `data-types`, `llrb-tree`, `print`, `red-black`, `splay`, `types.rs`, `util` (split to `first/next/swap/print/mod`), `util2.rs`
+- local: `lib.rs`, `avl`, `data-types`, `llrb-tree`, `print`, `radix` (partial), `red-black`, `splay`, `types.rs`, `util` (split to `first/next/swap/print/mod`), `util2.rs`
 
 Implication:
 
 - `red-black`, `data-types`, `avl`, `llrb-tree`, and `print` families are now ported with upstream-mapped integration tests.
+- `radix/Slice.ts` is now ported with upstream-mapped integration tests; the rest of the `radix` family is still pending.
 - Several optimized data-structure families are still missing from the Rust port.
 - Given project direction, missing sonic-forest families should now be treated as planned port work, not permanent divergence.
 
 ## Recommended next review slices
 
-1. `sonic-forest`: `radix`, `trie`, and `SortedMap` families.
+1. `sonic-forest`: complete remaining `radix` files, then port `trie` and `SortedMap` families.
 2. `json-path`: complete module-family parity with upstream package layout.
 3. `json-random`: complete full `examples.ts` catalog parity (replace placeholder templates with full upstream mappings).
 4. `json-type`: close codegen stub modules first (`binary`, `json`, `discriminator`, `capacity`).
