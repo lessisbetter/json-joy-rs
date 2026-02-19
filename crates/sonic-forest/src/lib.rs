@@ -35,6 +35,10 @@ pub mod radix;
 #[path = "red-black/mod.rs"]
 pub mod red_black;
 pub mod splay;
+#[path = "Tree.rs"]
+pub mod tree;
+#[path = "TreeNode.rs"]
+pub mod tree_node;
 #[path = "trie/mod.rs"]
 pub mod trie;
 pub mod types;
@@ -48,6 +52,8 @@ pub use radix::{BinaryRadixTree, BinaryTrieNode, RadixTree, Slice as RadixSlice}
 pub use red_black::RbMap;
 pub use splay::util2::splay2;
 pub use splay::{l_splay, ll_splay, lr_splay, r_splay, rl_splay, rr_splay, splay};
+pub use tree::Tree;
+pub use tree_node::TreeNode;
 pub use trie::TrieNode;
 pub use types::{Node, Node2};
 pub use util::{
