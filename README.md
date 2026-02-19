@@ -4,7 +4,7 @@ Rust-first JSON CRDT implementation with Python bindings.
 
 ## Repository layout
 
-- `crates/json-joy-core`: core Rust library (CRDT engine).
+- `crates/json-joy`: core Rust library (CRDT engine and upstream package parity target).
 - `crates/json-joy-ffi`: UniFFI bridge crate exported as `cdylib` for other languages.
 - `crates/json-joy-wasm`: coarse-grained WASM bridge crate for JS.
 - `tools/embedded-uniffi-bindgen`: pinned local bindgen CLI wrapper.

@@ -6,6 +6,7 @@ This checklist is generated from upstream package sources at:
 Rules:
 - Keep upstream package and path structure mirrored under `crates/<package>/`.
 - Check a row only when implementation + tests + fixture parity + differential parity are complete.
+- Legacy `crates/json-joy-core` is retired; parity tracking is against the mirrored upstream package crates listed in `PORT_PLAN.md`.
 
 ## Package: base64
 

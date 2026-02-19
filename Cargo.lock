@@ -400,22 +400,11 @@ name = "json-joy-codegen"
 version = "0.1.0"
 
 [[package]]
-name = "json-joy-core"
-version = "0.1.0"
-dependencies = [
- "base64",
- "json-joy-json-pack",
- "json-joy-json-pointer",
- "rand 0.8.5",
- "serde_json",
- "thiserror",
-]
-
-[[package]]
 name = "json-joy-ffi"
 version = "0.1.0"
 dependencies = [
- "json-joy-core",
+ "json-joy",
+ "json-joy-json-pack",
  "serde_json",
  "uniffi",
 ]

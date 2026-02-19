@@ -32,7 +32,7 @@ Tight local loop while porting:
 2. Optional controls for the same command:
    - `FILTER=<test_name_substring>`
    - `FIXTURES=0` (skip fixture regeneration)
-   - `GATES=1` (run full core gates after fast loop)
+   - `GATES=1` (run full gates after fast loop)
 3. Manual drill-down commands when needed:
    - `make test-smoke`
    - `make test-suite SUITE=<integration_test_name>`
@@ -46,6 +46,10 @@ Agent runbook:
 Checkpoint gates before marking a slice complete:
 1. `make test-gates`
 2. `make test`
+
+Workspace note:
+- Legacy `crates/json-joy-core` has been retired.
+- Gate commands now target the active `crates/json-joy` + bridge crates in workspace.
 
 ## Batch order
 
