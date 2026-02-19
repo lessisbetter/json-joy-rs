@@ -45,6 +45,7 @@ The inventory test enforces the pinned fixture contract including:
 Known divergences are tracked in:
 
 - `tests/compat/xfail.toml`
+- `tests/compat/PARITY_AUDIT.md`
 
 Each entry defines:
 

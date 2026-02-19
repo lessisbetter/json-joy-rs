@@ -25,6 +25,7 @@ diff, and codec functionality, plus native bridges for WASM and Python.
 - `bindings/python`: Python packaging and generated bindings
 - `bindings/wasm`: WASM benchmark and interop harness scripts
 - `tests/compat`: compatibility fixture corpus, manifest, and xfail policy
+- `tests/compat/PARITY_AUDIT.md`: ongoing file-family parity and intentional divergence log
 - `bin/`: helper scripts (`compat` fixture generation, binding generation)
 
 ## Quick start
