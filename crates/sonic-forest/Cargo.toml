@@ -1,0 +1,10 @@
+[package]
+name = "sonic-forest"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "Rust port of sonic-forest — arena-based splay tree utilities for dual-tree data structures"
+
+[dependencies]
+
+[dev-dependencies]

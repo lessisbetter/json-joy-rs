@@ -2,6 +2,7 @@
 resolver = "2"
 
 members = [
+  "crates/sonic-forest",
   "crates/base64",
   "crates/buffers",
   "crates/codegen",
@@ -20,6 +21,7 @@ members = [
 ]
 
 default-members = [
+  "crates/sonic-forest",
   "crates/base64",
   "crates/buffers",
   "crates/codegen",
