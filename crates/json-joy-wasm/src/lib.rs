@@ -1098,4 +1098,46 @@ mod tests {
         assert!(!bytes.is_empty());
         assert_eq!(m.inner.view(), json!({"a": "hello", "b": [1, 2]}));
     }
+
+    #[test]
+    fn convert_slate_to_view_range_static_helper() {
+        let doc = r#"[{"type":"paragraph","children":[{"text":"hi","bold":true}]}]"#;
+        let out = Model::convert_slate_to_view_range(doc).unwrap();
+        let v: Value = serde_json::from_str(&out).unwrap();
+        assert!(v.is_array());
+        assert_eq!(v[0], json!("\nhi"));
+    }
+
+    #[test]
+    fn convert_prosemirror_to_view_range_static_helper() {
+        let node = r#"{
+          "type": {"name": "doc"},
+          "content": {"content": [
+            {"type":{"name":"paragraph"},"attrs":{},"content":{"content":[
+              {"type":{"name":"text"},"text":"abc","marks":[]}
+            ]}}
+          ]}
+        }"#;
+        let out = Model::convert_prosemirror_to_view_range(node).unwrap();
+        let v: Value = serde_json::from_str(&out).unwrap();
+        assert!(v.is_array());
+        assert_eq!(v[0], json!("\nabc"));
+    }
+
+    #[test]
+    fn diff_quill_attributes_static_helper() {
+        let old = r#"{"bold":true,"size":"12px"}"#;
+        let new = r#"{"bold":true,"size":"14px","color":"red"}"#;
+        let out = Model::diff_quill_attributes(old, new).unwrap();
+        let v: Value = serde_json::from_str(&out).unwrap();
+        assert_eq!(v, json!({"size":"14px","color":"red"}));
+    }
+
+    #[test]
+    fn remove_quill_erasures_static_helper() {
+        let attrs = r#"{"bold":true,"color":null}"#;
+        let out = Model::remove_quill_erasures(attrs).unwrap();
+        let v: Value = serde_json::from_str(&out).unwrap();
+        assert_eq!(v, json!({"bold":true}));
+    }
 }
