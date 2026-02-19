@@ -227,4 +227,21 @@ export class Model {
   applyBatch(patches: Array<Patch | Uint8Array>): void {
     for (const p of patches) this.applyPatch(p);
   }
+
+  // ── Lifecycle ──────────────────────────────────────────────────────────────
+
+  /**
+   * Release the WASM memory held by this document.
+   *
+   * For typical long-lived documents (one model per open tab or session) you
+   * never need to call this — just let the object be garbage-collected when
+   * the page unloads.
+   *
+   * Call it when creating many short-lived models (server-side batch
+   * processing, tests) to prevent WASM heap growth, since the JS garbage
+   * collector cannot see into WASM linear memory.
+   */
+  dispose(): void {
+    this._wasm.free();
+  }
 }

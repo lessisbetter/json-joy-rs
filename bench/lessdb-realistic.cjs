@@ -136,7 +136,7 @@ function runWasmStateless() {
   const created = new WASMModel(WASM_SID);
   created.diffApply(JSON.stringify(makeInitialDoc()));
   let bin = created.toBinary();
-  created.free();
+  created.free() // dispose() in the TS wrapper;
 
   // Update loop
   const patches = [];
@@ -147,7 +147,7 @@ function runWasmStateless() {
       bin = model.toBinary();
       patches.push(patchBytes);
     }
-    model.free();
+    model.free() // dispose() in the TS wrapper;
   }
 
   // Merge
@@ -155,12 +155,12 @@ function runWasmStateless() {
   remote.diffApply(JSON.stringify(makeInitialDoc()));
   remote.diffApply(JSON.stringify(mutateDoc(makeInitialDoc(), 999)));
   const remoteBin = remote.toBinary();
-  remote.free();
+  remote.free() // dispose() in the TS wrapper;
 
   const merged = WASMModel.fromBinary(remoteBin);
   for (const p of patches) merged.applyPatch(p);
   const view = merged.view();
-  merged.free();
+  merged.free() // dispose() in the TS wrapper;
 
   return {view};
 }
@@ -182,19 +182,19 @@ function runWasmResident() {
     if (patchBytes.length > 0) patches.push(patchBytes);
   }
 
-  model.free();
+  model.free() // dispose() in the TS wrapper;
 
   // Merge
   const remote = new WASMModel(BigInt(SID + 1));
   remote.diffApply(JSON.stringify(makeInitialDoc()));
   remote.diffApply(JSON.stringify(mutateDoc(makeInitialDoc(), 999)));
   const remoteBin = remote.toBinary();
-  remote.free();
+  remote.free() // dispose() in the TS wrapper;
 
   const merged = WASMModel.fromBinary(remoteBin);
   for (const p of patches) merged.applyPatch(p);
   const view = merged.view();
-  merged.free();
+  merged.free() // dispose() in the TS wrapper;
 
   return {view};
 }
