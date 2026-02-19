@@ -92,22 +92,22 @@ Upstream reference:
 Current local status:
 
 - upstream source files: 82
-- local source files: 19
+- local source files: 27
 
 Top-level families:
 
 - upstream: `SortedMap`, `Tree.ts`, `TreeNode.ts`, `avl`, `data-types`, `llrb-tree`, `print`, `radix`, `red-black`, `splay`, `trie`, `types.ts`, `types2.ts`, `util`, `util2.ts`
-- local: `lib.rs`, `data-types`, `red-black`, `splay`, `types.rs`, `util` (split to `first/next/swap/print/mod`), `util2.rs`
+- local: `lib.rs`, `avl`, `data-types`, `red-black`, `splay`, `types.rs`, `util` (split to `first/next/swap/print/mod`), `util2.rs`
 
 Implication:
 
-- `red-black` and `data-types` families are now ported with upstream-mapped integration tests.
+- `red-black`, `data-types`, and `avl` families are now ported with upstream-mapped integration tests.
 - Several optimized data-structure families are still missing from the Rust port.
 - Given project direction, missing sonic-forest families should now be treated as planned port work, not permanent divergence.
 
 ## Recommended next review slices
 
-1. `sonic-forest`: `avl`, `llrb-tree`, `radix`, `trie`, `print`, and `SortedMap` families.
+1. `sonic-forest`: `llrb-tree`, `radix`, `trie`, `print`, and `SortedMap` families.
 2. `json-path`: complete module-family parity with upstream package layout.
 3. `json-random`: complete full `examples.ts` catalog parity (replace placeholder templates with full upstream mappings).
 4. `json-type`: close codegen stub modules first (`binary`, `json`, `discriminator`, `capacity`).
