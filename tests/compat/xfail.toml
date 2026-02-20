@@ -1,25 +1,4 @@
 [[xfail]]
-scenario = "model_canonical_encode"
-name = "*"
-reason = "Model canonical encoding parity is not yet implemented in the Rust harness."
-source_file = "crates/json-joy/src/json_crdt/log.rs"
-issue = "parity-model-canonical-encode"
-
-[[xfail]]
-scenario = "model_lifecycle_workflow"
-name = "*"
-reason = "Lifecycle workflow adapter from fixture DSL to Rust runtime is not yet implemented."
-source_file = "crates/json-joy/src/json_crdt/log.rs"
-issue = "parity-model-lifecycle-workflow"
-
-[[xfail]]
-scenario = "lessdb_model_manager"
-name = "*"
-reason = "LessDB compat workflow layer is not implemented in the Rust parity harness."
-source_file = "crates/json-joy/src/json_crdt/log.rs"
-issue = "parity-lessdb-model-manager"
-
-[[xfail]]
 scenario = "model_decode_error"
 name = "*"
 reason = "Model decode error classification differs from upstream and still includes panicking paths."

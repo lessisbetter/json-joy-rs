@@ -135,6 +135,75 @@ fn patch_stats(patch: &Patch) -> Value {
     })
 }
 
+fn set_model_sid(model: &mut Model, sid: u64) {
+    if model.clock.sid != sid {
+        model.clock = model.clock.fork(sid);
+    }
+}
+
+fn model_from_patches(patches: &[Patch]) -> Result<Model, String> {
+    if patches.is_empty() {
+        return Err("NO_PATCHES".to_string());
+    }
+    let sid = patches
+        .first()
+        .and_then(Patch::get_id)
+        .map(|id| id.sid)
+        .ok_or_else(|| "NO_SID".to_string())?;
+    if sid == 0 {
+        return Err("NO_SID".to_string());
+    }
+    let mut model = Model::new(sid);
+    for patch in patches {
+        model.apply_patch(patch);
+    }
+    Ok(model)
+}
+
+fn append_patch_log(existing: &[u8], patch_binary: &[u8]) -> Vec<u8> {
+    if existing.is_empty() {
+        let mut out = Vec::with_capacity(1 + 4 + patch_binary.len());
+        out.push(1);
+        out.extend_from_slice(&(patch_binary.len() as u32).to_be_bytes());
+        out.extend_from_slice(patch_binary);
+        return out;
+    }
+    let mut out = Vec::with_capacity(existing.len() + 4 + patch_binary.len());
+    out.extend_from_slice(existing);
+    out.extend_from_slice(&(patch_binary.len() as u32).to_be_bytes());
+    out.extend_from_slice(patch_binary);
+    out
+}
+
+fn decode_patch_log_count(data: &[u8]) -> Result<usize, String> {
+    if data.is_empty() {
+        return Ok(0);
+    }
+    if data[0] != 1 {
+        return Err("Unsupported patch log version".to_string());
+    }
+    let mut offset = 1usize;
+    let mut count = 0usize;
+    while offset < data.len() {
+        if offset + 4 > data.len() {
+            return Err("Corrupt pending patches: truncated length header".to_string());
+        }
+        let len = u32::from_be_bytes([
+            data[offset],
+            data[offset + 1],
+            data[offset + 2],
+            data[offset + 3],
+        ]) as usize;
+        offset += 4;
+        if offset + len > data.len() {
+            return Err("Corrupt pending patches: truncated patch data".to_string());
+        }
+        offset += len;
+        count += 1;
+    }
+    Ok(count)
+}
+
 fn parse_ts(v: &Value) -> Result<Ts, String> {
     let arr = v
         .as_array()
@@ -539,6 +608,375 @@ fn model_api_diff_patch(model: &Model, sid: u64, next: &Value) -> Option<Patch> 
         val: model.root.val,
     });
     diff_node(&root_val, &model.index, sid, model.clock.time, next)
+}
+
+fn parse_ts_pair(v: &Value) -> Result<(u64, u64), String> {
+    let arr = v
+        .as_array()
+        .ok_or_else(|| "timestamp must be [sid,time]".to_string())?;
+    if arr.len() != 2 {
+        return Err("timestamp must have 2 elements".to_string());
+    }
+    let sid = arr[0]
+        .as_u64()
+        .ok_or_else(|| "timestamp sid must be u64".to_string())?;
+    let time = arr[1]
+        .as_u64()
+        .ok_or_else(|| "timestamp time must be u64".to_string())?;
+    Ok((sid, time))
+}
+
+fn write_u32be(out: &mut Vec<u8>, n: u32) {
+    out.extend_from_slice(&n.to_be_bytes());
+}
+
+fn write_vu57(out: &mut Vec<u8>, n: u64) {
+    let mut w = CrdtWriter::new();
+    w.vu57(n);
+    out.extend_from_slice(&w.flush());
+}
+
+fn write_b1vu56(out: &mut Vec<u8>, flag: u8, n: u64) {
+    let mut w = CrdtWriter::new();
+    w.b1vu56(flag, n);
+    out.extend_from_slice(&w.flush());
+}
+
+fn write_cbor_major(out: &mut Vec<u8>, major: u8, n: u64) {
+    if n < 24 {
+        out.push((major << 5) | n as u8);
+    } else if n < 256 {
+        out.push((major << 5) | 24);
+        out.push(n as u8);
+    } else if n < 65536 {
+        out.push((major << 5) | 25);
+        out.extend_from_slice(&(n as u16).to_be_bytes());
+    } else {
+        out.push((major << 5) | 26);
+        out.extend_from_slice(&(n as u32).to_be_bytes());
+    }
+}
+
+fn write_cbor_canonical(out: &mut Vec<u8>, v: &Value) -> Result<(), String> {
+    match v {
+        Value::Null => {
+            out.push(0xf6);
+            Ok(())
+        }
+        Value::Bool(false) => {
+            out.push(0xf4);
+            Ok(())
+        }
+        Value::Bool(true) => {
+            out.push(0xf5);
+            Ok(())
+        }
+        Value::Number(num) => {
+            if let Some(i) = num.as_i64() {
+                if i >= 0 {
+                    write_cbor_major(out, 0, i as u64);
+                } else {
+                    write_cbor_major(out, 1, (-1 - i) as u64);
+                }
+                Ok(())
+            } else if let Some(u) = num.as_u64() {
+                write_cbor_major(out, 0, u);
+                Ok(())
+            } else if let Some(f) = num.as_f64() {
+                out.push(0xfb);
+                out.extend_from_slice(&f.to_be_bytes());
+                Ok(())
+            } else {
+                Err("unsupported number".to_string())
+            }
+        }
+        Value::String(s) => {
+            let b = s.as_bytes();
+            write_cbor_major(out, 3, b.len() as u64);
+            out.extend_from_slice(b);
+            Ok(())
+        }
+        _ => Err(format!("unsupported cbor value: {v}")),
+    }
+}
+
+fn encode_model_canonical(input: &Map<String, Value>) -> Result<Vec<u8>, String> {
+    let mode = input
+        .get("mode")
+        .and_then(Value::as_str)
+        .ok_or_else(|| "input.mode missing".to_string())?;
+    let root = input
+        .get("root")
+        .ok_or_else(|| "input.root missing".to_string())?;
+
+    let mut clock_table = Vec::<(u64, u64)>::new();
+    let mut idx_by_sid = std::collections::HashMap::<u64, usize>::new();
+    let mut base_by_sid = std::collections::HashMap::<u64, u64>::new();
+    if mode == "logical" {
+        let arr = input
+            .get("clock_table")
+            .and_then(Value::as_array)
+            .ok_or_else(|| "input.clock_table missing".to_string())?;
+        for (i, v) in arr.iter().enumerate() {
+            let (sid, time) = parse_ts_pair(v)?;
+            clock_table.push((sid, time));
+            idx_by_sid.insert(sid, i);
+            base_by_sid.insert(sid, time);
+        }
+    }
+
+    fn write_type_len(out: &mut Vec<u8>, major: u8, len: usize) {
+        if len < 31 {
+            out.push((major << 5) | len as u8);
+        } else {
+            out.push((major << 5) | 31);
+            write_vu57(out, len as u64);
+        }
+    }
+
+    fn encode_id(
+        out: &mut Vec<u8>,
+        mode: &str,
+        node_id: &Value,
+        idx_by_sid: &std::collections::HashMap<u64, usize>,
+        base_by_sid: &std::collections::HashMap<u64, u64>,
+    ) -> Result<(), String> {
+        let (sid, time) = parse_ts_pair(node_id)?;
+        if mode == "server" {
+            write_vu57(out, time);
+            return Ok(());
+        }
+        let idx = *idx_by_sid
+            .get(&sid)
+            .ok_or_else(|| format!("sid {sid} missing from clock_table"))?;
+        let base = *base_by_sid
+            .get(&sid)
+            .ok_or_else(|| format!("sid {sid} missing base clock"))?;
+        let diff = time
+            .checked_sub(base)
+            .ok_or_else(|| "timestamp underflow".to_string())?;
+        if idx <= 7 && diff <= 15 {
+            out.push(((idx as u8) << 4) | (diff as u8));
+        } else {
+            write_b1vu56(out, 0, idx as u64);
+            write_vu57(out, diff);
+        }
+        Ok(())
+    }
+
+    fn write_node(
+        out: &mut Vec<u8>,
+        mode: &str,
+        node: &Value,
+        idx_by_sid: &std::collections::HashMap<u64, usize>,
+        base_by_sid: &std::collections::HashMap<u64, u64>,
+    ) -> Result<(), String> {
+        let obj = node
+            .as_object()
+            .ok_or_else(|| "node must be object".to_string())?;
+        encode_id(
+            out,
+            mode,
+            obj.get("id").ok_or_else(|| "node.id missing".to_string())?,
+            idx_by_sid,
+            base_by_sid,
+        )?;
+        let kind = obj
+            .get("kind")
+            .and_then(Value::as_str)
+            .ok_or_else(|| "node.kind missing".to_string())?;
+        match kind {
+            "con" => {
+                out.push(0b0000_0000);
+                write_cbor_canonical(
+                    out,
+                    obj.get("value")
+                        .ok_or_else(|| "con.value missing".to_string())?,
+                )?;
+            }
+            "val" => {
+                out.push(0b0010_0000);
+                write_node(
+                    out,
+                    mode,
+                    obj.get("child")
+                        .ok_or_else(|| "val.child missing".to_string())?,
+                    idx_by_sid,
+                    base_by_sid,
+                )?;
+            }
+            "obj" => {
+                let entries = obj
+                    .get("entries")
+                    .and_then(Value::as_array)
+                    .cloned()
+                    .unwrap_or_default();
+                write_type_len(out, 2, entries.len());
+                for entry in entries {
+                    let eobj = entry
+                        .as_object()
+                        .ok_or_else(|| "obj entry must be object".to_string())?;
+                    write_cbor_canonical(
+                        out,
+                        eobj.get("key")
+                            .ok_or_else(|| "obj entry key missing".to_string())?,
+                    )?;
+                    write_node(
+                        out,
+                        mode,
+                        eobj.get("value")
+                            .ok_or_else(|| "obj entry value missing".to_string())?,
+                        idx_by_sid,
+                        base_by_sid,
+                    )?;
+                }
+            }
+            "vec" => {
+                let values = obj
+                    .get("values")
+                    .and_then(Value::as_array)
+                    .cloned()
+                    .unwrap_or_default();
+                write_type_len(out, 3, values.len());
+                for v in values {
+                    if v.is_null() {
+                        out.push(0);
+                    } else {
+                        write_node(out, mode, &v, idx_by_sid, base_by_sid)?;
+                    }
+                }
+            }
+            "str" => {
+                let chunks = obj
+                    .get("chunks")
+                    .and_then(Value::as_array)
+                    .cloned()
+                    .unwrap_or_default();
+                write_type_len(out, 4, chunks.len());
+                for chunk in chunks {
+                    let cobj = chunk
+                        .as_object()
+                        .ok_or_else(|| "str chunk must be object".to_string())?;
+                    encode_id(
+                        out,
+                        mode,
+                        cobj.get("id")
+                            .ok_or_else(|| "str chunk id missing".to_string())?,
+                        idx_by_sid,
+                        base_by_sid,
+                    )?;
+                    if let Some(text) = cobj.get("text") {
+                        write_cbor_canonical(out, text)?;
+                    } else {
+                        write_cbor_canonical(
+                            out,
+                            cobj.get("deleted")
+                                .ok_or_else(|| "str chunk deleted missing".to_string())?,
+                        )?;
+                    }
+                }
+            }
+            "bin" => {
+                let chunks = obj
+                    .get("chunks")
+                    .and_then(Value::as_array)
+                    .cloned()
+                    .unwrap_or_default();
+                write_type_len(out, 5, chunks.len());
+                for chunk in chunks {
+                    let cobj = chunk
+                        .as_object()
+                        .ok_or_else(|| "bin chunk must be object".to_string())?;
+                    encode_id(
+                        out,
+                        mode,
+                        cobj.get("id")
+                            .ok_or_else(|| "bin chunk id missing".to_string())?,
+                        idx_by_sid,
+                        base_by_sid,
+                    )?;
+                    if let Some(deleted) = cobj.get("deleted") {
+                        let n = deleted
+                            .as_u64()
+                            .ok_or_else(|| "bin deleted must be u64".to_string())?;
+                        write_b1vu56(out, 1, n);
+                    } else {
+                        let hex = cobj
+                            .get("bytes_hex")
+                            .and_then(Value::as_str)
+                            .ok_or_else(|| "bin bytes_hex missing".to_string())?;
+                        let bytes = decode_hex(hex)?;
+                        write_b1vu56(out, 0, bytes.len() as u64);
+                        out.extend_from_slice(&bytes);
+                    }
+                }
+            }
+            "arr" => {
+                let chunks = obj
+                    .get("chunks")
+                    .and_then(Value::as_array)
+                    .cloned()
+                    .unwrap_or_default();
+                write_type_len(out, 6, chunks.len());
+                for chunk in chunks {
+                    let cobj = chunk
+                        .as_object()
+                        .ok_or_else(|| "arr chunk must be object".to_string())?;
+                    encode_id(
+                        out,
+                        mode,
+                        cobj.get("id")
+                            .ok_or_else(|| "arr chunk id missing".to_string())?,
+                        idx_by_sid,
+                        base_by_sid,
+                    )?;
+                    if let Some(deleted) = cobj.get("deleted") {
+                        let n = deleted
+                            .as_u64()
+                            .ok_or_else(|| "arr deleted must be u64".to_string())?;
+                        write_b1vu56(out, 1, n);
+                    } else {
+                        let vals = cobj
+                            .get("values")
+                            .and_then(Value::as_array)
+                            .cloned()
+                            .unwrap_or_default();
+                        write_b1vu56(out, 0, vals.len() as u64);
+                        for v in vals {
+                            write_node(out, mode, &v, idx_by_sid, base_by_sid)?;
+                        }
+                    }
+                }
+            }
+            _ => return Err(format!("unsupported canonical model kind: {kind}")),
+        }
+        Ok(())
+    }
+
+    let mut root_bytes = Vec::<u8>::new();
+    write_node(&mut root_bytes, mode, root, &idx_by_sid, &base_by_sid)?;
+
+    if mode == "server" {
+        let server_time = input
+            .get("server_time")
+            .and_then(Value::as_u64)
+            .ok_or_else(|| "input.server_time missing".to_string())?;
+        let mut out = Vec::<u8>::new();
+        out.push(0x80);
+        write_vu57(&mut out, server_time);
+        out.extend_from_slice(&root_bytes);
+        return Ok(out);
+    }
+
+    let mut out = Vec::<u8>::new();
+    write_u32be(&mut out, root_bytes.len() as u32);
+    out.extend_from_slice(&root_bytes);
+    write_vu57(&mut out, clock_table.len() as u64);
+    for (sid, time) in clock_table {
+        write_vu57(&mut out, sid);
+        write_vu57(&mut out, time);
+    }
+    Ok(out)
 }
 
 pub fn evaluate_fixture(scenario: &str, fixture: &Value) -> Result<Value, String> {
@@ -1462,11 +1900,324 @@ pub fn evaluate_fixture(scenario: &str, fixture: &Value) -> Result<Value, String
                 "relative_ids": relative_ids,
             }))
         }
-        "model_canonical_encode"
-        | "model_lifecycle_workflow"
-        | "lessdb_model_manager" => Err(format!(
-            "scenario {scenario} not implemented in Rust parity harness yet"
-        )),
+        "model_canonical_encode" => {
+            let binary = encode_model_canonical(input)?;
+            let (view_json, decode_error_message) = match structural_binary::decode(&binary) {
+                Ok(model) => (model.view(), "NO_ERROR".to_string()),
+                Err(err) => (Value::Null, format!("{err:?}")),
+            };
+            Ok(json!({
+                "model_binary_hex": encode_hex(&binary),
+                "view_json": view_json,
+                "decode_error_message": decode_error_message,
+            }))
+        }
+        "model_lifecycle_workflow" => {
+            let workflow = input
+                .get("workflow")
+                .and_then(Value::as_str)
+                .ok_or_else(|| "input.workflow missing".to_string())?;
+            let batch_patches_binary_hex = input
+                .get("batch_patches_binary_hex")
+                .and_then(Value::as_array)
+                .ok_or_else(|| "input.batch_patches_binary_hex missing".to_string())?;
+            let batch_patches = batch_patches_binary_hex
+                .iter()
+                .map(|v| {
+                    let b = decode_hex(v.as_str().ok_or_else(|| "batch patch hex".to_string())?)?;
+                    Patch::from_binary(&b).map_err(|e| e.to_string())
+                })
+                .collect::<Result<Vec<_>, String>>()?;
+
+            let mut model = match workflow {
+                "from_patches_apply_batch" => {
+                    let seed_patches_binary_hex = input
+                        .get("seed_patches_binary_hex")
+                        .and_then(Value::as_array)
+                        .ok_or_else(|| "input.seed_patches_binary_hex missing".to_string())?;
+                    let seed_patches = seed_patches_binary_hex
+                        .iter()
+                        .map(|v| {
+                            let b = decode_hex(
+                                v.as_str().ok_or_else(|| "seed patch hex".to_string())?,
+                            )?;
+                            Patch::from_binary(&b).map_err(|e| e.to_string())
+                        })
+                        .collect::<Result<Vec<_>, String>>()?;
+                    model_from_patches(&seed_patches)?
+                }
+                "load_apply_batch" => {
+                    let base = decode_hex(
+                        input
+                            .get("base_model_binary_hex")
+                            .and_then(Value::as_str)
+                            .ok_or_else(|| "input.base_model_binary_hex missing".to_string())?,
+                    )?;
+                    let mut model =
+                        structural_binary::decode(&base).map_err(|e| format!("{e:?}"))?;
+                    if let Some(load_sid) = input.get("load_sid").and_then(Value::as_u64) {
+                        set_model_sid(&mut model, load_sid);
+                    }
+                    model
+                }
+                other => return Err(format!("unsupported lifecycle workflow: {other}")),
+            };
+
+            for patch in &batch_patches {
+                model.apply_patch(patch);
+            }
+
+            Ok(json!({
+                "final_view_json": model.view(),
+                "final_model_binary_hex": encode_hex(&structural_binary::encode(&model)),
+            }))
+        }
+        "lessdb_model_manager" => {
+            let workflow = input
+                .get("workflow")
+                .and_then(Value::as_str)
+                .ok_or_else(|| "input.workflow missing".to_string())?;
+            match workflow {
+                "create_diff_apply" => {
+                    let sid = input
+                        .get("sid")
+                        .and_then(Value::as_u64)
+                        .ok_or_else(|| "input.sid missing".to_string())?;
+                    let initial = input
+                        .get("initial_json")
+                        .ok_or_else(|| "input.initial_json missing".to_string())?;
+                    let ops = input
+                        .get("ops")
+                        .and_then(Value::as_array)
+                        .ok_or_else(|| "input.ops missing".to_string())?;
+                    let mut model = model_from_json(initial, sid);
+                    let mut pending = Vec::<u8>::new();
+                    let mut last_patch: Option<Patch> = None;
+                    let mut steps = Vec::<Value>::with_capacity(ops.len());
+
+                    for op in ops {
+                        let kind = op
+                            .get("kind")
+                            .and_then(Value::as_str)
+                            .ok_or_else(|| "lessdb op.kind missing".to_string())?;
+                        match kind {
+                            "diff" => {
+                                let next = op
+                                    .get("next_view_json")
+                                    .ok_or_else(|| "diff.next_view_json missing".to_string())?;
+                                let patch = model_api_diff_patch(&model, sid, next);
+                                if let Some(p) = patch {
+                                    let id = p.get_id();
+                                    steps.push(json!({
+                                        "kind": "diff",
+                                        "patch_present": true,
+                                        "patch_binary_hex": encode_hex(&p.to_binary()),
+                                        "patch_op_count": p.ops.len(),
+                                        "patch_opcodes": p.ops.iter().map(|op| Value::from(op_to_opcode(op) as u64)).collect::<Vec<_>>(),
+                                        "patch_span": p.span(),
+                                        "patch_id_sid": id.map(|x| x.sid),
+                                        "patch_id_time": id.map(|x| x.time),
+                                        "patch_next_time": p.next_time(),
+                                    }));
+                                    last_patch = Some(p);
+                                } else {
+                                    steps.push(json!({
+                                        "kind": "diff",
+                                        "patch_present": false,
+                                        "patch_binary_hex": Value::Null,
+                                    }));
+                                    last_patch = None;
+                                }
+                            }
+                            "apply_last_diff" => {
+                                if let Some(p) = &last_patch {
+                                    model.apply_patch(p);
+                                }
+                                steps.push(json!({
+                                    "kind": "apply_last_diff",
+                                    "view_json": model.view(),
+                                    "model_binary_hex": encode_hex(&structural_binary::encode(&model)),
+                                }));
+                            }
+                            "patch_log_append_last_diff" => {
+                                if let Some(p) = &last_patch {
+                                    pending = append_patch_log(&pending, &p.to_binary());
+                                }
+                                steps.push(json!({
+                                    "kind": "patch_log_append_last_diff",
+                                    "pending_patch_log_hex": encode_hex(&pending),
+                                }));
+                            }
+                            "patch_log_deserialize" => {
+                                let count = decode_patch_log_count(&pending)?;
+                                steps.push(json!({
+                                    "kind": "patch_log_deserialize",
+                                    "patch_count": count,
+                                }));
+                            }
+                            other => return Err(format!("unsupported lessdb op kind: {other}")),
+                        }
+                    }
+
+                    Ok(json!({
+                        "steps": steps,
+                        "final_view_json": model.view(),
+                        "final_model_binary_hex": encode_hex(&structural_binary::encode(&model)),
+                        "final_pending_patch_log_hex": encode_hex(&pending),
+                    }))
+                }
+                "fork_merge" => {
+                    let sid = input
+                        .get("sid")
+                        .and_then(Value::as_u64)
+                        .ok_or_else(|| "input.sid missing".to_string())?;
+                    let initial = input
+                        .get("initial_json")
+                        .ok_or_else(|| "input.initial_json missing".to_string())?;
+                    let ops = input
+                        .get("ops")
+                        .and_then(Value::as_array)
+                        .ok_or_else(|| "input.ops missing".to_string())?;
+                    let base = model_from_json(initial, sid);
+                    let base_binary = structural_binary::encode(&base);
+                    let mut fork: Option<Model> = None;
+                    let mut last_patch: Option<Patch> = None;
+                    let mut merged = structural_binary::decode(&base_binary).map_err(|e| format!("{e:?}"))?;
+                    let mut steps = Vec::<Value>::with_capacity(ops.len());
+
+                    for op in ops {
+                        let kind = op
+                            .get("kind")
+                            .and_then(Value::as_str)
+                            .ok_or_else(|| "lessdb op.kind missing".to_string())?;
+                        match kind {
+                            "fork" => {
+                                let fork_sid = op
+                                    .get("sid")
+                                    .and_then(Value::as_u64)
+                                    .ok_or_else(|| "fork.sid missing".to_string())?;
+                                let mut f = structural_binary::decode(&base_binary)
+                                    .map_err(|e| format!("{e:?}"))?;
+                                set_model_sid(&mut f, fork_sid);
+                                steps.push(json!({
+                                    "kind": "fork",
+                                    "view_json": f.view(),
+                                }));
+                                fork = Some(f);
+                            }
+                            "diff_on_fork" => {
+                                let next = op
+                                    .get("next_view_json")
+                                    .ok_or_else(|| "diff_on_fork.next_view_json missing".to_string())?;
+                                let f = fork
+                                    .as_ref()
+                                    .ok_or_else(|| "diff_on_fork called before fork".to_string())?;
+                                let patch = model_api_diff_patch(f, f.clock.sid, next);
+                                if let Some(p) = patch {
+                                    steps.push(json!({
+                                        "kind": "diff_on_fork",
+                                        "patch_present": true,
+                                        "patch_binary_hex": encode_hex(&p.to_binary()),
+                                    }));
+                                    last_patch = Some(p);
+                                } else {
+                                    steps.push(json!({
+                                        "kind": "diff_on_fork",
+                                        "patch_present": false,
+                                        "patch_binary_hex": Value::Null,
+                                    }));
+                                    last_patch = None;
+                                }
+                            }
+                            "apply_last_diff_on_fork" => {
+                                let f = fork
+                                    .as_mut()
+                                    .ok_or_else(|| "apply_last_diff_on_fork called before fork".to_string())?;
+                                if let Some(p) = &last_patch {
+                                    f.apply_patch(p);
+                                }
+                                steps.push(json!({
+                                    "kind": "apply_last_diff_on_fork",
+                                    "view_json": f.view(),
+                                    "model_binary_hex": encode_hex(&structural_binary::encode(f)),
+                                }));
+                            }
+                            "merge_into_base" => {
+                                merged =
+                                    structural_binary::decode(&base_binary).map_err(|e| format!("{e:?}"))?;
+                                if let Some(p) = &last_patch {
+                                    merged.apply_patch(p);
+                                }
+                                steps.push(json!({
+                                    "kind": "merge_into_base",
+                                    "view_json": merged.view(),
+                                    "model_binary_hex": encode_hex(&structural_binary::encode(&merged)),
+                                }));
+                            }
+                            other => return Err(format!("unsupported lessdb op kind: {other}")),
+                        }
+                    }
+
+                    Ok(json!({
+                        "steps": steps,
+                        "final_view_json": merged.view(),
+                        "final_model_binary_hex": encode_hex(&structural_binary::encode(&merged)),
+                    }))
+                }
+                "merge_idempotent" => {
+                    let base_binary = decode_hex(
+                        input
+                            .get("base_model_binary_hex")
+                            .and_then(Value::as_str)
+                            .ok_or_else(|| "input.base_model_binary_hex missing".to_string())?,
+                    )?;
+                    let ops = input
+                        .get("ops")
+                        .and_then(Value::as_array)
+                        .ok_or_else(|| "input.ops missing".to_string())?;
+                    let mut model =
+                        structural_binary::decode(&base_binary).map_err(|e| format!("{e:?}"))?;
+                    let mut first_patch_hex = String::new();
+                    let mut steps = Vec::<Value>::new();
+                    for op in ops {
+                        let kind = op
+                            .get("kind")
+                            .and_then(Value::as_str)
+                            .ok_or_else(|| "lessdb op.kind missing".to_string())?;
+                        if kind != "merge" {
+                            return Err(format!("unsupported merge_idempotent op kind: {kind}"));
+                        }
+                        let patches = op
+                            .get("patches_binary_hex")
+                            .and_then(Value::as_array)
+                            .ok_or_else(|| "merge.patches_binary_hex missing".to_string())?;
+                        for (i, phex) in patches.iter().enumerate() {
+                            let phex = phex
+                                .as_str()
+                                .ok_or_else(|| "merge patch hex must be string".to_string())?;
+                            if i == 0 && first_patch_hex.is_empty() {
+                                first_patch_hex = phex.to_string();
+                            }
+                            let pb = decode_hex(phex)?;
+                            let patch = Patch::from_binary(&pb).map_err(|e| e.to_string())?;
+                            model.apply_patch(&patch);
+                        }
+                        steps.push(json!({
+                            "kind": "merge",
+                            "view_json": model.view(),
+                            "model_binary_hex": encode_hex(&structural_binary::encode(&model)),
+                        }));
+                    }
+                    Ok(json!({
+                        "steps": steps,
+                        "patch_binary_hex": first_patch_hex,
+                        "final_view_json": model.view(),
+                        "final_model_binary_hex": encode_hex(&structural_binary::encode(&model)),
+                    }))
+                }
+                other => Err(format!("unsupported lessdb workflow: {other}")),
+            }
+        }
         other => Err(format!("unknown scenario: {other}")),
     }
 }

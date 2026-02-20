@@ -50,9 +50,6 @@ These are intentionally documented non-parity areas and should remain tracked un
 
 Current xfail scenarios:
 
-- `model_canonical_encode`
-- `model_lifecycle_workflow`
-- `lessdb_model_manager`
 - `model_decode_error`
 - `patch_decode_error`
 
@@ -75,6 +72,15 @@ Notes:
   - sidecar object encoding now writes interleaved key/value CBOR pairs (upstream order), with decoder matching that layout.
   - sidecar view-value encoding now mirrors upstream CBOR encoder behavior for scalar values.
   - sidecar CBOR decoder now handles float32 (`0xfa`) in addition to float64 (`0xfb`).
+- `model_canonical_encode` wildcard xfail was removed after porting canonical model encoder fixture logic into Rust compat harness:
+  - fixture evaluator now generates canonical model binary bytes from fixture DSL for both `logical` and `server` modes.
+  - evaluator decodes the generated model bytes with structural decoder and reports `view_json`/`decode_error_message` parity fields.
+- `model_lifecycle_workflow` wildcard xfail was removed after porting fixture workflow execution:
+  - `from_patches_apply_batch` and `load_apply_batch` now mirror upstream fixture semantics.
+  - load-time SID override uses clock forking semantics to match upstream `Model.load(..., sid)` behavior.
+- `lessdb_model_manager` wildcard xfail was removed after porting workflow adapters:
+  - `create_diff_apply`, `fork_merge`, and `merge_idempotent` fixture workflows are now executed in Rust harness.
+  - pending patch-log append/deserialize behavior mirrors upstream fixture generator wire format.
 - Slice A closures completed in this pass:
   - `patch_schema_parity` xfail removed after aligning schema fixture replay root wiring plus binary string/header parity.
   - `patch_canonical_encode` xfail removed after canonical patch encoder parity fixes.
