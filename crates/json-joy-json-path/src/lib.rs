@@ -849,4 +849,74 @@ mod tests {
         assert_eq!(results.len(), 1);
         assert_eq!(results[0]["name"], json!("Alice"));
     }
+
+    #[test]
+    fn test_eval_filter_value_function_multiple_nodes_returns_nothing() {
+        let doc = json!({
+            "store": {
+                "book": [
+                    {"price": 8.95},
+                    {"price": 12.99}
+                ]
+            }
+        });
+        let path = JsonPathParser::parse("$[?(value(@..price) == 8.95)]").unwrap();
+        let results = JsonPathEval::eval(&path, &doc);
+        assert_eq!(results.len(), 0);
+    }
+
+    #[test]
+    fn test_eval_filter_unknown_function_returns_false() {
+        let doc = json!([{"name": "Alice"}]);
+        let path = JsonPathParser::parse("$[?(unknown(@.name) == true)]").unwrap();
+        let results = JsonPathEval::eval(&path, &doc);
+        assert_eq!(results.len(), 0);
+    }
+
+    #[test]
+    fn test_eval_filter_function_wrong_arity_returns_false() {
+        let doc = json!([{"name": "Alice", "other": "x"}]);
+        let path = JsonPathParser::parse("$[?(length(@.name, @.other) == 5)]").unwrap();
+        let results = JsonPathEval::eval(&path, &doc);
+        assert_eq!(results.len(), 0);
+    }
+
+    #[test]
+    fn test_eval_filter_match_vs_search_difference() {
+        let doc = json!({
+            "store": {
+                "book": [
+                    {"title": "The Lord of the Rings"},
+                    {"title": "Moby Dick"}
+                ]
+            }
+        });
+        let match_path =
+            JsonPathParser::parse(r#"$.store.book[?(match(@.title, "Lord"))]"#).unwrap();
+        let search_path =
+            JsonPathParser::parse(r#"$.store.book[?(search(@.title, "Lord"))]"#).unwrap();
+        let match_results = JsonPathEval::eval(&match_path, &doc);
+        let search_results = JsonPathEval::eval(&search_path, &doc);
+        assert_eq!(match_results.len(), 0);
+        assert_eq!(search_results.len(), 1);
+        assert_eq!(search_results[0]["title"], json!("The Lord of the Rings"));
+    }
+
+    #[test]
+    fn test_eval_filter_nested_functions() {
+        let doc = json!({
+            "store": {
+                "book": [
+                    {"title": "Moby Dick"},
+                    {"title": "The Lord of the Rings"},
+                    {"title": "Sword of Honour"}
+                ]
+            }
+        });
+        let path = JsonPathParser::parse("$.store.book[?(length(value(@.title)) > 10)]").unwrap();
+        let results = JsonPathEval::eval(&path, &doc);
+        assert_eq!(results.len(), 2);
+        assert_eq!(results[0]["title"], json!("The Lord of the Rings"));
+        assert_eq!(results[1]["title"], json!("Sword of Honour"));
+    }
 }
