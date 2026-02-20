@@ -7,10 +7,20 @@
 pub enum AvroDecodeError {
     #[error("unexpected end of input")]
     EndOfInput,
+    #[error("invalid schema")]
+    InvalidSchema,
+    #[error("variable-length integer is too long")]
+    VarIntTooLong,
+    #[error("variable-length long is too long")]
+    VarLongTooLong,
     #[error("invalid UTF-8")]
     InvalidUtf8,
     #[error("negative array/map count")]
     NegativeCount,
+    #[error("invalid key")]
+    InvalidKey,
+    #[error("invalid enum index: {0}")]
+    InvalidEnumIndex(i32),
     #[error("union index out of range")]
     UnionIndexOutOfRange,
 }
@@ -62,7 +72,7 @@ impl AvroDecoder {
 
     // ---------------------------------------------------------------- varint
 
-    /// Reads a variable-length unsigned integer (max 10 bytes for 64-bit Avro long).
+    /// Reads a variable-length unsigned integer (max 10 bytes for 64-bit long).
     pub fn read_varint_u64(&mut self) -> Result<u64, AvroDecodeError> {
         let mut result: u64 = 0;
         let mut shift = 0u32;
@@ -74,12 +84,27 @@ impl AvroDecoder {
             }
             shift += 7;
         }
-        Err(AvroDecodeError::EndOfInput)
+        Err(AvroDecodeError::VarLongTooLong)
+    }
+
+    /// Reads a variable-length unsigned integer (max 5 bytes for 32-bit int/length).
+    pub fn read_varint_u32(&mut self) -> Result<u32, AvroDecodeError> {
+        let mut result: u32 = 0;
+        let mut shift = 0u32;
+        for _ in 0..5 {
+            let b = self.read_byte()? as u32;
+            result |= (b & 0x7f) << shift;
+            if b & 0x80 == 0 {
+                return Ok(result);
+            }
+            shift += 7;
+        }
+        Err(AvroDecodeError::VarIntTooLong)
     }
 
     /// Reads a zigzag-decoded signed integer (Avro int).
     pub fn read_int(&mut self) -> Result<i32, AvroDecodeError> {
-        let encoded = self.read_varint_u64()? as u32;
+        let encoded = self.read_varint_u32()?;
         Ok(((encoded >> 1) as i32) ^ -((encoded & 1) as i32))
     }
 
@@ -114,11 +139,8 @@ impl AvroDecoder {
     }
 
     pub fn read_bytes(&mut self) -> Result<Vec<u8>, AvroDecodeError> {
-        let len = self.read_long()?;
-        if len < 0 {
-            return Err(AvroDecodeError::NegativeCount);
-        }
-        self.read_bytes_raw(len as usize)
+        let len = self.read_varint_u32()? as usize;
+        self.read_bytes_raw(len)
     }
 
     pub fn read_string(&mut self) -> Result<String, AvroDecodeError> {
@@ -146,18 +168,11 @@ impl AvroDecoder {
     {
         let mut result = Vec::new();
         loop {
-            let count = self.read_long()?;
+            let count = self.read_varint_u32()? as usize;
             if count == 0 {
                 break;
             }
-            let n = if count < 0 {
-                // Negative count means byte-count follows (skip it), then |count| items.
-                let _byte_count = self.read_long()?;
-                (-count) as usize
-            } else {
-                count as usize
-            };
-            for _ in 0..n {
+            for _ in 0..count {
                 result.push(item_reader(self)?);
             }
         }
@@ -174,18 +189,15 @@ impl AvroDecoder {
     {
         let mut result = Vec::new();
         loop {
-            let count = self.read_long()?;
+            let count = self.read_varint_u32()? as usize;
             if count == 0 {
                 break;
             }
-            let n = if count < 0 {
-                let _byte_count = self.read_long()?;
-                (-count) as usize
-            } else {
-                count as usize
-            };
-            for _ in 0..n {
+            for _ in 0..count {
                 let key = self.read_str()?;
+                if key == "__proto__" {
+                    return Err(AvroDecodeError::InvalidKey);
+                }
                 let val = value_reader(self)?;
                 result.push((key, val));
             }

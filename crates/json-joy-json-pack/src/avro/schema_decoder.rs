@@ -5,11 +5,13 @@
 use std::collections::HashMap;
 
 use super::decoder::{AvroDecodeError, AvroDecoder};
+use super::schema_validator::AvroSchemaValidator;
 use super::types::{AvroSchema, AvroValue};
 
 /// Apache Avro schema-aware decoder.
 pub struct AvroSchemaDecoder {
     decoder: AvroDecoder,
+    validator: AvroSchemaValidator,
     named: HashMap<String, AvroSchema>,
 }
 
@@ -23,6 +25,7 @@ impl AvroSchemaDecoder {
     pub fn new() -> Self {
         Self {
             decoder: AvroDecoder::new(),
+            validator: AvroSchemaValidator::new(),
             named: HashMap::new(),
         }
     }
@@ -33,6 +36,9 @@ impl AvroSchemaDecoder {
         schema: &AvroSchema,
     ) -> Result<AvroValue, AvroDecodeError> {
         self.named.clear();
+        if !self.validator.validate_schema(schema) {
+            return Err(AvroDecodeError::InvalidSchema);
+        }
         self.collect_named(schema);
         self.decoder.reset(data);
         self.read_value(schema)
@@ -96,23 +102,11 @@ impl AvroSchemaDecoder {
                 let sym = symbols
                     .get(idx as usize)
                     .cloned()
-                    .unwrap_or_else(|| idx.to_string());
+                    .ok_or(AvroDecodeError::InvalidEnumIndex(idx))?;
                 Ok(AvroValue::Enum(sym))
             }
-            AvroSchema::Array { items } => {
-                let items = items.as_ref().clone();
-                let arr = self
-                    .decoder
-                    .read_array(|dec| Self::read_value_with_named(dec, &items, &HashMap::new()))?;
-                Ok(AvroValue::Array(arr))
-            }
-            AvroSchema::Map { values } => {
-                let values = values.as_ref().clone();
-                let map = self
-                    .decoder
-                    .read_map(|dec| Self::read_value_with_named(dec, &values, &HashMap::new()))?;
-                Ok(AvroValue::Map(map))
-            }
+            AvroSchema::Array { items } => self.read_array_value(items),
+            AvroSchema::Map { values } => self.read_map_value(values),
             AvroSchema::Fixed { size, .. } => Ok(AvroValue::Fixed(self.decoder.read_fixed(*size)?)),
             AvroSchema::Union(schemas) => {
                 let idx = self.decoder.read_union_index()?;
@@ -130,24 +124,37 @@ impl AvroSchemaDecoder {
         }
     }
 
-    /// Helper for closures that need stateless decoding (for Array/Map blocks).
-    fn read_value_with_named(
-        dec: &mut AvroDecoder,
-        schema: &AvroSchema,
-        _named: &HashMap<String, AvroSchema>,
-    ) -> Result<AvroValue, AvroDecodeError> {
-        // For simple primitives in arrays/maps, delegate directly.
-        match schema {
-            AvroSchema::Null => Ok(AvroValue::Null),
-            AvroSchema::Boolean => Ok(AvroValue::Bool(dec.read_boolean()?)),
-            AvroSchema::Int => Ok(AvroValue::Int(dec.read_int()?)),
-            AvroSchema::Long => Ok(AvroValue::Long(dec.read_long()?)),
-            AvroSchema::Float => Ok(AvroValue::Float(dec.read_float()?)),
-            AvroSchema::Double => Ok(AvroValue::Double(dec.read_double()?)),
-            AvroSchema::Bytes => Ok(AvroValue::Bytes(dec.read_bytes()?)),
-            AvroSchema::String => Ok(AvroValue::Str(dec.read_str()?)),
-            AvroSchema::Fixed { size, .. } => Ok(AvroValue::Fixed(dec.read_fixed(*size)?)),
-            _ => Err(AvroDecodeError::EndOfInput),
+    fn read_array_value(&mut self, item_schema: &AvroSchema) -> Result<AvroValue, AvroDecodeError> {
+        let item_schema = item_schema.clone();
+        let mut items = Vec::new();
+        loop {
+            let count = self.decoder.read_varint_u32()? as usize;
+            if count == 0 {
+                break;
+            }
+            for _ in 0..count {
+                items.push(self.read_value(&item_schema)?);
+            }
         }
+        Ok(AvroValue::Array(items))
+    }
+
+    fn read_map_value(&mut self, value_schema: &AvroSchema) -> Result<AvroValue, AvroDecodeError> {
+        let value_schema = value_schema.clone();
+        let mut entries = Vec::new();
+        loop {
+            let count = self.decoder.read_varint_u32()? as usize;
+            if count == 0 {
+                break;
+            }
+            for _ in 0..count {
+                let key = self.decoder.read_str()?;
+                if key == "__proto__" {
+                    return Err(AvroDecodeError::InvalidKey);
+                }
+                entries.push((key, self.read_value(&value_schema)?));
+            }
+        }
+        Ok(AvroValue::Map(entries))
     }
 }

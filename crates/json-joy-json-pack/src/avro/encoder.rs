@@ -60,6 +60,19 @@ impl AvroEncoder {
         }
     }
 
+    /// Writes a variable-length unsigned 32-bit integer.
+    pub fn write_varint_u32(&mut self, mut n: u32) {
+        loop {
+            let low7 = (n & 0x7f) as u8;
+            n >>= 7;
+            if n == 0 {
+                self.writer.u8(low7);
+                return;
+            }
+            self.writer.u8(low7 | 0x80);
+        }
+    }
+
     // ---------------------------------------------------------------- primitives
 
     pub fn write_null(&mut self) {
@@ -81,36 +94,36 @@ impl AvroEncoder {
     }
 
     pub fn write_bytes(&mut self, data: &[u8]) {
-        self.write_long(data.len() as i64);
+        self.write_varint_u32(data.len() as u32);
         self.writer.buf(data);
     }
 
     pub fn write_str(&mut self, s: &str) {
         let bytes = s.as_bytes();
-        self.write_long(bytes.len() as i64);
+        self.write_varint_u32(bytes.len() as u32);
         self.writer.buf(bytes);
     }
 
     pub fn write_ascii_str(&mut self, s: &str) {
-        self.write_long(s.len() as i64);
+        self.write_varint_u32(s.len() as u32);
         self.writer.ascii(s);
     }
 
     /// Writes an array block: varint(count) + items + varint(0).
     pub fn write_array_start(&mut self, count: usize) {
-        self.write_long(count as i64);
+        self.write_varint_u32(count as u32);
     }
 
     pub fn write_array_end(&mut self) {
-        self.write_long(0);
+        self.write_varint_u32(0);
     }
 
     pub fn write_map_start(&mut self, count: usize) {
-        self.write_long(count as i64);
+        self.write_varint_u32(count as u32);
     }
 
     pub fn write_map_end(&mut self) {
-        self.write_long(0);
+        self.write_varint_u32(0);
     }
 
     /// Writes any [`PackValue`] using type inference.
@@ -137,19 +150,19 @@ impl AvroEncoder {
             PackValue::Str(s) => self.write_str(s),
             PackValue::Bytes(b) => self.write_bytes(b),
             PackValue::Array(arr) => {
-                self.write_long(arr.len() as i64);
+                self.write_varint_u32(arr.len() as u32);
                 for item in arr {
                     self.write_any(item);
                 }
-                self.write_long(0);
+                self.write_varint_u32(0);
             }
             PackValue::Object(obj) => {
-                self.write_long(obj.len() as i64);
+                self.write_varint_u32(obj.len() as u32);
                 for (key, val) in obj {
                     self.write_str(key);
                     self.write_any(val);
                 }
-                self.write_long(0);
+                self.write_varint_u32(0);
             }
             PackValue::Extension(_) | PackValue::Blob(_) => self.write_null(),
         }

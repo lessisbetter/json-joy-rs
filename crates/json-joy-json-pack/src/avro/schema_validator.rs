@@ -191,9 +191,17 @@ impl AvroSchemaValidator {
     fn validate_value_against_schema(&self, value: &AvroValue, schema: &AvroSchema) -> bool {
         match schema {
             AvroSchema::Ref(name) => self.validate_value_against_ref_schema(value, name),
-            AvroSchema::Union(schemas) => schemas
-                .iter()
-                .any(|sub_schema| self.validate_value_against_schema(value, sub_schema)),
+            AvroSchema::Union(schemas) => {
+                if let AvroValue::Union { index, value } = value {
+                    schemas
+                        .get(*index)
+                        .is_some_and(|schema| self.validate_value_against_schema(value, schema))
+                } else {
+                    schemas
+                        .iter()
+                        .any(|sub_schema| self.validate_value_against_schema(value, sub_schema))
+                }
+            }
             AvroSchema::Null => matches!(value, AvroValue::Null),
             AvroSchema::Boolean => matches!(value, AvroValue::Bool(_)),
             AvroSchema::Int => self.validate_int_value(value),

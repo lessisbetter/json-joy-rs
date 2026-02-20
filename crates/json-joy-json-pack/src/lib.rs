@@ -1157,8 +1157,8 @@ mod tests {
         let mut dec = AvroDecoder::new();
         enc.write_str("test");
         let bytes = enc.writer.flush();
-        // String: zigzag(byteLen) + UTF-8 bytes. zigzag(4) = 8.
-        assert_eq!(bytes[0], 8); // zigzag(4) = 8
+        // String: unsigned varint(byteLen) + UTF-8 bytes.
+        assert_eq!(bytes[0], 4);
         assert_eq!(&bytes[1..], b"test");
         dec.reset(&bytes);
         assert_eq!(dec.read_str().unwrap(), "test");
