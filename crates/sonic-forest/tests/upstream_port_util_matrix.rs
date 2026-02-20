@@ -116,7 +116,12 @@ fn build_tree(keys: &[i32]) -> (Vec<TestNode>, Option<u32>) {
 }
 
 fn assert_tree_links(arena: &[TestNode], root: Option<u32>) {
-    fn walk(arena: &[TestNode], idx: u32, expected_parent: Option<u32>, visited: &mut HashSet<u32>) {
+    fn walk(
+        arena: &[TestNode],
+        idx: u32,
+        expected_parent: Option<u32>,
+        visited: &mut HashSet<u32>,
+    ) {
         assert!(visited.insert(idx), "cycle detected at node {idx}");
         let node = &arena[idx as usize];
 
@@ -317,7 +322,11 @@ fn util_swap_immediate_right_child_root_matrix() {
 
 #[test]
 fn util_swap_immediate_left_child_not_root_matrix() {
-    let mut arena = vec![TestNode::new(0, 0), TestNode::new(1, 1), TestNode::new(2, 2)];
+    let mut arena = vec![
+        TestNode::new(0, 0),
+        TestNode::new(1, 1),
+        TestNode::new(2, 2),
+    ];
     // 0
     // /
     //   1

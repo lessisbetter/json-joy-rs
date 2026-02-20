@@ -73,8 +73,11 @@ pub fn encode(patch: &Patch) -> Vec<Value> {
     for op in &patch.ops {
         let op_val = match op {
             Op::NewCon { val, .. } => match val {
-                ConValue::Ref(ts_ref) =>
-                    json!([JsonCrdtPatchOpcode::NewCon as u8, encode_ts(*ts_ref, patch_sid), true]),
+                ConValue::Ref(ts_ref) => json!([
+                    JsonCrdtPatchOpcode::NewCon as u8,
+                    encode_ts(*ts_ref, patch_sid),
+                    true
+                ]),
                 ConValue::Val(v) => {
                     if matches!(v, json_joy_json_pack::PackValue::Undefined) {
                         json!([JsonCrdtPatchOpcode::NewCon as u8])
@@ -156,7 +159,10 @@ pub fn encode(patch: &Patch) -> Vec<Value> {
                 encode_ts(*val, patch_sid),
             ]),
             Op::Del { obj, what, .. } => {
-                let spans: Vec<Value> = what.iter().map(|span| encode_tss(span, patch_sid)).collect();
+                let spans: Vec<Value> = what
+                    .iter()
+                    .map(|span| encode_tss(span, patch_sid))
+                    .collect();
                 json!([
                     JsonCrdtPatchOpcode::Del as u8,
                     encode_ts(*obj, patch_sid),

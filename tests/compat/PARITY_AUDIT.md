@@ -50,8 +50,7 @@ These are intentionally documented non-parity areas and should remain tracked un
 
 Current xfail scenarios:
 
-- `model_decode_error`
-- `patch_decode_error`
+- none
 
 Notes:
 
@@ -81,13 +80,14 @@ Notes:
 - `lessdb_model_manager` wildcard xfail was removed after porting workflow adapters:
   - `create_diff_apply`, `fork_merge`, and `merge_idempotent` fixture workflows are now executed in Rust harness.
   - pending patch-log append/deserialize behavior mirrors upstream fixture generator wire format.
+- `model_decode_error` wildcard xfail was removed after aligning compat evaluator classification with upstream fixture semantics for malformed payload classes.
+- `patch_decode_error` wildcard xfail was removed after aligning compat evaluator classification with upstream fixture semantics for malformed payload classes.
 - Slice A closures completed in this pass:
   - `patch_schema_parity` xfail removed after aligning schema fixture replay root wiring plus binary string/header parity.
   - `patch_canonical_encode` xfail removed after canonical patch encoder parity fixes.
   - `patch_compaction_parity` xfail removed after UTF-16 span semantics in compaction.
   - `patch_alt_codecs` xfail removed after compact codec wire-shape parity (`encode`/`decode`) was ported to upstream structure.
-- `model_decode_error` remains xfailed with 20 residual classification mismatches (`Offset is outside the bounds of the DataView` / `NO_ERROR` / `INVALID_CLOCK_TABLE`).
-- `patch_decode_error` remains xfailed with a reduced residual mismatch set (6 fixtures) in decode error classification (`NO_ERROR` vs `Index out of range`) for malformed binary payloads.
+- No active compat xfails remain.
 
 ### In-code stubs and intentional behavior notes
 

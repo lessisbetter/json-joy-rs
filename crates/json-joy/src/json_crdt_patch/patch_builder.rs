@@ -316,8 +316,8 @@ impl PatchBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::json_crdt_patch::constants::ORIGIN;
     use crate::json_crdt_patch::clock::ts;
+    use crate::json_crdt_patch::constants::ORIGIN;
 
     #[test]
     fn builder_creates_new_obj() {
