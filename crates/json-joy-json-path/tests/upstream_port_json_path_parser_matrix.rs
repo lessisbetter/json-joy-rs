@@ -2,6 +2,7 @@ use json_joy_json_path::{
     ComparisonOperator, FilterExpression, JsonPathParser, LogicalOperator, Selector,
     ValueExpression,
 };
+use serde_json::json;
 
 #[test]
 fn parser_union_selector_matrix() {
@@ -170,6 +171,23 @@ fn parser_function_and_nested_filter_matrix() {
         }
         other => panic!("expected nested logical filter, got {other:?}"),
     }
+
+    let function_cases = [
+        ("$[?length(@.name)]", "length"),
+        ("$[?count(@.items)]", "count"),
+        ("$[?match(@.email, \".*@example\\\\.com\")]", "match"),
+        ("$[?search(@.description, \"test\")]", "search"),
+    ];
+    for (expr, expected_name) in function_cases {
+        let path = JsonPathParser::parse(expr).unwrap();
+        let selector = &path.segments[0].selectors[0];
+        match selector {
+            Selector::Filter(FilterExpression::Function { name, .. }) => {
+                assert_eq!(name, expected_name, "expression: {expr}");
+            }
+            other => panic!("expected function filter for {expr}, got {other:?}"),
+        }
+    }
 }
 
 #[test]
@@ -201,6 +219,56 @@ fn parser_edge_case_syntax_matrix() {
     assert!(matches!(path.segments[1].selectors[0], Selector::Name(_)));
     assert!(matches!(path.segments[2].selectors[0], Selector::Index(0)));
     assert!(matches!(path.segments[3].selectors[0], Selector::Name(_)));
+
+    let path = JsonPathParser::parse("$[\"first\", \"second\", 0]").unwrap();
+    assert_eq!(path.segments.len(), 1);
+    assert_eq!(path.segments[0].selectors.len(), 3);
+    assert!(matches!(path.segments[0].selectors[0], Selector::Name(_)));
+    assert!(matches!(path.segments[0].selectors[1], Selector::Name(_)));
+    assert!(matches!(path.segments[0].selectors[2], Selector::Index(0)));
+}
+
+#[test]
+fn parser_existence_and_literal_filter_shapes_matrix() {
+    let existence_cases = [
+        "$[?@.items[0]]",
+        "$[?@.data.values[*].name]",
+        "$[?@['single-quotes']]",
+        "$[?@[0].name]",
+        "$[?@[-1]]",
+    ];
+    for expr in existence_cases {
+        let path = JsonPathParser::parse(expr).unwrap();
+        let selector = &path.segments[0].selectors[0];
+        match selector {
+            Selector::Filter(FilterExpression::Existence { path }) => {
+                assert!(
+                    !path.segments.is_empty(),
+                    "existence path should not be empty for {expr}"
+                );
+            }
+            other => panic!("expected existence filter for {expr}, got {other:?}"),
+        }
+    }
+
+    let three_point_fourteen = "3.14".parse::<f64>().unwrap();
+    let literal_cases = [
+        ("$[?(@.active == true)]", json!(true)),
+        ("$[?(@.active == false)]", json!(false)),
+        ("$[?(@.value == null)]", json!(null)),
+        ("$[?(@.price == 3.14)]", json!(three_point_fourteen)),
+        ("$[?(@.name == 'test')]", json!("test")),
+    ];
+    for (expr, expected_right) in literal_cases {
+        let path = JsonPathParser::parse(expr).unwrap();
+        let selector = &path.segments[0].selectors[0];
+        match selector {
+            Selector::Filter(FilterExpression::Comparison { right, .. }) => {
+                assert_eq!(right, &ValueExpression::Literal(expected_right), "{expr}");
+            }
+            other => panic!("expected comparison filter for {expr}, got {other:?}"),
+        }
+    }
 }
 
 #[test]
