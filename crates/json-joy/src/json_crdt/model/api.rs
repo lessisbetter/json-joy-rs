@@ -843,6 +843,78 @@ mod tests {
     }
 
     #[test]
+    fn model_api_spec_can_edit_root_string() {
+        let mut model = Model::create();
+        {
+            let mut api = ModelApi::new(&mut model);
+            api.set(&json!("")).unwrap();
+        }
+        let str_id = model.root.val;
+        {
+            let mut api = ModelApi::new(&mut model);
+            api.str_ins(str_id, 0, "var foo = bar").unwrap();
+            api.str_ins(str_id, 10, "\"").unwrap();
+            api.str_ins(str_id, 14, "\";").unwrap();
+            api.str_del(str_id, 0, 3).unwrap();
+            api.str_ins(str_id, 0, "const").unwrap();
+        }
+        assert_eq!(model.view(), json!("const foo = \"bar\";"));
+    }
+
+    #[test]
+    fn model_api_spec_can_edit_nested_string() {
+        let mut model = Model::create();
+        let str_id = {
+            let mut api = ModelApi::new(&mut model);
+            api.set(&json!({"foo": [123, "", 5]})).unwrap();
+            let root_id = api.model.root.val;
+            api.find(root_id, &[json!("foo"), json!(1)]).unwrap()
+        };
+        {
+            let mut api = ModelApi::new(&mut model);
+            api.str_ins(str_id, 0, "var foo = bar").unwrap();
+            api.str_ins(str_id, 10, "\"").unwrap();
+            api.str_ins(str_id, 14, "\";").unwrap();
+            api.str_del(str_id, 0, 3).unwrap();
+            api.str_ins(str_id, 0, "const").unwrap();
+        }
+        assert_eq!(model.view(), json!({"foo": [123, "const foo = \"bar\";", 5]}));
+    }
+
+    #[test]
+    fn model_api_spec_can_edit_number_in_object() {
+        let mut model = Model::create();
+        let target_obj_id = {
+            let mut api = ModelApi::new(&mut model);
+            api.set(&json!({"a": [{"b": 123}]})).unwrap();
+            let root_id = api.model.root.val;
+            api.find(root_id, &[json!("a"), json!(0)]).unwrap()
+        };
+        {
+            let mut api = ModelApi::new(&mut model);
+            api.obj_set(target_obj_id, &[("b".to_string(), json!(0.5))])
+                .unwrap();
+        }
+        assert_eq!(model.view(), json!({"a": [{"b": 0.5}]}));
+    }
+
+    #[test]
+    fn model_api_spec_can_edit_number_in_array() {
+        let mut model = Model::create();
+        let target_val_id = {
+            let mut api = ModelApi::new(&mut model);
+            api.set(&json!({"a": [123]})).unwrap();
+            let root_id = api.model.root.val;
+            api.find(root_id, &[json!("a"), json!(0)]).unwrap()
+        };
+        {
+            let mut api = ModelApi::new(&mut model);
+            api.val_set(target_val_id, &json!(0.5)).unwrap();
+        }
+        assert_eq!(model.view(), json!({"a": [0.5]}));
+    }
+
+    #[test]
     fn set_root_array_wraps_numeric_elements_in_val_nodes() {
         let mut model = Model::create();
         let mut api = ModelApi::new(&mut model);

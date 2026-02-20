@@ -316,6 +316,7 @@ impl PatchBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::json_crdt_patch::constants::ORIGIN;
     use crate::json_crdt_patch::clock::ts;
 
     #[test]
@@ -353,5 +354,38 @@ mod tests {
         // str_node: tick 1 → time=1
         // ins_str: tick 1 → op id at time=1, then tick 4 more → time=6
         assert_eq!(b.clock.time(), 6);
+    }
+
+    #[test]
+    fn root_creates_ins_val_targeting_origin() {
+        let mut b = PatchBuilder::new(1, 5);
+        b.root(ts(0, 2));
+        assert_eq!(b.patch.ops.len(), 1);
+        assert!(matches!(
+            b.patch.ops[0],
+            Op::InsVal {
+                obj: ORIGIN,
+                val: Ts { sid: 0, time: 2 },
+                ..
+            }
+        ));
+    }
+
+    #[test]
+    fn first_op_id_and_patch_span_match_upstream_spec() {
+        let mut b = PatchBuilder::new(1, 5);
+        b.root(ts(0, 2));
+        b.obj();
+        assert_eq!(b.patch.get_id(), Some(ts(1, 5)));
+        assert_eq!(b.patch.span(), 2);
+    }
+
+    #[test]
+    fn injected_clock_assigns_operation_ids() {
+        let mut b = PatchBuilder::new(1, 5);
+        b.root(ts(0, 2));
+        b.obj();
+        assert_eq!(b.patch.ops[0].id(), ts(1, 5));
+        assert_eq!(b.patch.ops[1].id(), ts(1, 6));
     }
 }
