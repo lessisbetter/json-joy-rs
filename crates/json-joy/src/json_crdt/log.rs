@@ -21,8 +21,12 @@ use std::collections::BTreeMap;
 use serde_json::Value;
 
 use crate::json_crdt::model::Model;
-use crate::json_crdt_patch::clock::{compare, Ts};
+use crate::json_crdt::nodes::{rga::ChunkData, CrdtNode, TsKey};
+use crate::json_crdt::schema::to_schema;
+use crate::json_crdt_patch::clock::{compare, Ts, Tss};
 use crate::json_crdt_patch::patch::Patch;
+use crate::json_crdt_patch::patch_builder::PatchBuilder;
+use json_joy_json_pack::PackValue;
 
 /// Key used in the patch `BTreeMap`: orders by `(time, sid)` — matching
 /// upstream's `ITimestampStruct` comparator (time first, then session ID).
@@ -306,6 +310,324 @@ impl Log {
         // In-place replacement of `end`: copy clock and nodes from other.end.
         self.end = other.end;
     }
+
+    /// Build an undo patch for `patch` against the current end state.
+    ///
+    /// Mirrors `Log.undo(patch)` in upstream TypeScript.
+    pub fn undo(&self, patch: &Patch) -> Patch {
+        let ops = &patch.ops;
+        if ops.is_empty() {
+            panic!("EMPTY_PATCH");
+        }
+        let id = patch.get_id().expect("EMPTY_PATCH");
+        let mut replay_model: Option<Model> = None;
+        let mut builder = PatchBuilder::new(self.end.clock.sid, self.end.clock.time);
+
+        for op in ops.iter().rev() {
+            let op_id = op.id();
+            match op {
+                crate::json_crdt_patch::operations::Op::InsStr { obj, .. }
+                | crate::json_crdt_patch::operations::Op::InsArr { obj, .. }
+                | crate::json_crdt_patch::operations::Op::InsBin { obj, .. } => {
+                    builder.del(*obj, vec![Tss::new(op_id.sid, op_id.time, op.span())]);
+                    continue;
+                }
+                _ => {}
+            }
+
+            let model = replay_model.get_or_insert_with(|| self.replay_to(id, false));
+
+            match op {
+                crate::json_crdt_patch::operations::Op::InsVal { obj, .. } => {
+                    if let Some(CrdtNode::Val(val)) = model.index.get(&TsKey::from(*obj)) {
+                        let new_id = if let Some(node) = model.index.get(&TsKey::from(val.val)) {
+                            let schema = to_schema(node, &model.index);
+                            schema.build(&mut builder)
+                        } else {
+                            builder.con_val(PackValue::Undefined)
+                        };
+                        builder.set_val(*obj, new_id);
+                    }
+                }
+                crate::json_crdt_patch::operations::Op::InsObj { obj, data, .. } => {
+                    let container = model.index.get(&TsKey::from(*obj));
+                    let mut restore: Vec<(String, Ts)> = Vec::with_capacity(data.len());
+                    for (key, _) in data {
+                        let restored = match container {
+                            Some(CrdtNode::Obj(node)) => node
+                                .keys
+                                .get(key)
+                                .and_then(|id| model.index.get(&TsKey::from(*id)))
+                                .map(|node| {
+                                    let schema = to_schema(node, &model.index);
+                                    schema.build(&mut builder)
+                                }),
+                            _ => None,
+                        }
+                        .unwrap_or_else(|| builder.con_val(PackValue::Undefined));
+                        restore.push((key.clone(), restored));
+                    }
+                    if !restore.is_empty() {
+                        builder.ins_obj(*obj, restore);
+                    }
+                }
+                crate::json_crdt_patch::operations::Op::InsVec { obj, data, .. } => {
+                    let container = model.index.get(&TsKey::from(*obj));
+                    let mut restore: Vec<(u8, Ts)> = Vec::with_capacity(data.len());
+                    for (key, _) in data {
+                        let restored = match container {
+                            Some(CrdtNode::Vec(node)) => node
+                                .elements
+                                .get(*key as usize)
+                                .and_then(|id| *id)
+                                .and_then(|id| model.index.get(&TsKey::from(id)))
+                                .map(|node| {
+                                    let schema = to_schema(node, &model.index);
+                                    schema.build(&mut builder)
+                                }),
+                            _ => None,
+                        }
+                        .unwrap_or_else(|| builder.con_val(PackValue::Undefined));
+                        restore.push((*key, restored));
+                    }
+                    if !restore.is_empty() {
+                        builder.ins_vec(*obj, restore);
+                    }
+                }
+                crate::json_crdt_patch::operations::Op::Del { obj, what, .. } => {
+                    if let Some(node) = model.index.get(&TsKey::from(*obj)) {
+                        match node {
+                            CrdtNode::Str(str_node) => {
+                                let mut restored = String::new();
+                                for span in what {
+                                    for part in span_view_str(&str_node.rga, *span) {
+                                        restored.push_str(&part);
+                                    }
+                                }
+                                let mut after = *obj;
+                                if let Some(first_span) = what.first() {
+                                    let first = Ts::new(first_span.sid, first_span.time);
+                                    if let Some(prev) = prev_id(&str_node.rga, first) {
+                                        after = prev;
+                                    }
+                                }
+                                if !restored.is_empty() {
+                                    builder.ins_str(*obj, after, restored);
+                                }
+                            }
+                            CrdtNode::Bin(bin_node) => {
+                                let mut restored: Vec<u8> = Vec::new();
+                                for span in what {
+                                    for part in span_view_bin(&bin_node.rga, *span) {
+                                        restored.extend(part);
+                                    }
+                                }
+                                let mut after = *obj;
+                                if let Some(first_span) = what.first() {
+                                    let first = Ts::new(first_span.sid, first_span.time);
+                                    if let Some(prev) = prev_id(&bin_node.rga, first) {
+                                        after = prev;
+                                    }
+                                }
+                                if !restored.is_empty() {
+                                    builder.ins_bin(*obj, after, restored);
+                                }
+                            }
+                            CrdtNode::Arr(arr_node) => {
+                                let mut copies: Vec<Ts> = Vec::new();
+                                for span in what {
+                                    for ids in span_view_arr(&arr_node.rga, *span) {
+                                        for id in ids {
+                                            if let Some(src) = model.index.get(&TsKey::from(id)) {
+                                                let schema = to_schema(src, &model.index);
+                                                let new_id = schema.build(&mut builder);
+                                                copies.push(new_id);
+                                            }
+                                        }
+                                    }
+                                }
+                                let mut after = *obj;
+                                if let Some(first_span) = what.first() {
+                                    let first = Ts::new(first_span.sid, first_span.time);
+                                    if let Some(prev) = prev_id(&arr_node.rga, first) {
+                                        after = prev;
+                                    }
+                                }
+                                if !copies.is_empty() {
+                                    builder.ins_arr(*obj, after, copies);
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        builder.flush()
+    }
+}
+
+fn prev_id<T: Clone + ChunkData>(rga: &crate::json_crdt::nodes::rga::Rga<T>, id: Ts) -> Option<Ts> {
+    let mut prev: Option<Ts> = None;
+    for chunk in rga.iter() {
+        for offset in 0..chunk.span {
+            let curr = Ts::new(chunk.id.sid, chunk.id.time + offset);
+            if curr == id {
+                return prev;
+            }
+            prev = Some(curr);
+        }
+    }
+    None
+}
+
+fn span_view_str(rga: &crate::json_crdt::nodes::rga::Rga<String>, span: Tss) -> Vec<String> {
+    let mut view: Vec<String> = Vec::new();
+    let mut remaining = span.span as usize;
+    let time = span.time;
+    let Some(chunk_idx) = rga.find_by_id(Ts::new(span.sid, time)) else {
+        return view;
+    };
+    let mut next = Some(chunk_idx);
+    let mut is_first = true;
+
+    while let Some(idx) = next {
+        let chunk = rga.slot(idx);
+        let chunk_span = chunk.span as usize;
+        if !chunk.deleted {
+            if is_first {
+                let offset = (time - chunk.id.time) as usize;
+                if chunk_span >= remaining + offset {
+                    if let Some(data) = &chunk.data {
+                        view.push(data.chars().skip(offset).take(remaining).collect());
+                    }
+                    return view;
+                }
+                if let Some(data) = &chunk.data {
+                    let take = chunk_span.saturating_sub(offset);
+                    if take > 0 {
+                        view.push(data.chars().skip(offset).take(take).collect());
+                    }
+                }
+                remaining = remaining.saturating_sub(chunk_span.saturating_sub(offset));
+            } else if chunk_span > remaining {
+                if let Some(data) = &chunk.data {
+                    view.push(data.chars().take(remaining).collect());
+                }
+                break;
+            } else if let Some(data) = &chunk.data {
+                view.push(data.clone());
+            }
+        }
+        remaining = remaining.saturating_sub(chunk_span);
+        if remaining == 0 {
+            break;
+        }
+        next = chunk.s;
+        is_first = false;
+    }
+
+    view
+}
+
+fn span_view_bin(rga: &crate::json_crdt::nodes::rga::Rga<Vec<u8>>, span: Tss) -> Vec<Vec<u8>> {
+    let mut view: Vec<Vec<u8>> = Vec::new();
+    let mut remaining = span.span as usize;
+    let time = span.time;
+    let Some(chunk_idx) = rga.find_by_id(Ts::new(span.sid, time)) else {
+        return view;
+    };
+    let mut next = Some(chunk_idx);
+    let mut is_first = true;
+
+    while let Some(idx) = next {
+        let chunk = rga.slot(idx);
+        let chunk_span = chunk.span as usize;
+        if !chunk.deleted {
+            if is_first {
+                let offset = (time - chunk.id.time) as usize;
+                if chunk_span >= remaining + offset {
+                    if let Some(data) = &chunk.data {
+                        view.push(data[offset..offset + remaining].to_vec());
+                    }
+                    return view;
+                }
+                if let Some(data) = &chunk.data {
+                    let take = chunk_span.saturating_sub(offset);
+                    if take > 0 {
+                        view.push(data[offset..offset + take].to_vec());
+                    }
+                }
+                remaining = remaining.saturating_sub(chunk_span.saturating_sub(offset));
+            } else if chunk_span > remaining {
+                if let Some(data) = &chunk.data {
+                    view.push(data[..remaining].to_vec());
+                }
+                break;
+            } else if let Some(data) = &chunk.data {
+                view.push(data.clone());
+            }
+        }
+        remaining = remaining.saturating_sub(chunk_span);
+        if remaining == 0 {
+            break;
+        }
+        next = chunk.s;
+        is_first = false;
+    }
+
+    view
+}
+
+fn span_view_arr(rga: &crate::json_crdt::nodes::rga::Rga<Vec<Ts>>, span: Tss) -> Vec<Vec<Ts>> {
+    let mut view: Vec<Vec<Ts>> = Vec::new();
+    let mut remaining = span.span as usize;
+    let time = span.time;
+    let Some(chunk_idx) = rga.find_by_id(Ts::new(span.sid, time)) else {
+        return view;
+    };
+    let mut next = Some(chunk_idx);
+    let mut is_first = true;
+
+    while let Some(idx) = next {
+        let chunk = rga.slot(idx);
+        let chunk_span = chunk.span as usize;
+        if !chunk.deleted {
+            if is_first {
+                let offset = (time - chunk.id.time) as usize;
+                if chunk_span >= remaining + offset {
+                    if let Some(data) = &chunk.data {
+                        view.push(data[offset..offset + remaining].to_vec());
+                    }
+                    return view;
+                }
+                if let Some(data) = &chunk.data {
+                    let take = chunk_span.saturating_sub(offset);
+                    if take > 0 {
+                        view.push(data[offset..offset + take].to_vec());
+                    }
+                }
+                remaining = remaining.saturating_sub(chunk_span.saturating_sub(offset));
+            } else if chunk_span > remaining {
+                if let Some(data) = &chunk.data {
+                    view.push(data[..remaining].to_vec());
+                }
+                break;
+            } else if let Some(data) = &chunk.data {
+                view.push(data.clone());
+            }
+        }
+        remaining = remaining.saturating_sub(chunk_span);
+        if remaining == 0 {
+            break;
+        }
+        next = chunk.s;
+        is_first = false;
+    }
+
+    view
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -806,7 +1128,7 @@ mod tests {
         DecodeParams, DeserializeParams, EncodingFormat, EncodingParams, HistoryFormat, LogDecoder,
         LogEncoder, ModelFormat, SerializeParams,
     };
-    use crate::json_crdt_patch::clock::ts;
+    use crate::json_crdt_patch::clock::{ts, tss};
     use crate::json_crdt_patch::operations::{ConValue, Op};
     use json_joy_json_pack::json::JsonDecoder;
     use json_joy_json_pack::{decode_cbor_value_with_consumed, PackValue};
@@ -897,6 +1219,156 @@ mod tests {
         let mut log = Log::from_new_model(Model::new(s));
         log.apply(make_base_object_patch(s));
         log
+    }
+
+    fn make_root_str_log(initial: &str) -> (Log, Ts) {
+        let s = sid();
+        let str_id = ts(s, 1);
+        let mut model = Model::new(s);
+        model.apply_operation(&Op::NewStr { id: str_id });
+        if !initial.is_empty() {
+            model.apply_operation(&Op::InsStr {
+                id: ts(s, 2),
+                obj: str_id,
+                after: crate::json_crdt::constants::ORIGIN,
+                data: initial.to_string(),
+            });
+        }
+        model.apply_operation(&Op::InsVal {
+            id: ts(s, model.clock.time),
+            obj: crate::json_crdt::constants::ORIGIN,
+            val: str_id,
+        });
+        (Log::from_model(model), str_id)
+    }
+
+    fn make_root_bin_log(initial: &[u8]) -> (Log, Ts) {
+        let s = sid();
+        let bin_id = ts(s, 1);
+        let mut model = Model::new(s);
+        model.apply_operation(&Op::NewBin { id: bin_id });
+        if !initial.is_empty() {
+            model.apply_operation(&Op::InsBin {
+                id: ts(s, 2),
+                obj: bin_id,
+                after: crate::json_crdt::constants::ORIGIN,
+                data: initial.to_vec(),
+            });
+        }
+        model.apply_operation(&Op::InsVal {
+            id: ts(s, model.clock.time),
+            obj: crate::json_crdt::constants::ORIGIN,
+            val: bin_id,
+        });
+        (Log::from_model(model), bin_id)
+    }
+
+    fn make_root_arr_log(initial: &[i64]) -> (Log, Ts, Ts) {
+        let s = sid();
+        let arr_id = ts(s, 1);
+        let mut model = Model::new(s);
+        model.apply_operation(&Op::NewArr { id: arr_id });
+        let mut value_ids = Vec::new();
+        for value in initial {
+            let id = ts(s, model.clock.time);
+            model.apply_operation(&Op::NewCon {
+                id,
+                val: ConValue::Val(PackValue::Integer(*value)),
+            });
+            value_ids.push(id);
+        }
+        let ins_arr_id = if value_ids.is_empty() {
+            arr_id
+        } else {
+            let id = ts(s, model.clock.time);
+            model.apply_operation(&Op::InsArr {
+                id,
+                obj: arr_id,
+                after: crate::json_crdt::constants::ORIGIN,
+                data: value_ids,
+            });
+            id
+        };
+        model.apply_operation(&Op::InsVal {
+            id: ts(s, model.clock.time),
+            obj: crate::json_crdt::constants::ORIGIN,
+            val: arr_id,
+        });
+        (Log::from_model(model), arr_id, ins_arr_id)
+    }
+
+    fn make_root_obj_with_foo_bar() -> (Log, Ts) {
+        let s = sid();
+        let obj_id = ts(s, 1);
+        let mut model = Model::new(s);
+        model.apply_operation(&Op::NewObj { id: obj_id });
+        model.apply_operation(&Op::NewCon {
+            id: ts(s, 2),
+            val: ConValue::Val(PackValue::Str("bar".to_string())),
+        });
+        model.apply_operation(&Op::InsObj {
+            id: ts(s, 3),
+            obj: obj_id,
+            data: vec![("foo".to_string(), ts(s, 2))],
+        });
+        model.apply_operation(&Op::InsVal {
+            id: ts(s, 4),
+            obj: crate::json_crdt::constants::ORIGIN,
+            val: obj_id,
+        });
+        (Log::from_model(model), obj_id)
+    }
+
+    fn make_root_vec_with_bar() -> (Log, Ts) {
+        let s = sid();
+        let vec_id = ts(s, 1);
+        let mut model = Model::new(s);
+        model.apply_operation(&Op::NewVec { id: vec_id });
+        model.apply_operation(&Op::NewCon {
+            id: ts(s, 2),
+            val: ConValue::Val(PackValue::Str("bar".to_string())),
+        });
+        model.apply_operation(&Op::InsVec {
+            id: ts(s, 3),
+            obj: vec_id,
+            data: vec![(0u8, ts(s, 2))],
+        });
+        model.apply_operation(&Op::InsVal {
+            id: ts(s, 4),
+            obj: crate::json_crdt::constants::ORIGIN,
+            val: vec_id,
+        });
+        (Log::from_model(model), vec_id)
+    }
+
+    fn make_root_arr_with_one_register(value: i64) -> (Log, Ts) {
+        let s = sid();
+        let arr_id = ts(s, 1);
+        let val_id = ts(s, 2);
+        let mut model = Model::new(s);
+        model.apply_operation(&Op::NewArr { id: arr_id });
+        model.apply_operation(&Op::NewVal { id: val_id });
+        model.apply_operation(&Op::NewCon {
+            id: ts(s, 3),
+            val: ConValue::Val(PackValue::Integer(value)),
+        });
+        model.apply_operation(&Op::InsVal {
+            id: ts(s, 4),
+            obj: val_id,
+            val: ts(s, 3),
+        });
+        model.apply_operation(&Op::InsArr {
+            id: ts(s, 5),
+            obj: arr_id,
+            after: crate::json_crdt::constants::ORIGIN,
+            data: vec![val_id],
+        });
+        model.apply_operation(&Op::InsVal {
+            id: ts(s, 6),
+            obj: crate::json_crdt::constants::ORIGIN,
+            val: arr_id,
+        });
+        (Log::from_model(model), val_id)
     }
 
     // ── Log::from_new_model ───────────────────────────────────────────────
@@ -1171,6 +1643,257 @@ mod tests {
         let restored = Model::from_binary(&bytes).unwrap();
         assert_eq!(restored.clock.sid, model.clock.sid);
         assert_eq!(restored.clock.time, model.clock.time);
+    }
+
+    // ── Log::undo ──────────────────────────────────────────────────────────
+
+    #[test]
+    fn undo_string_insert() {
+        let (mut log, str_id) = make_root_str_log("");
+        let patch = Patch {
+            ops: vec![Op::InsStr {
+                id: ts(sid(), log.end.clock.time),
+                obj: str_id,
+                after: str_id,
+                data: "a".to_string(),
+            }],
+            meta: None,
+        };
+        log.apply(patch.clone());
+        let undo = log.undo(&patch);
+        assert_eq!(undo.ops.len(), 1);
+        if let Op::Del { what, .. } = &undo.ops[0] {
+            assert_eq!(what.len(), 1);
+            assert_eq!(what[0].sid, patch.ops[0].id().sid);
+            assert_eq!(what[0].time, patch.ops[0].id().time);
+            assert_eq!(what[0].span, 1);
+        } else {
+            panic!("expected del");
+        }
+        assert_eq!(log.end.view(), json!("a"));
+        log.apply(undo);
+        assert_eq!(log.end.view(), json!(""));
+    }
+
+    #[test]
+    fn undo_string_delete() {
+        let (mut log, str_id) = make_root_str_log("a");
+        let patch = Patch {
+            ops: vec![Op::Del {
+                id: ts(sid(), log.end.clock.time),
+                obj: str_id,
+                what: vec![tss(sid(), 2, 1)],
+            }],
+            meta: None,
+        };
+        log.apply(patch.clone());
+        let undo = log.undo(&patch);
+        assert_eq!(undo.ops.len(), 1);
+        if let Op::InsStr {
+            obj, after, data, ..
+        } = &undo.ops[0]
+        {
+            assert_eq!(data, "a");
+            assert_eq!(*obj, str_id);
+            assert_eq!(*after, str_id);
+        } else {
+            panic!("expected ins_str");
+        }
+        assert_eq!(log.end.view(), json!(""));
+        log.apply(undo);
+        assert_eq!(log.end.view(), json!("a"));
+    }
+
+    #[test]
+    fn undo_string_delete_sequence() {
+        let (mut log, str_id) = make_root_str_log("12345");
+        let patch1 = Patch {
+            ops: vec![Op::Del {
+                id: ts(sid(), log.end.clock.time),
+                obj: str_id,
+                what: vec![tss(sid(), 3, 1)],
+            }],
+            meta: None,
+        };
+        log.apply(patch1.clone());
+        let patch2 = Patch {
+            ops: vec![Op::Del {
+                id: ts(sid(), log.end.clock.time),
+                obj: str_id,
+                what: vec![tss(sid(), 4, 2)],
+            }],
+            meta: None,
+        };
+        log.apply(patch2.clone());
+        let undo2 = log.undo(&patch2);
+        let undo1 = log.undo(&patch1);
+        assert_eq!(log.end.view(), json!("15"));
+        log.apply(undo2);
+        assert_eq!(log.end.view(), json!("1345"));
+        log.apply(undo1);
+        assert_eq!(log.end.view(), json!("12345"));
+    }
+
+    #[test]
+    fn undo_bin_insert_and_delete() {
+        let (mut log, bin_id) = make_root_bin_log(&[]);
+        let ins_patch = Patch {
+            ops: vec![Op::InsBin {
+                id: ts(sid(), log.end.clock.time),
+                obj: bin_id,
+                after: bin_id,
+                data: vec![1, 2, 3],
+            }],
+            meta: None,
+        };
+        log.apply(ins_patch.clone());
+        let undo_ins = log.undo(&ins_patch);
+        log.apply(undo_ins);
+        assert_eq!(log.end.view(), json!([]));
+
+        let (mut log, bin_id) = make_root_bin_log(&[1, 2, 3]);
+        let del_patch = Patch {
+            ops: vec![Op::Del {
+                id: ts(sid(), log.end.clock.time),
+                obj: bin_id,
+                what: vec![tss(sid(), 3, 1)],
+            }],
+            meta: None,
+        };
+        log.apply(del_patch.clone());
+        assert_eq!(log.end.view(), json!([1, 3]));
+        let undo_del = log.undo(&del_patch);
+        log.apply(undo_del);
+        assert_eq!(log.end.view(), json!([1, 2, 3]));
+    }
+
+    #[test]
+    fn undo_arr_insert_and_delete() {
+        let (mut log, arr_id, _) = make_root_arr_log(&[]);
+        let patch = Patch {
+            ops: vec![
+                Op::NewCon {
+                    id: ts(sid(), log.end.clock.time),
+                    val: ConValue::Val(PackValue::Integer(1)),
+                },
+                Op::InsArr {
+                    id: ts(sid(), log.end.clock.time + 1),
+                    obj: arr_id,
+                    after: arr_id,
+                    data: vec![ts(sid(), log.end.clock.time)],
+                },
+            ],
+            meta: None,
+        };
+        log.apply(patch.clone());
+        assert_eq!(log.end.view(), json!([1]));
+        let undo = log.undo(&patch);
+        assert_eq!(undo.ops.len(), 1);
+        assert!(matches!(undo.ops[0], Op::Del { .. }));
+        log.apply(undo);
+        assert_eq!(log.end.view(), json!([]));
+
+        let (mut log, arr_id, ins_arr_id) = make_root_arr_log(&[1, 2, 3]);
+        let del_patch = Patch {
+            ops: vec![Op::Del {
+                id: ts(sid(), log.end.clock.time),
+                obj: arr_id,
+                what: vec![tss(sid(), ins_arr_id.time + 1, 1)],
+            }],
+            meta: None,
+        };
+        log.apply(del_patch.clone());
+        assert_eq!(log.end.view(), json!([1, 3]));
+        let undo = log.undo(&del_patch);
+        log.apply(undo);
+        assert_eq!(log.end.view(), json!([1, 2, 3]));
+    }
+
+    #[test]
+    fn undo_lww_obj_vec_and_val_writes() {
+        let (mut log, obj_id) = make_root_obj_with_foo_bar();
+        let patch = Patch {
+            ops: vec![
+                Op::NewCon {
+                    id: ts(sid(), log.end.clock.time),
+                    val: ConValue::Val(PackValue::Str("baz".to_string())),
+                },
+                Op::InsObj {
+                    id: ts(sid(), log.end.clock.time + 1),
+                    obj: obj_id,
+                    data: vec![("foo".to_string(), ts(sid(), log.end.clock.time))],
+                },
+            ],
+            meta: None,
+        };
+        log.apply(patch.clone());
+        assert_eq!(log.end.view(), json!({"foo": "baz"}));
+        let undo = log.undo(&patch);
+        log.apply(undo);
+        assert_eq!(log.end.view(), json!({"foo": "bar"}));
+
+        let (mut log, obj_id) = make_root_obj_with_foo_bar();
+        let del_patch = Patch {
+            ops: vec![
+                Op::NewCon {
+                    id: ts(sid(), log.end.clock.time),
+                    val: ConValue::Val(PackValue::Undefined),
+                },
+                Op::InsObj {
+                    id: ts(sid(), log.end.clock.time + 1),
+                    obj: obj_id,
+                    data: vec![("foo".to_string(), ts(sid(), log.end.clock.time))],
+                },
+            ],
+            meta: None,
+        };
+        log.apply(del_patch.clone());
+        assert_eq!(log.end.view(), json!({}));
+        let undo_del = log.undo(&del_patch);
+        log.apply(undo_del);
+        assert_eq!(log.end.view(), json!({"foo": "bar"}));
+
+        let (mut log, vec_id) = make_root_vec_with_bar();
+        let vec_patch = Patch {
+            ops: vec![
+                Op::NewCon {
+                    id: ts(sid(), log.end.clock.time),
+                    val: ConValue::Val(PackValue::Str("baz".to_string())),
+                },
+                Op::InsVec {
+                    id: ts(sid(), log.end.clock.time + 1),
+                    obj: vec_id,
+                    data: vec![(0u8, ts(sid(), log.end.clock.time))],
+                },
+            ],
+            meta: None,
+        };
+        log.apply(vec_patch.clone());
+        assert_eq!(log.end.view(), json!(["baz"]));
+        let undo_vec = log.undo(&vec_patch);
+        log.apply(undo_vec);
+        assert_eq!(log.end.view(), json!(["bar"]));
+
+        let (mut log, val_id) = make_root_arr_with_one_register(1);
+        let val_patch = Patch {
+            ops: vec![
+                Op::NewCon {
+                    id: ts(sid(), log.end.clock.time),
+                    val: ConValue::Val(PackValue::Integer(2)),
+                },
+                Op::InsVal {
+                    id: ts(sid(), log.end.clock.time + 1),
+                    obj: val_id,
+                    val: ts(sid(), log.end.clock.time),
+                },
+            ],
+            meta: None,
+        };
+        log.apply(val_patch.clone());
+        assert_eq!(log.end.view(), json!([2]));
+        let undo_val = log.undo(&val_patch);
+        log.apply(undo_val);
+        assert_eq!(log.end.view(), json!([1]));
     }
 
     // ── Log codec ───────────────────────────────────────────────────────────
