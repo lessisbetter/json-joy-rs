@@ -54,6 +54,8 @@ mod tests {
     use super::*;
     use json_joy_json_pack::{JsonPackExtension, JsonPackValue};
 
+    const TEST_F64_3_14: f64 = 314.0 / 100.0;
+
     #[test]
     fn null_is_one_byte() {
         assert_eq!(msgpack_size_fast(&PackValue::Null), 1);
@@ -70,7 +72,7 @@ mod tests {
     fn numbers_are_nine_bytes() {
         assert_eq!(msgpack_size_fast(&PackValue::Integer(-42)), 9);
         assert_eq!(msgpack_size_fast(&PackValue::UInteger(u64::MAX)), 9);
-        assert_eq!(msgpack_size_fast(&PackValue::Float(3.14)), 9);
+        assert_eq!(msgpack_size_fast(&PackValue::Float(TEST_F64_3_14)), 9);
         assert_eq!(msgpack_size_fast(&PackValue::BigInt(i128::MAX)), 9);
     }
 

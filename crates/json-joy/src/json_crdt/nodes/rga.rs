@@ -129,6 +129,10 @@ impl<T: Clone> Chunk<T> {
             self.span
         }
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
 }
 
 impl<T: Clone> Node for Chunk<T> {
@@ -191,7 +195,7 @@ pub struct Rga<T: Clone> {
 // ── len aggregation helpers ───────────────────────────────────────────────
 
 /// Recalculate `chunk.len = (del?0:span) + l.len + r.len`.
-fn update_len_one<T: Clone>(chunks: &mut Vec<Chunk<T>>, idx: u32) {
+fn update_len_one<T: Clone>(chunks: &mut [Chunk<T>], idx: u32) {
     let c = &chunks[idx as usize];
     let l_len = c.l.map(|l| chunks[l as usize].len).unwrap_or(0);
     let r_len = c.r.map(|r| chunks[r as usize].len).unwrap_or(0);
@@ -200,7 +204,7 @@ fn update_len_one<T: Clone>(chunks: &mut Vec<Chunk<T>>, idx: u32) {
 }
 
 /// Same as `update_len_one` but always uses `span` (chunk is known live).
-fn update_len_one_live<T: Clone>(chunks: &mut Vec<Chunk<T>>, idx: u32) {
+fn update_len_one_live<T: Clone>(chunks: &mut [Chunk<T>], idx: u32) {
     let c = &chunks[idx as usize];
     let l_len = c.l.map(|l| chunks[l as usize].len).unwrap_or(0);
     let r_len = c.r.map(|r| chunks[r as usize].len).unwrap_or(0);
@@ -208,7 +212,7 @@ fn update_len_one_live<T: Clone>(chunks: &mut Vec<Chunk<T>>, idx: u32) {
 }
 
 /// Propagate a `delta` up the position tree from `idx` to the root.
-fn d_len<T: Clone>(chunks: &mut Vec<Chunk<T>>, mut idx: Option<u32>, delta: i64) {
+fn d_len<T: Clone>(chunks: &mut [Chunk<T>], mut idx: Option<u32>, delta: i64) {
     while let Some(i) = idx {
         let c = &mut chunks[i as usize];
         c.len = (c.len as i64 + delta) as u64;
@@ -220,7 +224,7 @@ fn d_len<T: Clone>(chunks: &mut Vec<Chunk<T>>, mut idx: Option<u32>, delta: i64)
 
 /// Splay `idx` to the root of the position tree, updating `len` aggregates.
 /// Mirrors `AbstractRga.splay()`.
-fn splay_pos<T: Clone>(chunks: &mut Vec<Chunk<T>>, root: &mut Option<u32>, idx: u32) {
+fn splay_pos<T: Clone>(chunks: &mut [Chunk<T>], root: &mut Option<u32>, idx: u32) {
     loop {
         let p = chunks[idx as usize].p;
         let Some(p) = p else {
@@ -546,11 +550,7 @@ fn insert_inside<T: Clone + ChunkData>(rga: &mut Rga<T>, idx: u32, at: u32, offs
     rga.chunks[idx as usize].p = p;
 
     // Left side: l → [... → at]
-    if l.is_none() {
-        rga.chunks[idx as usize].l = Some(at);
-        rga.chunks[at as usize].p = Some(idx);
-    } else {
-        let l = l.unwrap();
+    if let Some(l) = l {
         rga.chunks[idx as usize].l = Some(l);
         rga.chunks[l as usize].p = Some(idx);
         // Attach `at` as right child of `l`, preserving l's right sub-tree.
@@ -561,14 +561,13 @@ fn insert_inside<T: Clone + ChunkData>(rga: &mut Rga<T>, idx: u32, at: u32, offs
         if let Some(a) = a {
             rga.chunks[a as usize].p = Some(at);
         }
+    } else {
+        rga.chunks[idx as usize].l = Some(at);
+        rga.chunks[at as usize].p = Some(idx);
     }
 
     // Right side: [at2 → ...] → r
-    if r.is_none() {
-        rga.chunks[idx as usize].r = Some(at2);
-        rga.chunks[at2 as usize].p = Some(idx);
-    } else {
-        let r = r.unwrap();
+    if let Some(r) = r {
         rga.chunks[idx as usize].r = Some(r);
         rga.chunks[r as usize].p = Some(idx);
         // Attach `at2` as left child of `r`, preserving r's left sub-tree.
@@ -579,18 +578,20 @@ fn insert_inside<T: Clone + ChunkData>(rga: &mut Rga<T>, idx: u32, at: u32, offs
         if let Some(b) = b {
             rga.chunks[b as usize].p = Some(at2);
         }
+    } else {
+        rga.chunks[idx as usize].r = Some(at2);
+        rga.chunks[at2 as usize].p = Some(idx);
     }
 
     // Wire idx into p's child slot.
-    if p.is_none() {
-        rga.root = Some(idx);
-    } else {
-        let p = p.unwrap();
+    if let Some(p) = p {
         if rga.chunks[p as usize].l == Some(at) {
             rga.chunks[p as usize].l = Some(idx);
         } else {
             rga.chunks[p as usize].r = Some(idx);
         }
+    } else {
+        rga.root = Some(idx);
     }
 
     // Update len aggregates.

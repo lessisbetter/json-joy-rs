@@ -123,7 +123,7 @@ fn critical_node_kind_diffs(model: &Model, final_view: &Value) -> Vec<String> {
             }
         };
         match resolve_non_val_node(model, id) {
-            Ok(node) if matches!(node, CrdtNode::Str(_)) => {}
+            Ok(CrdtNode::Str(_)) => {}
             Ok(node) => diffs.push(format!(
                 "{}: expected string to resolve to str node, got {}",
                 format_path(&path),

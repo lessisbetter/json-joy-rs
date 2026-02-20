@@ -79,9 +79,10 @@ mod tests {
 
     #[test]
     fn number_values() {
+        let decimal = 314.0 / 100.0;
         assert_eq!(stringify(&json!(42)), "42");
         assert_eq!(stringify(&json!(-1)), "-1");
-        assert_eq!(stringify(&json!(3.14)), "3.14");
+        assert_eq!(stringify(&json!(decimal)), "3.14");
     }
 
     #[test]

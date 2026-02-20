@@ -65,8 +65,8 @@ pub fn agg(patch: &Patch) -> Vec<Patch> {
     }
 
     // Normalize each line.
-    for i in 0..lines.len() {
-        lines[i] = normalize(std::mem::take(&mut lines[i]));
+    for line in &mut lines {
+        *line = normalize(std::mem::take(line));
     }
 
     // Mirrors TypeScript `NORMALIZE_LINE_START` / `NORMALIZE_LINE_END` passes.
@@ -136,8 +136,7 @@ pub fn agg(patch: &Patch) -> Vec<Patch> {
                     continue;
                 }
 
-                let target_last_idx;
-                if target_len == 1 {
+                let target_last_idx = if target_len == 1 {
                     let target_type = lines[j][0].0;
                     if target_type == PatchOpType::Del {
                         continue;
@@ -145,7 +144,7 @@ pub fn agg(patch: &Patch) -> Vec<Patch> {
                     if target_type != PatchOpType::Eql {
                         break 'normalize_line_end;
                     }
-                    target_last_idx = 0usize;
+                    0usize
                 } else {
                     if target_len > 2 {
                         break 'normalize_line_end;
@@ -153,8 +152,8 @@ pub fn agg(patch: &Patch) -> Vec<Patch> {
                     if lines[j][0].0 != PatchOpType::Del {
                         break 'normalize_line_end;
                     }
-                    target_last_idx = 1usize;
-                }
+                    1usize
+                };
 
                 let target_last_type = lines[j][target_last_idx].0;
                 if target_last_type == PatchOpType::Del {

@@ -677,7 +677,7 @@ fn decode_op(v: &Value, parent_path: Option<&[String]>) -> Result<Op, PatchError
                 let s = v.as_str().ok_or_else(|| {
                     PatchError::InvalidOp("test_type: type element must be string".into())
                 })?;
-                JsonPatchType::from_str(s)
+                JsonPatchType::parse_str(s)
             })
             .collect();
         return Ok(Op::TestType {
@@ -729,7 +729,7 @@ fn decode_op(v: &Value, parent_path: Option<&[String]>) -> Result<Op, PatchError
         let type_str = arr_get(arr, 2)?
             .as_str()
             .ok_or_else(|| PatchError::InvalidOp("type: value must be string".into()))?;
-        let value = JsonPatchType::from_str(type_str)?;
+        let value = JsonPatchType::parse_str(type_str)?;
         return Ok(Op::Type { path, value });
     }
     if key.matches(OPCODE_AND, "and") {

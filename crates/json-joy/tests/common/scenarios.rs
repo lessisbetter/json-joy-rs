@@ -1350,7 +1350,7 @@ pub fn evaluate_fixture(scenario: &str, fixture: &Value) -> Result<Value, String
                 .get("next_view_json")
                 .ok_or_else(|| "input.next_view_json missing".to_string())?;
             let mut model = structural_binary::decode(&base_bytes).map_err(|e| format!("{e:?}"))?;
-            let patch_opt = if model.index.get(&TsKey::from(model.root.val)).is_some() {
+            let patch_opt = if model.index.contains_key(&TsKey::from(model.root.val)) {
                 model_api_diff_patch(&model, sid, next)
             } else {
                 let mut builder = PatchBuilder::new(sid, model.clock.time);

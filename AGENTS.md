@@ -52,6 +52,9 @@ For normal development, run:
 3. `just test-gates`
 4. `just test`
 
+Lint gate policy:
+- `just lint` must run clippy with `--all-features --all-targets` and `-D warnings`.
+
 If a change touches parity-sensitive paths, also run:
 
 1. `just parity-fixtures`

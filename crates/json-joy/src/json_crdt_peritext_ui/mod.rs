@@ -7,6 +7,9 @@
 
 // ── Undo / Redo framework ─────────────────────────────────────────────────
 
+type RedoCallback<R> = Box<dyn FnOnce(R)>;
+type UndoCallback<U, R> = Box<dyn FnOnce(U) -> (R, RedoCallback<R>)>;
+
 /// Manages a stack of undo/redo operations.
 ///
 /// Mirrors the `UndoManager` interface from `types.ts`.
@@ -20,9 +23,7 @@ pub trait UndoManager {
     fn push(
         &mut self,
         state: Self::UndoState,
-        callback: Box<
-            dyn FnOnce(Self::UndoState) -> (Self::RedoState, Box<dyn FnOnce(Self::RedoState)>),
-        >,
+        callback: UndoCallback<Self::UndoState, Self::RedoState>,
     );
     /// Undo the most recent operation.
     fn undo(&mut self);

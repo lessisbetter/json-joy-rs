@@ -657,24 +657,14 @@ pub fn find_path(model: &Model, start_id: Ts, path: &[Value]) -> Result<Ts, ApiE
     let mut current_id = start_id;
 
     // Unwrap leading ValNode wrappers (mirrors `find.ts` behaviour).
-    loop {
-        match IndexExt::get(&model.index, &current_id) {
-            Some(CrdtNode::Val(v)) => {
-                current_id = v.val;
-            }
-            _ => break,
-        }
+    while let Some(CrdtNode::Val(v)) = IndexExt::get(&model.index, &current_id) {
+        current_id = v.val;
     }
 
     for step in path {
         // Unwrap any ValNode at the current position.
-        loop {
-            match IndexExt::get(&model.index, &current_id) {
-                Some(CrdtNode::Val(v)) => {
-                    current_id = v.val;
-                }
-                _ => break,
-            }
+        while let Some(CrdtNode::Val(v)) = IndexExt::get(&model.index, &current_id) {
+            current_id = v.val;
         }
 
         match IndexExt::get(&model.index, &current_id) {

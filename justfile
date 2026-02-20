@@ -11,9 +11,9 @@ check: fmt lint test-gates test
 fmt:
     mise x -- cargo fmt --all
 
-# Clippy baseline for default quality gate
+# Strict Clippy gate across all targets/features
 lint:
-    mise x -- cargo clippy --workspace --all-features --lib --bins --examples --offline -- -D clippy::invalid_regex -D clippy::todo -D clippy::dbg_macro
+    mise x -- cargo clippy --workspace --all-features --all-targets --offline -- -D warnings
 
 # Run full workspace tests
 test *args:

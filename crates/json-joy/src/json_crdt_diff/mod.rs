@@ -292,9 +292,8 @@ impl<'a> JsonCrdtDiff<'a> {
             if let Some(&val_id) = src.keys.get(key) {
                 if let Some(src_node) = self.index.get(&TsKey::from(val_id)) {
                     let src_node = src_node.clone();
-                    match self.diff_any(&src_node, dst_val) {
-                        Ok(()) => continue,
-                        Err(_) => {} // fall through to replace
+                    if let Ok(()) = self.diff_any(&src_node, dst_val) {
+                        continue;
                     }
                 }
             }
@@ -332,11 +331,11 @@ impl<'a> JsonCrdtDiff<'a> {
         let dst_len = dst.len();
         let min_len = src_len.min(dst_len);
 
-        for i in dst_len..src_len {
+        for (i, elem) in elements.iter().enumerate().take(src_len).skip(dst_len) {
             if i > u8::MAX as usize {
                 break;
             }
-            let Some(id) = elements[i] else {
+            let Some(id) = *elem else {
                 continue;
             };
             let is_deleted = match self.index.get(&TsKey::from(id)) {

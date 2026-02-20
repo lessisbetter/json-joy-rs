@@ -5,6 +5,7 @@
 //! the Op class hierarchy in `packages/json-joy/src/json-patch/op/`.
 
 use serde_json::{Map, Value};
+use std::str::FromStr;
 use thiserror::Error;
 
 pub use json_joy_json_pointer::Path;
@@ -53,7 +54,7 @@ impl JsonPatchType {
         }
     }
 
-    pub fn from_str(s: &str) -> Result<Self, PatchError> {
+    pub fn parse_str(s: &str) -> Result<Self, PatchError> {
         match s {
             "string" => Ok(JsonPatchType::String),
             "number" => Ok(JsonPatchType::Number),
@@ -77,6 +78,14 @@ impl JsonPatchType {
             JsonPatchType::Array => val.is_array(),
             JsonPatchType::Null => val.is_null(),
         }
+    }
+}
+
+impl FromStr for JsonPatchType {
+    type Err = PatchError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        JsonPatchType::parse_str(s)
     }
 }
 

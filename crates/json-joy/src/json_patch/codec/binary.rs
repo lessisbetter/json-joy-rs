@@ -735,7 +735,7 @@ fn decode_pack_op(v: &PackValue, parent_path: Option<&[String]>) -> Result<Op, P
                 .iter()
                 .map(|v| {
                     let s = pack_as_str(v)?;
-                    JsonPatchType::from_str(s)
+                    JsonPatchType::parse_str(s)
                 })
                 .collect();
             Ok(Op::TestType {
@@ -768,7 +768,7 @@ fn decode_pack_op(v: &PackValue, parent_path: Option<&[String]>) -> Result<Op, P
         OPCODE_TYPE => {
             let path = pack_relative_path(pack_arr_get(arr, 1)?, parent_path)?;
             let type_str = pack_as_str(pack_arr_get(arr, 2)?)?;
-            let value = JsonPatchType::from_str(type_str)?;
+            let value = JsonPatchType::parse_str(type_str)?;
             Ok(Op::Type { path, value })
         }
         OPCODE_AND => {

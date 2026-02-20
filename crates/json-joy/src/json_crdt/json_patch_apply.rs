@@ -225,14 +225,14 @@ impl<'a> JsonPatch<'a> {
                 if key == "-" {
                     // Append to end
                     let mut api = ModelApi::new(self.model);
-                    api.arr_ins(parent_id, length, &[value.clone()])
+                    api.arr_ins(parent_id, length, std::slice::from_ref(value))
                         .map_err(JsonPatchError::from)
                 } else {
                     let index = key
                         .parse::<usize>()
                         .map_err(|_| JsonPatchError::InvalidIndex)?;
                     let mut api = ModelApi::new(self.model);
-                    api.arr_ins(parent_id, index, &[value.clone()])
+                    api.arr_ins(parent_id, index, std::slice::from_ref(value))
                         .map_err(JsonPatchError::from)
                 }
             }
@@ -283,7 +283,7 @@ impl<'a> JsonPatch<'a> {
                 }
                 // Set to undefined (represented as null con in CRDT)
                 let mut api = ModelApi::new(self.model);
-                api.obj_del(parent_id, &[key.clone()])
+                api.obj_del(parent_id, std::slice::from_ref(key))
                     .map_err(JsonPatchError::from)
             }
             Some(CrdtNode::Arr(_)) => {

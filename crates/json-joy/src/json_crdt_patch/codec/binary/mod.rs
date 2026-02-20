@@ -30,6 +30,8 @@ mod tests {
     use crate::json_crdt_patch::patch::Patch;
     use json_joy_json_pack::PackValue;
 
+    const TEST_F64_3_14: f64 = 314.0 / 100.0;
+
     fn sid() -> u64 {
         1
     }
@@ -83,7 +85,7 @@ mod tests {
     fn new_con_float() {
         let ops = vec![Op::NewCon {
             id: t(1),
-            val: ConValue::Val(PackValue::Float(3.14)),
+            val: ConValue::Val(PackValue::Float(TEST_F64_3_14)),
         }];
         let out = roundtrip(ops.clone());
         match &out.ops[0] {
@@ -91,7 +93,7 @@ mod tests {
                 val: ConValue::Val(PackValue::Float(f)),
                 ..
             } => {
-                assert!((f - 3.14_f64).abs() < 1e-10, "float mismatch: {f}");
+                assert!((f - TEST_F64_3_14).abs() < 1e-10, "float mismatch: {f}");
             }
             other => panic!("unexpected op: {other:?}"),
         }

@@ -34,12 +34,12 @@ diff, and codec functionality, plus native bridges for WASM and Python.
 just check
 ```
 
-`just check` runs formatting, clippy lint, compatibility gates, and full workspace tests.
+`just check` runs formatting, strict clippy (`-D warnings` across all targets/features), compatibility gates, and full workspace tests.
 
 If running cargo directly, use `mise` for pinned toolchains:
 
 ```bash
-mise x -- cargo clippy --workspace --all-features --lib --bins --examples -- -D clippy::invalid_regex -D clippy::todo -D clippy::dbg_macro
+mise x -- cargo clippy --workspace --all-features --all-targets -- -D warnings
 mise x -- cargo test --workspace
 ```
 

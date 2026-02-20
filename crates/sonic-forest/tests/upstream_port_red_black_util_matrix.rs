@@ -23,7 +23,7 @@ fn insert_value(arena: &mut Vec<RbNode<i32, i32>>, root: Option<u32>, value: i32
     root
 }
 
-fn delete_value(arena: &mut Vec<RbNode<i32, i32>>, root: Option<u32>, value: i32) -> Option<u32> {
+fn delete_value(arena: &mut [RbNode<i32, i32>], root: Option<u32>, value: i32) -> Option<u32> {
     if let Some(idx) = find(arena, root, &value, rb_key, rb_cmp) {
         let root = remove(arena, root, idx);
         if let Err(err) = assert_red_black_tree(arena, root, &rb_cmp) {

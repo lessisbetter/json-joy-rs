@@ -692,7 +692,7 @@ mod tests {
             ops: vec![Op::NewStr { id: ts(s, 1) }],
             meta: None,
         };
-        let result = log.rebase_batch(&[p.clone()], None);
+        let result = log.rebase_batch(std::slice::from_ref(&p), None);
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].get_id().unwrap().time, 1);
     }

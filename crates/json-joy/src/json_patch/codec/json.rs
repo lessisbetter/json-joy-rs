@@ -35,7 +35,7 @@ fn decode_type(v: &Value) -> Result<JsonPatchType, PatchError> {
     let s = v
         .as_str()
         .ok_or_else(|| PatchError::InvalidOp("type must be a string".into()))?;
-    JsonPatchType::from_str(s)
+    JsonPatchType::parse_str(s)
 }
 
 fn encode_type(t: &JsonPatchType) -> Value {
