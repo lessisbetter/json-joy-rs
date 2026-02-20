@@ -46,7 +46,12 @@ Notes:
 - `json-path` now has an upstream-mapped integration matrix at `crates/json-joy-json-path/tests/upstream_port_json_path_parser_matrix.rs` covering parser-shape scenarios for unions, recursive+filter composition, bracket-notation existence filters, and parser error handling from upstream `JsonPathParser.spec.ts`.
 - `json-path` now has an expression inventory matrix at `crates/json-joy-json-path/tests/upstream_port_json_path_expression_inventory.rs` to enforce a broad set of known-valid and known-invalid parser cases derived from upstream test suites.
 - `json-type` codegen families (`capacity`, `json`, `discriminator`, `binary`) are now implemented as runtime Rust codegen adapters with upstream-mapped parity coverage at `crates/json-joy-json-type/tests/upstream_port_json_type_codegen_matrix.rs` (including tuple head/tail sizing, unknown-key object encoding through refs, recursive ref/alias chains, native binary preservation for MsgPack/CBOR `bin` fields, and binary codec roundtrips).
-- `json-crdt` log codec no longer uses `unimplemented!` placeholders: `LogEncoder`/`LogDecoder` now provide a concrete binary roundtrip format with regression tests.
+- `json-crdt` log codec now mirrors upstream component encoding flow:
+  - `LogEncoder.serialize/encode` supports `ndjson` and `seq.cbor`.
+  - model encodings: `sidecar`, `binary`, `compact`, `verbose`, `none`.
+  - history encodings: `binary`, `compact`, `verbose`, `none`.
+  - `LogDecoder.decode/deserialize` supports `view`/`history`/`frontier` decode paths, sidecar `sidecar_view` injection, and frontier patch application.
+  - upstream-mapped regression coverage includes first-component view readability, sidecar-without-view decode, metadata roundtrip, frontier application, and full format-combination matrix.
 - Prefixed crate naming is intentional and documented in `AGENTS.md` package mapping.
 
 ## Explicit non-parity choices currently in tree
