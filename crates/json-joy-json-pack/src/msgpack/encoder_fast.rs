@@ -4,7 +4,7 @@
 
 use json_joy_buffers::Writer;
 
-use crate::{JsonPackExtension, PackValue};
+use crate::{JsonPackExtension, JsonPackValue, PackValue};
 
 pub struct MsgPackEncoderFast {
     pub writer: Writer,
@@ -43,8 +43,13 @@ impl MsgPackEncoderFast {
             PackValue::Object(obj) => self.write_obj_pairs(obj),
             PackValue::Undefined => self.writer.u8(0xc1),
             PackValue::Extension(ext) => self.encode_ext(ext),
-            PackValue::Blob(_) => self.write_null(),
+            PackValue::Blob(blob) => self.write_blob(blob),
         }
+    }
+
+    /// Write pre-encoded MessagePack value bytes as-is.
+    pub fn write_blob(&mut self, blob: &JsonPackValue) {
+        self.writer.buf(&blob.val);
     }
 
     pub fn write_null(&mut self) {

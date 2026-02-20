@@ -10,7 +10,7 @@ pub mod encoder_stable;
 pub mod error;
 pub mod to_json;
 
-pub use decoder::MsgPackDecoder;
+pub use decoder::{MsgPackDecoder, MsgPackPathSegment};
 pub use decoder_fast::MsgPackDecoderFast;
 pub use encoder::MsgPackEncoder;
 pub use encoder_fast::MsgPackEncoderFast;

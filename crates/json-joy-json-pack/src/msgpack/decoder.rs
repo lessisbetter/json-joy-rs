@@ -4,7 +4,13 @@
 
 use super::decoder_fast::MsgPackDecoderFast;
 use super::error::MsgPackError;
-use crate::PackValue;
+use crate::{JsonPackValue, PackValue};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MsgPackPathSegment<'a> {
+    Key(&'a str),
+    Index(usize),
+}
 
 pub struct MsgPackDecoder {
     pub inner: MsgPackDecoderFast,
@@ -25,6 +31,26 @@ impl MsgPackDecoder {
 
     pub fn decode(&mut self, input: &[u8]) -> Result<PackValue, MsgPackError> {
         self.inner.decode(input)
+    }
+
+    /// Reset internal reader state to decode from `input`.
+    pub fn reset(&mut self, input: &[u8]) {
+        self.inner.data = input.to_vec();
+        self.inner.x = 0;
+    }
+
+    /// Read one MessagePack value at the current offset.
+    pub fn read_any(&mut self) -> Result<PackValue, MsgPackError> {
+        self.inner.read_any()
+    }
+
+    /// Decode one-level object/array values.
+    ///
+    /// Top-level maps and arrays are decoded, but nested maps/arrays are returned as
+    /// [`PackValue::Blob`] wrappers that preserve pre-encoded bytes.
+    pub fn read_level(&mut self, input: &[u8]) -> Result<PackValue, MsgPackError> {
+        self.reset(input);
+        self.val_one_level()
     }
 
     /// Skip any MessagePack value and return how many bytes it consumed.
@@ -57,7 +83,7 @@ impl MsgPackDecoder {
             return Ok(1 + s);
         }
         // fixstr: 0xa0-0xbf
-        if byte >= 0xa0 {
+        if (0xa0..=0xbf).contains(&byte) {
             let n = (byte & 0x1f) as usize;
             return self.skip(n).map(|s| 1 + s);
         }
@@ -274,5 +300,95 @@ impl MsgPackDecoder {
             0xdb => self.read_u32_size(),
             _ => Err(MsgPackError::NotStr),
         }
+    }
+
+    pub fn find_key(&mut self, key: &str) -> Result<&mut Self, MsgPackError> {
+        let size = self.read_obj_hdr()?;
+        for _ in 0..size {
+            let current = self.inner.read_key()?;
+            if current == key {
+                return Ok(self);
+            }
+            self.skip_any()?;
+        }
+        Err(MsgPackError::KeyNotFound)
+    }
+
+    pub fn find_index(&mut self, index: usize) -> Result<&mut Self, MsgPackError> {
+        let size = self.read_arr_hdr()?;
+        if index >= size {
+            return Err(MsgPackError::IndexOutOfBounds);
+        }
+        for _ in 0..index {
+            self.skip_any()?;
+        }
+        Ok(self)
+    }
+
+    pub fn find_path<'a>(
+        &mut self,
+        path: &[MsgPackPathSegment<'a>],
+    ) -> Result<&mut Self, MsgPackError> {
+        for segment in path {
+            match segment {
+                MsgPackPathSegment::Key(key) => {
+                    self.find_key(key)?;
+                }
+                MsgPackPathSegment::Index(index) => {
+                    self.find_index(*index)?;
+                }
+            }
+        }
+        Ok(self)
+    }
+
+    fn val_one_level(&mut self) -> Result<PackValue, MsgPackError> {
+        if self.inner.x >= self.inner.data.len() {
+            return Err(MsgPackError::UnexpectedEof);
+        }
+
+        let byte = self.inner.data[self.inner.x];
+        let is_map = matches!(byte, 0xde | 0xdf) || (byte >> 4 == 0b1000);
+        if is_map {
+            let size = self.read_obj_hdr()?;
+            let mut obj = Vec::with_capacity(size);
+            for _ in 0..size {
+                let key = self.inner.read_key()?;
+                let value = self.primitive()?;
+                obj.push((key, value));
+            }
+            return Ok(PackValue::Object(obj));
+        }
+
+        let is_array = matches!(byte, 0xdc | 0xdd) || (byte >> 4 == 0b1001);
+        if is_array {
+            let size = self.read_arr_hdr()?;
+            let mut arr = Vec::with_capacity(size);
+            for _ in 0..size {
+                arr.push(self.primitive()?);
+            }
+            return Ok(PackValue::Array(arr));
+        }
+
+        self.inner.read_any()
+    }
+
+    fn primitive(&mut self) -> Result<PackValue, MsgPackError> {
+        if self.inner.x >= self.inner.data.len() {
+            return Err(MsgPackError::UnexpectedEof);
+        }
+
+        let byte = self.inner.data[self.inner.x];
+        let is_map = matches!(byte, 0xde | 0xdf) || (byte >> 4 == 0b1000);
+        let is_array = matches!(byte, 0xdc | 0xdd) || (byte >> 4 == 0b1001);
+        if is_map || is_array {
+            let start = self.inner.x;
+            let length = self.skip_any()?;
+            let end = start + length;
+            let value = self.inner.data[start..end].to_vec();
+            return Ok(PackValue::Blob(JsonPackValue::new(value)));
+        }
+
+        self.inner.read_any()
     }
 }
