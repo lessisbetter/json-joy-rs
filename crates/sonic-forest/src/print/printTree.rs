@@ -14,12 +14,13 @@ pub fn print_tree(tab: Option<&str>, children: &[Option<&PrintChild>]) -> String
         return out;
     }
 
-    for i in 0..=last as usize {
-        let Some(child_fn) = children[i] else {
+    let last = last as usize;
+    for (i, child_opt) in children.iter().enumerate().take(last + 1) {
+        let Some(child_fn) = *child_opt else {
             continue;
         };
 
-        let is_last = i == last as usize;
+        let is_last = i == last;
         let child_tab = format!("{tab}{}  ", if is_last { " " } else { "│" });
         let child = child_fn(&child_tab);
         let branch = if child.is_empty() {

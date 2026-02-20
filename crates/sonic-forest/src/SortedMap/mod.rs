@@ -3,6 +3,7 @@
 pub mod constants;
 pub mod index;
 #[path = "SortedMap.rs"]
+#[allow(clippy::module_inception)]
 pub mod sorted_map;
 #[path = "SortedMapIterator.rs"]
 pub mod sorted_map_iterator;

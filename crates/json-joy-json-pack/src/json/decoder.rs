@@ -69,7 +69,7 @@ impl JsonDecoder {
             b'n' => self.read_null(),
             b't' => self.read_true(),
             b'{' => self.read_obj(),
-            c if (c >= b'0' && c <= b'9') || c == b'-' => self.read_num(),
+            c if c.is_ascii_digit() || c == b'-' => self.read_num(),
             _ => Err(JsonError::Invalid(x)),
         }
     }

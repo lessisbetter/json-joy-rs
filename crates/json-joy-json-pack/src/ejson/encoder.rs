@@ -310,7 +310,7 @@ impl EjsonEncoder {
         } else {
             // Relaxed: ISO string for years 1970-9999, else $numberLong
             let year = year_from_ms(timestamp_ms);
-            if year >= 1970 && year <= 9999 {
+            if (1970..=9999).contains(&year) {
                 if let Some(s) = iso {
                     self.write_str(s);
                 } else {
@@ -369,9 +369,7 @@ impl EjsonEncoder {
     }
 
     fn write_bson_float_as_ejson(&mut self, v: &BsonFloat) {
-        if self.options.canonical {
-            self.write_number_double_wrapper(v.value);
-        } else if !v.value.is_finite() {
+        if self.options.canonical || !v.value.is_finite() {
             self.write_number_double_wrapper(v.value);
         } else {
             self.write_number(v.value);

@@ -6,7 +6,7 @@
 //! constant folding optimisation at compilation time.
 
 use crate::error::JsError;
-use crate::eval_ctx::EvalCtx;
+use crate::eval_ctx::{EvalCtx, PatternFactory};
 use crate::evaluate::evaluate;
 use crate::operators::operators_map;
 use crate::types::{JsValue, OperatorMap};
@@ -20,7 +20,7 @@ use std::sync::Arc;
 pub struct JsonExpressionFn {
     expression: Value,
     operators: Arc<OperatorMap>,
-    create_pattern: Option<Arc<dyn Fn(&str) -> Box<dyn Fn(&str) -> bool> + Send + Sync>>,
+    create_pattern: Option<Arc<PatternFactory>>,
 }
 
 impl JsonExpressionFn {
@@ -41,7 +41,7 @@ impl JsonExpressionFn {
 pub struct JsonExpressionCodegenOptions {
     pub expression: Value,
     pub operators: Arc<OperatorMap>,
-    pub create_pattern: Option<Arc<dyn Fn(&str) -> Box<dyn Fn(&str) -> bool> + Send + Sync>>,
+    pub create_pattern: Option<Arc<PatternFactory>>,
 }
 
 /// Compiles a JSON expression into a callable function.

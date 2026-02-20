@@ -4,6 +4,7 @@
 
 pub mod builder;
 pub mod common;
+#[allow(clippy::module_inception)]
 pub mod schema;
 pub mod validate;
 pub mod walker;

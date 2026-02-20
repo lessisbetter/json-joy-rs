@@ -70,7 +70,7 @@ pub fn decode(data: &[Value]) -> Patch {
 
     // First element is the header: [id, meta?]
     let header = data[0].as_array().expect("INVALID_HEADER");
-    let id_val = header.get(0).expect("MISSING_ID");
+    let id_val = header.first().expect("MISSING_ID");
 
     let (patch_sid, patch_time) = match id_val {
         Value::Number(n) => (SESSION::SERVER, n.as_u64().unwrap_or(0)),
@@ -96,7 +96,7 @@ pub fn decode(data: &[Value]) -> Patch {
             Some(a) => a,
             None => continue,
         };
-        let opcode_num = match arr.get(0).and_then(|v| v.as_u64()) {
+        let opcode_num = match arr.first().and_then(|v| v.as_u64()) {
             Some(n) => n as u8,
             None => continue,
         };

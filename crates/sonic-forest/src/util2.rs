@@ -19,15 +19,15 @@ fn get_r2<N: Node2>(arena: &[N], idx: u32) -> Option<u32> {
     arena[idx as usize].r2()
 }
 #[inline]
-fn set_p2<N: Node2>(arena: &mut Vec<N>, idx: u32, v: Option<u32>) {
+fn set_p2<N: Node2>(arena: &mut [N], idx: u32, v: Option<u32>) {
     arena[idx as usize].set_p2(v);
 }
 #[inline]
-fn set_l2<N: Node2>(arena: &mut Vec<N>, idx: u32, v: Option<u32>) {
+fn set_l2<N: Node2>(arena: &mut [N], idx: u32, v: Option<u32>) {
     arena[idx as usize].set_l2(v);
 }
 #[inline]
-fn set_r2<N: Node2>(arena: &mut Vec<N>, idx: u32, v: Option<u32>) {
+fn set_r2<N: Node2>(arena: &mut [N], idx: u32, v: Option<u32>) {
     arena[idx as usize].set_r2(v);
 }
 
@@ -103,7 +103,7 @@ pub fn prev2<N: Node2>(arena: &[N], node: u32) -> Option<u32> {
 
 // ── mutation ──────────────────────────────────────────────────────────────
 
-fn insert_right2<N: Node2>(arena: &mut Vec<N>, node: u32, p: u32) {
+fn insert_right2<N: Node2>(arena: &mut [N], node: u32, p: u32) {
     let r = get_r2(arena, p);
     set_r2(arena, p, Some(node));
     set_p2(arena, node, Some(p));
@@ -113,7 +113,7 @@ fn insert_right2<N: Node2>(arena: &mut Vec<N>, node: u32, p: u32) {
     }
 }
 
-fn insert_left2<N: Node2>(arena: &mut Vec<N>, node: u32, p: u32) {
+fn insert_left2<N: Node2>(arena: &mut [N], node: u32, p: u32) {
     let l = get_l2(arena, p);
     set_l2(arena, p, Some(node));
     set_p2(arena, node, Some(p));
@@ -126,7 +126,7 @@ fn insert_left2<N: Node2>(arena: &mut Vec<N>, node: u32, p: u32) {
 /// Insert `node` into the ID tree rooted at `root` using `comparator`.
 ///
 /// Returns the (unchanged) root.  Mirrors `insert2` in `util2.ts`.
-pub fn insert2<N, F>(arena: &mut Vec<N>, root: Option<u32>, node: u32, comparator: F) -> Option<u32>
+pub fn insert2<N, F>(arena: &mut [N], root: Option<u32>, node: u32, comparator: F) -> Option<u32>
 where
     N: Node2,
     F: Fn(&N, &N) -> std::cmp::Ordering,
@@ -160,7 +160,7 @@ where
 /// Remove `node` from the ID tree rooted at `root`.
 ///
 /// Returns the new root.  Mirrors `remove2` in `util2.ts`.
-pub fn remove2<N: Node2>(arena: &mut Vec<N>, root: Option<u32>, node: u32) -> Option<u32> {
+pub fn remove2<N: Node2>(arena: &mut [N], root: Option<u32>, node: u32) -> Option<u32> {
     let p = get_p2(arena, node);
     let l = get_l2(arena, node);
     let r = get_r2(arena, node);

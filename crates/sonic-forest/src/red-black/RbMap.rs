@@ -52,6 +52,8 @@ fn default_comparator<K: PartialOrd>(a: &K, b: &K) -> i32 {
     }
 }
 
+type RbMapInner<K, V, C> = SonicMap<K, V, RbNode<K, V>, RbOps, C, fn(K, V) -> RbNode<K, V>>;
+
 /// High-performance red-black tree map.
 ///
 /// Mirrors upstream `red-black/RbMap.ts`.
@@ -59,7 +61,7 @@ pub struct RbMap<K, V, C = fn(&K, &K) -> i32>
 where
     C: Fn(&K, &K) -> i32,
 {
-    inner: SonicMap<K, V, RbNode<K, V>, RbOps, C, fn(K, V) -> RbNode<K, V>>,
+    inner: RbMapInner<K, V, C>,
 }
 
 impl<K, V> RbMap<K, V, fn(&K, &K) -> i32>

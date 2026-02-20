@@ -115,7 +115,7 @@ impl BencodeDecoder {
             if ch == b':' {
                 break;
             }
-            if ch < b'0' || ch > b'9' {
+            if !ch.is_ascii_digit() {
                 return Err(BencodeError::InvalidByte(c.pos - 1));
             }
             len_str.push(ch as char);

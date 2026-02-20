@@ -156,12 +156,12 @@ impl WsFrameEncoder {
         let writer = &mut self.writer;
         if length < 126 {
             // 0b10000010_00000000 | length
-            writer.u16(0b10000010_0000_0000 | length as u16);
+            writer.u16(0b1000_0010_0000_0000 | length as u16);
         } else if length < 0x1_0000 {
             // 0b10000010_01111110_<length_hi>_<length_lo>
-            writer.u32(0b10000010_0111_1110_0000_0000_0000_0000 | length as u32);
+            writer.u32(0b1000_0010_0111_1110_0000_0000_0000_0000 | length as u32);
         } else {
-            writer.u16(0b10000010_0111_1111);
+            writer.u16(0b1000_0010_0111_1111);
             writer.u32(0);
             writer.u32(length as u32);
         }

@@ -113,15 +113,15 @@ impl UbjsonEncoder {
 
     /// Write an integer using the smallest UBJSON integer type that fits.
     pub fn write_integer(&mut self, int: i64) {
-        if int >= 0 && int <= 0xff {
+        if (0..=0xff).contains(&int) {
             // uint8
             self.writer.u8(0x55); // 'U'
             self.writer.u8(int as u8);
-        } else if int >= -128 && int <= 127 {
+        } else if (-128..=127).contains(&int) {
             // int8
             self.writer.u8(0x69); // 'i'
             self.writer.u8(int as i8 as u8);
-        } else if int >= -32768 && int <= 32767 {
+        } else if (-32768..=32767).contains(&int) {
             // int16
             self.writer.ensure_capacity(3);
             let x = self.writer.x;
@@ -130,7 +130,7 @@ impl UbjsonEncoder {
             self.writer.uint8[x + 1] = b[0];
             self.writer.uint8[x + 2] = b[1];
             self.writer.x = x + 3;
-        } else if int >= -2147483648 && int <= 2147483647 {
+        } else if (-2147483648..=2147483647).contains(&int) {
             // int32
             self.writer.u8(0x6c); // 'l'
             self.writer.i32(int as i32);

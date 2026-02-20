@@ -134,7 +134,7 @@ impl AvroSchemaEncoder {
                         .iter()
                         .find(|(k, _)| k == &field.name)
                         .map(|(_, v)| v)
-                        .or_else(|| field.default.as_ref())
+                        .or(field.default.as_ref())
                         .ok_or_else(|| AvroEncodeError::MissingField(field.name.clone()))?;
                     self.write_value(val, &field.type_)?;
                 }

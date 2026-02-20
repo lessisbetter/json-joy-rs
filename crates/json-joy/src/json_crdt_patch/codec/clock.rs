@@ -69,7 +69,7 @@ impl ClockTable {
         // Local session: stored at time - 1 (the last *issued* time).
         table.push(Ts::new(clock.sid, clock.time.saturating_sub(1)));
         // Peer sessions.
-        for (_sid, peer_ts) in &clock.peers {
+        for peer_ts in clock.peers.values() {
             table.push(*peer_ts);
         }
         table

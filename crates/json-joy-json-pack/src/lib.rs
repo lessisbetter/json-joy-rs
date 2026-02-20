@@ -48,6 +48,10 @@ mod tests {
     use super::PackValue;
     use serde_json::json;
 
+    const TEST_F64_3_14: f64 = 314.0 / 100.0;
+    const TEST_F64_3_14159: f64 = 314_159.0 / 100_000.0;
+    const TEST_F64_2_71828: f64 = 271_828.0 / 100_000.0;
+
     #[test]
     fn json_cbor_roundtrip_matrix() {
         let cases = vec![
@@ -339,7 +343,7 @@ mod tests {
             PackValue::Null,
             PackValue::Bool(true),
             PackValue::Integer(12345),
-            PackValue::Float(3.14),
+            PackValue::Float(TEST_F64_3_14),
             PackValue::Str("hello, world!".into()),
             PackValue::Array(vec![PackValue::Integer(1), PackValue::Null]),
             PackValue::Object(vec![
@@ -510,7 +514,7 @@ mod tests {
             PackValue::Integer(-1),
             PackValue::Integer(1000),
             PackValue::Integer(-1000),
-            PackValue::Float(3.14),
+            PackValue::Float(TEST_F64_3_14),
             PackValue::Str("hello".into()),
             PackValue::Bytes(vec![1, 2, 3]),
             PackValue::Array(vec![PackValue::Integer(1), PackValue::Null]),
@@ -741,13 +745,13 @@ mod tests {
         let mut dec = BsonDecoder::new();
         let fields = vec![
             ("n".to_string(), BsonValue::Null),
-            ("f".to_string(), BsonValue::Float(3.14)),
+            ("f".to_string(), BsonValue::Float(TEST_F64_3_14)),
         ];
         let bytes = enc.encode(&fields);
         let decoded = dec.decode(&bytes).unwrap();
         assert!(matches!(decoded[0].1, BsonValue::Null));
         if let BsonValue::Float(f) = decoded[1].1 {
-            assert!((f - 3.14).abs() < 1e-10);
+            assert!((f - TEST_F64_3_14).abs() < 1e-10);
         } else {
             panic!("expected float");
         }
@@ -878,7 +882,7 @@ mod tests {
             PackValue::Integer(0),
             PackValue::Integer(42),
             PackValue::Integer(-100),
-            PackValue::Float(3.14),
+            PackValue::Float(TEST_F64_3_14),
             PackValue::Str("hello".into()),
             PackValue::Array(vec![PackValue::Integer(1), PackValue::Null]),
         ];
@@ -956,11 +960,11 @@ mod tests {
         use super::xdr::{XdrDecoder, XdrEncoder};
         let mut enc = XdrEncoder::new();
         let mut dec = XdrDecoder::new();
-        enc.write_double(3.14159);
+        enc.write_double(TEST_F64_3_14159);
         let bytes = enc.writer.flush();
         dec.reset(&bytes);
         let decoded = dec.read_double().unwrap();
-        assert!((decoded - 3.14159).abs() < 1e-10);
+        assert!((decoded - TEST_F64_3_14159).abs() < 1e-10);
     }
 
     #[test]
@@ -972,8 +976,8 @@ mod tests {
         enc.write_boolean(false);
         let bytes = enc.writer.flush();
         dec.reset(&bytes);
-        assert_eq!(dec.read_boolean().unwrap(), true);
-        assert_eq!(dec.read_boolean().unwrap(), false);
+        assert!(dec.read_boolean().unwrap());
+        assert!(!dec.read_boolean().unwrap());
     }
 
     // ---------------------------------------------------------------- Slice 6: RPC
@@ -1081,8 +1085,8 @@ mod tests {
         let bytes = enc.writer.flush();
         assert_eq!(bytes, [1, 0]);
         dec.reset(&bytes);
-        assert_eq!(dec.read_boolean().unwrap(), true);
-        assert_eq!(dec.read_boolean().unwrap(), false);
+        assert!(dec.read_boolean().unwrap());
+        assert!(!dec.read_boolean().unwrap());
     }
 
     #[test]
@@ -1139,11 +1143,11 @@ mod tests {
         use super::avro::{AvroDecoder, AvroEncoder};
         let mut enc = AvroEncoder::new();
         let mut dec = AvroDecoder::new();
-        enc.write_double(2.71828);
+        enc.write_double(TEST_F64_2_71828);
         let bytes = enc.writer.flush();
         dec.reset(&bytes);
         let v = dec.read_double().unwrap();
-        assert!((v - 2.71828).abs() < 1e-10);
+        assert!((v - TEST_F64_2_71828).abs() < 1e-10);
     }
 
     #[test]
@@ -1284,7 +1288,9 @@ mod tests {
             .unwrap();
         assert_eq!(s, r#"{"$numberLong":"2147483648"}"#);
         // Float
-        let s = enc.encode_to_string(&EjsonValue::Number(3.14)).unwrap();
+        let s = enc
+            .encode_to_string(&EjsonValue::Number(TEST_F64_3_14))
+            .unwrap();
         assert_eq!(s, r#"{"$numberDouble":"3.14"}"#);
     }
 
@@ -1295,7 +1301,9 @@ mod tests {
         let mut enc = EjsonEncoder::new();
         let s = enc.encode_to_string(&EjsonValue::Number(42.0)).unwrap();
         assert_eq!(s, "42");
-        let s = enc.encode_to_string(&EjsonValue::Number(3.14)).unwrap();
+        let s = enc
+            .encode_to_string(&EjsonValue::Number(TEST_F64_3_14))
+            .unwrap();
         assert_eq!(s, "3.14");
         // Non-finite still get wrapped
         let s = enc
@@ -1347,7 +1355,9 @@ mod tests {
         use super::bson::BsonFloat;
         use super::ejson::{EjsonEncoder, EjsonEncoderOptions, EjsonValue};
         let mut enc = EjsonEncoder::with_options(EjsonEncoderOptions { canonical: true });
-        let v = BsonFloat { value: 3.14 };
+        let v = BsonFloat {
+            value: TEST_F64_3_14,
+        };
         let s = enc.encode_to_string(&EjsonValue::BsonFloat(v)).unwrap();
         assert_eq!(s, r#"{"$numberDouble":"3.14"}"#);
     }
@@ -1520,7 +1530,10 @@ mod tests {
         assert_eq!(dec.decode_str("true").unwrap(), EjsonValue::Bool(true));
         assert_eq!(dec.decode_str("false").unwrap(), EjsonValue::Bool(false));
         assert_eq!(dec.decode_str("42").unwrap(), EjsonValue::Integer(42));
-        assert_eq!(dec.decode_str("3.14").unwrap(), EjsonValue::Float(3.14));
+        assert_eq!(
+            dec.decode_str("3.14").unwrap(),
+            EjsonValue::Float(TEST_F64_3_14)
+        );
         assert_eq!(
             dec.decode_str("\"hello\"").unwrap(),
             EjsonValue::Str("hello".to_string())
@@ -1602,7 +1615,12 @@ mod tests {
         use super::ejson::{EjsonDecoder, EjsonValue};
         let mut dec = EjsonDecoder::new();
         let v = dec.decode_str(r#"{"$numberDouble":"3.14"}"#).unwrap();
-        assert_eq!(v, EjsonValue::BsonFloat(BsonFloat { value: 3.14 }));
+        assert_eq!(
+            v,
+            EjsonValue::BsonFloat(BsonFloat {
+                value: TEST_F64_3_14
+            })
+        );
         // Special values
         let v_inf = dec.decode_str(r#"{"$numberDouble":"Infinity"}"#).unwrap();
         assert_eq!(
@@ -2049,7 +2067,7 @@ mod tests {
         let mut enc = MsgPackEncoderFast::new();
         let mut dec = MsgPackDecoderFast::new();
         // fixarray holds 0..=15 items; 15 items → 0x9f header
-        let items: Vec<PackValue> = (0..15).map(|i| PackValue::Integer(i)).collect();
+        let items: Vec<PackValue> = (0..15).map(PackValue::Integer).collect();
         let arr = PackValue::Array(items.clone());
         let bytes = enc.encode(&arr);
         assert_eq!(bytes[0], 0x9f, "fixarray(15) header");
@@ -2063,7 +2081,7 @@ mod tests {
         let mut enc = MsgPackEncoderFast::new();
         let mut dec = MsgPackDecoderFast::new();
         // 16 items → array16 (0xdc) header
-        let items: Vec<PackValue> = (0..16).map(|i| PackValue::Integer(i)).collect();
+        let items: Vec<PackValue> = (0..16).map(PackValue::Integer).collect();
         let arr = PackValue::Array(items.clone());
         let bytes = enc.encode(&arr);
         assert_eq!(bytes[0], 0xdc, "array16 header");
@@ -2163,7 +2181,10 @@ mod tests {
     fn resp_decode_float() {
         use super::resp::RespDecoder;
         let mut dec = RespDecoder::new();
-        assert_eq!(dec.decode(b",3.14\r\n").unwrap(), PackValue::Float(3.14));
+        assert_eq!(
+            dec.decode(b",3.14\r\n").unwrap(),
+            PackValue::Float(TEST_F64_3_14)
+        );
     }
 
     #[test]

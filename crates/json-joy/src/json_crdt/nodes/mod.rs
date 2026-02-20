@@ -82,7 +82,7 @@ impl ValNode {
     }
 
     /// View: resolve the pointed-to node from the index.
-    pub fn view<'a>(&self, index: &'a NodeIndex) -> Value {
+    pub fn view(&self, index: &NodeIndex) -> Value {
         match index.get(&TsKey::from(self.val)) {
             Some(node) => node.view(index),
             None => Value::Null,
@@ -268,11 +268,7 @@ impl StrNode {
             let chunk_start = count;
             let chunk_end = count + chunk_len;
             if chunk_end > pos && chunk_start < end {
-                let local_start = if chunk_start >= pos {
-                    0
-                } else {
-                    pos - chunk_start
-                };
+                let local_start = pos.saturating_sub(chunk_start);
                 let local_end = (end - chunk_start).min(chunk_len);
                 result.push(Tss::new(
                     chunk.id.sid,
@@ -426,11 +422,7 @@ impl ArrNode {
                 let chunk_start = count;
                 let chunk_end = count + chunk_len;
                 if chunk_end > pos && chunk_start < end {
-                    let local_start = if chunk_start >= pos {
-                        0
-                    } else {
-                        pos - chunk_start
-                    };
+                    let local_start = pos.saturating_sub(chunk_start);
                     let local_end = (end - chunk_start).min(chunk_len);
                     result.extend_from_slice(&data[local_start..local_end]);
                 }
@@ -451,11 +443,7 @@ impl ArrNode {
                 let chunk_start = count;
                 let chunk_end = count + chunk_len;
                 if chunk_end > pos && chunk_start < end {
-                    let local_start = if chunk_start >= pos {
-                        0
-                    } else {
-                        pos - chunk_start
-                    };
+                    let local_start = pos.saturating_sub(chunk_start);
                     let local_end = (end - chunk_start).min(chunk_len);
                     result.push(Tss::new(
                         chunk.id.sid,

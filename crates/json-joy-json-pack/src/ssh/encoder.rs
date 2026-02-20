@@ -124,7 +124,7 @@ impl SshEncoder {
     }
 
     fn write_number_i64(&mut self, n: i64) {
-        if n >= 0 && n <= 0xffff_ffff {
+        if (0..=0xffff_ffff).contains(&n) {
             self.write_uint32(n as u32);
         } else {
             self.write_uint64(n as u64);

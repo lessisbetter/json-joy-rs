@@ -52,6 +52,8 @@ fn default_comparator<K: PartialOrd>(a: &K, b: &K) -> i32 {
     }
 }
 
+type AvlMapInner<K, V, C> = SonicMap<K, V, AvlNode<K, V>, AvlOps, C, fn(K, V) -> AvlNode<K, V>>;
+
 /// High-performance AVL tree map.
 ///
 /// Mirrors upstream `avl/AvlMap.ts`.
@@ -59,7 +61,7 @@ pub struct AvlMap<K, V, C = fn(&K, &K) -> i32>
 where
     C: Fn(&K, &K) -> i32,
 {
-    inner: SonicMap<K, V, AvlNode<K, V>, AvlOps, C, fn(K, V) -> AvlNode<K, V>>,
+    inner: AvlMapInner<K, V, C>,
 }
 
 impl<K, V> AvlMap<K, V, fn(&K, &K) -> i32>

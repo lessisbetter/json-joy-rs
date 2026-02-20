@@ -42,6 +42,7 @@ impl OrderedMapIterator {
         self
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn next(&mut self) -> &mut Self {
         match self.iterator_type {
             IteratorType::Normal => {

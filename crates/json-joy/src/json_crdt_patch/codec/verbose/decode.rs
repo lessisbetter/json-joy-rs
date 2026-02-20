@@ -131,7 +131,7 @@ pub fn decode(data: &Value) -> Patch {
                     .iter()
                     .filter_map(|pair| {
                         let arr = pair.as_array()?;
-                        let key = arr.get(0)?.as_str()?.to_owned();
+                        let key = arr.first()?.as_str()?.to_owned();
                         let id = decode_id(arr.get(1)?);
                         Some((key, id))
                     })
@@ -151,7 +151,7 @@ pub fn decode(data: &Value) -> Patch {
                     .iter()
                     .filter_map(|pair| {
                         let arr = pair.as_array()?;
-                        let idx = arr.get(0)?.as_u64()? as u8;
+                        let idx = arr.first()?.as_u64()? as u8;
                         let id = decode_id(arr.get(1)?);
                         Some((idx, id))
                     })
@@ -212,7 +212,7 @@ pub fn decode(data: &Value) -> Patch {
                     .iter()
                     .filter_map(|s| {
                         let arr = s.as_array()?;
-                        let sid = arr.get(0)?.as_u64()?;
+                        let sid = arr.first()?.as_u64()?;
                         let time = arr.get(1)?.as_u64()?;
                         let span = arr.get(2)?.as_u64()?;
                         Some(tss(sid, time, span))

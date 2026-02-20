@@ -202,7 +202,7 @@ fn x_add(add_path: &Path, op: &Op) -> Vec<Op> {
     if is_root(add_path) {
         return vec![];
     }
-    if is_root(&op.path()) {
+    if is_root(op.path()) {
         return vec![op.clone()];
     }
 
@@ -213,12 +213,12 @@ fn x_add(add_path: &Path, op: &Op) -> Vec<Op> {
     let last_is_index = is_valid_index(last_step);
 
     // If added a non-array value that op targets inside — op is invalidated
-    if is_child(add_path, &op.path()) && !last_is_index {
+    if is_child(add_path, op.path()) && !last_is_index {
         return vec![];
     }
 
     if last_is_index {
-        let new_path = bump_array_path(add_path, &op.path());
+        let new_path = bump_array_path(add_path, op.path());
         let new_from = op_from(op).and_then(|f| bump_array_path(add_path, f));
         if new_path.is_some() || new_from.is_some() {
             let mut result = op.clone();
@@ -240,7 +240,7 @@ fn x_remove(rem_path: &Path, op: &Op) -> Vec<Op> {
     if is_root(rem_path) {
         return vec![];
     }
-    if is_root(&op.path()) {
+    if is_root(op.path()) {
         return vec![op.clone()];
     }
 
@@ -251,13 +251,13 @@ fn x_remove(rem_path: &Path, op: &Op) -> Vec<Op> {
     let last_is_index = is_valid_index(last_step);
 
     // Concurrent remove at the same numeric index: discard op
-    if matches!(op, Op::Remove { .. }) && path_equal(rem_path, &op.path()) && last_is_index {
+    if matches!(op, Op::Remove { .. }) && path_equal(rem_path, op.path()) && last_is_index {
         return vec![];
     }
 
     // Op targets a descendant of what was removed — discard it.
     // Also applies to the `from` path for Move/Copy.
-    if is_child(rem_path, &op.path()) {
+    if is_child(rem_path, op.path()) {
         return vec![];
     }
     if let Some(from) = op_from(op) {
@@ -267,7 +267,7 @@ fn x_remove(rem_path: &Path, op: &Op) -> Vec<Op> {
     }
 
     if last_is_index {
-        let new_path = lower_array_path(rem_path, &op.path());
+        let new_path = lower_array_path(rem_path, op.path());
         let new_from = op_from(op).and_then(|f| lower_array_path(rem_path, f));
         if new_path.is_some() || new_from.is_some() {
             let mut result = op.clone();
@@ -290,7 +290,7 @@ fn x_move(move_from: &Path, move_to: &Path, op: &Op) -> Vec<Op> {
         return vec![op.clone()];
     }
 
-    if is_child(move_from, &op.path()) {
+    if is_child(move_from, op.path()) {
         // op targets something inside what was moved — update its path.
         // NOTE: The upstream TypeScript erroneously slices at move.path.length
         // instead of move.from.length. We use move_from.len() which is correct:

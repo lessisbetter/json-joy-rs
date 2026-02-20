@@ -339,15 +339,9 @@ pub struct PatchResult {
 }
 
 /// Options for `apply_patch`.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct ApplyPatchOptions {
     /// If true, mutate the document in place (passed by value).
     /// If false, clone the document before applying.
     pub mutate: bool,
-}
-
-impl Default for ApplyPatchOptions {
-    fn default() -> Self {
-        Self { mutate: false }
-    }
 }

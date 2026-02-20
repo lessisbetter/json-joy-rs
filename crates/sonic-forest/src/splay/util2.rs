@@ -22,21 +22,21 @@ fn get_r2<N: Node2>(arena: &[N], idx: u32) -> Option<u32> {
     arena[idx as usize].r2()
 }
 #[inline]
-fn set_p2<N: Node2>(arena: &mut Vec<N>, idx: u32, v: Option<u32>) {
+fn set_p2<N: Node2>(arena: &mut [N], idx: u32, v: Option<u32>) {
     arena[idx as usize].set_p2(v);
 }
 #[inline]
-fn set_l2<N: Node2>(arena: &mut Vec<N>, idx: u32, v: Option<u32>) {
+fn set_l2<N: Node2>(arena: &mut [N], idx: u32, v: Option<u32>) {
     arena[idx as usize].set_l2(v);
 }
 #[inline]
-fn set_r2<N: Node2>(arena: &mut Vec<N>, idx: u32, v: Option<u32>) {
+fn set_r2<N: Node2>(arena: &mut [N], idx: u32, v: Option<u32>) {
     arena[idx as usize].set_r2(v);
 }
 
 // ── single-level rotations ────────────────────────────────────────────────
 
-pub fn r_splay2<N: Node2>(arena: &mut Vec<N>, c2: u32, c1: u32) {
+pub fn r_splay2<N: Node2>(arena: &mut [N], c2: u32, c1: u32) {
     let b = get_r2(arena, c2);
     set_p2(arena, c2, None);
     set_r2(arena, c2, Some(c1));
@@ -47,7 +47,7 @@ pub fn r_splay2<N: Node2>(arena: &mut Vec<N>, c2: u32, c1: u32) {
     }
 }
 
-pub fn l_splay2<N: Node2>(arena: &mut Vec<N>, c2: u32, c1: u32) {
+pub fn l_splay2<N: Node2>(arena: &mut [N], c2: u32, c1: u32) {
     let b = get_l2(arena, c2);
     set_p2(arena, c2, None);
     set_l2(arena, c2, Some(c1));
@@ -61,7 +61,7 @@ pub fn l_splay2<N: Node2>(arena: &mut Vec<N>, c2: u32, c1: u32) {
 // ── double-level rotations ────────────────────────────────────────────────
 
 pub fn rr_splay2<N: Node2>(
-    arena: &mut Vec<N>,
+    arena: &mut [N],
     root: Option<u32>,
     c3: u32,
     c2: u32,
@@ -87,7 +87,7 @@ pub fn rr_splay2<N: Node2>(
 }
 
 pub fn ll_splay2<N: Node2>(
-    arena: &mut Vec<N>,
+    arena: &mut [N],
     root: Option<u32>,
     c3: u32,
     c2: u32,
@@ -113,7 +113,7 @@ pub fn ll_splay2<N: Node2>(
 }
 
 pub fn lr_splay2<N: Node2>(
-    arena: &mut Vec<N>,
+    arena: &mut [N],
     root: Option<u32>,
     c3: u32,
     c2: u32,
@@ -139,7 +139,7 @@ pub fn lr_splay2<N: Node2>(
 }
 
 pub fn rl_splay2<N: Node2>(
-    arena: &mut Vec<N>,
+    arena: &mut [N],
     root: Option<u32>,
     c3: u32,
     c2: u32,
@@ -198,7 +198,7 @@ pub fn splay2<N: Node2>(arena: &mut Vec<N>, root: Option<u32>, node: u32) -> Opt
 // ── internal helper ───────────────────────────────────────────────────────
 
 fn update_parent2<N: Node2>(
-    arena: &mut Vec<N>,
+    arena: &mut [N],
     root: Option<u32>,
     p: Option<u32>,
     c1: u32,

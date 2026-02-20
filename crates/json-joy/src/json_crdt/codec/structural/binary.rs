@@ -102,12 +102,10 @@ fn encode_root_server(model: &Model, w: &mut CrdtWriter, server_time: u64) {
     let root_ts = model.root.val;
     if root_ts == UNDEFINED_TS || root_ts.time == 0 {
         w.u8(0);
+    } else if let Some(node) = model.index.get(&TsKey::from(root_ts)) {
+        encode_node_server(model, node, w, server_time);
     } else {
-        if let Some(node) = model.index.get(&TsKey::from(root_ts)) {
-            encode_node_server(model, node, w, server_time);
-        } else {
-            w.u8(0);
-        }
+        w.u8(0);
     }
 }
 
@@ -115,12 +113,10 @@ fn encode_root_logical(model: &Model, w: &mut CrdtWriter, enc: &mut ClockEncoder
     let root_ts = model.root.val;
     if root_ts == UNDEFINED_TS || root_ts.time == 0 {
         w.u8(0);
+    } else if let Some(node) = model.index.get(&TsKey::from(root_ts)) {
+        encode_node_logical(model, node, w, enc);
     } else {
-        if let Some(node) = model.index.get(&TsKey::from(root_ts)) {
-            encode_node_logical(model, node, w, enc);
-        } else {
-            w.u8(0);
-        }
+        w.u8(0);
     }
 }
 
@@ -159,7 +155,7 @@ fn encode_con_server(node: &ConNode, w: &mut CrdtWriter) {
             ts_server(w, *ref_ts);
         }
         ConValue::Val(pv) => {
-            w.u8(MAJOR_CON | 0);
+            w.u8(MAJOR_CON);
             write_cbor_value(w, pv);
         }
     }
@@ -167,7 +163,7 @@ fn encode_con_server(node: &ConNode, w: &mut CrdtWriter) {
 
 fn encode_val_server(model: &Model, node: &ValNode, w: &mut CrdtWriter, server_time: u64) {
     ts_server(w, node.id);
-    w.u8(MAJOR_VAL | 0);
+    w.u8(MAJOR_VAL);
     if let Some(child) = model.index.get(&TsKey::from(node.val)) {
         encode_node_server(model, child, w, server_time);
     }
@@ -240,7 +236,7 @@ fn encode_arr_server(model: &Model, node: &ArrNode, w: &mut CrdtWriter, server_t
         let span = chunk.span;
         w.b1vu56(deleted as u8, span);
         if !deleted {
-            let ids = chunk.data.as_ref().map(|v| v.as_slice()).unwrap_or(&[]);
+            let ids = chunk.data.as_deref().unwrap_or(&[]);
             for id in ids {
                 if let Some(child) = model.index.get(&TsKey::from(*id)) {
                     encode_node_server(model, child, w, server_time);
@@ -279,7 +275,7 @@ fn encode_con_logical(node: &ConNode, w: &mut CrdtWriter, enc: &mut ClockEncoder
             ts_logical(w, *ref_ts, enc);
         }
         ConValue::Val(pv) => {
-            w.u8(MAJOR_CON | 0);
+            w.u8(MAJOR_CON);
             write_cbor_value(w, pv);
         }
     }
@@ -287,7 +283,7 @@ fn encode_con_logical(node: &ConNode, w: &mut CrdtWriter, enc: &mut ClockEncoder
 
 fn encode_val_logical(model: &Model, node: &ValNode, w: &mut CrdtWriter, enc: &mut ClockEncoder) {
     ts_logical(w, node.id, enc);
-    w.u8(MAJOR_VAL | 0);
+    w.u8(MAJOR_VAL);
     if let Some(child) = model.index.get(&TsKey::from(node.val)) {
         encode_node_logical(model, child, w, enc);
     }
@@ -360,7 +356,7 @@ fn encode_arr_logical(model: &Model, node: &ArrNode, w: &mut CrdtWriter, enc: &m
         let span = chunk.span;
         w.b1vu56(deleted as u8, span);
         if !deleted {
-            let ids = chunk.data.as_ref().map(|v| v.as_slice()).unwrap_or(&[]);
+            let ids = chunk.data.as_deref().unwrap_or(&[]);
             for id in ids {
                 if let Some(child) = model.index.get(&TsKey::from(*id)) {
                     encode_node_logical(model, child, w, enc);

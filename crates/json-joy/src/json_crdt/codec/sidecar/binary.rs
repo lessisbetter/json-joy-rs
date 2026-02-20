@@ -84,12 +84,10 @@ fn encode_root(
     let root_ts = model.root.val;
     if root_ts == UNDEFINED_TS || root_ts.time == 0 {
         meta_w.u8(0);
+    } else if let Some(node) = model.index.get(&TsKey::from(root_ts)) {
+        encode_node(model, node, view_w, meta_w, enc);
     } else {
-        if let Some(node) = model.index.get(&TsKey::from(root_ts)) {
-            encode_node(model, node, view_w, meta_w, enc);
-        } else {
-            meta_w.u8(0);
-        }
+        meta_w.u8(0);
     }
 }
 
@@ -147,7 +145,7 @@ fn encode_con(
         ConValue::Val(pv) => {
             // Value: view gets the CBOR value, meta gets type=0
             write_cbor_value(view_w, pv);
-            meta_w.u8(MAJOR_CON | 0);
+            meta_w.u8(MAJOR_CON);
         }
     }
 }
@@ -160,7 +158,7 @@ fn encode_val(
     enc: &mut ClockEncoder,
 ) {
     ts_logical(meta_w, node.id, enc);
-    meta_w.u8(MAJOR_VAL | 0);
+    meta_w.u8(MAJOR_VAL);
     if let Some(child) = model.index.get(&TsKey::from(node.val)) {
         encode_node(model, child, view_w, meta_w, enc);
     }
@@ -297,7 +295,7 @@ fn encode_arr(
         let span = chunk.span;
         meta_w.b1vu56(deleted as u8, span);
         if !deleted {
-            let ids = chunk.data.as_ref().map(|v| v.as_slice()).unwrap_or(&[]);
+            let ids = chunk.data.as_deref().unwrap_or(&[]);
             for id in ids {
                 if let Some(child) = model.index.get(&TsKey::from(*id)) {
                     encode_node(model, child, view_w, meta_w, enc);
@@ -595,7 +593,7 @@ fn decode_vec(
         if peek == 0 {
             meta_r.x += 1;
             // Skip null from view
-            skip_cbor_value(view_r).map_err(|e| DecodeError::Format(e))?;
+            skip_cbor_value(view_r).map_err(DecodeError::Format)?;
             node.elements.push(None);
         } else {
             let child_id = decode_node(view_r, meta_r, model, cd)?;

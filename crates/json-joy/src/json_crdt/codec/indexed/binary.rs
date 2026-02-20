@@ -207,7 +207,7 @@ fn encode_arr(w: &mut CrdtWriter, node: &ArrNode, table: &ClockTable) {
         let span = chunk.span;
         w.b1vu56(deleted as u8, span);
         if !deleted {
-            let ids = chunk.data.as_ref().map(|v| v.as_slice()).unwrap_or(&[]);
+            let ids = chunk.data.as_deref().unwrap_or(&[]);
             for id in ids {
                 write_ts_indexed(w, *id, table);
             }

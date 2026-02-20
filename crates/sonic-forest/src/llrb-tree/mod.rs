@@ -2,6 +2,7 @@
 
 pub mod index;
 #[path = "LlrbTree.rs"]
+#[allow(clippy::module_inception)]
 pub mod llrb_tree;
 pub mod util;
 

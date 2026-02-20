@@ -14,7 +14,7 @@ fn validate_add_operand_count(count: usize) -> Result<(), JsError> {
             "Not enough operands for \"jp.add\" operand.".to_string(),
         ));
     }
-    if count % 2 != 0 {
+    if !count.is_multiple_of(2) {
         return Err(JsError::Other(
             "Invalid number of operands for \"jp.add\" operand.".to_string(),
         ));

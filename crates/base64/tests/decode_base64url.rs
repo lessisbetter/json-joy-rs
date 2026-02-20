@@ -15,15 +15,9 @@ fn works() {
         let blob = generate_blob();
         let encoded = to_base64(&blob)
             .replace('+', "-")
-            .replace('_', "_")
-            .replace('+', "-")
             .replace('/', "_")
             .trim_end_matches('=')
             .to_string();
-
-        // Also remove trailing = characters
-        let encoded = encoded.trim_end_matches('=').to_string();
-        let encoded = encoded.replace('+', "-").replace('/', "_");
 
         let decoded = from_base64_url(&encoded).unwrap();
         assert_eq!(decoded, blob);

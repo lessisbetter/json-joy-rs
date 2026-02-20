@@ -170,7 +170,7 @@ impl JsonEncoder {
         if len < 256 {
             let mut has_special = false;
             for &b in bytes {
-                if b < 32 || b > 126 || b == b'"' || b == b'\\' {
+                if !(32..=126).contains(&b) || b == b'"' || b == b'\\' {
                     has_special = true;
                     break;
                 }

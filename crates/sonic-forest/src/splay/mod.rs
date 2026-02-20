@@ -27,15 +27,15 @@ fn get_r<N: Node>(arena: &[N], idx: u32) -> Option<u32> {
     arena[idx as usize].r()
 }
 #[inline]
-fn set_p<N: Node>(arena: &mut Vec<N>, idx: u32, v: Option<u32>) {
+fn set_p<N: Node>(arena: &mut [N], idx: u32, v: Option<u32>) {
     arena[idx as usize].set_p(v);
 }
 #[inline]
-fn set_l<N: Node>(arena: &mut Vec<N>, idx: u32, v: Option<u32>) {
+fn set_l<N: Node>(arena: &mut [N], idx: u32, v: Option<u32>) {
     arena[idx as usize].set_l(v);
 }
 #[inline]
-fn set_r<N: Node>(arena: &mut Vec<N>, idx: u32, v: Option<u32>) {
+fn set_r<N: Node>(arena: &mut [N], idx: u32, v: Option<u32>) {
     arena[idx as usize].set_r(v);
 }
 
@@ -52,7 +52,7 @@ fn set_r<N: Node>(arena: &mut Vec<N>, idx: u32, v: Option<u32>) {
 /// ```
 ///
 /// Mirrors `rSplay` in `splay/util.ts`.
-pub fn r_splay<N: Node>(arena: &mut Vec<N>, c2: u32, c1: u32) {
+pub fn r_splay<N: Node>(arena: &mut [N], c2: u32, c1: u32) {
     let b = get_r(arena, c2);
     set_p(arena, c2, None);
     set_r(arena, c2, Some(c1));
@@ -66,7 +66,7 @@ pub fn r_splay<N: Node>(arena: &mut Vec<N>, c2: u32, c1: u32) {
 /// Left-splay: promote `c2` over `c1` (c2 was right child of c1).
 ///
 /// Mirrors `lSplay` in `splay/util.ts`.
-pub fn l_splay<N: Node>(arena: &mut Vec<N>, c2: u32, c1: u32) {
+pub fn l_splay<N: Node>(arena: &mut [N], c2: u32, c1: u32) {
     let b = get_l(arena, c2);
     set_p(arena, c2, None);
     set_l(arena, c2, Some(c1));
@@ -84,7 +84,7 @@ pub fn l_splay<N: Node>(arena: &mut Vec<N>, c2: u32, c1: u32) {
 ///
 /// Mirrors `rrSplay` in `splay/util.ts`.
 pub fn rr_splay<N: Node>(
-    arena: &mut Vec<N>,
+    arena: &mut [N],
     root: Option<u32>,
     c3: u32,
     c2: u32,
@@ -114,7 +114,7 @@ pub fn rr_splay<N: Node>(
 ///
 /// Mirrors `llSplay` in `splay/util.ts`.
 pub fn ll_splay<N: Node>(
-    arena: &mut Vec<N>,
+    arena: &mut [N],
     root: Option<u32>,
     c3: u32,
     c2: u32,
@@ -144,7 +144,7 @@ pub fn ll_splay<N: Node>(
 ///
 /// Mirrors `lrSplay` in `splay/util.ts`.
 pub fn lr_splay<N: Node>(
-    arena: &mut Vec<N>,
+    arena: &mut [N],
     root: Option<u32>,
     c3: u32,
     c2: u32,
@@ -174,7 +174,7 @@ pub fn lr_splay<N: Node>(
 ///
 /// Mirrors `rlSplay` in `splay/util.ts`.
 pub fn rl_splay<N: Node>(
-    arena: &mut Vec<N>,
+    arena: &mut [N],
     root: Option<u32>,
     c3: u32,
     c2: u32,
@@ -244,7 +244,7 @@ pub fn splay<N: Node>(
 /// After a double rotation that moved `c3` into the slot previously occupied
 /// by `c1`, wire `c3` into c1's old parent `p`.
 fn update_parent<N: Node>(
-    arena: &mut Vec<N>,
+    arena: &mut [N],
     root: Option<u32>,
     p: Option<u32>,
     c1: u32,

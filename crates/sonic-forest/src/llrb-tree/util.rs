@@ -8,7 +8,7 @@ pub fn is_red<K, V>(arena: &[LlrbNode<K, V>], node: Option<u32>) -> bool {
 }
 
 /// Flip colors of node and its children.
-pub fn color_flip<K, V>(arena: &mut Vec<LlrbNode<K, V>>, node: u32) {
+pub fn color_flip<K, V>(arena: &mut [LlrbNode<K, V>], node: u32) {
     arena[node as usize].b = !arena[node as usize].b;
     if let Some(l) = arena[node as usize].l {
         arena[l as usize].b = !arena[l as usize].b;
@@ -19,7 +19,7 @@ pub fn color_flip<K, V>(arena: &mut Vec<LlrbNode<K, V>>, node: u32) {
 }
 
 /// Rotate left with parent pointer updates.
-pub fn rotate_left<K, V>(arena: &mut Vec<LlrbNode<K, V>>, node: u32) -> u32 {
+pub fn rotate_left<K, V>(arena: &mut [LlrbNode<K, V>], node: u32) -> u32 {
     let x = arena[node as usize]
         .r
         .expect("rotate_left requires right child");
@@ -48,7 +48,7 @@ pub fn rotate_left<K, V>(arena: &mut Vec<LlrbNode<K, V>>, node: u32) -> u32 {
 }
 
 /// Rotate right with parent pointer updates.
-pub fn rotate_right<K, V>(arena: &mut Vec<LlrbNode<K, V>>, node: u32) -> u32 {
+pub fn rotate_right<K, V>(arena: &mut [LlrbNode<K, V>], node: u32) -> u32 {
     let x = arena[node as usize]
         .l
         .expect("rotate_right requires left child");
@@ -77,7 +77,7 @@ pub fn rotate_right<K, V>(arena: &mut Vec<LlrbNode<K, V>>, node: u32) -> u32 {
 }
 
 /// Move red link to the left.
-pub fn move_red_left<K, V>(arena: &mut Vec<LlrbNode<K, V>>, mut node: u32) -> u32 {
+pub fn move_red_left<K, V>(arena: &mut [LlrbNode<K, V>], mut node: u32) -> u32 {
     color_flip(arena, node);
     if let Some(r) = arena[node as usize].r {
         if is_red(arena, arena[r as usize].l) {
@@ -91,7 +91,7 @@ pub fn move_red_left<K, V>(arena: &mut Vec<LlrbNode<K, V>>, mut node: u32) -> u3
 }
 
 /// Move red link to the right.
-pub fn move_red_right<K, V>(arena: &mut Vec<LlrbNode<K, V>>, mut node: u32) -> u32 {
+pub fn move_red_right<K, V>(arena: &mut [LlrbNode<K, V>], mut node: u32) -> u32 {
     color_flip(arena, node);
     if let Some(l) = arena[node as usize].l {
         if is_red(arena, arena[l as usize].l) {
@@ -103,7 +103,7 @@ pub fn move_red_right<K, V>(arena: &mut Vec<LlrbNode<K, V>>, mut node: u32) -> u
 }
 
 /// Balance the LLRB tree after modifications.
-pub fn balance<K, V>(arena: &mut Vec<LlrbNode<K, V>>, mut node: u32) -> u32 {
+pub fn balance<K, V>(arena: &mut [LlrbNode<K, V>], mut node: u32) -> u32 {
     if is_red(arena, arena[node as usize].r) {
         node = rotate_left(arena, node);
     }
@@ -123,9 +123,7 @@ pub fn balance<K, V>(arena: &mut Vec<LlrbNode<K, V>>, mut node: u32) -> u32 {
 
 /// Delete the minimum node from the subtree.
 pub fn delete_min<K, V>(arena: &mut Vec<LlrbNode<K, V>>, node: u32) -> Option<u32> {
-    if arena[node as usize].l.is_none() {
-        return None;
-    }
+    arena[node as usize].l?;
 
     let mut node = node;
     let l = arena[node as usize].l.expect("left exists");
@@ -184,9 +182,7 @@ pub fn delete_node<K, V, C>(
 where
     C: Fn(&K, &K) -> i32,
 {
-    let Some(mut node) = node else {
-        return None;
-    };
+    let mut node = node?;
 
     let cmp = comparator(key, &arena[node as usize].k);
 

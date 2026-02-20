@@ -24,7 +24,7 @@ impl JsonPathEval {
                 if segment.recursive {
                     // Recursive descent
                     Self::eval_recursive(
-                        *value,
+                        value,
                         &segment.selectors,
                         current_path,
                         &mut new_results,
@@ -32,7 +32,7 @@ impl JsonPathEval {
                     );
                 } else {
                     Self::eval_segment(
-                        *value,
+                        value,
                         segment,
                         current_path,
                         &mut new_results,

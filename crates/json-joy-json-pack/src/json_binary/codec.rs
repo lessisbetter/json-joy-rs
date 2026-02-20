@@ -89,14 +89,11 @@ pub fn unwrap_binary(value: JsonValue) -> PackValue {
                     let tag_str = &rest[..comma];
                     let b64 = &rest[comma + 1..];
                     if let Ok(tag) = tag_str.parse::<u64>() {
-                        match json_joy_base64::from_base64(b64) {
-                            Ok(bytes) => {
-                                return PackValue::Extension(Box::new(JsonPackExtension::new(
-                                    tag,
-                                    PackValue::Bytes(bytes),
-                                )));
-                            }
-                            Err(_) => {}
+                        if let Ok(bytes) = json_joy_base64::from_base64(b64) {
+                            return PackValue::Extension(Box::new(JsonPackExtension::new(
+                                tag,
+                                PackValue::Bytes(bytes),
+                            )));
                         }
                     }
                 }

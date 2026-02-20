@@ -218,9 +218,7 @@ impl TemplateJson {
 
         let mut bytes = Vec::with_capacity(length);
         for _ in 0..length {
-            bytes.push(Value::Number(Number::from(
-                int(omin as i64, omax as i64) as i64
-            )));
+            bytes.push(Value::Number(Number::from(int(omin as i64, omax as i64))));
         }
         Value::Array(bytes)
     }

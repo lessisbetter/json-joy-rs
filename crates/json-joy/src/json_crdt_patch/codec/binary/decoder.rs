@@ -47,7 +47,7 @@ impl Decoder {
     }
 
     /// Decodes a binary blob into a [`Patch`].
-    pub fn decode<'a>(&self, data: &'a [u8]) -> Result<Patch, DecodeError> {
+    pub fn decode(&self, data: &[u8]) -> Result<Patch, DecodeError> {
         let mut r = CrdtReader::new(data);
         self.read_patch(&mut r)
     }
@@ -274,7 +274,7 @@ fn read_cbor<'a>(r: &mut CrdtReader<'a>) -> Result<PackValue, DecodeError> {
                         return Err(DecodeError::InvalidCbor);
                     }
                     let bits = u16::from_be_bytes([bytes[0], bytes[1]]);
-                    Ok(PackValue::Float(json_joy_buffers::decode_f16(bits) as f64))
+                    Ok(PackValue::Float(json_joy_buffers::decode_f16(bits)))
                 }
                 26 => {
                     let bytes = r.buf(4);

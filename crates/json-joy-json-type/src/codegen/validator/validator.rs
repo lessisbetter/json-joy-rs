@@ -18,8 +18,7 @@ pub fn validate(
     opts: &ValidatorOptions,
     path: &[Value],
 ) -> ValidationResult {
-    let result = validate_inner(value, type_, opts, path);
-    result
+    validate_inner(value, type_, opts, path)
 }
 
 fn make_error(code: ValidationError, path: &[Value], opts: &ValidatorOptions) -> ValidationResult {
@@ -149,17 +148,17 @@ fn validate_num(
                     }
                 }
                 NumFormat::I8 => {
-                    if num > 127.0 || num < -128.0 {
+                    if !(-128.0..=127.0).contains(&num) {
                         return make_error(ValidationError::Int, path, opts);
                     }
                 }
                 NumFormat::I16 => {
-                    if num > 32767.0 || num < -32768.0 {
+                    if !(-32768.0..=32767.0).contains(&num) {
                         return make_error(ValidationError::Int, path, opts);
                     }
                 }
                 NumFormat::I32 => {
-                    if num > 2147483647.0 || num < -2147483648.0 {
+                    if !(-2147483648.0..=2147483647.0).contains(&num) {
                         return make_error(ValidationError::Int, path, opts);
                     }
                 }
@@ -168,10 +167,8 @@ fn validate_num(
                 // We accept any integer-valued f64 for these formats (same as upstream behavior).
                 _ => {}
             }
-        } else if format.is_float() {
-            if !num.is_finite() {
-                return make_error(ValidationError::Num, path, opts);
-            }
+        } else if format.is_float() && !num.is_finite() {
+            return make_error(ValidationError::Num, path, opts);
         }
     }
 
@@ -320,10 +317,15 @@ fn validate_arr(
                 return make_error(ValidationError::ArrLen, path, opts);
             }
         }
-        for i in head_len..(arr.len().saturating_sub(tail_len)) {
+        for (i, item) in arr
+            .iter()
+            .enumerate()
+            .take(arr.len().saturating_sub(tail_len))
+            .skip(head_len)
+        {
             let mut p = path.to_vec();
             p.push(Value::Number(i.into()));
-            let r = validate_inner(&arr[i], body_type, opts, &p);
+            let r = validate_inner(item, body_type, opts, &p);
             if r.is_err() {
                 return r;
             }

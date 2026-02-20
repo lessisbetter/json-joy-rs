@@ -52,7 +52,7 @@ fn node_kind_name(node: &CrdtNode) -> &'static str {
     }
 }
 
-fn resolve_non_val_node<'a>(model: &'a Model, mut id: Ts) -> Result<&'a CrdtNode, String> {
+fn resolve_non_val_node(model: &Model, mut id: Ts) -> Result<&CrdtNode, String> {
     for _ in 0..16 {
         let node = IndexExt::get(&model.index, &id).ok_or_else(|| {
             format!(

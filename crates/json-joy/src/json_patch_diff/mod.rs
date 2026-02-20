@@ -154,7 +154,7 @@ fn diff_arr(ops: &mut Vec<Op>, path: &[String], src: &[Value], dst: &[Value]) {
         match op_type {
             LinePatchOpType::Eql => {}
             LinePatchOpType::Del => {
-                let actual_idx = (*src_idx as i64 + offset) as usize;
+                let actual_idx = (*src_idx + offset) as usize;
                 let mut p = path.to_vec();
                 p.push(actual_idx.to_string());
                 ops.push(Op::Remove {
@@ -164,7 +164,7 @@ fn diff_arr(ops: &mut Vec<Op>, path: &[String], src: &[Value], dst: &[Value]) {
                 offset -= 1;
             }
             LinePatchOpType::Ins => {
-                let actual_idx = (*src_idx as i64 + offset + 1) as usize;
+                let actual_idx = (*src_idx + offset + 1) as usize;
                 let mut p = path.to_vec();
                 p.push(actual_idx.to_string());
                 let dst_i = *dst_idx as usize;
@@ -175,7 +175,7 @@ fn diff_arr(ops: &mut Vec<Op>, path: &[String], src: &[Value], dst: &[Value]) {
                 offset += 1;
             }
             LinePatchOpType::Mix => {
-                let actual_idx = (*src_idx as i64 + offset) as usize;
+                let actual_idx = (*src_idx + offset) as usize;
                 let mut p = path.to_vec();
                 p.push(actual_idx.to_string());
                 let src_i = *src_idx as usize;

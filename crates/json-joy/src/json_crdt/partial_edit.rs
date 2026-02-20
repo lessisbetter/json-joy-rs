@@ -202,7 +202,7 @@ impl PartialEdit {
                     .push(ts(local_sid, peers.time.saturating_sub(1)));
             }
             // Add all peer sessions.
-            for (_sid, &peer_ts) in &peers.peers {
+            for &peer_ts in peers.peers.values() {
                 if self.clock_table.get_by_sid(peer_ts.sid).is_none() {
                     self.clock_table.push(peer_ts);
                 }

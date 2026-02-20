@@ -119,7 +119,7 @@ pub fn clone_value_with_binary(value: &Value) -> Value {
             // Check if this looks like binary data (array of small integers)
             if arr
                 .iter()
-                .all(|v| matches!(v, Value::Number(n) if n.as_u64().map_or(false, |n| n <= 255)))
+                .all(|v| matches!(v, Value::Number(n) if n.as_u64().is_some_and(|n| n <= 255)))
             {
                 Value::Array(arr.clone())
             } else {

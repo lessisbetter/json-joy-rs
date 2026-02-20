@@ -1039,10 +1039,10 @@ mod tests {
                 not: false,
             },
         ];
-        let json_before: Vec<Value> = ops.iter().map(|o| to_json(o)).collect();
+        let json_before: Vec<Value> = ops.iter().map(to_json).collect();
         let bytes = encode(&ops);
         let decoded = decode(&bytes).expect("decode failed");
-        let json_after: Vec<Value> = decoded.iter().map(|o| to_json(o)).collect();
+        let json_after: Vec<Value> = decoded.iter().map(to_json).collect();
         assert_eq!(json_after, json_before);
     }
 }

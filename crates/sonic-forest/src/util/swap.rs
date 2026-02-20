@@ -4,7 +4,7 @@ use super::{get_l, get_p, get_r, set_l, set_p, set_r};
 
 /// Swaps two node positions in a binary tree.
 /// Mirrors upstream `util/swap.ts`.
-pub fn swap<N: Node>(arena: &mut Vec<N>, mut root: u32, x: u32, y: u32) -> u32 {
+pub fn swap<N: Node>(arena: &mut [N], mut root: u32, x: u32, y: u32) -> u32 {
     if x == y {
         return root;
     }
@@ -62,11 +62,12 @@ pub fn swap<N: Node>(arena: &mut Vec<N>, mut root: u32, x: u32, y: u32) -> u32 {
         set_p(arena, y, None);
     } else if xp != Some(y) {
         set_p(arena, y, xp);
-        let xp = xp.unwrap();
-        if get_l(arena, xp) == Some(x) {
-            set_l(arena, xp, Some(y));
-        } else {
-            set_r(arena, xp, Some(y));
+        if let Some(xp) = xp {
+            if get_l(arena, xp) == Some(x) {
+                set_l(arena, xp, Some(y));
+            } else {
+                set_r(arena, xp, Some(y));
+            }
         }
     }
 
@@ -75,11 +76,12 @@ pub fn swap<N: Node>(arena: &mut Vec<N>, mut root: u32, x: u32, y: u32) -> u32 {
         set_p(arena, x, None);
     } else if yp != Some(x) {
         set_p(arena, x, yp);
-        let yp = yp.unwrap();
-        if get_l(arena, yp) == Some(y) {
-            set_l(arena, yp, Some(x));
-        } else {
-            set_r(arena, yp, Some(x));
+        if let Some(yp) = yp {
+            if get_l(arena, yp) == Some(y) {
+                set_l(arena, yp, Some(x));
+            } else {
+                set_r(arena, yp, Some(x));
+            }
         }
     }
 

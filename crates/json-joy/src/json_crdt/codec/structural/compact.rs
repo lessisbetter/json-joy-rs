@@ -240,7 +240,7 @@ fn encode_arr(model: &Model, node: &ArrNode, state: &mut EncodeState) -> Value {
             if chunk.deleted {
                 json!([chunk_id, chunk.span])
             } else {
-                let node_ids = chunk.data.as_ref().map(|ids| ids.as_slice()).unwrap_or(&[]);
+                let node_ids = chunk.data.as_deref().unwrap_or(&[]);
                 let nodes: Vec<Value> = node_ids
                     .iter()
                     .filter_map(|id| {
@@ -306,7 +306,7 @@ pub fn decode(data: &Value) -> Result<Model, DecodeError> {
 
     // Decode root
     if root_val.as_u64() != Some(0) && !root_val.is_null() {
-        let node_id = decode_node_into(&root_val, &mut model, &mut dec)?;
+        let node_id = decode_node_into(root_val, &mut model, &mut dec)?;
         model.root.val = node_id;
     }
 

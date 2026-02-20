@@ -150,13 +150,11 @@ impl CborEncoder {
             } else {
                 self.writer.u8u64(0x1b, u64::MAX);
             }
+        } else if int >= i64::MIN as i128 {
+            self.encode_nint(int as i64);
         } else {
-            if int >= i64::MIN as i128 {
-                self.encode_nint(int as i64);
-            } else {
-                let uint = (-1i128 - int) as u64;
-                self.writer.u8u64(0x3b, uint);
-            }
+            let uint = (-1i128 - int) as u64;
+            self.writer.u8u64(0x3b, uint);
         }
     }
 

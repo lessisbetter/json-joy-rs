@@ -165,15 +165,15 @@ impl MsgPackDecoderFast {
             return Ok(PackValue::Integer(byte as i64));
         }
         // fixmap: 0x80–0x8f
-        if byte >= 0x80 && byte <= 0x8f {
+        if (0x80..=0x8f).contains(&byte) {
             return self.read_obj(byte as usize & 0xf);
         }
         // fixarray: 0x90–0x9f
-        if byte >= 0x90 && byte <= 0x9f {
+        if (0x90..=0x9f).contains(&byte) {
             return self.read_arr(byte as usize & 0xf);
         }
         // fixstr: 0xa0–0xbf
-        if byte >= 0xa0 && byte <= 0xbf {
+        if (0xa0..=0xbf).contains(&byte) {
             let len = byte as usize & 0x1f;
             return self.utf8(len).map(PackValue::Str);
         }
@@ -309,7 +309,7 @@ impl MsgPackDecoderFast {
         }
         let byte = self.data[self.x];
         // fixstr
-        if byte >= 0xa0 && byte <= 0xbf {
+        if (0xa0..=0xbf).contains(&byte) {
             let size = (byte & 0x1f) as usize;
             self.x += 1;
             return self.utf8(size);

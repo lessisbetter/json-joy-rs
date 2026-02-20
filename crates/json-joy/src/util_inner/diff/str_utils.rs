@@ -198,9 +198,7 @@ fn cleanup_semantic_lossless(patch: &mut Patch) {
             if patch[pointer - 1].1 != best_eq1 {
                 if best_eq1.is_empty() {
                     patch.remove(pointer - 1);
-                    if pointer > 0 {
-                        pointer -= 1;
-                    }
+                    pointer = pointer.saturating_sub(1);
                 } else {
                     patch[pointer - 1].1 = best_eq1;
                 }
@@ -210,9 +208,7 @@ fn cleanup_semantic_lossless(patch: &mut Patch) {
                 if pointer + 1 < patch.len() {
                     if best_eq2.is_empty() {
                         patch.remove(pointer + 1);
-                        if pointer > 0 {
-                            pointer -= 1;
-                        }
+                        pointer = pointer.saturating_sub(1);
                     } else {
                         patch[pointer + 1].1 = best_eq2;
                     }

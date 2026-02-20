@@ -114,7 +114,7 @@ impl Random {
     }
 
     /// Pick a random element from a slice.
-    pub fn pick<'a, T>(elements: &'a [T]) -> &'a T {
+    pub fn pick<T>(elements: &[T]) -> &T {
         let idx = rand::thread_rng().gen_range(0..elements.len());
         &elements[idx]
     }
@@ -139,7 +139,7 @@ mod tests {
         // Test range
         for _ in 0..100 {
             let n = fuzzer.random_int(1, 10);
-            assert!(n >= 1 && n <= 10);
+            assert!((1..=10).contains(&n));
         }
     }
 
@@ -149,7 +149,7 @@ mod tests {
 
         for _ in 0..100 {
             let n = fuzzer.random_int_range((5, 15));
-            assert!(n >= 5 && n <= 15);
+            assert!((5..=15).contains(&n));
         }
     }
 
@@ -191,7 +191,7 @@ mod tests {
 
         for _ in 0..100 {
             let r = fuzzer.random();
-            assert!(r >= 0.0 && r < 1.0);
+            assert!((0.0..1.0).contains(&r));
         }
     }
 
@@ -235,7 +235,7 @@ mod tests {
     fn test_random_static() {
         // Test static methods
         let n = Random::random_int(1, 10);
-        assert!(n >= 1 && n <= 10);
+        assert!((1..=10).contains(&n));
 
         let choices = vec![1, 2, 3];
         let picked = Random::pick(&choices);

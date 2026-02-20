@@ -1,5 +1,6 @@
 pub mod fn_value;
 pub mod obj_value;
+#[allow(clippy::module_inception)]
 pub mod value;
 
 pub use fn_value::FnValue;

@@ -45,7 +45,7 @@ where
     arena[i as usize].set_bf(v);
 }
 
-fn rebalance_after_insert<K, V, N>(arena: &mut Vec<N>, root: u32, node: u32, child: u32) -> u32
+fn rebalance_after_insert<K, V, N>(arena: &mut [N], root: u32, node: u32, child: u32) -> u32
 where
     N: AvlNodeLike<K, V>,
 {
@@ -102,7 +102,7 @@ where
     }
 }
 
-fn ll_rotate<K, V, N>(arena: &mut Vec<N>, n: u32, nl: u32)
+fn ll_rotate<K, V, N>(arena: &mut [N], n: u32, nl: u32)
 where
     N: AvlNodeLike<K, V>,
 {
@@ -132,7 +132,7 @@ where
     set_bf(arena, nl, nlbf);
 }
 
-fn rr_rotate<K, V, N>(arena: &mut Vec<N>, n: u32, nr: u32)
+fn rr_rotate<K, V, N>(arena: &mut [N], n: u32, nr: u32)
 where
     N: AvlNodeLike<K, V>,
 {
@@ -162,7 +162,7 @@ where
     set_bf(arena, nr, nrbf);
 }
 
-fn lr_rotate<K, V, N>(arena: &mut Vec<N>, n: u32, nl: u32, nlr: u32)
+fn lr_rotate<K, V, N>(arena: &mut [N], n: u32, nl: u32, nlr: u32)
 where
     N: AvlNodeLike<K, V>,
 {
@@ -170,7 +170,7 @@ where
     ll_rotate(arena, n, nlr);
 }
 
-fn rl_rotate<K, V, N>(arena: &mut Vec<N>, n: u32, nr: u32, nrl: u32)
+fn rl_rotate<K, V, N>(arena: &mut [N], n: u32, nr: u32, nrl: u32)
 where
     N: AvlNodeLike<K, V>,
 {
@@ -178,7 +178,7 @@ where
     rr_rotate(arena, n, nrl);
 }
 
-pub fn insert_right<K, V, N>(arena: &mut Vec<N>, root: Option<u32>, n: u32, p: u32) -> Option<u32>
+pub fn insert_right<K, V, N>(arena: &mut [N], root: Option<u32>, n: u32, p: u32) -> Option<u32>
 where
     N: AvlNodeLike<K, V>,
 {
@@ -194,7 +194,7 @@ where
     }
 }
 
-pub fn insert_left<K, V, N>(arena: &mut Vec<N>, root: Option<u32>, n: u32, p: u32) -> Option<u32>
+pub fn insert_left<K, V, N>(arena: &mut [N], root: Option<u32>, n: u32, p: u32) -> Option<u32>
 where
     N: AvlNodeLike<K, V>,
 {
@@ -210,12 +210,7 @@ where
     }
 }
 
-pub fn insert<K, V, N, C>(
-    arena: &mut Vec<N>,
-    root: Option<u32>,
-    n: u32,
-    comparator: &C,
-) -> Option<u32>
+pub fn insert<K, V, N, C>(arena: &mut [N], root: Option<u32>, n: u32, comparator: &C) -> Option<u32>
 where
     N: AvlNodeLike<K, V>,
     C: Fn(&K, &K) -> i32,

@@ -65,7 +65,7 @@ fn escape_text(s: &str) -> String {
     let mut out = String::with_capacity(s.len());
     for ch in s.chars() {
         let code = ch as u32;
-        if ch == '<' || ch == '>' || ch == '&' || (code >= 0x00A0 && code <= 0x9999) {
+        if ch == '<' || ch == '>' || ch == '&' || (0x00A0..=0x9999).contains(&code) {
             out.push_str(&format!("&#{};", code));
         } else {
             out.push(ch);

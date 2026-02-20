@@ -73,10 +73,7 @@ pub fn to_schema(node: &CrdtNode, index: &NodeIndex) -> Box<dyn NodeBuilder> {
             let mut slots: Vec<Option<Box<dyn NodeBuilder>>> = Vec::with_capacity(len);
             for opt_id in &n.elements {
                 let schema = match opt_id {
-                    Some(id) => match get_node(index, id) {
-                        Some(child) => Some(to_schema(child, index)),
-                        None => None,
-                    },
+                    Some(id) => get_node(index, id).map(|child| to_schema(child, index)),
                     None => None,
                 };
                 slots.push(schema);

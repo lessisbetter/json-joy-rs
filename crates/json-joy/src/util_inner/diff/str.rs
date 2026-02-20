@@ -393,7 +393,7 @@ fn diff_no_common_affix(c1: &[char], c2: &[char]) -> Patch {
 fn bisect(c1: &[char], c2: &[char]) -> Patch {
     let n1 = c1.len();
     let n2 = c2.len();
-    let max_d = (n1 + n2 + 1) / 2 + 1;
+    let max_d = (n1 + n2).div_ceil(2) + 1;
     let v_offset = max_d;
     let v_length = 2 * max_d;
 
@@ -432,10 +432,8 @@ fn bisect(c1: &[char], c2: &[char]) -> Patch {
                 k1start += 2;
             } else if front {
                 let k2_offset = (v_offset as i64 + delta - k1) as usize;
-                if k2_offset < v_length && v2[k2_offset] != -1 {
-                    if x1 >= n1 as i64 - v2[k2_offset] {
-                        return bisect_split(c1, c2, x1 as usize, y1 as usize);
-                    }
+                if k2_offset < v_length && v2[k2_offset] != -1 && x1 >= n1 as i64 - v2[k2_offset] {
+                    return bisect_split(c1, c2, x1 as usize, y1 as usize);
                 }
             }
             k1 += 2;

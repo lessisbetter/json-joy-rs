@@ -35,6 +35,7 @@ impl RpcMessageEncoder {
     }
 
     /// Encodes a Call message. Returns `Err` if an auth body exceeds 400 bytes.
+    #[allow(clippy::too_many_arguments)]
     pub fn encode_call(
         &mut self,
         xid: u32,
@@ -112,6 +113,7 @@ impl RpcMessageEncoder {
         Ok(())
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn write_call(
         &mut self,
         xid: u32,

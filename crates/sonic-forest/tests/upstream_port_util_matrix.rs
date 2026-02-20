@@ -293,9 +293,7 @@ fn util_swap_immediate_left_child_root_matrix() {
     let mut arena = vec![TestNode::new(0, 0), TestNode::new(1, 1)];
     arena[0].l = Some(1);
     arena[1].p = Some(0);
-    let root = Some(0);
-
-    let new_root = swap(&mut arena, root.unwrap(), 0, 1);
+    let new_root = swap(&mut arena, 0, 0, 1);
     assert_eq!(new_root, 1);
     assert_eq!(arena[1].l, Some(0));
     assert_eq!(arena[0].p, Some(1));
@@ -309,9 +307,7 @@ fn util_swap_immediate_right_child_root_matrix() {
     let mut arena = vec![TestNode::new(0, 0), TestNode::new(1, 1)];
     arena[0].r = Some(1);
     arena[1].p = Some(0);
-    let root = Some(0);
-
-    let new_root = swap(&mut arena, root.unwrap(), 0, 1);
+    let new_root = swap(&mut arena, 0, 0, 1);
     assert_eq!(new_root, 1);
     assert_eq!(arena[1].r, Some(0));
     assert_eq!(arena[0].p, Some(1));
@@ -336,9 +332,7 @@ fn util_swap_immediate_left_child_not_root_matrix() {
     arena[1].p = Some(0);
     arena[1].l = Some(2);
     arena[2].p = Some(1);
-    let root = Some(0);
-
-    let new_root = swap(&mut arena, root.unwrap(), 1, 2);
+    let new_root = swap(&mut arena, 0, 1, 2);
     assert_eq!(new_root, 0);
     assert_eq!(arena[2].l, Some(1));
     assert_eq!(arena[1].p, Some(2));

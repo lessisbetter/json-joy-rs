@@ -118,13 +118,13 @@ impl MsgPackToJsonConverter {
         if byte <= 0x7f {
             return byte.to_string();
         }
-        if byte >= 0x80 && byte <= 0x8f {
+        if (0x80..=0x8f).contains(&byte) {
             return self.obj((byte & 0xf) as usize);
         }
-        if byte >= 0x90 && byte <= 0x9f {
+        if (0x90..=0x9f).contains(&byte) {
             return self.arr((byte & 0xf) as usize);
         }
-        if byte >= 0xa0 && byte <= 0xbf {
+        if (0xa0..=0xbf).contains(&byte) {
             let n = (byte & 0x1f) as usize;
             return self.str(n);
         }

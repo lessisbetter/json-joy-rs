@@ -39,17 +39,17 @@ pub(crate) fn get_r<N: Node>(arena: &[N], idx: u32) -> Option<u32> {
 }
 
 #[inline]
-pub(crate) fn set_p<N: Node>(arena: &mut Vec<N>, idx: u32, v: Option<u32>) {
+pub(crate) fn set_p<N: Node>(arena: &mut [N], idx: u32, v: Option<u32>) {
     arena[idx as usize].set_p(v);
 }
 
 #[inline]
-pub(crate) fn set_l<N: Node>(arena: &mut Vec<N>, idx: u32, v: Option<u32>) {
+pub(crate) fn set_l<N: Node>(arena: &mut [N], idx: u32, v: Option<u32>) {
     arena[idx as usize].set_l(v);
 }
 
 #[inline]
-pub(crate) fn set_r<N: Node>(arena: &mut Vec<N>, idx: u32, v: Option<u32>) {
+pub(crate) fn set_r<N: Node>(arena: &mut [N], idx: u32, v: Option<u32>) {
     arena[idx as usize].set_r(v);
 }
 
@@ -155,7 +155,7 @@ where
 }
 
 /// Inserts `node` immediately to the right of `parent`.
-pub fn insert_right<N: Node>(arena: &mut Vec<N>, node: u32, parent: u32) {
+pub fn insert_right<N: Node>(arena: &mut [N], node: u32, parent: u32) {
     let r = get_r(arena, parent);
     set_r(arena, node, r);
     set_r(arena, parent, Some(node));
@@ -166,7 +166,7 @@ pub fn insert_right<N: Node>(arena: &mut Vec<N>, node: u32, parent: u32) {
 }
 
 /// Inserts `node` immediately to the left of `parent`.
-pub fn insert_left<N: Node>(arena: &mut Vec<N>, node: u32, parent: u32) {
+pub fn insert_left<N: Node>(arena: &mut [N], node: u32, parent: u32) {
     let l = get_l(arena, parent);
     set_l(arena, node, l);
     set_l(arena, parent, Some(node));
@@ -178,7 +178,7 @@ pub fn insert_left<N: Node>(arena: &mut Vec<N>, node: u32, parent: u32) {
 
 /// BST insert using comparator and key accessor.
 pub fn insert<N, K, F, C>(
-    arena: &mut Vec<N>,
+    arena: &mut [N],
     root: Option<u32>,
     node: u32,
     key_of: F,
@@ -222,7 +222,7 @@ where
 /// Remove `node` from the tree rooted at `root`.
 ///
 /// Returns the new root. Mirrors `remove` in upstream `util/index.ts`.
-pub fn remove<N: Node>(arena: &mut Vec<N>, root: Option<u32>, node: u32) -> Option<u32> {
+pub fn remove<N: Node>(arena: &mut [N], root: Option<u32>, node: u32) -> Option<u32> {
     let p = get_p(arena, node);
     let l = get_l(arena, node);
     let r = get_r(arena, node);

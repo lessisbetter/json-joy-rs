@@ -188,7 +188,7 @@ impl Log {
     pub fn advance_to(&mut self, ts: Ts) {
         // Collect patches to bake into the new baseline.
         let mut to_bake: Vec<(PatchKey, Patch)> = Vec::new();
-        for (key, _) in &self.patches {
+        for key in self.patches.keys() {
             let patch_ts = Ts {
                 sid: key.sid,
                 time: key.time,
@@ -465,7 +465,8 @@ mod tests {
         let next = model.clock.time;
         let str_ts = ts(s, 1); // existing str node
         let op_id = ts(s, next);
-        let patch = Patch {
+
+        Patch {
             ops: vec![Op::InsStr {
                 id: op_id,
                 obj: str_ts,
@@ -473,8 +474,7 @@ mod tests {
                 data: text.to_string(),
             }],
             meta: None,
-        };
-        patch
+        }
     }
 
     // ── Log::from_new_model ───────────────────────────────────────────────

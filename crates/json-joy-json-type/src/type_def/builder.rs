@@ -275,10 +275,7 @@ impl TypeBuilder {
                 let res = self.import(&s.res);
                 self.function_streaming(req, res, None)
             }
-            Schema::Alias(s) => {
-                let inner = self.import(&s.value);
-                inner
-            }
+            Schema::Alias(s) => self.import(&s.value),
             Schema::Module(_) => {
                 // Modules are not directly representable as a TypeNode
                 self.Any(None)

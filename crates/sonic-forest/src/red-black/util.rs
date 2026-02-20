@@ -8,7 +8,7 @@ mod print_impl;
 pub use print_impl::print;
 
 #[inline]
-fn set_p<K, V, N>(arena: &mut Vec<N>, i: u32, v: Option<u32>)
+fn set_p<K, V, N>(arena: &mut [N], i: u32, v: Option<u32>)
 where
     N: RbNodeLike<K, V>,
 {
@@ -16,7 +16,7 @@ where
 }
 
 #[inline]
-fn set_l<K, V, N>(arena: &mut Vec<N>, i: u32, v: Option<u32>)
+fn set_l<K, V, N>(arena: &mut [N], i: u32, v: Option<u32>)
 where
     N: RbNodeLike<K, V>,
 {
@@ -24,7 +24,7 @@ where
 }
 
 #[inline]
-fn set_r<K, V, N>(arena: &mut Vec<N>, i: u32, v: Option<u32>)
+fn set_r<K, V, N>(arena: &mut [N], i: u32, v: Option<u32>)
 where
     N: RbNodeLike<K, V>,
 {
@@ -40,7 +40,7 @@ where
 }
 
 #[inline]
-fn set_black<K, V, N>(arena: &mut Vec<N>, i: u32, v: bool)
+fn set_black<K, V, N>(arena: &mut [N], i: u32, v: bool)
 where
     N: RbNodeLike<K, V>,
 {
@@ -196,7 +196,7 @@ where
     }
 }
 
-fn l_rotate<K, V, N>(arena: &mut Vec<N>, n: u32, nl: u32)
+fn l_rotate<K, V, N>(arena: &mut [N], n: u32, nl: u32)
 where
     N: RbNodeLike<K, V>,
 {
@@ -220,7 +220,7 @@ where
     }
 }
 
-fn r_rotate<K, V, N>(arena: &mut Vec<N>, n: u32, nr: u32)
+fn r_rotate<K, V, N>(arena: &mut [N], n: u32, nr: u32)
 where
     N: RbNodeLike<K, V>,
 {
@@ -244,7 +244,7 @@ where
     }
 }
 
-fn lr_rotate<K, V, N>(arena: &mut Vec<N>, g: u32, p: u32, n: u32)
+fn lr_rotate<K, V, N>(arena: &mut [N], g: u32, p: u32, n: u32)
 where
     N: RbNodeLike<K, V>,
 {
@@ -277,7 +277,7 @@ where
     }
 }
 
-fn rl_rotate<K, V, N>(arena: &mut Vec<N>, g: u32, p: u32, n: u32)
+fn rl_rotate<K, V, N>(arena: &mut [N], g: u32, p: u32, n: u32)
 where
     N: RbNodeLike<K, V>,
 {
@@ -310,7 +310,7 @@ where
     }
 }
 
-pub fn remove<K, V, N>(arena: &mut Vec<N>, mut root: Option<u32>, mut n: u32) -> Option<u32>
+pub fn remove<K, V, N>(arena: &mut [N], mut root: Option<u32>, mut n: u32) -> Option<u32>
 where
     N: RbNodeLike<K, V>,
 {
@@ -384,11 +384,7 @@ where
     root
 }
 
-fn correct_double_black<K, V, N>(
-    arena: &mut Vec<N>,
-    mut root: Option<u32>,
-    mut n: u32,
-) -> Option<u32>
+fn correct_double_black<K, V, N>(arena: &mut [N], mut root: Option<u32>, mut n: u32) -> Option<u32>
 where
     N: RbNodeLike<K, V>,
 {

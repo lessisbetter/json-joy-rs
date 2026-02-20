@@ -242,11 +242,9 @@ impl NodeBuilder for VecNode {
 
     fn struct_hash(&self) -> String {
         let mut res = String::from("[");
-        for slot in &self.value {
-            if let Some(child) = slot {
-                res.push_str(&child.struct_hash());
-                res.push(';');
-            }
+        for child in self.value.iter().flatten() {
+            res.push_str(&child.struct_hash());
+            res.push(';');
         }
         res.push(']');
         res

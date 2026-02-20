@@ -45,13 +45,13 @@ impl MsgPackDecoder {
             return Ok(1);
         }
         // fixmap: 0x80-0x8f
-        if byte >= 0x80 && byte <= 0x8f {
+        if (0x80..=0x8f).contains(&byte) {
             let n = (byte & 0xf) as usize;
             let s = self.skip_obj(n)?;
             return Ok(1 + s);
         }
         // fixarray: 0x90-0x9f
-        if byte >= 0x90 && byte <= 0x9f {
+        if (0x90..=0x9f).contains(&byte) {
             let n = (byte & 0xf) as usize;
             let s = self.skip_arr(n)?;
             return Ok(1 + s);
@@ -63,7 +63,7 @@ impl MsgPackDecoder {
         }
 
         let _after = match byte {
-            0xc0 | 0xc1 | 0xc2 | 0xc3 => 0,
+            0xc0..=0xc3 => 0,
             0xc4 => {
                 let n = self.read_u8_size()?;
                 self.skip(n)?;

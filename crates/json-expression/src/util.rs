@@ -497,7 +497,7 @@ pub fn is_duration(value: &JsValue) -> bool {
 const DAYS: [u32; 13] = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 
 fn is_leap_year(year: u32) -> bool {
-    year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)
+    year.is_multiple_of(4) && (!year.is_multiple_of(100) || year.is_multiple_of(400))
 }
 
 pub fn is_date(value: &JsValue) -> bool {
@@ -512,7 +512,7 @@ pub fn is_date(value: &JsValue) -> bool {
     let year: u32 = caps[1].parse().unwrap_or(0);
     let month: u32 = caps[2].parse().unwrap_or(0);
     let day: u32 = caps[3].parse().unwrap_or(0);
-    if month < 1 || month > 12 {
+    if !(1..=12).contains(&month) {
         return false;
     }
     let max_day = if month == 2 && is_leap_year(year) {
@@ -566,9 +566,7 @@ pub fn is_datetime(value: &JsValue) -> bool {
         _ => return false,
     };
     // Split on 't', 'T', ' ' or '\t'
-    let parts: Vec<&str> = s
-        .splitn(2, |c: char| c == 't' || c == 'T' || c == ' ')
-        .collect();
+    let parts: Vec<&str> = s.splitn(2, ['t', 'T', ' ']).collect();
     if parts.len() != 2 {
         return false;
     }

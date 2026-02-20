@@ -82,12 +82,10 @@ pub fn struct_hash_crdt(node: Option<&CrdtNode>, index: &NodeIndex) -> String {
         }
         CrdtNode::Vec(vec_node) => {
             let mut res = String::from("[");
-            for slot in &vec_node.elements {
-                if let Some(id) = slot {
-                    let child = index.get(&TsKey::from(*id));
-                    res.push_str(&struct_hash_crdt(child, index));
-                    res.push(';');
-                }
+            for id in vec_node.elements.iter().flatten() {
+                let child = index.get(&TsKey::from(*id));
+                res.push_str(&struct_hash_crdt(child, index));
+                res.push(';');
             }
             res.push(']');
             res

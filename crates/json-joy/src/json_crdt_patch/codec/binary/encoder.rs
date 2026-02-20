@@ -368,7 +368,7 @@ impl Encoder {
             PackValue::Blob(b) => w.buf(&b.val),
             PackValue::Extension(ext) => {
                 // CBOR tag
-                let tag = ext.tag as u64;
+                let tag = ext.tag;
                 if tag <= 23 {
                     w.u8(0xC0 | tag as u8);
                 } else if tag <= 0xFF {

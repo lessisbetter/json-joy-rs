@@ -212,7 +212,7 @@ fn encode_arr(model: &Model, node: &ArrNode) -> Value {
             if chunk.deleted {
                 json!({ "id": chunk_id, "span": chunk.span })
             } else {
-                let ids = chunk.data.as_ref().map(|v| v.as_slice()).unwrap_or(&[]);
+                let ids = chunk.data.as_deref().unwrap_or(&[]);
                 let values: Vec<Value> = ids
                     .iter()
                     .filter_map(|id| {

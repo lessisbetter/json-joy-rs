@@ -65,7 +65,7 @@ impl EjsonDecoder {
             b'n' => self.read_null(),
             b't' => self.read_true(),
             b'{' => self.read_obj_with_ejson(),
-            c if (c >= b'0' && c <= b'9') || c == b'-' => self.read_num(),
+            c if c.is_ascii_digit() || c == b'-' => self.read_num(),
             _ => Err(EjsonDecodeError::InvalidJson(x)),
         }
     }
@@ -291,10 +291,7 @@ impl EjsonDecoder {
                     return Err(EjsonDecodeError::ExtraKeys("ObjectId"));
                 }
                 if let Some(EjsonValue::Str(s)) = get("$oid") {
-                    if s.len() == 24
-                        && s.bytes()
-                            .all(|b| matches!(b, b'0'..=b'9' | b'a'..=b'f' | b'A'..=b'F'))
-                    {
+                    if s.len() == 24 && s.bytes().all(|b: u8| b.is_ascii_hexdigit()) {
                         return Ok(EjsonValue::ObjectId(parse_object_id(s)));
                     }
                 }
@@ -762,7 +759,7 @@ fn parse_digits(s: &str, start: usize, end: usize) -> Option<i64> {
 /// Convert civil date to number of days since Unix epoch (1970-01-01).
 /// Algorithm from Howard Hinnant's date library.
 fn days_from_civil(y: i64, m: i64, d: i64) -> Option<i64> {
-    if m < 1 || m > 12 || d < 1 || d > 31 {
+    if !(1..=12).contains(&m) || !(1..=31).contains(&d) {
         return None;
     }
     let yy = if m <= 2 { y - 1 } else { y };

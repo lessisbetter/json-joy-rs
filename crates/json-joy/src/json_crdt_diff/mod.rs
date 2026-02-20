@@ -542,7 +542,7 @@ fn json_to_pack(val: &Value) -> PackValue {
                 PackValue::Float(n.as_f64().unwrap_or(0.0))
             }
         }
-        Value::String(s) => PackValue::Str(s.clone().into()),
+        Value::String(s) => PackValue::Str(s.clone()),
         _ => PackValue::Null,
     }
 }
@@ -571,11 +571,7 @@ fn find_bin_interval(src: &BinNode, pos: usize, len: usize) -> Vec<Tss> {
             let chunk_start = count;
             let chunk_end = count + chunk_len;
             if chunk_end > pos && chunk_start < end {
-                let local_start = if chunk_start >= pos {
-                    0
-                } else {
-                    pos - chunk_start
-                };
+                let local_start = pos.saturating_sub(chunk_start);
                 let local_end = (end - chunk_start).min(chunk_len);
                 result.push(Tss::new(
                     chunk.id.sid,

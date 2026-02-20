@@ -93,8 +93,7 @@ impl PatchBuilder {
     /// Inserts a `Nop` to fill any gap between the clock time and the patch's
     /// last operation, then returns the current patch and resets the builder.
     pub fn flush(&mut self) -> Patch {
-        let patch = std::mem::replace(&mut self.patch, Patch::new());
-        patch
+        std::mem::take(&mut self.patch)
     }
 
     // ── Padding ────────────────────────────────────────────────────────────

@@ -190,7 +190,7 @@ impl IonEncoder {
 
     pub fn write_uint(&mut self, n: u64) {
         if n == 0 {
-            self.writer.u8(TypeOverlay::UINT | 0);
+            self.writer.u8(TypeOverlay::UINT);
             return;
         }
         // Calculate byte length needed.

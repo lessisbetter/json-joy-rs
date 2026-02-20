@@ -54,17 +54,12 @@ impl NodeOdds {
 }
 
 /// Root node type for generated JSON.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum RootNode {
+    #[default]
     Object,
     Array,
     String,
-}
-
-impl Default for RootNode {
-    fn default() -> Self {
-        Self::Object
-    }
 }
 
 /// Options for random JSON generation.
