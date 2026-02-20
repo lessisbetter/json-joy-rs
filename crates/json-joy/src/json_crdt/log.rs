@@ -313,8 +313,21 @@ impl Log {
 // ──────────────────────────────────────────────────────────────────────────────
 
 pub mod codec {
-    //! Stub codec for `Log`. Full implementation is deferred to Wave 3 when
-    //! the structural CRDT codecs are available.
+    //! Binary codec for `Log`.
+    //!
+    //! This preserves:
+    //! - start-model snapshot
+    //! - metadata map
+    //! - ordered patch list (binary patch codec payloads)
+    //!
+    //! Format:
+    //! - magic: `JLOG1` (5 bytes)
+    //! - start_len: `u32` LE
+    //! - start_bytes
+    //! - metadata_len: `u32` LE (JSON object bytes)
+    //! - metadata_bytes
+    //! - patch_count: `u32` LE
+    //! - repeated: patch_len `u32` LE + patch_bytes
 
     /// Encoding format constants — mirrors `log/codec/constants.ts`.
     #[repr(u8)]
@@ -332,9 +345,30 @@ pub mod codec {
             Self
         }
 
-        /// Placeholder — always panics with a not-implemented message.
-        pub fn encode(&self, _log: &super::Log) -> Vec<u8> {
-            unimplemented!("LogEncoder is deferred to Wave 3 (requires structural codec)")
+        pub fn encode(&self, log: &super::Log) -> Vec<u8> {
+            const MAGIC: &[u8; 5] = b"JLOG1";
+            let start_bytes = log.start().to_binary();
+            let metadata_bytes =
+                serde_json::to_vec(&serde_json::Value::Object(log.metadata.clone()))
+                    .unwrap_or_else(|_| b"{}".to_vec());
+
+            let mut out = Vec::new();
+            out.extend_from_slice(MAGIC);
+
+            out.extend_from_slice(&(start_bytes.len() as u32).to_le_bytes());
+            out.extend_from_slice(&start_bytes);
+
+            out.extend_from_slice(&(metadata_bytes.len() as u32).to_le_bytes());
+            out.extend_from_slice(&metadata_bytes);
+
+            out.extend_from_slice(&(log.patches.len() as u32).to_le_bytes());
+            for patch in log.patches.values() {
+                let patch_bytes = patch.to_binary();
+                out.extend_from_slice(&(patch_bytes.len() as u32).to_le_bytes());
+                out.extend_from_slice(&patch_bytes);
+            }
+
+            out
         }
     }
 
@@ -352,9 +386,75 @@ pub mod codec {
             Self
         }
 
-        /// Placeholder — always panics with a not-implemented message.
-        pub fn decode(&self, _data: &[u8]) -> super::Log {
-            unimplemented!("LogDecoder is deferred to Wave 3 (requires structural codec)")
+        /// Decode bytes into a log, panicking on malformed payload.
+        pub fn decode(&self, data: &[u8]) -> super::Log {
+            self.decode_result(data)
+                .expect("LogDecoder::decode: malformed payload")
+        }
+
+        /// Decode bytes into a log.
+        pub fn decode_result(&self, data: &[u8]) -> Result<super::Log, String> {
+            const MAGIC: &[u8; 5] = b"JLOG1";
+            let mut offset = 0usize;
+
+            fn read_u32(data: &[u8], offset: &mut usize) -> Result<u32, String> {
+                if *offset + 4 > data.len() {
+                    return Err("truncated u32".to_string());
+                }
+                let num = u32::from_le_bytes(
+                    data[*offset..*offset + 4]
+                        .try_into()
+                        .map_err(|_| "bad u32".to_string())?,
+                );
+                *offset += 4;
+                Ok(num)
+            }
+
+            fn read_bytes<'a>(
+                data: &'a [u8],
+                offset: &mut usize,
+                len: usize,
+            ) -> Result<&'a [u8], String> {
+                if *offset + len > data.len() {
+                    return Err("truncated bytes".to_string());
+                }
+                let slice = &data[*offset..*offset + len];
+                *offset += len;
+                Ok(slice)
+            }
+
+            if data.len() < MAGIC.len() || &data[..MAGIC.len()] != MAGIC {
+                return Err("bad magic".to_string());
+            }
+            offset += MAGIC.len();
+
+            let start_len = read_u32(data, &mut offset)? as usize;
+            let start_bytes = read_bytes(data, &mut offset, start_len)?;
+            let start_model = super::Model::from_binary(start_bytes)?;
+            let mut log = super::Log::from_model(start_model);
+
+            let metadata_len = read_u32(data, &mut offset)? as usize;
+            let metadata_bytes = read_bytes(data, &mut offset, metadata_len)?;
+            let metadata_value: serde_json::Value =
+                serde_json::from_slice(metadata_bytes).map_err(|e| e.to_string())?;
+            log.metadata = match metadata_value {
+                serde_json::Value::Object(map) => map,
+                _ => return Err("metadata must be object".to_string()),
+            };
+
+            let patch_count = read_u32(data, &mut offset)? as usize;
+            for _ in 0..patch_count {
+                let patch_len = read_u32(data, &mut offset)? as usize;
+                let patch_bytes = read_bytes(data, &mut offset, patch_len)?;
+                let patch = crate::json_crdt_patch::patch::Patch::from_binary(patch_bytes)
+                    .map_err(|e| e.to_string())?;
+                log.apply(patch);
+            }
+
+            if offset != data.len() {
+                return Err("trailing bytes".to_string());
+            }
+            Ok(log)
         }
     }
 
@@ -749,5 +849,49 @@ mod tests {
         let restored = Model::from_binary(&bytes).unwrap();
         assert_eq!(restored.clock.sid, model.clock.sid);
         assert_eq!(restored.clock.time, model.clock.time);
+    }
+
+    // ── Log codec ───────────────────────────────────────────────────────────
+
+    #[test]
+    fn log_codec_round_trip_preserves_state_and_metadata() {
+        let s = sid();
+        let mut log = Log::from_new_model(Model::new(s));
+        log.metadata.insert("source".into(), json!("test"));
+
+        let patch = Patch {
+            ops: vec![
+                Op::NewStr { id: ts(s, 1) },
+                Op::InsStr {
+                    id: ts(s, 2),
+                    obj: ts(s, 1),
+                    after: crate::json_crdt::constants::ORIGIN,
+                    data: "codec".into(),
+                },
+                Op::InsVal {
+                    id: ts(s, 7),
+                    obj: crate::json_crdt::constants::ORIGIN,
+                    val: ts(s, 1),
+                },
+            ],
+            meta: None,
+        };
+        log.apply(patch);
+
+        let encoded = crate::json_crdt::log::codec::LogEncoder::new().encode(&log);
+        let decoded = crate::json_crdt::log::codec::LogDecoder::new()
+            .decode_result(&encoded)
+            .expect("decode log");
+
+        assert_eq!(decoded.metadata.get("source"), Some(&json!("test")));
+        assert_eq!(decoded.patches.len(), log.patches.len());
+        assert_eq!(decoded.replay_to_end().view(), log.replay_to_end().view());
+        assert_eq!(decoded.end.view(), log.end.view());
+    }
+
+    #[test]
+    fn log_decoder_rejects_malformed_payload() {
+        let decoder = crate::json_crdt::log::codec::LogDecoder::new();
+        assert!(decoder.decode_result(b"bad").is_err());
     }
 }
