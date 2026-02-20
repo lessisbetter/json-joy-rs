@@ -302,7 +302,10 @@ fn or_codegen_with_custom_discriminator_matches_upstream_binary_suite_case() {
     assert_eq!(cbor_number, json!(123));
 
     let estimator = CapacityEstimatorCodegen::get(&typ);
-    assert_eq!(estimator(&json!("asdf")), max_encoding_capacity(&json!("asdf")));
+    assert_eq!(
+        estimator(&json!("asdf")),
+        max_encoding_capacity(&json!("asdf"))
+    );
     assert_eq!(estimator(&json!(123)), max_encoding_capacity(&json!(123)));
 }
 
@@ -329,6 +332,181 @@ fn binary_codegen_preserves_native_binary_for_msgpack_and_cbor() {
         decoded_cbor,
         PackValue::Object(vec![("bin".to_string(), PackValue::Bytes(vec![1, 2, 3]))])
     );
+}
+
+#[test]
+fn binary_codegen_optional_only_object_unknown_key_modes_match_upstream_cases() {
+    let mut encode_unknown_obj = json_joy_json_type::type_def::ObjType::new(vec![
+        KeyType::new_opt("id", t().str()),
+        KeyType::new_opt("name", t().str()),
+        KeyType::new_opt("address", t().str()),
+    ]);
+    encode_unknown_obj.schema.encode_unknown_keys = Some(true);
+    let encode_unknown_typ = TypeNode::Obj(encode_unknown_obj);
+
+    let keep_unknown_cases = [
+        json!({
+            "id": "xxxxx",
+            "name": "Go Lang",
+            "____unknownField": 123,
+            "age": 30,
+            "address": "123 Main St"
+        }),
+        json!({
+            "____unknownField": 123,
+            "address": "123 Main St"
+        }),
+        json!({
+            "____unknownField": 123
+        }),
+        json!({}),
+    ];
+
+    for value in keep_unknown_cases {
+        let json_bytes = JsonCodegen::get(&encode_unknown_typ)(&value).expect("encode json");
+        let decoded_json: serde_json::Value =
+            serde_json::from_slice(&json_bytes).expect("decode json bytes");
+        assert_eq!(decoded_json, value);
+
+        let cbor_bytes = CborCodegen::get(&encode_unknown_typ)(&value).expect("encode cbor");
+        let decoded_cbor = decode_json_from_cbor_bytes(&cbor_bytes).expect("decode cbor bytes");
+        assert_eq!(decoded_cbor, value);
+
+        let msgpack_bytes =
+            MsgPackCodegen::get(&encode_unknown_typ)(&value).expect("encode msgpack");
+        let mut msgpack_decoder = MsgPackDecoderFast::new();
+        let decoded_msgpack = serde_json::Value::from(
+            msgpack_decoder
+                .decode(&msgpack_bytes)
+                .expect("decode msgpack bytes"),
+        );
+        assert_eq!(decoded_msgpack, value);
+    }
+
+    let mut drop_unknown_obj = json_joy_json_type::type_def::ObjType::new(vec![
+        KeyType::new_opt("id", t().str()),
+        KeyType::new_opt("name", t().str()),
+        KeyType::new_opt("address", t().str()),
+    ]);
+    drop_unknown_obj.schema.encode_unknown_keys = Some(false);
+    let drop_unknown_typ = TypeNode::Obj(drop_unknown_obj);
+
+    let drop_unknown_cases = [
+        (
+            json!({
+                "id": "xxxxx",
+                "name": "Go Lang",
+                "address": "123 Main St"
+            }),
+            json!({
+                "id": "xxxxx",
+                "name": "Go Lang",
+                "address": "123 Main St"
+            }),
+        ),
+        (
+            json!({
+                "____unknownField": 123,
+                "address": "123 Main St"
+            }),
+            json!({
+                "address": "123 Main St"
+            }),
+        ),
+        (
+            json!({
+                "____unknownField": 123
+            }),
+            json!({}),
+        ),
+        (json!({}), json!({})),
+    ];
+
+    for (value, expected) in drop_unknown_cases {
+        let json_bytes = JsonCodegen::get(&drop_unknown_typ)(&value).expect("encode json");
+        let decoded_json: serde_json::Value =
+            serde_json::from_slice(&json_bytes).expect("decode json bytes");
+        assert_eq!(decoded_json, expected);
+
+        let cbor_bytes = CborCodegen::get(&drop_unknown_typ)(&value).expect("encode cbor");
+        let decoded_cbor = decode_json_from_cbor_bytes(&cbor_bytes).expect("decode cbor bytes");
+        assert_eq!(decoded_cbor, expected);
+
+        let msgpack_bytes = MsgPackCodegen::get(&drop_unknown_typ)(&value).expect("encode msgpack");
+        let mut msgpack_decoder = MsgPackDecoderFast::new();
+        let decoded_msgpack = serde_json::Value::from(
+            msgpack_decoder
+                .decode(&msgpack_bytes)
+                .expect("decode msgpack bytes"),
+        );
+        assert_eq!(decoded_msgpack, expected);
+    }
+}
+
+#[test]
+fn binary_codegen_nested_object_unknown_keys_match_upstream_object_suite_case() {
+    let mut root = json_joy_json_type::type_def::ObjType::new(vec![
+        KeyType::new("id", t().str()),
+        KeyType::new_opt("name", t().str()),
+        KeyType::new("addr", t().Object(vec![KeyType::new("street", t().str())])),
+        KeyType::new(
+            "interests",
+            t().Object(vec![
+                KeyType::new_opt("hobbies", t().Array(t().str(), None)),
+                KeyType::new_opt(
+                    "sports",
+                    t().Array(t().Tuple(vec![t().num(), t().str()], None, None), None),
+                ),
+            ]),
+        ),
+    ]);
+    root.schema.encode_unknown_keys = Some(true);
+    let typ = TypeNode::Obj(root);
+
+    let value = json!({
+        "id": "xxxxx",
+        "name": "Go Lang",
+        "____unknownField": 123,
+        "addr": {
+            "street": "123 Main St",
+            "____extra": true
+        },
+        "interests": {
+            "hobbies": ["hiking", "biking"],
+            "sports": [[1, "football"], [12333, "skiing"]],
+            "______extraProp": "abc"
+        }
+    });
+    let expected = json!({
+        "id": "xxxxx",
+        "name": "Go Lang",
+        "____unknownField": 123,
+        "addr": {
+            "street": "123 Main St"
+        },
+        "interests": {
+            "hobbies": ["hiking", "biking"],
+            "sports": [[1, "football"], [12333, "skiing"]]
+        }
+    });
+
+    let json_bytes = JsonCodegen::get(&typ)(&value).expect("encode json");
+    let decoded_json: serde_json::Value =
+        serde_json::from_slice(&json_bytes).expect("decode json bytes");
+    assert_eq!(decoded_json, expected);
+
+    let cbor_bytes = CborCodegen::get(&typ)(&value).expect("encode cbor");
+    let decoded_cbor = decode_json_from_cbor_bytes(&cbor_bytes).expect("decode cbor bytes");
+    assert_eq!(decoded_cbor, expected);
+
+    let msgpack_bytes = MsgPackCodegen::get(&typ)(&value).expect("encode msgpack");
+    let mut msgpack_decoder = MsgPackDecoderFast::new();
+    let decoded_msgpack = serde_json::Value::from(
+        msgpack_decoder
+            .decode(&msgpack_bytes)
+            .expect("decode msgpack bytes"),
+    );
+    assert_eq!(decoded_msgpack, expected);
 }
 
 #[test]
@@ -425,8 +603,11 @@ fn binary_codegen_handles_recursive_ref_shapes() {
 
     let msgpack_bytes = MsgPackCodegen::get(&tb.Ref("User"))(&value).unwrap();
     let mut msgpack_decoder = MsgPackDecoderFast::new();
-    let decoded_msgpack =
-        serde_json::Value::from(msgpack_decoder.decode(&msgpack_bytes).expect("decode msgpack"));
+    let decoded_msgpack = serde_json::Value::from(
+        msgpack_decoder
+            .decode(&msgpack_bytes)
+            .expect("decode msgpack"),
+    );
     assert_eq!(decoded_msgpack, value);
 
     let cbor_bytes = CborCodegen::get(&tb.Ref("User"))(&value).unwrap();
@@ -477,8 +658,11 @@ fn binary_codegen_handles_recursive_chain_of_ref_aliases() {
 
     let msgpack_bytes = MsgPackCodegen::get(&tb.Ref("Address"))(&value).unwrap();
     let mut msgpack_decoder = MsgPackDecoderFast::new();
-    let decoded_msgpack =
-        serde_json::Value::from(msgpack_decoder.decode(&msgpack_bytes).expect("decode msgpack"));
+    let decoded_msgpack = serde_json::Value::from(
+        msgpack_decoder
+            .decode(&msgpack_bytes)
+            .expect("decode msgpack"),
+    );
     assert_eq!(decoded_msgpack, value);
 
     let cbor_bytes = CborCodegen::get(&tb.Ref("Address"))(&value).unwrap();

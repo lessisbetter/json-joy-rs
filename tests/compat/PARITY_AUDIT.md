@@ -45,7 +45,7 @@ Notes:
 - `json-path` now has an upstream-mapped integration matrix at `crates/json-joy-json-path/tests/upstream_port_json_path_functions_matrix.rs` covering function extension scenarios (`length`, `count`, `match`, `search`, `value`) and combined logical usage from upstream `testJsonPathExec`, including Unicode length checks, descendant counting, regex anchor/case behavior, wrong-arity and unknown-function filters, and null-value function edge cases.
 - `json-path` now has an upstream-mapped integration matrix at `crates/json-joy-json-path/tests/upstream_port_json_path_parser_matrix.rs` covering parser-shape scenarios for unions, recursive+filter composition, bracket-notation existence filters, and parser error handling from upstream `JsonPathParser.spec.ts`.
 - `json-path` now has an expression inventory matrix at `crates/json-joy-json-path/tests/upstream_port_json_path_expression_inventory.rs` to enforce a broad set of known-valid and known-invalid parser cases derived from upstream test suites.
-- `json-type` codegen families (`capacity`, `json`, `discriminator`, `binary`) are now implemented as runtime Rust codegen adapters with upstream-mapped parity coverage at `crates/json-joy-json-type/tests/upstream_port_json_type_codegen_matrix.rs` (including tuple head/tail sizing, unknown-key object encoding through refs, recursive ref/alias chains, custom `or` discriminator-expression handling, native binary preservation for MsgPack/CBOR `bin` fields, and binary codec roundtrips for recursive ref structures).
+- `json-type` codegen families (`capacity`, `json`, `discriminator`, `binary`) are now implemented as runtime Rust codegen adapters with upstream-mapped parity coverage at `crates/json-joy-json-type/tests/upstream_port_json_type_codegen_matrix.rs` (including tuple head/tail sizing, unknown-key object encoding through refs, optional-only object unknown-key mode permutations, nested-object unknown-key handling, recursive ref/alias chains, custom `or` discriminator-expression handling, native binary preservation for MsgPack/CBOR `bin` fields, and binary codec roundtrips for recursive ref structures).
 - `json-crdt` log codec now mirrors upstream component encoding flow:
   - `LogEncoder.serialize/encode` supports `ndjson` and `seq.cbor`.
   - model encodings: `sidecar`, `binary`, `compact`, `verbose`, `none`.
@@ -150,5 +150,4 @@ Implication:
 ## Recommended next review slices
 
 1. `json-path`: continue porting additional upstream parser/evaluator corner cases (especially high-complexity nested filter/function combinations) into matrix tests to widen behavioral coverage.
-2. `json-type`: continue expanding codegen parity matrices with remaining upstream binary-suite object edge cases (optional-only object shapes and unknown-key mode permutations).
-3. Revisit xfail scenarios one family at a time and remove wildcard entries as cases are fixed.
+2. Revisit xfail scenarios one family at a time and remove wildcard entries as cases are fixed.
