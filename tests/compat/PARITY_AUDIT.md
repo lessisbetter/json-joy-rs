@@ -40,6 +40,7 @@ Notes:
 - `json-pointer` local `src` count is +3 vs upstream because Rust requires crate/module scaffolding files (`lib.rs`, `codegen/mod.rs`, `findByPointer/mod.rs`) that have no direct TS counterparts.
 - `json-path` now includes explicit `codegen`, `util`, and `value` modules mapped from upstream package families; key parser/evaluator semantics from upstream test families are aligned (function filters including edge cases such as unknown/wrong-arity/nested calls, no-paren filters, reverse/negative slices, root-object filters, recursive descent selectors, and strict rejection of malformed trailing/empty selectors), with remaining differences primarily around broader test-family coverage and Rust decomposition.
 - `json-path` now has an upstream-mapped integration matrix at `crates/json-joy-json-path/tests/upstream_port_json_path_matrix.rs` covering canonical bookstore queries from upstream `testJsonPathExec`.
+- `json-path` now has an upstream-mapped integration matrix at `crates/json-joy-json-path/tests/upstream_port_json_path_descendant_matrix.rs` covering descendant-selector behavior and codegen/eval equivalence from upstream `descendant-selector.spec.ts`.
 - Prefixed crate naming is intentional and documented in `AGENTS.md` package mapping.
 
 ## Explicit non-parity choices currently in tree
@@ -142,6 +143,6 @@ Implication:
 
 ## Recommended next review slices
 
-1. `json-path`: continue porting additional upstream `__tests__` families (especially broader `testJsonPathExec` cases and `descendant-selector`) into Rust parity matrices to widen behavioral coverage.
+1. `json-path`: continue porting additional upstream `__tests__` families (especially broader `testJsonPathExec` scenarios beyond the current matrix slices) into Rust parity matrices to widen behavioral coverage.
 2. `json-type`: close codegen stub modules first (`binary`, `json`, `discriminator`, `capacity`).
 3. Revisit xfail scenarios one family at a time and remove wildcard entries as cases are fixed.
