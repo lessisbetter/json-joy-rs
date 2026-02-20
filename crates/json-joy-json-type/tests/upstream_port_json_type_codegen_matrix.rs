@@ -221,6 +221,16 @@ fn discriminator_codegen_handles_nested_constant_discriminators() {
 }
 
 #[test]
+fn discriminator_codegen_supports_custom_if_expression() {
+    let mut or_type = OrType::new(vec![t().str(), t().num()]);
+    or_type.discriminator = json!(["if", ["==", "string", ["type", ["get", ""]]], 0, 1]);
+
+    let discriminator = DiscriminatorCodegen::get(&or_type).expect("build discriminator");
+    assert_eq!(discriminator(&json!("asdf")), 0);
+    assert_eq!(discriminator(&json!(123)), 1);
+}
+
+#[test]
 fn binary_codegen_roundtrips_for_json_msgpack_and_cbor() {
     let typ = t().Object(vec![
         KeyType::new("foo", t().str()),
@@ -248,6 +258,52 @@ fn binary_codegen_roundtrips_for_json_msgpack_and_cbor() {
             .expect("decode msgpack bytes"),
     );
     assert_eq!(decoded_msgpack, value);
+}
+
+#[test]
+fn or_codegen_with_custom_discriminator_matches_upstream_binary_suite_case() {
+    let mut or_type = OrType::new(vec![t().str(), t().num()]);
+    or_type.discriminator = json!(["if", ["==", "string", ["type", ["get", ""]]], 0, 1]);
+    let typ = TypeNode::Or(or_type);
+
+    let discriminator = if let TypeNode::Or(or) = &typ {
+        DiscriminatorCodegen::get(or).expect("build discriminator")
+    } else {
+        panic!("expected or type");
+    };
+    assert_eq!(discriminator(&json!("asdf")), 0);
+    assert_eq!(discriminator(&json!(123)), 1);
+
+    let json_encode = JsonTextCodegen::get(&typ);
+    assert_eq!(json_encode(&json!("asdf")).unwrap(), "\"asdf\"");
+    assert_eq!(json_encode(&json!(123)).unwrap(), "123");
+
+    let msgpack_encode = MsgPackCodegen::get(&typ);
+    let mut msgpack_decoder = MsgPackDecoderFast::new();
+    let msgpack_string = serde_json::Value::from(
+        msgpack_decoder
+            .decode(&msgpack_encode(&json!("asdf")).unwrap())
+            .expect("decode msgpack string"),
+    );
+    let msgpack_number = serde_json::Value::from(
+        msgpack_decoder
+            .decode(&msgpack_encode(&json!(123)).unwrap())
+            .expect("decode msgpack number"),
+    );
+    assert_eq!(msgpack_string, json!("asdf"));
+    assert_eq!(msgpack_number, json!(123));
+
+    let cbor_encode = CborCodegen::get(&typ);
+    let cbor_string =
+        decode_json_from_cbor_bytes(&cbor_encode(&json!("asdf")).unwrap()).expect("decode cbor");
+    let cbor_number =
+        decode_json_from_cbor_bytes(&cbor_encode(&json!(123)).unwrap()).expect("decode cbor");
+    assert_eq!(cbor_string, json!("asdf"));
+    assert_eq!(cbor_number, json!(123));
+
+    let estimator = CapacityEstimatorCodegen::get(&typ);
+    assert_eq!(estimator(&json!("asdf")), max_encoding_capacity(&json!("asdf")));
+    assert_eq!(estimator(&json!(123)), max_encoding_capacity(&json!(123)));
 }
 
 #[test]
@@ -329,6 +385,105 @@ fn json_text_handles_recursive_ref_shapes() {
     let encoded = JsonTextCodegen::get(&tb.Ref("User"))(&value).unwrap();
     let decoded: serde_json::Value = serde_json::from_str(&encoded).unwrap();
     assert_eq!(decoded, value);
+}
+
+#[test]
+fn binary_codegen_handles_recursive_ref_shapes() {
+    let module = Arc::new(ModuleType::new());
+    let tb = TypeBuilder::with_system(Arc::clone(&module));
+
+    module.alias(
+        "User",
+        tb.Object(vec![
+            KeyType::new("id", tb.str()),
+            KeyType::new_opt("address", tb.Ref("Address")),
+        ])
+        .get_schema(),
+    );
+    module.alias(
+        "Address",
+        tb.Object(vec![
+            KeyType::new("id", tb.str()),
+            KeyType::new_opt("user", tb.Ref("User")),
+        ])
+        .get_schema(),
+    );
+
+    let value = json!({
+        "id": "user-1",
+        "address": {
+            "id": "address-1",
+            "user": {
+                "id": "user-2",
+                "address": {
+                    "id": "address-2",
+                    "user": {"id": "user-3"}
+                }
+            }
+        }
+    });
+
+    let msgpack_bytes = MsgPackCodegen::get(&tb.Ref("User"))(&value).unwrap();
+    let mut msgpack_decoder = MsgPackDecoderFast::new();
+    let decoded_msgpack =
+        serde_json::Value::from(msgpack_decoder.decode(&msgpack_bytes).expect("decode msgpack"));
+    assert_eq!(decoded_msgpack, value);
+
+    let cbor_bytes = CborCodegen::get(&tb.Ref("User"))(&value).unwrap();
+    let decoded_cbor = decode_json_from_cbor_bytes(&cbor_bytes).expect("decode cbor");
+    assert_eq!(decoded_cbor, value);
+}
+
+#[test]
+fn binary_codegen_handles_recursive_chain_of_ref_aliases() {
+    let module = Arc::new(ModuleType::new());
+    let tb = TypeBuilder::with_system(Arc::clone(&module));
+
+    module.alias(
+        "User0",
+        tb.Object(vec![
+            KeyType::new("id", tb.str()),
+            KeyType::new_opt("address", tb.Ref("Address")),
+        ])
+        .get_schema(),
+    );
+    module.alias("User1", tb.Ref("User0").get_schema());
+    module.alias("User", tb.Ref("User1").get_schema());
+
+    module.alias(
+        "Address0",
+        tb.Object(vec![
+            KeyType::new("id", tb.str()),
+            KeyType::new_opt("user", tb.Ref("User")),
+        ])
+        .get_schema(),
+    );
+    module.alias("Address1", tb.Ref("Address0").get_schema());
+    module.alias("Address", tb.Ref("Address1").get_schema());
+
+    let value = json!({
+        "id": "address-1",
+        "user": {
+            "id": "user-1",
+            "address": {
+                "id": "address-2",
+                "user": {
+                    "id": "user-2",
+                    "address": {"id": "address-3"}
+                }
+            }
+        }
+    });
+
+    let msgpack_bytes = MsgPackCodegen::get(&tb.Ref("Address"))(&value).unwrap();
+    let mut msgpack_decoder = MsgPackDecoderFast::new();
+    let decoded_msgpack =
+        serde_json::Value::from(msgpack_decoder.decode(&msgpack_bytes).expect("decode msgpack"));
+    assert_eq!(decoded_msgpack, value);
+
+    let cbor_bytes = CborCodegen::get(&tb.Ref("Address"))(&value).unwrap();
+    let decoded_cbor = decode_json_from_cbor_bytes(&cbor_bytes).expect("decode cbor");
+    assert_eq!(decoded_cbor, value);
 }
 
 #[test]
