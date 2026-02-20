@@ -1,5 +1,6 @@
-use json_joy_json_pack::cbor::decode_json_from_cbor_bytes;
+use json_joy_json_pack::cbor::{decode_cbor_value, decode_json_from_cbor_bytes};
 use json_joy_json_pack::msgpack::MsgPackDecoderFast;
+use json_joy_json_pack::PackValue;
 use json_joy_json_type::codegen::binary::{CborCodegen, JsonCodegen, MsgPackCodegen};
 use json_joy_json_type::codegen::capacity::CapacityEstimatorCodegen;
 use json_joy_json_type::codegen::discriminator::DiscriminatorCodegen;
@@ -247,6 +248,31 @@ fn binary_codegen_roundtrips_for_json_msgpack_and_cbor() {
             .expect("decode msgpack bytes"),
     );
     assert_eq!(decoded_msgpack, value);
+}
+
+#[test]
+fn binary_codegen_preserves_native_binary_for_msgpack_and_cbor() {
+    let typ = t().Object(vec![KeyType::new("bin", t().bin())]);
+    let value = json!({"bin": [1, 2, 3]});
+
+    let encode_msgpack = MsgPackCodegen::get(&typ);
+    let msgpack_bytes = encode_msgpack(&value).expect("msgpack encode");
+    let mut msgpack_decoder = MsgPackDecoderFast::new();
+    let decoded_msgpack = msgpack_decoder
+        .decode(&msgpack_bytes)
+        .expect("decode msgpack");
+    assert_eq!(
+        decoded_msgpack,
+        PackValue::Object(vec![("bin".to_string(), PackValue::Bytes(vec![1, 2, 3]))])
+    );
+
+    let encode_cbor = CborCodegen::get(&typ);
+    let cbor_bytes = encode_cbor(&value).expect("cbor encode");
+    let decoded_cbor = decode_cbor_value(&cbor_bytes).expect("decode cbor");
+    assert_eq!(
+        decoded_cbor,
+        PackValue::Object(vec![("bin".to_string(), PackValue::Bytes(vec![1, 2, 3]))])
+    );
 }
 
 #[test]
