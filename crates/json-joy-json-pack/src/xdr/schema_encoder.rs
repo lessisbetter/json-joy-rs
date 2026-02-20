@@ -20,6 +20,8 @@ pub enum XdrEncodeError {
     NoUnionArm,
     #[error("array size mismatch")]
     ArraySizeMismatch,
+    #[error("unsupported XDR type: {0}")]
+    UnsupportedType(&'static str),
 }
 
 /// XDR schema-aware encoder.
@@ -92,7 +94,7 @@ impl XdrSchemaEncoder {
                     Err(XdrEncodeError::TypeMismatch("float"))
                 }
             }
-            XdrSchema::Double | XdrSchema::Quadruple => {
+            XdrSchema::Double => {
                 if let XdrValue::Double(f) = value {
                     self.encoder.write_double(*f);
                     Ok(())
@@ -100,6 +102,7 @@ impl XdrSchemaEncoder {
                     Err(XdrEncodeError::TypeMismatch("double"))
                 }
             }
+            XdrSchema::Quadruple => Err(XdrEncodeError::UnsupportedType("quadruple")),
             XdrSchema::Boolean => {
                 if let XdrValue::Bool(b) = value {
                     self.encoder.write_boolean(*b);
@@ -207,7 +210,11 @@ impl XdrSchemaEncoder {
                     let disc_int = match &u.discriminant {
                         XdrDiscriminant::Int(n) => *n,
                         XdrDiscriminant::Bool(b) => *b as i32,
-                        XdrDiscriminant::Str(_) => 0,
+                        XdrDiscriminant::Str(_) => {
+                            return Err(XdrEncodeError::UnsupportedType(
+                                "string union discriminant",
+                            ))
+                        }
                     };
                     let arm = arms.iter().find(|(d, _)| d == &u.discriminant);
                     let arm_schema = if let Some((_, s)) = arm {

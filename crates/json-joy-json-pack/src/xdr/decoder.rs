@@ -14,6 +14,8 @@ pub enum XdrDecodeError {
     MaxSizeExceeded,
     #[error("unknown union discriminant")]
     UnknownDiscriminant,
+    #[error("unsupported XDR type: {0}")]
+    UnsupportedType(&'static str),
 }
 
 /// XDR primitive decoder.

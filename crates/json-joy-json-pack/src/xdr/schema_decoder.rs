@@ -40,9 +40,8 @@ impl XdrSchemaDecoder {
                 Ok(XdrValue::UnsignedHyper(self.decoder.read_unsigned_hyper()?))
             }
             XdrSchema::Float => Ok(XdrValue::Float(self.decoder.read_float()?)),
-            XdrSchema::Double | XdrSchema::Quadruple => {
-                Ok(XdrValue::Double(self.decoder.read_double()?))
-            }
+            XdrSchema::Double => Ok(XdrValue::Double(self.decoder.read_double()?)),
+            XdrSchema::Quadruple => Err(XdrDecodeError::UnsupportedType("quadruple")),
             XdrSchema::Boolean => Ok(XdrValue::Bool(self.decoder.read_boolean()?)),
             XdrSchema::Enum(values) => {
                 let n = self.decoder.read_int()?;
