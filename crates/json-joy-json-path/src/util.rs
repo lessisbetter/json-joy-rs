@@ -43,7 +43,7 @@ fn segment_to_string(segment: &PathSegment) -> String {
         let joined = segment
             .selectors
             .iter()
-            .map(selector_to_selector_atom)
+            .map(selector_to_segment)
             .collect::<Vec<_>>()
             .join(",");
         if segment.recursive {
@@ -98,30 +98,6 @@ fn selector_to_segment_tail(selector: &Selector) -> String {
         Selector::Slice { .. } => selector_to_segment(selector),
         Selector::Wildcard => String::from("*"),
         Selector::Filter(_) => String::from("[?(...)]"),
-    }
-}
-
-fn selector_to_selector_atom(selector: &Selector) -> String {
-    match selector {
-        Selector::Name(name) => format!("'{}'", escape_single_quoted(name)),
-        Selector::Index(index) => index.to_string(),
-        Selector::Slice { start, end, step } => {
-            let mut s = String::new();
-            if let Some(v) = start {
-                s.push_str(&v.to_string());
-            }
-            s.push(':');
-            if let Some(v) = end {
-                s.push_str(&v.to_string());
-            }
-            if let Some(v) = step {
-                s.push(':');
-                s.push_str(&v.to_string());
-            }
-            s
-        }
-        Selector::Wildcard => String::from("*"),
-        Selector::Filter(_) => String::from("?(...)"),
     }
 }
 
@@ -183,7 +159,7 @@ mod tests {
             false,
         )]);
 
-        assert_eq!(json_path_to_string(&path), "$['a',1,?(...)]");
+        assert_eq!(json_path_to_string(&path), "$[.a,[1],[?(...)]]");
     }
 
     #[test]
