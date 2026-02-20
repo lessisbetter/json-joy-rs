@@ -29,7 +29,7 @@ It is a review checkpoint artifact and should be updated as gaps are closed.
 | `json-path` | `json-joy-json-path` | 24 | 5 |
 | `json-pointer` | `json-joy-json-pointer` | 31 | 34 |
 | `json-random` | `json-joy-json-random` | 18 | 10 |
-| `json-type` | `json-joy-json-type` | 123 | 40 |
+| `json-type` | `json-joy-json-type` | 123 | 42 |
 | `util` | `util` | 71 | 23 |
 
 Notes:
@@ -73,7 +73,7 @@ Current xfail scenarios:
 - `crates/json-joy-json-type/src/codegen/binary/mod.rs`: TODO for binary codegen classes.
 - `crates/json-joy-json-type/src/codegen/json/mod.rs`: JSON text codegen stub/TODO.
 - `crates/json-joy-json-type/src/codegen/discriminator/index.rs`: runtime discriminator evaluator is ported, but Rust does not memoize generated closures by union identity.
-- `crates/json-joy-json-type/src/codegen/capacity/mod.rs`: capacity estimator codegen stub/TODO.
+- `crates/json-joy-json-type/src/codegen/capacity/capacity_estimator_codegen.rs`: runtime estimator is ported, but Rust does not model JS `Value<T>` wrapper objects in estimator input and does not emit/generated JS code.
 - `crates/json-joy/src/json_crdt/draft.rs`: redo methods are explicit stubs.
 - `crates/json-joy/src/json_crdt/codec/structural/verbose.rs`: local stub-node fallback path has comment noting upstream would error.
 - `crates/json-joy-json-pack/src/ejson/encoder.rs`: Decimal128 encoder keeps upstream "return 0" stub behavior.
@@ -119,7 +119,7 @@ Implication:
 
 ## Recommended next review slices
 
-1. `json-type`: close remaining codegen stub modules (`binary`, `json`, `capacity`).
+1. `json-type`: close remaining codegen stub modules (`binary`, `json`).
 2. `json-pack`: target remaining codec family parity and remove ejson Decimal128 stubs where feasible.
 3. `json-joy`: continue family-by-family coverage expansion against upstream package layout.
 4. Revisit xfail scenarios one family at a time and remove wildcard entries as cases are fixed.

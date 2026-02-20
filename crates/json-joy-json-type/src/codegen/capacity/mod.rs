@@ -1,5 +1,4 @@
-//! Capacity estimator codegen stub.
-//!
-//! Upstream reference: json-type/src/codegen/capacity/
+pub mod capacity_estimator_codegen;
+pub mod index;
 
-// TODO: Port CapacityEstimatorCodegen.
+pub use capacity_estimator_codegen::{CapacityEstimatorCodegen, CompiledCapacityEstimator};
