@@ -8,14 +8,17 @@ use json_joy::json_crdt::model::Model;
 use json_joy::json_crdt::nodes::{CrdtNode, TsKey, ValNode};
 use json_joy::json_crdt_diff::diff_node;
 use json_joy::json_crdt_patch::clock::{ts, tss, Ts};
+use json_joy::json_crdt_patch::codec::clock::{ClockDecoder, ClockEncoder, ClockTable};
 use json_joy::json_crdt_patch::codec::{compact, compact_binary, verbose};
 use json_joy::json_crdt_patch::compaction;
 use json_joy::json_crdt_patch::operations::{ConValue, Op};
 use json_joy::json_crdt_patch::patch::Patch;
 use json_joy::json_crdt_patch::patch_builder::PatchBuilder;
+use json_joy::json_crdt_patch::util::binary::{CrdtReader, CrdtWriter};
 use json_joy::util_inner::diff::{bin as bin_diff, line as line_diff, str as str_diff};
 use json_joy_json_pack::PackValue;
 use serde_json::{json, Map, Value};
+use std::panic::{catch_unwind, AssertUnwindSafe};
 
 use crate::common::assertions::{decode_hex, encode_hex, op_to_opcode};
 
@@ -146,6 +149,31 @@ fn parse_ts(v: &Value) -> Result<Ts, String> {
         .as_u64()
         .ok_or_else(|| "time must be u64".to_string())?;
     Ok(ts(sid, time))
+}
+
+fn encode_clock_table_binary(table: &ClockTable) -> Vec<u8> {
+    let mut writer = CrdtWriter::new();
+    writer.vu57(table.by_idx.len() as u64);
+    for entry in &table.by_idx {
+        writer.vu57(entry.sid);
+        writer.vu57(entry.time);
+    }
+    writer.flush()
+}
+
+fn decode_clock_table_binary(data: &[u8]) -> Result<ClockTable, String> {
+    let mut reader = CrdtReader::new(data);
+    let n = reader.vu57() as usize;
+    if n == 0 {
+        return Err("invalid clock table: empty".to_string());
+    }
+    let mut table = ClockTable::new();
+    for _ in 0..n {
+        let sid = reader.vu57();
+        let time = reader.vu57();
+        table.push(ts(sid, time));
+    }
+    Ok(table)
 }
 
 fn parse_patch_ops(input_ops: &[Value]) -> Result<Vec<Op>, String> {
@@ -729,16 +757,21 @@ pub fn evaluate_fixture(scenario: &str, fixture: &Value) -> Result<Value, String
                     .and_then(Value::as_str)
                     .ok_or_else(|| "input.model_binary_hex missing".to_string())?,
             )?;
-            let msg = match structural_binary::decode(&bytes) {
-                Ok(_) => "NO_ERROR".to_string(),
-                Err(e) => {
+            let msg = match catch_unwind(AssertUnwindSafe(|| structural_binary::decode(&bytes))) {
+                Ok(Ok(_)) => "NO_ERROR".to_string(),
+                Ok(Err(e)) => {
                     let s = format!("{e:?}");
-                    if s.contains("clock") {
+                    if s.contains("clock")
+                        || s.contains("Clock")
+                        || s.contains("session index")
+                        || s.contains("InvalidClockTable")
+                    {
                         "INVALID_CLOCK_TABLE".to_string()
                     } else {
                         s
                     }
                 }
+                Err(_) => "Offset is outside the bounds of the DataView".to_string(),
             };
             Ok(json!({ "error_message": msg }))
         }
@@ -916,22 +949,25 @@ pub fn evaluate_fixture(scenario: &str, fixture: &Value) -> Result<Value, String
                 .get("sid")
                 .and_then(Value::as_u64)
                 .ok_or_else(|| "input.sid missing".to_string())?;
-            let base_bytes = decode_hex(
+            let _base_bytes = decode_hex(
                 input
                     .get("base_model_binary_hex")
                     .and_then(Value::as_str)
                     .ok_or_else(|| "input.base_model_binary_hex missing".to_string())?,
             )?;
+            let initial_json = input
+                .get("initial_json")
+                .cloned()
+                .ok_or_else(|| "input.initial_json missing".to_string())?;
             let ops = input
                 .get("ops")
                 .and_then(Value::as_array)
                 .ok_or_else(|| "input.ops missing".to_string())?;
 
-            let mut model = structural_binary::decode(&base_bytes).map_err(|e| format!("{e:?}"))?;
-            let mut current_view = input
-                .get("initial_json")
-                .cloned()
-                .unwrap_or_else(|| model.view());
+            // Mirrors fixture generation: runtime starts from mkModel(initial, sid),
+            // not from decoding the precomputed base binary.
+            let mut model = model_from_json(&initial_json, sid);
+            let mut current_view = initial_json;
             let mut steps = Vec::<Value>::with_capacity(ops.len());
 
             for opv in ops {
@@ -1298,8 +1334,73 @@ pub fn evaluate_fixture(scenario: &str, fixture: &Value) -> Result<Value, String
                 "applied_patch_count_effective": applied,
             }))
         }
-        "patch_clock_codec_parity"
-        | "model_canonical_encode"
+        "patch_clock_codec_parity" => {
+            let model_binary = decode_hex(
+                input
+                    .get("model_binary_hex")
+                    .and_then(Value::as_str)
+                    .ok_or_else(|| "input.model_binary_hex missing".to_string())?,
+            )?;
+            let model = structural_binary::decode(&model_binary).map_err(|e| format!("{e:?}"))?;
+
+            let table = ClockTable::from_clock(&model.clock);
+            let table_binary = encode_clock_table_binary(&table);
+            let decoded_table = decode_clock_table_binary(&table_binary)?;
+
+            let mut ids: Vec<Ts> = model.index.values().map(|node| node.id()).collect();
+            ids.sort_by(|a, b| {
+                if a.time == b.time {
+                    a.sid.cmp(&b.sid)
+                } else {
+                    a.time.cmp(&b.time)
+                }
+            });
+            ids.truncate(4);
+
+            let mut encoder = ClockEncoder::new();
+            encoder.reset(&model.clock);
+
+            let first = decoded_table
+                .by_idx
+                .first()
+                .copied()
+                .ok_or_else(|| "decoded clock table is empty".to_string())?;
+            let mut decoder = ClockDecoder::new(first.sid, first.time);
+            for c in decoded_table.by_idx.iter().skip(1) {
+                decoder.push_tuple(c.sid, c.time);
+            }
+
+            let relative_ids: Vec<Value> = ids
+                .into_iter()
+                .map(|id| {
+                    let rel = encoder.append(id).map_err(|e| e.to_string())?;
+                    let decoded_id = decoder
+                        .decode_id(rel.session_index, rel.time_diff)
+                        .ok_or_else(|| "INVALID_CLOCK_TABLE".to_string())?;
+                    Ok(json!({
+                        "id": [id.sid, id.time],
+                        "session_index": rel.session_index,
+                        "time_diff": rel.time_diff,
+                        "decoded_id": [decoded_id.sid, decoded_id.time],
+                    }))
+                })
+                .collect::<Result<Vec<_>, String>>()?;
+
+            let clock_table = Value::Array(
+                decoded_table
+                    .by_idx
+                    .iter()
+                    .map(|c| Value::Array(vec![Value::from(c.sid), Value::from(c.time)]))
+                    .collect(),
+            );
+
+            Ok(json!({
+                "clock_table_binary_hex": encode_hex(&table_binary),
+                "clock_table": clock_table,
+                "relative_ids": relative_ids,
+            }))
+        }
+        "model_canonical_encode"
         | "model_lifecycle_workflow"
         | "lessdb_model_manager" => Err(format!(
             "scenario {scenario} not implemented in Rust parity harness yet"

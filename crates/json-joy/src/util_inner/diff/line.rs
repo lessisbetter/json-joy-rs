@@ -64,9 +64,125 @@ pub fn agg(patch: &Patch) -> Vec<Patch> {
         lines.push(line);
     }
 
-    // Normalize each line
+    // Normalize each line.
     for i in 0..lines.len() {
         lines[i] = normalize(std::mem::take(&mut lines[i]));
+    }
+
+    // Mirrors TypeScript `NORMALIZE_LINE_START` / `NORMALIZE_LINE_END` passes.
+    for i in 0..lines.len() {
+        // NORMALIZE_LINE_START
+        'normalize_line_start: {
+            let line_len = lines[i].len();
+            if line_len < 2 {
+                break 'normalize_line_start;
+            }
+
+            let first_op_type = lines[i][0].0;
+            let second_op_type = lines[i][1].0;
+            if first_op_type != PatchOpType::Eql {
+                break 'normalize_line_start;
+            }
+            if second_op_type != PatchOpType::Del && second_op_type != PatchOpType::Ins {
+                break 'normalize_line_start;
+            }
+            if lines[i][2..].iter().any(|(t, _)| *t != second_op_type) {
+                break 'normalize_line_start;
+            }
+
+            let pfx = lines[i][0].1.clone();
+            for j in (i + 1)..lines.len() {
+                lines[j] = normalize(std::mem::take(&mut lines[j]));
+                let target_len = lines[j].len();
+
+                if target_len > 1
+                    && lines[j][0].0 == second_op_type
+                    && lines[j][1].0 == PatchOpType::Eql
+                    && lines[j][0].1 == pfx
+                {
+                    // line.splice(0, 1)
+                    lines[i].remove(0);
+                    // secondOp[1] = pfx + secondOp[1]
+                    let new_second = format!("{pfx}{}", lines[i][0].1);
+                    lines[i][0].1 = new_second;
+                    // targetLineSecondOp[1] = pfx + targetLineSecondOp[1]
+                    let new_target_second = format!("{pfx}{}", lines[j][1].1);
+                    lines[j][1].1 = new_target_second;
+                    // targetLine.splice(0, 1)
+                    lines[j].remove(0);
+                    break 'normalize_line_start;
+                }
+
+                if lines[j].iter().any(|(t, _)| *t != second_op_type) {
+                    break 'normalize_line_start;
+                }
+            }
+        }
+
+        // NORMALIZE_LINE_END
+        'normalize_line_end: {
+            if lines[i].len() < 2 {
+                break 'normalize_line_end;
+            }
+
+            if lines[i].last().map(|op| op.0) != Some(PatchOpType::Del) {
+                break 'normalize_line_end;
+            }
+
+            for j in (i + 1)..lines.len() {
+                lines[j] = normalize(std::mem::take(&mut lines[j]));
+                let target_len = lines[j].len();
+                if target_len == 0 {
+                    continue;
+                }
+
+                let target_last_idx;
+                if target_len == 1 {
+                    let target_type = lines[j][0].0;
+                    if target_type == PatchOpType::Del {
+                        continue;
+                    }
+                    if target_type != PatchOpType::Eql {
+                        break 'normalize_line_end;
+                    }
+                    target_last_idx = 0usize;
+                } else {
+                    if target_len > 2 {
+                        break 'normalize_line_end;
+                    }
+                    if lines[j][0].0 != PatchOpType::Del {
+                        break 'normalize_line_end;
+                    }
+                    target_last_idx = 1usize;
+                }
+
+                let target_last_type = lines[j][target_last_idx].0;
+                if target_last_type == PatchOpType::Del {
+                    continue;
+                }
+                if target_last_type != PatchOpType::Eql {
+                    break 'normalize_line_end;
+                }
+
+                let move_str = lines[j][target_last_idx].1.clone();
+                let last_idx = lines[i].len() - 1;
+                let last_op_str = lines[i][last_idx].1.clone();
+                if move_str.len() > last_op_str.len() {
+                    break 'normalize_line_end;
+                }
+                let Some(prefix) = last_op_str.strip_suffix(move_str.as_str()) else {
+                    break 'normalize_line_end;
+                };
+
+                lines[i][last_idx].1 = prefix.to_string();
+                lines[i].push((PatchOpType::Eql, move_str));
+                lines[j][target_last_idx].0 = PatchOpType::Del;
+
+                lines[i] = normalize(std::mem::take(&mut lines[i]));
+                lines[j] = normalize(std::mem::take(&mut lines[j]));
+                break 'normalize_line_end;
+            }
+        }
     }
 
     lines

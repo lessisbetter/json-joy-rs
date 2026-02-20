@@ -1068,6 +1068,16 @@ fn read_cbor_value(r: &mut CrdtReader) -> Result<PackValue, DecodeError> {
                 21 => Ok(PackValue::Bool(true)),
                 22 => Ok(PackValue::Null),
                 23 => Ok(PackValue::Undefined),
+                25 => {
+                    let bytes = r.buf(2);
+                    let bits = u16::from_be_bytes([bytes[0], bytes[1]]);
+                    Ok(PackValue::Float(json_joy_buffers::decode_f16(bits) as f64))
+                }
+                26 => {
+                    let bytes = r.buf(4);
+                    let f = f32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]);
+                    Ok(PackValue::Float(f as f64))
+                }
                 27 => {
                     let bytes = r.buf(8);
                     let f = f64::from_be_bytes([

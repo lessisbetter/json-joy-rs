@@ -266,8 +266,21 @@ impl<'a> JsonCrdtDiff<'a> {
     ) -> Result<(), DiffError> {
         let mut inserts: Vec<(String, Ts)> = Vec::new();
 
-        // Keys in src not in dst → set to undefined tombstone.
-        for key in src.keys.keys() {
+        // Mirrors upstream ObjNode.forEach(): only visible (non-tombstoned)
+        // keys participate in source-side delete detection.
+        for (key, &val_id) in &src.keys {
+            let visible = match self.index.get(&TsKey::from(val_id)) {
+                Some(CrdtNode::Con(con))
+                    if matches!(&con.val, ConValue::Val(PackValue::Undefined)) =>
+                {
+                    false
+                }
+                Some(_) => true,
+                None => false,
+            };
+            if !visible {
+                continue;
+            }
             if !dst.contains_key(key) {
                 let undef_id = self.builder.con_val(PackValue::Undefined);
                 inserts.push((key.clone(), undef_id));
@@ -463,11 +476,9 @@ impl<'a> JsonCrdtDiff<'a> {
             }
             Value::Array(arr) => {
                 let arr_id = self.builder.arr();
-                let mut after = arr_id;
-                for item in arr {
-                    let item_id = self.build_view(item);
-                    let ins_id = self.builder.ins_arr(arr_id, after, vec![item_id]);
-                    after = ins_id;
+                if !arr.is_empty() {
+                    let item_ids: Vec<Ts> = arr.iter().map(|item| self.build_view(item)).collect();
+                    self.builder.ins_arr(arr_id, arr_id, item_ids);
                 }
                 arr_id
             }

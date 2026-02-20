@@ -6,13 +6,6 @@ source_file = "crates/json-joy/src/json_crdt/log.rs"
 issue = "parity-model-canonical-encode"
 
 [[xfail]]
-scenario = "patch_clock_codec_parity"
-name = "*"
-reason = "Patch clock codec parity extraction is not yet implemented in the Rust harness."
-source_file = "crates/json-joy/src/json_crdt_patch/codec/clock.rs"
-issue = "parity-patch-clock-codec"
-
-[[xfail]]
 scenario = "model_lifecycle_workflow"
 name = "*"
 reason = "Lifecycle workflow adapter from fixture DSL to Rust runtime is not yet implemented."
@@ -21,15 +14,330 @@ issue = "parity-model-lifecycle-workflow"
 
 [[xfail]]
 scenario = "model_api_workflow"
-name = "*"
-reason = "Workflow behavior now matches in focused parity checks, but canonical final_model_binary_hex still diverges from upstream."
+name = "model_api_workflow_01_v1"
+reason = "Workflow behavior matches, but canonical final_model_binary_hex still diverges from upstream for this fixture."
+source_file = "crates/json-joy/src/json_crdt/model/api.rs"
+issue = "parity-model-api-workflow"
+
+[[xfail]]
+scenario = "model_api_workflow"
+name = "model_api_workflow_05_v1"
+reason = "Workflow behavior matches, but canonical final_model_binary_hex still diverges from upstream for this fixture."
+source_file = "crates/json-joy/src/json_crdt/model/api.rs"
+issue = "parity-model-api-workflow"
+
+[[xfail]]
+scenario = "model_api_workflow"
+name = "model_api_workflow_07_v1"
+reason = "Workflow behavior matches, but canonical final_model_binary_hex still diverges from upstream for this fixture."
+source_file = "crates/json-joy/src/json_crdt/model/api.rs"
+issue = "parity-model-api-workflow"
+
+[[xfail]]
+scenario = "model_api_workflow"
+name = "model_api_workflow_08_v1"
+reason = "Workflow behavior matches, but canonical final_model_binary_hex still diverges from upstream for this fixture."
+source_file = "crates/json-joy/src/json_crdt/model/api.rs"
+issue = "parity-model-api-workflow"
+
+[[xfail]]
+scenario = "model_api_workflow"
+name = "model_api_workflow_09_v1"
+reason = "Workflow behavior matches, but canonical final_model_binary_hex still diverges from upstream for this fixture."
+source_file = "crates/json-joy/src/json_crdt/model/api.rs"
+issue = "parity-model-api-workflow"
+
+[[xfail]]
+scenario = "model_api_workflow"
+name = "model_api_workflow_10_v1"
+reason = "Workflow behavior matches, but canonical final_model_binary_hex still diverges from upstream for this fixture."
+source_file = "crates/json-joy/src/json_crdt/model/api.rs"
+issue = "parity-model-api-workflow"
+
+[[xfail]]
+scenario = "model_api_workflow"
+name = "model_api_workflow_13_v1"
+reason = "Workflow behavior matches, but canonical final_model_binary_hex still diverges from upstream for this fixture."
+source_file = "crates/json-joy/src/json_crdt/model/api.rs"
+issue = "parity-model-api-workflow"
+
+[[xfail]]
+scenario = "model_api_workflow"
+name = "model_api_workflow_15_v1"
+reason = "Workflow behavior matches, but canonical final_model_binary_hex still diverges from upstream for this fixture."
+source_file = "crates/json-joy/src/json_crdt/model/api.rs"
+issue = "parity-model-api-workflow"
+
+[[xfail]]
+scenario = "model_api_workflow"
+name = "model_api_workflow_16_v1"
+reason = "Workflow behavior matches, but canonical final_model_binary_hex still diverges from upstream for this fixture."
+source_file = "crates/json-joy/src/json_crdt/model/api.rs"
+issue = "parity-model-api-workflow"
+
+[[xfail]]
+scenario = "model_api_workflow"
+name = "model_api_workflow_17_v1"
+reason = "Workflow behavior matches, but canonical final_model_binary_hex still diverges from upstream for this fixture."
+source_file = "crates/json-joy/src/json_crdt/model/api.rs"
+issue = "parity-model-api-workflow"
+
+[[xfail]]
+scenario = "model_api_workflow"
+name = "model_api_workflow_18_v1"
+reason = "Workflow behavior matches, but canonical final_model_binary_hex still diverges from upstream for this fixture."
+source_file = "crates/json-joy/src/json_crdt/model/api.rs"
+issue = "parity-model-api-workflow"
+
+[[xfail]]
+scenario = "model_api_workflow"
+name = "model_api_workflow_24_v1"
+reason = "Workflow behavior matches, but canonical final_model_binary_hex still diverges from upstream for this fixture."
+source_file = "crates/json-joy/src/json_crdt/model/api.rs"
+issue = "parity-model-api-workflow"
+
+[[xfail]]
+scenario = "model_api_workflow"
+name = "model_api_workflow_26_v1"
+reason = "Workflow behavior matches, but canonical final_model_binary_hex still diverges from upstream for this fixture."
+source_file = "crates/json-joy/src/json_crdt/model/api.rs"
+issue = "parity-model-api-workflow"
+
+[[xfail]]
+scenario = "model_api_workflow"
+name = "model_api_workflow_27_v1"
+reason = "Workflow behavior matches, but canonical final_model_binary_hex still diverges from upstream for this fixture."
+source_file = "crates/json-joy/src/json_crdt/model/api.rs"
+issue = "parity-model-api-workflow"
+
+[[xfail]]
+scenario = "model_api_workflow"
+name = "model_api_workflow_28_v1"
+reason = "Workflow behavior matches, but canonical final_model_binary_hex still diverges from upstream for this fixture."
+source_file = "crates/json-joy/src/json_crdt/model/api.rs"
+issue = "parity-model-api-workflow"
+
+[[xfail]]
+scenario = "model_api_workflow"
+name = "model_api_workflow_29_v1"
+reason = "Workflow behavior matches, but canonical final_model_binary_hex still diverges from upstream for this fixture."
+source_file = "crates/json-joy/src/json_crdt/model/api.rs"
+issue = "parity-model-api-workflow"
+
+[[xfail]]
+scenario = "model_api_workflow"
+name = "model_api_workflow_33_v1"
+reason = "Workflow behavior matches, but canonical final_model_binary_hex still diverges from upstream for this fixture."
+source_file = "crates/json-joy/src/json_crdt/model/api.rs"
+issue = "parity-model-api-workflow"
+
+[[xfail]]
+scenario = "model_api_workflow"
+name = "model_api_workflow_34_v1"
+reason = "Workflow behavior matches, but canonical final_model_binary_hex still diverges from upstream for this fixture."
+source_file = "crates/json-joy/src/json_crdt/model/api.rs"
+issue = "parity-model-api-workflow"
+
+[[xfail]]
+scenario = "model_api_workflow"
+name = "model_api_workflow_35_v1"
+reason = "Workflow behavior matches, but canonical final_model_binary_hex still diverges from upstream for this fixture."
+source_file = "crates/json-joy/src/json_crdt/model/api.rs"
+issue = "parity-model-api-workflow"
+
+[[xfail]]
+scenario = "model_api_workflow"
+name = "model_api_workflow_36_v1"
+reason = "Workflow behavior matches, but canonical final_model_binary_hex still diverges from upstream for this fixture."
+source_file = "crates/json-joy/src/json_crdt/model/api.rs"
+issue = "parity-model-api-workflow"
+
+[[xfail]]
+scenario = "model_api_workflow"
+name = "model_api_workflow_38_v1"
+reason = "Workflow behavior matches, but canonical final_model_binary_hex still diverges from upstream for this fixture."
+source_file = "crates/json-joy/src/json_crdt/model/api.rs"
+issue = "parity-model-api-workflow"
+
+[[xfail]]
+scenario = "model_api_workflow"
+name = "model_api_workflow_39_v1"
+reason = "Workflow behavior matches, but canonical final_model_binary_hex still diverges from upstream for this fixture."
+source_file = "crates/json-joy/src/json_crdt/model/api.rs"
+issue = "parity-model-api-workflow"
+
+[[xfail]]
+scenario = "model_api_workflow"
+name = "model_api_workflow_41_v1"
+reason = "Workflow behavior matches, but canonical final_model_binary_hex still diverges from upstream for this fixture."
+source_file = "crates/json-joy/src/json_crdt/model/api.rs"
+issue = "parity-model-api-workflow"
+
+[[xfail]]
+scenario = "model_api_workflow"
+name = "model_api_workflow_42_v1"
+reason = "Workflow behavior matches, but canonical final_model_binary_hex still diverges from upstream for this fixture."
+source_file = "crates/json-joy/src/json_crdt/model/api.rs"
+issue = "parity-model-api-workflow"
+
+[[xfail]]
+scenario = "model_api_workflow"
+name = "model_api_workflow_43_v1"
+reason = "Workflow behavior matches, but canonical final_model_binary_hex still diverges from upstream for this fixture."
+source_file = "crates/json-joy/src/json_crdt/model/api.rs"
+issue = "parity-model-api-workflow"
+
+[[xfail]]
+scenario = "model_api_workflow"
+name = "model_api_workflow_45_v1"
+reason = "Workflow behavior matches, but canonical final_model_binary_hex still diverges from upstream for this fixture."
+source_file = "crates/json-joy/src/json_crdt/model/api.rs"
+issue = "parity-model-api-workflow"
+
+[[xfail]]
+scenario = "model_api_workflow"
+name = "model_api_workflow_46_v1"
+reason = "Workflow behavior matches, but canonical final_model_binary_hex still diverges from upstream for this fixture."
+source_file = "crates/json-joy/src/json_crdt/model/api.rs"
+issue = "parity-model-api-workflow"
+
+[[xfail]]
+scenario = "model_api_workflow"
+name = "model_api_workflow_51_v1"
+reason = "Workflow behavior matches, but canonical final_model_binary_hex still diverges from upstream for this fixture."
+source_file = "crates/json-joy/src/json_crdt/model/api.rs"
+issue = "parity-model-api-workflow"
+
+[[xfail]]
+scenario = "model_api_workflow"
+name = "model_api_workflow_52_v1"
+reason = "Workflow behavior matches, but canonical final_model_binary_hex still diverges from upstream for this fixture."
+source_file = "crates/json-joy/src/json_crdt/model/api.rs"
+issue = "parity-model-api-workflow"
+
+[[xfail]]
+scenario = "model_api_workflow"
+name = "model_api_workflow_53_v1"
+reason = "Workflow behavior matches, but canonical final_model_binary_hex still diverges from upstream for this fixture."
+source_file = "crates/json-joy/src/json_crdt/model/api.rs"
+issue = "parity-model-api-workflow"
+
+[[xfail]]
+scenario = "model_api_workflow"
+name = "model_api_workflow_54_v1"
+reason = "Workflow behavior matches, but canonical final_model_binary_hex still diverges from upstream for this fixture."
+source_file = "crates/json-joy/src/json_crdt/model/api.rs"
+issue = "parity-model-api-workflow"
+
+[[xfail]]
+scenario = "model_api_workflow"
+name = "model_api_workflow_55_v1"
+reason = "Workflow behavior matches, but canonical final_model_binary_hex still diverges from upstream for this fixture."
+source_file = "crates/json-joy/src/json_crdt/model/api.rs"
+issue = "parity-model-api-workflow"
+
+[[xfail]]
+scenario = "model_api_workflow"
+name = "model_api_workflow_56_v1"
+reason = "Workflow behavior matches, but canonical final_model_binary_hex still diverges from upstream for this fixture."
+source_file = "crates/json-joy/src/json_crdt/model/api.rs"
+issue = "parity-model-api-workflow"
+
+[[xfail]]
+scenario = "model_api_workflow"
+name = "model_api_workflow_57_v1"
+reason = "Workflow behavior matches, but canonical final_model_binary_hex still diverges from upstream for this fixture."
+source_file = "crates/json-joy/src/json_crdt/model/api.rs"
+issue = "parity-model-api-workflow"
+
+[[xfail]]
+scenario = "model_api_workflow"
+name = "model_api_workflow_59_v1"
+reason = "Workflow behavior matches, but canonical final_model_binary_hex still diverges from upstream for this fixture."
+source_file = "crates/json-joy/src/json_crdt/model/api.rs"
+issue = "parity-model-api-workflow"
+
+[[xfail]]
+scenario = "model_api_workflow"
+name = "model_api_workflow_60_v1"
+reason = "Workflow behavior matches, but canonical final_model_binary_hex still diverges from upstream for this fixture."
 source_file = "crates/json-joy/src/json_crdt/model/api.rs"
 issue = "parity-model-api-workflow"
 
 [[xfail]]
 scenario = "model_api_proxy_fanout_workflow"
-name = "*"
-reason = "Workflow behavior now matches in focused parity checks, but canonical final_model_binary_hex still diverges from upstream."
+name = "model_api_proxy_fanout_workflow_01_det_v1"
+reason = "Workflow behavior matches, but canonical final_model_binary_hex still diverges from upstream for this fixture."
+source_file = "crates/json-joy/src/json_crdt/model/api.rs"
+issue = "parity-model-api-proxy-fanout"
+
+[[xfail]]
+scenario = "model_api_proxy_fanout_workflow"
+name = "model_api_proxy_fanout_workflow_04_det_v1"
+reason = "Workflow behavior matches, but canonical final_model_binary_hex still diverges from upstream for this fixture."
+source_file = "crates/json-joy/src/json_crdt/model/api.rs"
+issue = "parity-model-api-proxy-fanout"
+
+[[xfail]]
+scenario = "model_api_proxy_fanout_workflow"
+name = "model_api_proxy_fanout_workflow_05_rnd_v1"
+reason = "Workflow behavior matches, but canonical final_model_binary_hex still diverges from upstream for this fixture."
+source_file = "crates/json-joy/src/json_crdt/model/api.rs"
+issue = "parity-model-api-proxy-fanout"
+
+[[xfail]]
+scenario = "model_api_proxy_fanout_workflow"
+name = "model_api_proxy_fanout_workflow_11_rnd_v1"
+reason = "Workflow behavior matches, but canonical final_model_binary_hex still diverges from upstream for this fixture."
+source_file = "crates/json-joy/src/json_crdt/model/api.rs"
+issue = "parity-model-api-proxy-fanout"
+
+[[xfail]]
+scenario = "model_api_proxy_fanout_workflow"
+name = "model_api_proxy_fanout_workflow_12_rnd_v1"
+reason = "Workflow behavior matches, but canonical final_model_binary_hex still diverges from upstream for this fixture."
+source_file = "crates/json-joy/src/json_crdt/model/api.rs"
+issue = "parity-model-api-proxy-fanout"
+
+[[xfail]]
+scenario = "model_api_proxy_fanout_workflow"
+name = "model_api_proxy_fanout_workflow_24_rnd_v1"
+reason = "Workflow behavior matches, but canonical final_model_binary_hex still diverges from upstream for this fixture."
+source_file = "crates/json-joy/src/json_crdt/model/api.rs"
+issue = "parity-model-api-proxy-fanout"
+
+[[xfail]]
+scenario = "model_api_proxy_fanout_workflow"
+name = "model_api_proxy_fanout_workflow_25_rnd_v1"
+reason = "Workflow behavior matches, but canonical final_model_binary_hex still diverges from upstream for this fixture."
+source_file = "crates/json-joy/src/json_crdt/model/api.rs"
+issue = "parity-model-api-proxy-fanout"
+
+[[xfail]]
+scenario = "model_api_proxy_fanout_workflow"
+name = "model_api_proxy_fanout_workflow_29_rnd_v1"
+reason = "Workflow behavior matches, but canonical final_model_binary_hex still diverges from upstream for this fixture."
+source_file = "crates/json-joy/src/json_crdt/model/api.rs"
+issue = "parity-model-api-proxy-fanout"
+
+[[xfail]]
+scenario = "model_api_proxy_fanout_workflow"
+name = "model_api_proxy_fanout_workflow_36_rnd_v1"
+reason = "Workflow behavior matches, but canonical final_model_binary_hex still diverges from upstream for this fixture."
+source_file = "crates/json-joy/src/json_crdt/model/api.rs"
+issue = "parity-model-api-proxy-fanout"
+
+[[xfail]]
+scenario = "model_api_proxy_fanout_workflow"
+name = "model_api_proxy_fanout_workflow_37_rnd_v1"
+reason = "Workflow behavior matches, but canonical final_model_binary_hex still diverges from upstream for this fixture."
+source_file = "crates/json-joy/src/json_crdt/model/api.rs"
+issue = "parity-model-api-proxy-fanout"
+
+[[xfail]]
+scenario = "model_api_proxy_fanout_workflow"
+name = "model_api_proxy_fanout_workflow_38_rnd_v1"
+reason = "Workflow behavior matches, but canonical final_model_binary_hex still diverges from upstream for this fixture."
 source_file = "crates/json-joy/src/json_crdt/model/api.rs"
 issue = "parity-model-api-proxy-fanout"
 
@@ -43,16 +351,9 @@ issue = "parity-lessdb-model-manager"
 [[xfail]]
 scenario = "model_diff_parity"
 name = "*"
-reason = "JsonCrdtDiff has documented simplified-port behavior that diverges from upstream in this crate."
+reason = "JsonCrdtDiff still diverges from upstream canonical patch/model bytes on complex nested fixture corpus."
 source_file = "crates/json-joy/src/json_crdt_diff/mod.rs"
 issue = "parity-json-crdt-diff-limitations"
-
-[[xfail]]
-scenario = "model_diff_dst_keys"
-name = "*"
-reason = "JsonCrdtDiff destination-keys parity depends on full upstream diff semantics still in progress."
-source_file = "crates/json-joy/src/json_crdt_diff/mod.rs"
-issue = "parity-json-crdt-diff-dst-keys"
 
 [[xfail]]
 scenario = "model_apply_replay"
