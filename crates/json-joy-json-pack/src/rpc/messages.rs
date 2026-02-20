@@ -49,7 +49,7 @@ pub struct RpcAcceptedReplyMessage {
     pub verf: RpcOpaqueAuth,
     pub stat: RpcAcceptStat,
     pub mismatch_info: Option<RpcMismatchInfo>,
-    /// Raw result bytes; `None` when stat ≠ SUCCESS.
+    /// Raw trailing reply bytes (if any), preserved regardless of accept status.
     pub results: Option<Vec<u8>>,
 }
 

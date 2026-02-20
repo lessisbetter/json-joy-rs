@@ -171,7 +171,7 @@ impl<'a> SliceReader<'a> {
                         } else {
                             None
                         };
-                        let results = if stat == RpcAcceptStat::Success && self.remaining() > 0 {
+                        let results = if self.remaining() > 0 {
                             Some(self.rest())
                         } else {
                             None
