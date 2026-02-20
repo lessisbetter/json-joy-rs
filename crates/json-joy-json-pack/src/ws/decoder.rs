@@ -116,6 +116,9 @@ impl WsFrameDecoder {
                     if length > 125 {
                         return Err(WsFrameDecodingError::InvalidFrame);
                     }
+                    if self.reader.size() < length {
+                        return Ok(None);
+                    }
                     let data = match mask {
                         Some(m) => self.reader.buf_xor(length, m, 0),
                         None => self.reader.buf(length),
@@ -125,6 +128,9 @@ impl WsFrameDecoder {
                 10 /* PONG */ => {
                     if length > 125 {
                         return Err(WsFrameDecodingError::InvalidFrame);
+                    }
+                    if self.reader.size() < length {
+                        return Ok(None);
                     }
                     let data = match mask {
                         Some(m) => self.reader.buf_xor(length, m, 0),
