@@ -45,7 +45,7 @@ Notes:
 - `json-path` now has an upstream-mapped integration matrix at `crates/json-joy-json-path/tests/upstream_port_json_path_functions_matrix.rs` covering function extension scenarios (`length`, `count`, `match`, `search`, `value`) and combined logical usage from upstream `testJsonPathExec`.
 - `json-path` now has an upstream-mapped integration matrix at `crates/json-joy-json-path/tests/upstream_port_json_path_parser_matrix.rs` covering parser-shape scenarios for unions, recursive+filter composition, bracket-notation existence filters, and parser error handling from upstream `JsonPathParser.spec.ts`.
 - `json-path` now has an expression inventory matrix at `crates/json-joy-json-path/tests/upstream_port_json_path_expression_inventory.rs` to enforce a broad set of known-valid and known-invalid parser cases derived from upstream test suites.
-- `json-type` codegen families (`capacity`, `json`, `discriminator`, `binary`) are now implemented as runtime Rust codegen adapters with upstream-mapped parity coverage at `crates/json-joy-json-type/tests/upstream_port_json_type_codegen_matrix.rs`.
+- `json-type` codegen families (`capacity`, `json`, `discriminator`, `binary`) are now implemented as runtime Rust codegen adapters with upstream-mapped parity coverage at `crates/json-joy-json-type/tests/upstream_port_json_type_codegen_matrix.rs` (including tuple head/tail sizing, unknown-key object encoding through refs, recursive ref/alias chains, and binary codec roundtrips).
 - Prefixed crate naming is intentional and documented in `AGENTS.md` package mapping.
 
 ## Explicit non-parity choices currently in tree

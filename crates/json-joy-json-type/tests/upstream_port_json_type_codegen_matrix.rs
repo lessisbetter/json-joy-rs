@@ -248,3 +248,105 @@ fn binary_codegen_roundtrips_for_json_msgpack_and_cbor() {
     );
     assert_eq!(decoded_msgpack, value);
 }
+
+#[test]
+fn json_text_ref_preserves_unknown_keys_when_schema_option_enabled() {
+    let module = Arc::new(ModuleType::new());
+    let tb = TypeBuilder::with_system(Arc::clone(&module));
+
+    let mut obj = json_joy_json_type::type_def::ObjType::new(vec![
+        KeyType::new("foo", tb.str()),
+        KeyType::new_opt("zzz", tb.num()),
+    ]);
+    obj.schema.encode_unknown_keys = Some(true);
+
+    module.alias("foo", TypeNode::Obj(obj).get_schema());
+    let encoded =
+        JsonTextCodegen::get(&tb.Ref("foo"))(&json!({"foo": "bar", "zzz": 1, "baz": 123})).unwrap();
+    assert_eq!(encoded, "{\"foo\":\"bar\",\"zzz\":1,\"baz\":123}");
+}
+
+#[test]
+fn json_text_handles_recursive_ref_shapes() {
+    let module = Arc::new(ModuleType::new());
+    let tb = TypeBuilder::with_system(Arc::clone(&module));
+
+    let user_schema = tb
+        .Object(vec![
+            KeyType::new("id", tb.str()),
+            KeyType::new_opt("address", tb.Ref("Address")),
+        ])
+        .get_schema();
+    module.alias("User", user_schema);
+    let address_schema = tb
+        .Object(vec![
+            KeyType::new("id", tb.str()),
+            KeyType::new_opt("user", tb.Ref("User")),
+        ])
+        .get_schema();
+    module.alias("Address", address_schema);
+
+    let value = json!({
+        "id": "user-1",
+        "address": {
+            "id": "address-1",
+            "user": {
+                "id": "user-2",
+                "address": {
+                    "id": "address-2",
+                    "user": {"id": "user-3"}
+                }
+            }
+        }
+    });
+
+    let encoded = JsonTextCodegen::get(&tb.Ref("User"))(&value).unwrap();
+    let decoded: serde_json::Value = serde_json::from_str(&encoded).unwrap();
+    assert_eq!(decoded, value);
+}
+
+#[test]
+fn json_text_handles_recursive_chain_of_ref_aliases() {
+    let module = Arc::new(ModuleType::new());
+    let tb = TypeBuilder::with_system(Arc::clone(&module));
+
+    module.alias(
+        "User0",
+        tb.Object(vec![
+            KeyType::new("id", tb.str()),
+            KeyType::new_opt("address", tb.Ref("Address")),
+        ])
+        .get_schema(),
+    );
+    module.alias("User1", tb.Ref("User0").get_schema());
+    module.alias("User", tb.Ref("User1").get_schema());
+
+    module.alias(
+        "Address0",
+        tb.Object(vec![
+            KeyType::new("id", tb.str()),
+            KeyType::new_opt("user", tb.Ref("User")),
+        ])
+        .get_schema(),
+    );
+    module.alias("Address1", tb.Ref("Address0").get_schema());
+    module.alias("Address", tb.Ref("Address1").get_schema());
+
+    let value = json!({
+        "id": "address-1",
+        "user": {
+            "id": "user-1",
+            "address": {
+                "id": "address-2",
+                "user": {
+                    "id": "user-2",
+                    "address": {"id": "address-3"}
+                }
+            }
+        }
+    });
+
+    let encoded = JsonTextCodegen::get(&tb.Ref("Address"))(&value).unwrap();
+    let decoded: serde_json::Value = serde_json::from_str(&encoded).unwrap();
+    assert_eq!(decoded, value);
+}
