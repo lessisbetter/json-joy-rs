@@ -3,8 +3,9 @@
 use json_joy::json_crdt::codec::indexed::binary as indexed_binary;
 use json_joy::json_crdt::codec::sidecar::binary as sidecar_binary;
 use json_joy::json_crdt::codec::structural::binary as structural_binary;
+use json_joy::json_crdt::constants::ORIGIN;
 use json_joy::json_crdt::model::Model;
-use json_joy::json_crdt::nodes::TsKey;
+use json_joy::json_crdt::nodes::{CrdtNode, TsKey, ValNode};
 use json_joy::json_crdt_diff::diff_node;
 use json_joy::json_crdt_patch::clock::{ts, tss, Ts};
 use json_joy::json_crdt_patch::codec::{compact, compact_binary, verbose};
@@ -291,6 +292,189 @@ fn view_and_binary_after_apply(model: &mut Model, patch: &Patch) -> Value {
         "view_after_apply_json": model.view(),
         "model_binary_after_apply_hex": encode_hex(&structural_binary::encode(model)),
     })
+}
+
+fn parse_path(path: &Value) -> Result<Vec<Value>, String> {
+    path.as_array()
+        .cloned()
+        .ok_or_else(|| "path must be array".to_string())
+}
+
+fn path_step_to_index(step: &Value) -> Option<usize> {
+    match step {
+        Value::Number(n) => n
+            .as_i64()
+            .and_then(|v| {
+                if v >= 0 {
+                    usize::try_from(v).ok()
+                } else {
+                    None
+                }
+            })
+            .or_else(|| n.as_u64().and_then(|v| usize::try_from(v).ok())),
+        Value::String(s) => s.parse::<usize>().ok(),
+        _ => None,
+    }
+}
+
+fn path_step_to_key(step: &Value) -> String {
+    match step {
+        Value::String(s) => s.clone(),
+        Value::Number(n) => n.to_string(),
+        Value::Bool(b) => b.to_string(),
+        Value::Null => "null".to_string(),
+        _ => step.to_string(),
+    }
+}
+
+fn clamped_insert_index(step: &Value, len: usize) -> usize {
+    let raw = match step {
+        Value::Number(n) => n
+            .as_i64()
+            .or_else(|| n.as_u64().and_then(|v| i64::try_from(v).ok()))
+            .unwrap_or(0),
+        Value::String(s) => s.parse::<i64>().unwrap_or(0),
+        _ => 0,
+    };
+    if raw <= 0 {
+        0
+    } else {
+        usize::try_from(raw).unwrap_or(usize::MAX).min(len)
+    }
+}
+
+fn find_at_path<'a>(root: &'a Value, path: &[Value]) -> Result<&'a Value, String> {
+    if path.is_empty() {
+        return Ok(root);
+    }
+    match root {
+        Value::Array(items) => {
+            let idx = path_step_to_index(&path[0])
+                .ok_or_else(|| "invalid array index in path".to_string())?;
+            let next = items
+                .get(idx)
+                .ok_or_else(|| "array path index out of bounds".to_string())?;
+            find_at_path(next, &path[1..])
+        }
+        Value::Object(map) => {
+            let key = path_step_to_key(&path[0]);
+            let next = map
+                .get(&key)
+                .ok_or_else(|| "missing object key in path".to_string())?;
+            find_at_path(next, &path[1..])
+        }
+        _ => Err("non-container in path".to_string()),
+    }
+}
+
+fn find_at_path_mut<'a>(root: &'a mut Value, path: &[Value]) -> Result<&'a mut Value, String> {
+    if path.is_empty() {
+        return Ok(root);
+    }
+    match root {
+        Value::Array(items) => {
+            let idx = path_step_to_index(&path[0])
+                .ok_or_else(|| "invalid array index in path".to_string())?;
+            let next = items
+                .get_mut(idx)
+                .ok_or_else(|| "array path index out of bounds".to_string())?;
+            find_at_path_mut(next, &path[1..])
+        }
+        Value::Object(map) => {
+            let key = path_step_to_key(&path[0]);
+            let next = map
+                .get_mut(&key)
+                .ok_or_else(|| "missing object key in path".to_string())?;
+            find_at_path_mut(next, &path[1..])
+        }
+        _ => Err("non-container in path".to_string()),
+    }
+}
+
+fn set_at_path(root: &mut Value, path: &[Value], value: Value) -> Result<(), String> {
+    if path.is_empty() {
+        *root = value;
+        return Ok(());
+    }
+
+    let parent_path = &path[..path.len() - 1];
+    let leaf = &path[path.len() - 1];
+    let parent = find_at_path_mut(root, parent_path)?;
+
+    match parent {
+        Value::Array(items) => {
+            let idx = path_step_to_index(leaf).ok_or_else(|| "invalid array leaf".to_string())?;
+            if idx < items.len() {
+                items[idx] = value;
+                Ok(())
+            } else if idx == items.len() {
+                items.push(value);
+                Ok(())
+            } else {
+                Err("array leaf index out of bounds".to_string())
+            }
+        }
+        Value::Object(map) => {
+            map.insert(path_step_to_key(leaf), value);
+            Ok(())
+        }
+        _ => Err("invalid leaf parent".to_string()),
+    }
+}
+
+fn add_at_path(root: &mut Value, path: &[Value], value: Value) -> Result<(), String> {
+    if path.is_empty() {
+        return Err("add path must not be empty".to_string());
+    }
+    let parent_path = &path[..path.len() - 1];
+    let leaf = &path[path.len() - 1];
+    let parent = find_at_path_mut(root, parent_path)?;
+
+    match parent {
+        Value::Array(items) => {
+            let idx = clamped_insert_index(leaf, items.len());
+            items.insert(idx, value);
+            Ok(())
+        }
+        Value::Object(map) => {
+            map.insert(path_step_to_key(leaf), value);
+            Ok(())
+        }
+        _ => Err("add parent is not container".to_string()),
+    }
+}
+
+fn remove_at_path(root: &mut Value, path: &[Value]) -> Result<(), String> {
+    if path.is_empty() {
+        return Err("remove path must not be empty".to_string());
+    }
+    let parent_path = &path[..path.len() - 1];
+    let leaf = &path[path.len() - 1];
+    let parent = find_at_path_mut(root, parent_path)?;
+
+    match parent {
+        Value::Array(items) => {
+            if let Some(idx) = path_step_to_index(leaf) {
+                if idx < items.len() {
+                    items.remove(idx);
+                }
+            }
+            Ok(())
+        }
+        Value::Object(map) => {
+            map.remove(&path_step_to_key(leaf));
+            Ok(())
+        }
+        _ => Err("remove parent is not container".to_string()),
+    }
+}
+
+fn model_api_diff_patch(model: &Model, sid: u64, next: &Value) -> Option<Patch> {
+    let root_val = CrdtNode::Val(ValNode {
+        id: ORIGIN,
+        val: model.root.val,
+    });
+    diff_node(&root_val, &model.index, sid, model.clock.time, next)
 }
 
 pub fn evaluate_fixture(scenario: &str, fixture: &Value) -> Result<Value, String> {
@@ -694,6 +878,178 @@ pub fn evaluate_fixture(scenario: &str, fixture: &Value) -> Result<Value, String
                 Ok(json!({ "patch_present": false }))
             }
         }
+        "model_api_workflow" => {
+            let sid = input
+                .get("sid")
+                .and_then(Value::as_u64)
+                .ok_or_else(|| "input.sid missing".to_string())?;
+            let base_bytes = decode_hex(
+                input
+                    .get("base_model_binary_hex")
+                    .and_then(Value::as_str)
+                    .ok_or_else(|| "input.base_model_binary_hex missing".to_string())?,
+            )?;
+            let ops = input
+                .get("ops")
+                .and_then(Value::as_array)
+                .ok_or_else(|| "input.ops missing".to_string())?;
+
+            let mut model = structural_binary::decode(&base_bytes).map_err(|e| format!("{e:?}"))?;
+            let mut current_view = input
+                .get("initial_json")
+                .cloned()
+                .unwrap_or_else(|| model.view());
+            let mut steps = Vec::<Value>::with_capacity(ops.len());
+
+            for opv in ops {
+                let op = opv
+                    .as_object()
+                    .ok_or_else(|| "model_api op must be object".to_string())?;
+                let kind = op
+                    .get("kind")
+                    .and_then(Value::as_str)
+                    .ok_or_else(|| "model_api op.kind missing".to_string())?;
+                match kind {
+                    "find" => {
+                        let path = parse_path(
+                            op.get("path")
+                                .ok_or_else(|| "find.path missing".to_string())?,
+                        )?;
+                        let found = find_at_path(&model.view(), &path)?.clone();
+                        steps.push(json!({
+                            "kind": "find",
+                            "path": path,
+                            "value_json": found,
+                        }));
+                    }
+                    "set" | "replace" => {
+                        let path = parse_path(
+                            op.get("path")
+                                .ok_or_else(|| format!("{kind}.path missing"))?,
+                        )?;
+                        let value = op.get("value_json").cloned().unwrap_or(Value::Null);
+                        set_at_path(&mut current_view, &path, value)?;
+                        if let Some(patch) = model_api_diff_patch(&model, sid, &current_view) {
+                            model.apply_patch(&patch);
+                        }
+                        steps.push(json!({
+                            "kind": kind,
+                            "view_json": model.view(),
+                        }));
+                    }
+                    "add" => {
+                        let path = parse_path(
+                            op.get("path")
+                                .ok_or_else(|| "add.path missing".to_string())?,
+                        )?;
+                        let value = op.get("value_json").cloned().unwrap_or(Value::Null);
+                        add_at_path(&mut current_view, &path, value)?;
+                        if let Some(patch) = model_api_diff_patch(&model, sid, &current_view) {
+                            model.apply_patch(&patch);
+                        }
+                        steps.push(json!({
+                            "kind": "add",
+                            "view_json": model.view(),
+                        }));
+                    }
+                    "remove" => {
+                        let path = parse_path(
+                            op.get("path")
+                                .ok_or_else(|| "remove.path missing".to_string())?,
+                        )?;
+                        remove_at_path(&mut current_view, &path)?;
+                        if let Some(patch) = model_api_diff_patch(&model, sid, &current_view) {
+                            model.apply_patch(&patch);
+                        }
+                        steps.push(json!({
+                            "kind": "remove",
+                            "view_json": model.view(),
+                        }));
+                    }
+                    "obj_put" => {
+                        let path = parse_path(
+                            op.get("path")
+                                .ok_or_else(|| "obj_put.path missing".to_string())?,
+                        )?;
+                        let key = op
+                            .get("key")
+                            .and_then(Value::as_str)
+                            .ok_or_else(|| "obj_put.key missing".to_string())?;
+                        let value = op.get("value_json").cloned().unwrap_or(Value::Null);
+                        let target = find_at_path_mut(&mut current_view, &path)?;
+                        let obj = target
+                            .as_object_mut()
+                            .ok_or_else(|| "obj_put path is not object".to_string())?;
+                        obj.insert(key.to_string(), value);
+                        if let Some(patch) = model_api_diff_patch(&model, sid, &current_view) {
+                            model.apply_patch(&patch);
+                        }
+                        steps.push(json!({
+                            "kind": "obj_put",
+                            "view_json": model.view(),
+                        }));
+                    }
+                    "arr_push" => {
+                        let path = parse_path(
+                            op.get("path")
+                                .ok_or_else(|| "arr_push.path missing".to_string())?,
+                        )?;
+                        let value = op.get("value_json").cloned().unwrap_or(Value::Null);
+                        let target = find_at_path_mut(&mut current_view, &path)?;
+                        let arr = target
+                            .as_array_mut()
+                            .ok_or_else(|| "arr_push path is not array".to_string())?;
+                        arr.push(value);
+                        if let Some(patch) = model_api_diff_patch(&model, sid, &current_view) {
+                            model.apply_patch(&patch);
+                        }
+                        steps.push(json!({
+                            "kind": "arr_push",
+                            "view_json": model.view(),
+                        }));
+                    }
+                    "str_ins" => {
+                        let path = parse_path(
+                            op.get("path")
+                                .ok_or_else(|| "str_ins.path missing".to_string())?,
+                        )?;
+                        let pos =
+                            op.get("pos").and_then(Value::as_i64).unwrap_or(0).max(0) as usize;
+                        let text = op
+                            .get("text")
+                            .and_then(Value::as_str)
+                            .ok_or_else(|| "str_ins.text missing".to_string())?;
+                        let existing = find_at_path(&current_view, &path)?
+                            .as_str()
+                            .ok_or_else(|| "str_ins path is not string".to_string())?;
+                        let mut chars: Vec<char> = existing.chars().collect();
+                        let at = pos.min(chars.len());
+                        chars.splice(at..at, text.chars());
+                        set_at_path(
+                            &mut current_view,
+                            &path,
+                            Value::String(chars.into_iter().collect()),
+                        )?;
+                        if let Some(patch) = model_api_diff_patch(&model, sid, &current_view) {
+                            model.apply_patch(&patch);
+                        }
+                        steps.push(json!({
+                            "kind": "str_ins",
+                            "view_json": model.view(),
+                        }));
+                    }
+                    other => {
+                        return Err(format!("unsupported model_api op kind: {other}"));
+                    }
+                }
+            }
+
+            Ok(json!({
+                "steps": steps,
+                "final_view_json": model.view(),
+                "final_model_binary_hex": encode_hex(&structural_binary::encode(&model)),
+            }))
+        }
         "model_apply_replay" => {
             let base = decode_hex(
                 input
@@ -737,7 +1093,6 @@ pub fn evaluate_fixture(scenario: &str, fixture: &Value) -> Result<Value, String
         "patch_clock_codec_parity"
         | "model_canonical_encode"
         | "model_lifecycle_workflow"
-        | "model_api_workflow"
         | "model_api_proxy_fanout_workflow"
         | "lessdb_model_manager" => Err(format!(
             "scenario {scenario} not implemented in Rust parity harness yet"

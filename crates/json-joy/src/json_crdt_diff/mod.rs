@@ -165,10 +165,10 @@ impl<'a> JsonCrdtDiff<'a> {
     ) -> Result<(), DiffError> {
         let mut inserts: Vec<(String, Ts)> = Vec::new();
 
-        // Keys in src not in dst → set to null (undefined equivalent)
+        // Keys in src not in dst → set to undefined tombstone.
         for key in src.keys.keys() {
             if !dst.contains_key(key) {
-                let undef_id = self.builder.con_val(PackValue::Null);
+                let undef_id = self.builder.con_val(PackValue::Undefined);
                 inserts.push((key.clone(), undef_id));
             }
         }
@@ -251,8 +251,7 @@ impl<'a> JsonCrdtDiff<'a> {
     fn diff_any(&mut self, src: &CrdtNode, dst: &Value) -> Result<(), DiffError> {
         match src {
             CrdtNode::Con(node) => {
-                let src_val = con_to_json(&node.val);
-                if src_val == *dst {
+                if con_equals_dst(&node.val, dst) {
                     Ok(())
                 } else {
                     Err(DiffError("CON_MISMATCH"))
@@ -353,7 +352,9 @@ impl<'a> JsonCrdtDiff<'a> {
                     .iter()
                     .map(|(k, v)| {
                         let id = match v {
-                            Value::Null | Value::Bool(_) | Value::Number(_) => self.build_con_view(v),
+                            Value::Null | Value::Bool(_) | Value::Number(_) => {
+                                self.build_con_view(v)
+                            }
                             _ => self.build_view(v),
                         };
                         (k.clone(), id)
@@ -370,7 +371,9 @@ impl<'a> JsonCrdtDiff<'a> {
 
     fn build_con_view(&mut self, dst: &Value) -> Ts {
         match dst {
-            Value::Null | Value::Bool(_) | Value::Number(_) => self.builder.con_val(json_to_pack(dst)),
+            Value::Null | Value::Bool(_) | Value::Number(_) => {
+                self.builder.con_val(json_to_pack(dst))
+            }
             _ => self.build_view(dst),
         }
     }
@@ -378,10 +381,13 @@ impl<'a> JsonCrdtDiff<'a> {
 
 // ── Standalone helpers ─────────────────────────────────────────────────────
 
-fn con_to_json(val: &ConValue) -> Value {
+fn con_equals_dst(val: &ConValue, dst: &Value) -> bool {
     match val {
-        ConValue::Ref(_) => Value::Null,
-        ConValue::Val(pv) => Value::from(pv.clone()),
+        // Fixture destinations are plain JSON values only.
+        ConValue::Ref(_) => false,
+        // Upstream distinguishes `undefined` tombstones from JSON `null`.
+        ConValue::Val(PackValue::Undefined) => false,
+        ConValue::Val(pv) => Value::from(pv.clone()) == *dst,
     }
 }
 

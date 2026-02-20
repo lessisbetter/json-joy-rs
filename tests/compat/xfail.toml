@@ -22,7 +22,7 @@ issue = "parity-model-lifecycle-workflow"
 [[xfail]]
 scenario = "model_api_workflow"
 name = "*"
-reason = "Model API workflow fixture interpreter is pending for the Rust harness."
+reason = "Workflow behavior now matches in focused parity checks, but canonical final_model_binary_hex still diverges from upstream."
 source_file = "crates/json-joy/src/json_crdt/model/api.rs"
 issue = "parity-model-api-workflow"
 

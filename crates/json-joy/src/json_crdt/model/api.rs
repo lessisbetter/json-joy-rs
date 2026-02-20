@@ -205,7 +205,7 @@ impl<'a> ModelApi<'a> {
         let pairs: Vec<(String, Ts)> = keys
             .iter()
             .map(|k| {
-                let id = self.builder.con_val(PackValue::Null);
+                let id = self.builder.con_val(PackValue::Undefined);
                 (k.clone(), id)
             })
             .collect();
@@ -878,7 +878,10 @@ mod tests {
             api.str_del(str_id, 0, 3).unwrap();
             api.str_ins(str_id, 0, "const").unwrap();
         }
-        assert_eq!(model.view(), json!({"foo": [123, "const foo = \"bar\";", 5]}));
+        assert_eq!(
+            model.view(),
+            json!({"foo": [123, "const foo = \"bar\";", 5]})
+        );
     }
 
     #[test]
@@ -1039,13 +1042,11 @@ mod tests {
         let obj_id = model.root.val;
         {
             let mut api = ModelApi::new(&mut model);
-            // del sets the key to a null con, which makes the value null in view
             api.obj_del(obj_id, &["k".to_string()]).unwrap();
         }
-        // After deletion the key still exists but points to a null con
-        // (matches upstream behaviour: del sets value to undefined/null)
         let v = model.view();
         assert_eq!(v["other"], json!(1));
+        assert!(v.get("k").is_none());
     }
 
     #[test]

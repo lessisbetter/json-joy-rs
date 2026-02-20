@@ -127,8 +127,14 @@ impl ObjNode {
         let mut map = serde_json::Map::new();
         for (key, &id) in &self.keys {
             let val = match index.get(&TsKey::from(id)) {
+                // Upstream omits object keys whose winning value is `con(undefined)`.
+                Some(CrdtNode::Con(con)) => match &con.val {
+                    ConValue::Val(PackValue::Undefined) => continue,
+                    _ => con.view(),
+                },
                 Some(node) => node.view(index),
-                None => Value::Null,
+                // Missing node references are omitted from object views.
+                None => continue,
             };
             map.insert(key.clone(), val);
         }
