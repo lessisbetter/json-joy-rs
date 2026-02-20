@@ -44,9 +44,17 @@ fn json_to_pack(v: &Value) -> PackValue {
     }
 }
 
+fn build_json_val(builder: &mut PatchBuilder, v: &Value) -> Ts {
+    let val_id = builder.val();
+    let con_id = builder.con_val(json_to_pack(v));
+    builder.set_val(val_id, con_id);
+    val_id
+}
+
 fn build_json(builder: &mut PatchBuilder, v: &Value) -> Ts {
     match v {
-        Value::Null | Value::Bool(_) | Value::Number(_) => builder.con_val(json_to_pack(v)),
+        // Mirrors PatchBuilder.json(): scalars are val(con).
+        Value::Null | Value::Bool(_) | Value::Number(_) => build_json_val(builder, v),
         Value::String(s) => {
             let str_id = builder.str_node();
             if !s.is_empty() {
@@ -67,7 +75,16 @@ fn build_json(builder: &mut PatchBuilder, v: &Value) -> Ts {
             if !map.is_empty() {
                 let pairs: Vec<(String, Ts)> = map
                     .iter()
-                    .map(|(k, v)| (k.clone(), build_json(builder, v)))
+                    .map(|(k, v)| {
+                        let id = match v {
+                            // Mirrors PatchBuilder.jsonObj(): object scalar fields are con.
+                            Value::Null | Value::Bool(_) | Value::Number(_) => {
+                                builder.con_val(json_to_pack(v))
+                            }
+                            _ => build_json(builder, v),
+                        };
+                        (k.clone(), id)
+                    })
                     .collect();
                 builder.ins_obj(obj_id, pairs);
             }
@@ -76,10 +93,18 @@ fn build_json(builder: &mut PatchBuilder, v: &Value) -> Ts {
     }
 }
 
+fn build_const_or_json(builder: &mut PatchBuilder, v: &Value) -> Ts {
+    match v {
+        // Mirrors PatchBuilder.constOrJson(): root scalar values are con.
+        Value::Null | Value::Bool(_) | Value::Number(_) => builder.con_val(json_to_pack(v)),
+        _ => build_json(builder, v),
+    }
+}
+
 fn model_from_json(data: &Value, sid: u64) -> Model {
     let mut model = Model::new(sid);
     let mut builder = PatchBuilder::new(sid, model.clock.time);
-    let root = build_json(&mut builder, data);
+    let root = build_const_or_json(&mut builder, data);
     builder.root(root);
     let patch = builder.flush();
     if !patch.ops.is_empty() {
@@ -771,12 +796,7 @@ pub fn evaluate_fixture(scenario: &str, fixture: &Value) -> Result<Value, String
                 .get("next")
                 .ok_or_else(|| "input.next missing".to_string())?;
             let mut model = model_from_json(base, sid);
-            let root = model
-                .index
-                .get(&TsKey::from(model.root.val))
-                .ok_or_else(|| "missing root node".to_string())?
-                .clone();
-            let patch_opt = diff_node(&root, &model.index, sid, model.clock.time, next);
+            let patch_opt = model_api_diff_patch(&model, sid, next);
             if let Some(patch) = patch_opt {
                 let mut out = patch_stats(&patch);
                 if let Some(obj) = out.as_object_mut() {
@@ -788,7 +808,13 @@ pub fn evaluate_fixture(scenario: &str, fixture: &Value) -> Result<Value, String
                 }
                 Ok(out)
             } else {
-                Ok(json!({ "patch_present": false }))
+                let model_binary_hex = encode_hex(&structural_binary::encode(&model));
+                Ok(json!({
+                    "patch_present": false,
+                    "view_after_apply_json": model.view(),
+                    "base_model_binary_hex": model_binary_hex.clone(),
+                    "model_binary_after_apply_hex": model_binary_hex,
+                }))
             }
         }
         "model_diff_parity" => {
@@ -806,20 +832,19 @@ pub fn evaluate_fixture(scenario: &str, fixture: &Value) -> Result<Value, String
                 .get("next_view_json")
                 .ok_or_else(|| "input.next_view_json missing".to_string())?;
             let mut model = structural_binary::decode(&base_bytes).map_err(|e| format!("{e:?}"))?;
-            let patch_opt =
-                if let Some(root) = model.index.get(&TsKey::from(model.root.val)).cloned() {
-                    diff_node(&root, &model.index, sid, model.clock.time, next)
+            let patch_opt = if model.index.get(&TsKey::from(model.root.val)).is_some() {
+                model_api_diff_patch(&model, sid, next)
+            } else {
+                let mut builder = PatchBuilder::new(sid, model.clock.time);
+                let id = build_const_or_json(&mut builder, next);
+                builder.root(id);
+                let patch = builder.flush();
+                if patch.ops.is_empty() {
+                    None
                 } else {
-                    let mut builder = PatchBuilder::new(sid, model.clock.time);
-                    let id = build_json(&mut builder, next);
-                    builder.root(id);
-                    let patch = builder.flush();
-                    if patch.ops.is_empty() {
-                        None
-                    } else {
-                        Some(patch)
-                    }
-                };
+                    Some(patch)
+                }
+            };
             if let Some(patch) = patch_opt {
                 let mut out = patch_stats(&patch);
                 if let Some(obj) = out.as_object_mut() {
@@ -831,7 +856,11 @@ pub fn evaluate_fixture(scenario: &str, fixture: &Value) -> Result<Value, String
                 }
                 Ok(out)
             } else {
-                Ok(json!({ "patch_present": false }))
+                Ok(json!({
+                    "patch_present": false,
+                    "view_after_apply_json": model.view(),
+                    "model_binary_after_apply_hex": encode_hex(&structural_binary::encode(&model)),
+                }))
             }
         }
         "model_diff_dst_keys" => {
@@ -875,7 +904,11 @@ pub fn evaluate_fixture(scenario: &str, fixture: &Value) -> Result<Value, String
                 }
                 Ok(out)
             } else {
-                Ok(json!({ "patch_present": false }))
+                Ok(json!({
+                    "patch_present": false,
+                    "view_after_apply_json": model.view(),
+                    "model_binary_after_apply_hex": encode_hex(&structural_binary::encode(&model)),
+                }))
             }
         }
         "model_api_workflow" => {
@@ -1050,6 +1083,181 @@ pub fn evaluate_fixture(scenario: &str, fixture: &Value) -> Result<Value, String
                 "final_model_binary_hex": encode_hex(&structural_binary::encode(&model)),
             }))
         }
+        "model_api_proxy_fanout_workflow" => {
+            let sid = input
+                .get("sid")
+                .and_then(Value::as_u64)
+                .ok_or_else(|| "input.sid missing".to_string())?;
+            let base_bytes = decode_hex(
+                input
+                    .get("base_model_binary_hex")
+                    .and_then(Value::as_str)
+                    .ok_or_else(|| "input.base_model_binary_hex missing".to_string())?,
+            )?;
+            let ops = input
+                .get("ops")
+                .and_then(Value::as_array)
+                .ok_or_else(|| "input.ops missing".to_string())?;
+            let scoped_path = parse_path(
+                input
+                    .get("scoped_path")
+                    .ok_or_else(|| "input.scoped_path missing".to_string())?,
+            )?;
+
+            let mut model = structural_binary::decode(&base_bytes).map_err(|e| format!("{e:?}"))?;
+            let mut current_view = input
+                .get("initial_json")
+                .cloned()
+                .unwrap_or_else(|| model.view());
+            let mut steps = Vec::<Value>::with_capacity(ops.len());
+            let mut change_count = 0_u64;
+            let mut scoped_count = 0_u64;
+
+            for opv in ops {
+                let op = opv
+                    .as_object()
+                    .ok_or_else(|| "proxy/fanout op must be object".to_string())?;
+                let kind = op
+                    .get("kind")
+                    .and_then(Value::as_str)
+                    .ok_or_else(|| "proxy/fanout op.kind missing".to_string())?;
+
+                if kind == "read" {
+                    let path = parse_path(
+                        op.get("path")
+                            .ok_or_else(|| "read.path missing".to_string())?,
+                    )?;
+                    let value = find_at_path(&model.view(), &path)?.clone();
+                    steps.push(json!({
+                        "kind": "read",
+                        "value_json": value,
+                    }));
+                    continue;
+                }
+
+                let before_scoped = find_at_path(&model.view(), &scoped_path)?.clone();
+                match kind {
+                    "node_obj_put" => {
+                        let path = parse_path(
+                            op.get("path")
+                                .ok_or_else(|| "node_obj_put.path missing".to_string())?,
+                        )?;
+                        let key = op
+                            .get("key")
+                            .and_then(Value::as_str)
+                            .ok_or_else(|| "node_obj_put.key missing".to_string())?;
+                        let value = op.get("value_json").cloned().unwrap_or(Value::Null);
+                        let target = find_at_path_mut(&mut current_view, &path)?;
+                        let obj = target
+                            .as_object_mut()
+                            .ok_or_else(|| "node_obj_put path is not object".to_string())?;
+                        obj.insert(key.to_string(), value);
+                    }
+                    "node_arr_push" => {
+                        let path = parse_path(
+                            op.get("path")
+                                .ok_or_else(|| "node_arr_push.path missing".to_string())?,
+                        )?;
+                        let value = op.get("value_json").cloned().unwrap_or(Value::Null);
+                        let target = find_at_path_mut(&mut current_view, &path)?;
+                        let arr = target
+                            .as_array_mut()
+                            .ok_or_else(|| "node_arr_push path is not array".to_string())?;
+                        arr.push(value);
+                    }
+                    "node_str_ins" => {
+                        let path = parse_path(
+                            op.get("path")
+                                .ok_or_else(|| "node_str_ins.path missing".to_string())?,
+                        )?;
+                        let pos =
+                            op.get("pos").and_then(Value::as_i64).unwrap_or(0).max(0) as usize;
+                        let text = op
+                            .get("text")
+                            .and_then(Value::as_str)
+                            .ok_or_else(|| "node_str_ins.text missing".to_string())?;
+                        let existing = find_at_path(&current_view, &path)?
+                            .as_str()
+                            .ok_or_else(|| "node_str_ins path is not string".to_string())?;
+                        let mut chars: Vec<char> = existing.chars().collect();
+                        let at = pos.min(chars.len());
+                        chars.splice(at..at, text.chars());
+                        set_at_path(
+                            &mut current_view,
+                            &path,
+                            Value::String(chars.into_iter().collect()),
+                        )?;
+                    }
+                    "node_add" => {
+                        let path = parse_path(
+                            op.get("path")
+                                .ok_or_else(|| "node_add.path missing".to_string())?,
+                        )?;
+                        let value = op.get("value_json").cloned().unwrap_or(Value::Null);
+                        add_at_path(&mut current_view, &path, value)?;
+                    }
+                    "node_replace" => {
+                        let path = parse_path(
+                            op.get("path")
+                                .ok_or_else(|| "node_replace.path missing".to_string())?,
+                        )?;
+                        let value = op.get("value_json").cloned().unwrap_or(Value::Null);
+                        set_at_path(&mut current_view, &path, value)?;
+                    }
+                    "node_remove" => {
+                        let path = parse_path(
+                            op.get("path")
+                                .ok_or_else(|| "node_remove.path missing".to_string())?,
+                        )?;
+                        if path.is_empty() {
+                            return Err("node_remove path must not be empty".to_string());
+                        }
+                        let parent_path = &path[..path.len() - 1];
+                        let leaf = &path[path.len() - 1];
+                        let parent = find_at_path(&current_view, parent_path)?.clone();
+                        if parent.is_string() {
+                            let idx = path_step_to_index(leaf).unwrap_or(usize::MAX);
+                            let s = parent.as_str().unwrap_or("");
+                            let mut chars: Vec<char> = s.chars().collect();
+                            if idx < chars.len() {
+                                chars.remove(idx);
+                                set_at_path(
+                                    &mut current_view,
+                                    parent_path,
+                                    Value::String(chars.into_iter().collect()),
+                                )?;
+                            }
+                        } else {
+                            remove_at_path(&mut current_view, &path)?;
+                        }
+                    }
+                    other => return Err(format!("unsupported proxy/fanout op kind: {other}")),
+                }
+
+                if let Some(patch) = model_api_diff_patch(&model, sid, &current_view) {
+                    model.apply_patch(&patch);
+                    change_count += 1;
+                }
+                let after_scoped = find_at_path(&model.view(), &scoped_path)?.clone();
+                if before_scoped != after_scoped {
+                    scoped_count += 1;
+                }
+                steps.push(json!({
+                    "kind": kind,
+                    "view_json": model.view(),
+                }));
+            }
+
+            Ok(json!({
+                "steps": steps,
+                "final_view_json": model.view(),
+                "final_model_binary_hex": encode_hex(&structural_binary::encode(&model)),
+                "fanout": {
+                    "change_count": change_count,
+                    "scoped_count": scoped_count,
+                },
+            }))
+        }
         "model_apply_replay" => {
             let base = decode_hex(
                 input
@@ -1093,7 +1301,6 @@ pub fn evaluate_fixture(scenario: &str, fixture: &Value) -> Result<Value, String
         "patch_clock_codec_parity"
         | "model_canonical_encode"
         | "model_lifecycle_workflow"
-        | "model_api_proxy_fanout_workflow"
         | "lessdb_model_manager" => Err(format!(
             "scenario {scenario} not implemented in Rust parity harness yet"
         )),

@@ -15,6 +15,7 @@ It is a review checkpoint artifact and should be updated as gaps are closed.
 - `make test`: pass (2026-02-20)
 - `cargo test -p json-joy --test upstream_port_diff_workflows --offline`: pass (2026-02-20)
 - `cargo test -p json-joy --test upstream_port_model_api_workflow --offline`: pass (2026-02-20)
+- `cargo test -p json-joy --test upstream_port_model_api_proxy_fanout_workflow --offline`: pass (2026-02-20)
 
 ## Package layout and source-family parity snapshot
 
@@ -72,7 +73,9 @@ Current xfail scenarios:
 Notes:
 
 - `model_api_workflow` is now implemented in the Rust fixture interpreter (`crates/json-joy/tests/common/scenarios.rs`) and matches upstream workflow behavior in focused checks.
-- Broad `compat_fixtures` still keeps `model_api_workflow` on wildcard xfail due canonical `final_model_binary_hex` byte divergence.
+- `model_api_proxy_fanout_workflow` is now implemented in the Rust fixture interpreter (`crates/json-joy/tests/common/scenarios.rs`) and matches upstream workflow behavior in focused checks.
+- Broad `compat_fixtures` still keeps `model_api_workflow` and `model_api_proxy_fanout_workflow` on wildcard xfail due canonical `final_model_binary_hex` byte divergence.
+- `patch_diff_apply` is no longer wildcard-xfailed; only two fixture-level xfails remain (`diff_long_string_insert_v1`, `diff_long_string_delete_v1`) due canonical `model_binary_after_apply_hex` byte divergence.
 
 ### In-code stubs and intentional behavior notes
 

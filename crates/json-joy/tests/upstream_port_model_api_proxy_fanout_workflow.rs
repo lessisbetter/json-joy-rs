@@ -2,7 +2,7 @@ mod common;
 
 use std::collections::BTreeSet;
 
-use common::assertions::{compare_expected_fields, decode_hex, encode_hex};
+use common::assertions::{compare_expected_fields, decode_hex};
 use common::fixtures::{load_fixture_record, load_manifest};
 use common::scenarios::evaluate_fixture;
 use json_joy::json_crdt::codec::structural::binary as structural_binary;
@@ -10,82 +10,9 @@ use json_joy::json_crdt::model::api::find_path;
 use json_joy::json_crdt::model::Model;
 use json_joy::json_crdt::nodes::{CrdtNode, IndexExt};
 use json_joy::json_crdt_patch::clock::Ts;
-use json_joy::json_crdt_patch::patch_builder::PatchBuilder;
-use json_joy_json_pack::PackValue;
 use serde_json::{Map, Value};
 
-const PATCH_DIFF_APPLY_XFAILS: &[&str] = &[];
-
-const MODEL_DIFF_DST_KEYS_XFAILS: &[&str] = &[];
-
-fn json_to_pack(v: &Value) -> PackValue {
-    match v {
-        Value::Null => PackValue::Null,
-        Value::Bool(b) => PackValue::Bool(*b),
-        Value::Number(n) => {
-            if let Some(i) = n.as_i64() {
-                PackValue::Integer(i)
-            } else if let Some(u) = n.as_u64() {
-                PackValue::UInteger(u)
-            } else if let Some(f) = n.as_f64() {
-                PackValue::Float(f)
-            } else {
-                PackValue::Null
-            }
-        }
-        Value::String(s) => PackValue::Str(s.clone()),
-        Value::Array(arr) => PackValue::Array(arr.iter().map(json_to_pack).collect()),
-        Value::Object(obj) => PackValue::Object(
-            obj.iter()
-                .map(|(k, v)| (k.clone(), json_to_pack(v)))
-                .collect(),
-        ),
-    }
-}
-
-fn build_json(builder: &mut PatchBuilder, v: &Value) -> Ts {
-    match v {
-        Value::Null | Value::Bool(_) | Value::Number(_) => builder.con_val(json_to_pack(v)),
-        Value::String(s) => {
-            let str_id = builder.str_node();
-            if !s.is_empty() {
-                builder.ins_str(str_id, str_id, s.clone());
-            }
-            str_id
-        }
-        Value::Array(items) => {
-            let arr_id = builder.arr();
-            if !items.is_empty() {
-                let ids: Vec<Ts> = items.iter().map(|item| build_json(builder, item)).collect();
-                builder.ins_arr(arr_id, arr_id, ids);
-            }
-            arr_id
-        }
-        Value::Object(map) => {
-            let obj_id = builder.obj();
-            if !map.is_empty() {
-                let pairs: Vec<(String, Ts)> = map
-                    .iter()
-                    .map(|(k, v)| (k.clone(), build_json(builder, v)))
-                    .collect();
-                builder.ins_obj(obj_id, pairs);
-            }
-            obj_id
-        }
-    }
-}
-
-fn model_from_json(data: &Value, sid: u64) -> Model {
-    let mut model = Model::new(sid);
-    let mut builder = PatchBuilder::new(sid, model.clock.time);
-    let root = build_json(&mut builder, data);
-    builder.root(root);
-    let patch = builder.flush();
-    if !patch.ops.is_empty() {
-        model.apply_patch(&patch);
-    }
-    model
-}
+const MODEL_API_PROXY_FANOUT_WORKFLOW_XFAILS: &[&str] = &[];
 
 fn select_expected_fields(expected_full: &Value, keys: &[&str]) -> Value {
     let mut out = Map::new();
@@ -260,60 +187,8 @@ fn critical_node_kind_diffs(model: &Model, final_view: &Value) -> Vec<String> {
     diffs
 }
 
-fn fallback_view_and_model_hex(scenario: &str, fixture: &Value) -> Result<(Value, String), String> {
-    let input = fixture
-        .get("input")
-        .ok_or_else(|| "fixture.input missing".to_string())?;
-
-    match scenario {
-        "model_diff_parity" | "model_diff_dst_keys" => {
-            let base_model_hex = input
-                .get("base_model_binary_hex")
-                .and_then(Value::as_str)
-                .ok_or_else(|| "input.base_model_binary_hex missing".to_string())?;
-            let bytes = decode_hex(base_model_hex)?;
-            let model = structural_binary::decode(&bytes).map_err(|e| format!("{e:?}"))?;
-            Ok((model.view(), encode_hex(&structural_binary::encode(&model))))
-        }
-        "patch_diff_apply" => {
-            let sid = input
-                .get("sid")
-                .and_then(Value::as_u64)
-                .ok_or_else(|| "input.sid missing".to_string())?;
-            let base = input
-                .get("base")
-                .ok_or_else(|| "input.base missing".to_string())?;
-            let model = model_from_json(base, sid);
-            Ok((model.view(), encode_hex(&structural_binary::encode(&model))))
-        }
-        other => Err(format!("unsupported fallback scenario: {other}")),
-    }
-}
-
-fn normalize_actual_output(
-    scenario: &str,
-    fixture: &Value,
-    actual: Value,
-) -> Result<Value, String> {
-    let mut out = actual
-        .as_object()
-        .cloned()
-        .ok_or_else(|| "actual output must be object".to_string())?;
-
-    if !out.contains_key("view_after_apply_json")
-        || !out.contains_key("model_binary_after_apply_hex")
-    {
-        let (view, model_hex) = fallback_view_and_model_hex(scenario, fixture)?;
-        out.entry("view_after_apply_json".to_string())
-            .or_insert(view);
-        out.entry("model_binary_after_apply_hex".to_string())
-            .or_insert(Value::String(model_hex));
-    }
-
-    Ok(Value::Object(out))
-}
-
-fn run_diff_scenario(scenario: &str, expected_keys: &[&str], xfails: &[&str]) {
+fn run_model_api_proxy_fanout_workflow(xfails: &[&str]) {
+    let scenario = "model_api_proxy_fanout_workflow";
     let manifest = load_manifest();
     let dir = common::fixtures::fixtures_dir();
 
@@ -344,43 +219,36 @@ fn run_diff_scenario(scenario: &str, expected_keys: &[&str], xfails: &[&str]) {
             .get("expected")
             .cloned()
             .unwrap_or_else(|| Value::Null);
-        let expected = select_expected_fields(&expected_full, expected_keys);
+        let expected =
+            select_expected_fields(&expected_full, &["steps", "final_view_json", "fanout"]);
 
         let result = match evaluate_fixture(scenario, &record.fixture) {
             Ok(actual) => {
-                let actual = match normalize_actual_output(scenario, &record.fixture, actual) {
-                    Ok(value) => value,
-                    Err(err) => {
-                        return hard_failures.push(format!("{} normalize error: {err}", entry.name))
-                    }
-                };
-
                 let mut diffs = compare_expected_fields(&expected, &actual);
                 if diffs.is_empty() {
                     let final_view = actual
-                        .get("view_after_apply_json")
-                        .ok_or_else(|| "missing view_after_apply_json".to_string())
-                        .and_then(|v| {
-                            actual
-                                .get("model_binary_after_apply_hex")
-                                .and_then(Value::as_str)
-                                .ok_or_else(|| "missing model_binary_after_apply_hex".to_string())
-                                .and_then(decode_hex)
-                                .and_then(|bytes| {
-                                    structural_binary::decode(&bytes)
-                                        .map_err(|e| format!("model decode error: {e:?}"))
-                                })
-                                .map(|model| (v.clone(), model))
-                        });
-
-                    match final_view {
-                        Ok((view, model)) => {
-                            let kind_diffs = critical_node_kind_diffs(&model, &view);
-                            if !kind_diffs.is_empty() {
-                                diffs.extend(kind_diffs);
+                        .get("final_view_json")
+                        .ok_or_else(|| "missing final_view_json".to_string());
+                    let final_model_hex = actual
+                        .get("final_model_binary_hex")
+                        .and_then(Value::as_str)
+                        .ok_or_else(|| "missing final_model_binary_hex".to_string())
+                        .and_then(decode_hex);
+                    match (final_view, final_model_hex) {
+                        (Ok(view), Ok(bytes)) => {
+                            let decoded = structural_binary::decode(&bytes)
+                                .map_err(|e| format!("model decode error: {e:?}"));
+                            match decoded {
+                                Ok(model) => {
+                                    let kind_diffs = critical_node_kind_diffs(&model, view);
+                                    if !kind_diffs.is_empty() {
+                                        diffs.extend(kind_diffs);
+                                    }
+                                }
+                                Err(err) => diffs.push(err),
                             }
                         }
-                        Err(err) => diffs.push(err),
+                        (Err(err), _) | (_, Err(err)) => diffs.push(err),
                     }
                 }
 
@@ -415,40 +283,6 @@ fn run_diff_scenario(scenario: &str, expected_keys: &[&str], xfails: &[&str]) {
 }
 
 #[test]
-fn model_diff_parity_matches_upstream_fixtures() {
-    run_diff_scenario(
-        "model_diff_parity",
-        &["patch_present", "view_after_apply_json"],
-        &[],
-    );
-}
-
-#[test]
-fn model_diff_dst_keys_matches_upstream_fixtures() {
-    run_diff_scenario(
-        "model_diff_dst_keys",
-        &[
-            "patch_present",
-            "patch_op_count",
-            "patch_opcodes",
-            "patch_span",
-            "view_after_apply_json",
-        ],
-        MODEL_DIFF_DST_KEYS_XFAILS,
-    );
-}
-
-#[test]
-fn patch_diff_apply_matches_upstream_fixtures() {
-    run_diff_scenario(
-        "patch_diff_apply",
-        &[
-            "patch_present",
-            "patch_op_count",
-            "patch_opcodes",
-            "patch_span",
-            "view_after_apply_json",
-        ],
-        PATCH_DIFF_APPLY_XFAILS,
-    );
+fn model_api_proxy_fanout_workflow_matches_upstream_fixtures() {
+    run_model_api_proxy_fanout_workflow(MODEL_API_PROXY_FANOUT_WORKFLOW_XFAILS);
 }

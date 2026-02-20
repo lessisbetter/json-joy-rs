@@ -29,7 +29,7 @@ issue = "parity-model-api-workflow"
 [[xfail]]
 scenario = "model_api_proxy_fanout_workflow"
 name = "*"
-reason = "Proxy fanout workflow fixtures require event fanout semantics not yet wired in Rust harness."
+reason = "Workflow behavior now matches in focused parity checks, but canonical final_model_binary_hex still diverges from upstream."
 source_file = "crates/json-joy/src/json_crdt/model/api.rs"
 issue = "parity-model-api-proxy-fanout"
 
@@ -126,7 +126,14 @@ issue = "parity-patch-canonical-encode"
 
 [[xfail]]
 scenario = "patch_diff_apply"
-name = "*"
-reason = "Patch diff/apply parity against upstream differs for complex structures and canonical byte output."
+name = "diff_long_string_insert_v1"
+reason = "Final model binary canonical bytes diverge for long string insertion despite matching patch shape and final JSON view."
+source_file = "crates/json-joy/src/json_crdt_diff/mod.rs"
+issue = "parity-patch-diff-apply"
+
+[[xfail]]
+scenario = "patch_diff_apply"
+name = "diff_long_string_delete_v1"
+reason = "Final model binary canonical bytes diverge for long string deletion despite matching patch shape and final JSON view."
 source_file = "crates/json-joy/src/json_crdt_diff/mod.rs"
 issue = "parity-patch-diff-apply"

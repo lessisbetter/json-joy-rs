@@ -3,13 +3,14 @@
 //!
 //! Mirrors `packages/json-joy/src/json-crdt-diff/JsonCrdtDiff.ts`.
 //!
-//! # Limitations (simplified port)
+//! # Limitations
 //!
-//! - Array diffing uses delete-all / insert-all (not LCS-based as upstream).
 //! - `ConNode` matching uses value equality (no `Timestamp` reference comparison).
-//! - `VecNode` diffing is not implemented.
+//! - Destination values are plain JSON (`serde_json::Value`), so upstream
+//!   NodeBuilder wrapper variants are not represented directly in this API.
 
 use serde_json::Value;
+use std::cell::RefCell;
 
 use crate::json_crdt::nodes::{
     ArrNode, BinNode, CrdtNode, NodeIndex, ObjNode, StrNode, TsKey, ValNode, VecNode,
@@ -18,7 +19,9 @@ use crate::json_crdt_patch::clock::{Ts, Tss};
 use crate::json_crdt_patch::operations::ConValue;
 use crate::json_crdt_patch::patch::Patch;
 use crate::json_crdt_patch::patch_builder::PatchBuilder;
+use crate::json_hash::{struct_hash, struct_hash_crdt};
 use crate::util_inner::diff::bin as bin_diff;
+use crate::util_inner::diff::line as line_diff;
 use crate::util_inner::diff::str as str_diff;
 use json_joy_json_pack::PackValue;
 
@@ -61,9 +64,11 @@ impl<'a> JsonCrdtDiff<'a> {
         let src_id = src.id;
         let patch = str_diff::diff(&view, dst);
 
-        // Collect insertions and deletions without borrowing `self`.
-        let mut inserts: Vec<(Ts, String)> = Vec::new();
-        let mut deletes: Vec<Vec<Tss>> = Vec::new();
+        enum StrEdit {
+            Ins(Ts, String),
+            Del(Vec<Tss>),
+        }
+        let edits: RefCell<Vec<StrEdit>> = RefCell::new(Vec::new());
 
         str_diff::apply(
             &patch,
@@ -76,19 +81,26 @@ impl<'a> JsonCrdtDiff<'a> {
                 } else {
                     src.find(pos - 1).unwrap_or(src_id)
                 };
-                inserts.push((after, text.to_string()));
+                edits
+                    .borrow_mut()
+                    .push(StrEdit::Ins(after, text.to_string()));
             },
             |pos, len, _| {
-                deletes.push(src.find_interval(pos, len));
+                let spans = src.find_interval(pos, len);
+                if !spans.is_empty() {
+                    edits.borrow_mut().push(StrEdit::Del(spans));
+                }
             },
         );
 
-        for (after, text) in inserts {
-            self.builder.ins_str(src_id, after, text);
-        }
-        for spans in deletes {
-            if !spans.is_empty() {
-                self.builder.del(src_id, spans);
+        for edit in edits.into_inner() {
+            match edit {
+                StrEdit::Ins(after, text) => {
+                    self.builder.ins_str(src_id, after, text);
+                }
+                StrEdit::Del(spans) => {
+                    self.builder.del(src_id, spans);
+                }
             }
         }
         Ok(())
@@ -105,8 +117,11 @@ impl<'a> JsonCrdtDiff<'a> {
         let src_id = src.id;
         let patch = bin_diff::diff(&view, dst);
 
-        let mut inserts: Vec<(Ts, Vec<u8>)> = Vec::new();
-        let mut deletes: Vec<Vec<Tss>> = Vec::new();
+        enum BinEdit {
+            Ins(Ts, Vec<u8>),
+            Del(Vec<Tss>),
+        }
+        let edits: RefCell<Vec<BinEdit>> = RefCell::new(Vec::new());
 
         bin_diff::apply(
             &patch,
@@ -117,19 +132,24 @@ impl<'a> JsonCrdtDiff<'a> {
                 } else {
                     find_bin_ts(src, pos - 1).unwrap_or(src_id)
                 };
-                inserts.push((after, bytes));
+                edits.borrow_mut().push(BinEdit::Ins(after, bytes));
             },
             |pos, len| {
-                deletes.push(find_bin_interval(src, pos, len));
+                let spans = find_bin_interval(src, pos, len);
+                if !spans.is_empty() {
+                    edits.borrow_mut().push(BinEdit::Del(spans));
+                }
             },
         );
 
-        for (after, bytes) in inserts {
-            self.builder.ins_bin(src_id, after, bytes);
-        }
-        for spans in deletes {
-            if !spans.is_empty() {
-                self.builder.del(src_id, spans);
+        for edit in edits.into_inner() {
+            match edit {
+                BinEdit::Ins(after, bytes) => {
+                    self.builder.ins_bin(src_id, after, bytes);
+                }
+                BinEdit::Del(spans) => {
+                    self.builder.del(src_id, spans);
+                }
             }
         }
         Ok(())
@@ -138,20 +158,101 @@ impl<'a> JsonCrdtDiff<'a> {
     // ── Arr ──────────────────────────────────────────────────────────────
 
     fn diff_arr(&mut self, src: &ArrNode, dst: &[Value]) -> Result<(), DiffError> {
-        // Simplified: delete all existing, then insert all new elements.
         let src_size = src.size();
-        if src_size > 0 {
-            let spans = src.find_interval(0, src_size);
+        if src_size == 0 {
+            if dst.is_empty() {
+                return Ok(());
+            }
+            let mut after = src.id;
+            for view in dst {
+                let view_id = self.build_view(view);
+                let ins_id = self.builder.ins_arr(src.id, after, vec![view_id]);
+                after = ins_id;
+            }
+            return Ok(());
+        } else if dst.is_empty() {
+            let mut spans: Vec<Tss> = Vec::new();
+            for chunk in src.rga.iter_live() {
+                spans.push(Tss::new(chunk.id.sid, chunk.id.time, chunk.span));
+            }
             if !spans.is_empty() {
                 self.builder.del(src.id, spans);
             }
+            return Ok(());
         }
 
-        let mut after = src.id;
-        for item in dst {
-            let new_id = self.build_view(item);
-            let ins_id = self.builder.ins_arr(src.id, after, vec![new_id]);
-            after = ins_id;
+        let mut src_lines: Vec<String> = Vec::with_capacity(src_size);
+        for pos in 0..src_size {
+            let child = src
+                .get_data_ts(pos)
+                .and_then(|id| self.index.get(&TsKey::from(id)));
+            src_lines.push(struct_hash_crdt(child, self.index));
+        }
+
+        let dst_lines: Vec<String> = dst.iter().map(struct_hash).collect();
+        let src_line_refs: Vec<&str> = src_lines.iter().map(String::as_str).collect();
+        let dst_line_refs: Vec<&str> = dst_lines.iter().map(String::as_str).collect();
+        let line_patch = line_diff::diff(&src_line_refs, &dst_line_refs);
+        if line_patch.is_empty() {
+            return Ok(());
+        }
+
+        let mut inserts: Vec<(Ts, Value)> = Vec::new();
+        let mut deletes: Vec<Tss> = Vec::new();
+
+        for (op_type, pos_src, pos_dst) in line_patch.iter().rev().copied() {
+            match op_type {
+                line_diff::LinePatchOpType::Eql => {}
+                line_diff::LinePatchOpType::Del => {
+                    let span = src.find_interval(pos_src as usize, 1);
+                    if span.is_empty() {
+                        return Err(DiffError("ARR_DELETE_INTERVAL_MISSING"));
+                    }
+                    deletes.extend(span);
+                }
+                line_diff::LinePatchOpType::Ins => {
+                    let after = if pos_src >= 0 {
+                        src.find(pos_src as usize)
+                            .ok_or(DiffError("ARR_INSERT_AFTER_NOT_FOUND"))?
+                    } else {
+                        src.id
+                    };
+                    inserts.push((after, dst[pos_dst as usize].clone()));
+                }
+                line_diff::LinePatchOpType::Mix => {
+                    let view = &dst[pos_dst as usize];
+                    let src_child_id = src
+                        .get_data_ts(pos_src as usize)
+                        .ok_or(DiffError("ARR_MIX_SRC_CHILD_NOT_FOUND"))?;
+                    let src_child = self
+                        .index
+                        .get(&TsKey::from(src_child_id))
+                        .cloned()
+                        .ok_or(DiffError("ARR_MIX_SRC_NODE_NOT_FOUND"))?;
+                    if self.diff_any(&src_child, view).is_err() {
+                        let span = src.find_interval(pos_src as usize, 1);
+                        if span.is_empty() {
+                            return Err(DiffError("ARR_MIX_DELETE_INTERVAL_MISSING"));
+                        }
+                        deletes.extend(span);
+                        let after = if pos_src > 0 {
+                            src.find((pos_src - 1) as usize)
+                                .ok_or(DiffError("ARR_MIX_INSERT_AFTER_NOT_FOUND"))?
+                        } else {
+                            src.id
+                        };
+                        inserts.push((after, view.clone()));
+                    }
+                }
+            }
+        }
+
+        for (after, view) in inserts {
+            let view_id = self.build_view(&view);
+            self.builder.ins_arr(src.id, after, vec![view_id]);
+        }
+        if !deletes.is_empty() {
+            self.builder.del(src.id, deletes);
         }
         Ok(())
     }
@@ -212,36 +313,60 @@ impl<'a> JsonCrdtDiff<'a> {
     // ── Vec ──────────────────────────────────────────────────────────────
 
     fn diff_vec(&mut self, src: &VecNode, dst: &[Value]) -> Result<(), DiffError> {
-        let mut updates: Vec<(u8, Ts)> = Vec::new();
-        for (i, dst_val) in dst.iter().enumerate() {
+        let mut edits: Vec<(u8, Ts)> = Vec::new();
+        let elements = &src.elements;
+        let src_len = elements.len();
+        let dst_len = dst.len();
+        let min_len = src_len.min(dst_len);
+
+        for i in dst_len..src_len {
             if i > u8::MAX as usize {
-                break; // VecNode slots are u8 indexed
+                break;
             }
-            let slot = i as u8;
-            let existing = src.elements.get(i).and_then(|e| *e);
-            let should_update = match existing {
-                None => true,
-                Some(cur_id) => {
-                    match self.index.get(&TsKey::from(cur_id)) {
-                        Some(node) => {
-                            let node = node.clone();
-                            // If recursive diff fails (type mismatch or no change needed), replace
-                            match self.diff_any(&node, dst_val) {
-                                Ok(()) => false, // handled recursively
-                                Err(_) => true,  // type mismatch, replace
-                            }
-                        }
-                        None => true, // missing node, replace
-                    }
-                }
+            let Some(id) = elements[i] else {
+                continue;
             };
-            if should_update {
-                let new_id = self.build_con_view(dst_val);
-                updates.push((slot, new_id));
+            let is_deleted = match self.index.get(&TsKey::from(id)) {
+                None => true,
+                Some(CrdtNode::Con(con))
+                    if matches!(&con.val, ConValue::Val(PackValue::Undefined)) =>
+                {
+                    true
+                }
+                _ => false,
+            };
+            if is_deleted {
+                continue;
             }
+            edits.push((i as u8, self.builder.con_val(PackValue::Undefined)));
         }
-        if !updates.is_empty() {
-            self.builder.ins_vec(src.id, updates);
+
+        for (i, value) in dst.iter().enumerate().take(min_len) {
+            if i > u8::MAX as usize {
+                break;
+            }
+            let child = elements[i].and_then(|id| self.index.get(&TsKey::from(id)).cloned());
+            if let Some(child) = child {
+                if self.diff_any(&child, value).is_ok() {
+                    continue;
+                }
+                if matches!(child, CrdtNode::Con(_)) && is_js_non_object(value) {
+                    edits.push((i as u8, self.builder.con_val(json_to_pack(value))));
+                    continue;
+                }
+            }
+            edits.push((i as u8, self.build_con_view(value)));
+        }
+
+        for (i, value) in dst.iter().enumerate().take(dst_len).skip(src_len) {
+            if i > u8::MAX as usize {
+                break;
+            };
+            edits.push((i as u8, self.build_con_view(value)));
+        }
+
+        if !edits.is_empty() {
+            self.builder.ins_vec(src.id, edits);
         }
         Ok(())
     }
@@ -389,6 +514,10 @@ fn con_equals_dst(val: &ConValue, dst: &Value) -> bool {
         ConValue::Val(PackValue::Undefined) => false,
         ConValue::Val(pv) => Value::from(pv.clone()) == *dst,
     }
+}
+
+fn is_js_non_object(value: &Value) -> bool {
+    matches!(value, Value::String(_) | Value::Number(_) | Value::Bool(_))
 }
 
 fn json_to_pack(val: &Value) -> PackValue {
