@@ -38,7 +38,7 @@ It is a review checkpoint artifact and should be updated as gaps are closed.
 Notes:
 
 - `json-pointer` local `src` count is +3 vs upstream because Rust requires crate/module scaffolding files (`lib.rs`, `codegen/mod.rs`, `findByPointer/mod.rs`) that have no direct TS counterparts.
-- `json-path` now includes explicit `codegen`, `util`, and `value` modules mapped from upstream package families; key evaluator semantics from upstream test families are aligned (function filters, no-paren filters, reverse/negative slices, and root-object filters), with remaining differences primarily around broader test-family coverage and Rust decomposition.
+- `json-path` now includes explicit `codegen`, `util`, and `value` modules mapped from upstream package families; key parser/evaluator semantics from upstream test families are aligned (function filters, no-paren filters, reverse/negative slices, root-object filters, recursive descent selectors, and strict rejection of malformed trailing/empty selectors), with remaining differences primarily around broader test-family coverage and Rust decomposition.
 - Prefixed crate naming is intentional and documented in `AGENTS.md` package mapping.
 
 ## Explicit non-parity choices currently in tree

@@ -89,6 +89,38 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_recursive_descent_name() {
+        let path = JsonPathParser::parse("$..author").unwrap();
+        assert_eq!(path.segments.len(), 1);
+        assert!(path.segments[0].recursive);
+        assert!(matches!(path.segments[0].selectors[0], Selector::Name(_)));
+    }
+
+    #[test]
+    fn test_parse_recursive_descent_wildcard() {
+        let path = JsonPathParser::parse("$..*").unwrap();
+        assert_eq!(path.segments.len(), 1);
+        assert!(path.segments[0].recursive);
+        assert!(matches!(path.segments[0].selectors[0], Selector::Wildcard));
+    }
+
+    #[test]
+    fn test_parse_recursive_descent_requires_selector() {
+        assert!(JsonPathParser::parse("$..").is_err());
+    }
+
+    #[test]
+    fn test_parse_rejects_empty_bracket_selector() {
+        assert!(JsonPathParser::parse("$[]").is_err());
+        assert!(JsonPathParser::parse("$..[]").is_err());
+    }
+
+    #[test]
+    fn test_parse_rejects_trailing_garbage() {
+        assert!(JsonPathParser::parse("$.store?bad").is_err());
+    }
+
+    #[test]
     fn test_eval_root() {
         let doc = json!({"a": 1});
         let path = JsonPathParser::parse("$").unwrap();
@@ -195,6 +227,52 @@ mod tests {
         let results = JsonPathEval::eval(&path, &doc);
         assert_eq!(results.len(), 1);
         assert!(results[0].is_array());
+    }
+
+    #[test]
+    fn test_eval_recursive_descent_name() {
+        let doc = json!({
+            "store": {
+                "book": [
+                    {"title": "Book 1", "price": 10},
+                    {"title": "Book 2", "price": 20}
+                ],
+                "bicycle": {"price": 100}
+            }
+        });
+        let path = JsonPathParser::parse("$..price").unwrap();
+        let results = JsonPathEval::eval(&path, &doc);
+        assert_eq!(results.len(), 3);
+        let values: Vec<f64> = results.iter().map(|v| v.as_f64().unwrap()).collect();
+        assert!(values.contains(&10.0));
+        assert!(values.contains(&20.0));
+        assert!(values.contains(&100.0));
+    }
+
+    #[test]
+    fn test_eval_recursive_descent_wildcard() {
+        let doc = json!({"a": {"b": 1}, "c": [2, 3]});
+        let path = JsonPathParser::parse("$..*").unwrap();
+        let results = JsonPathEval::eval(&path, &doc);
+        assert!(results.iter().any(|v| **v == json!(1)));
+        assert!(results.iter().any(|v| **v == json!(2)));
+        assert!(results.iter().any(|v| **v == json!(3)));
+    }
+
+    #[test]
+    fn test_eval_recursive_descent_index() {
+        let doc = json!({
+            "items": [
+                ["a", "b"],
+                ["c", "d"]
+            ]
+        });
+        let path = JsonPathParser::parse("$..[0]").unwrap();
+        let results = JsonPathEval::eval(&path, &doc);
+        assert_eq!(results.len(), 3);
+        assert_eq!(results[0], &json!(["a", "b"]));
+        assert_eq!(results[1], &json!("a"));
+        assert_eq!(results[2], &json!("c"));
     }
 
     #[test]

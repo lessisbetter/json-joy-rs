@@ -46,33 +46,41 @@ impl<'a> JsonPathParser<'a> {
             return Err(ParseError::ExpectedRoot);
         }
         self.advance();
+        self.skip_whitespace();
 
         let mut segments = Vec::new();
 
         while !self.is_at_end() {
-            if self.peek() == Some('.') {
-                self.advance();
-                // Check for .. (recursive descent)
-                if self.peek() == Some('.') {
-                    self.advance();
-                    // This is recursive descent, parse the selector
-                    let selector = self.parse_recursive_selector()?;
-                    segments.push(PathSegment::new(vec![selector], true));
-                } else if self.peek() == Some('*') {
-                    // Wildcard: .*
-                    self.advance();
-                    segments.push(PathSegment::new(vec![Selector::Wildcard], false));
-                } else {
-                    // Single dot notation: .name
-                    let name = self.parse_identifier()?;
-                    segments.push(PathSegment::new(vec![Selector::Name(name)], false));
-                }
-            } else if self.peek() == Some('[') {
-                // Bracket notation
-                let selectors = self.parse_bracket_selectors()?;
-                segments.push(PathSegment::new(selectors, false));
-            } else {
+            self.skip_whitespace();
+            if self.is_at_end() {
                 break;
+            }
+            match self.peek() {
+                Some('.') => {
+                    self.advance();
+                    // Check for .. (recursive descent)
+                    if self.peek() == Some('.') {
+                        self.advance();
+                        // This is recursive descent, parse the selector
+                        let selector = self.parse_recursive_selector()?;
+                        segments.push(PathSegment::new(vec![selector], true));
+                    } else if self.peek() == Some('*') {
+                        // Wildcard: .*
+                        self.advance();
+                        segments.push(PathSegment::new(vec![Selector::Wildcard], false));
+                    } else {
+                        // Single dot notation: .name
+                        let name = self.parse_identifier()?;
+                        segments.push(PathSegment::new(vec![Selector::Name(name)], false));
+                    }
+                }
+                Some('[') => {
+                    // Bracket notation
+                    let selectors = self.parse_bracket_selectors()?;
+                    segments.push(PathSegment::new(selectors, false));
+                }
+                Some(c) => return Err(ParseError::UnexpectedChar(c)),
+                None => break,
             }
         }
 
@@ -125,6 +133,10 @@ impl<'a> JsonPathParser<'a> {
             } else {
                 return Err(ParseError::UnexpectedChar(self.peek().unwrap_or('\0')));
             }
+        }
+
+        if selectors.is_empty() {
+            return Err(ParseError::InvalidSelector);
         }
 
         Ok(selectors)
@@ -477,7 +489,7 @@ impl<'a> JsonPathParser<'a> {
                 let selectors = self.parse_bracket_selectors()?;
                 segments.push(PathSegment::new(selectors, false));
             } else {
-                break;
+                return Err(ParseError::UnexpectedChar(self.peek().unwrap_or('\0')));
             }
         }
 
