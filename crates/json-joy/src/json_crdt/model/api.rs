@@ -1142,6 +1142,43 @@ mod tests {
     }
 
     #[test]
+    fn str_api_spec_can_edit_simple_string() {
+        let mut model = Model::create();
+        let str_id = {
+            let mut api = ModelApi::new(&mut model);
+            api.set(&json!([0, "123", 2])).unwrap();
+            let root_id = api.model.root.val;
+            api.find(root_id, &[json!(1)]).unwrap()
+        };
+        {
+            let mut api = ModelApi::new(&mut model);
+            api.str_ins(str_id, 0, "0").unwrap();
+            api.str_ins(str_id, 4, "-xxxx").unwrap();
+            api.str_ins(str_id, 9, "-yyyyyyyy").unwrap();
+            api.str_del(str_id, 9, 1).unwrap();
+        }
+        assert_eq!(model.view(), json!([0, "0123-xxxxyyyyyyyy", 2]));
+    }
+
+    #[test]
+    fn str_api_spec_can_delete_across_two_chunks() {
+        let mut model = Model::create();
+        let str_id = {
+            let mut api = ModelApi::new(&mut model);
+            api.set(&json!("")).unwrap();
+            api.model.root.val
+        };
+        {
+            let mut api = ModelApi::new(&mut model);
+            api.str_ins(str_id, 0, "aaa").unwrap();
+            api.str_ins(str_id, 0, "bbb").unwrap();
+            api.str_ins(str_id, 0, "ccc").unwrap();
+            api.str_del(str_id, 1, 7).unwrap();
+        }
+        assert_eq!(model.view(), json!("ca"));
+    }
+
+    #[test]
     fn str_ins_empty_returns_error() {
         let mut model = Model::create();
         let str_id = {
@@ -1195,6 +1232,26 @@ mod tests {
         }
         let api = ModelApi::new(&mut model);
         assert_eq!(api.bin_len(bin_id), Some(3));
+    }
+
+    #[test]
+    fn bin_api_spec_can_delete_across_two_chunks() {
+        let mut model = Model::create();
+        let bin_id = {
+            let mut api = ModelApi::new(&mut model);
+            let id = api.builder.bin();
+            api.builder.root(id);
+            api.apply();
+            id
+        };
+        {
+            let mut api = ModelApi::new(&mut model);
+            api.bin_ins(bin_id, 0, &[1, 1, 1]).unwrap();
+            api.bin_ins(bin_id, 0, &[2, 2, 2]).unwrap();
+            api.bin_ins(bin_id, 0, &[3, 3, 3]).unwrap();
+            api.bin_del(bin_id, 1, 7).unwrap();
+        }
+        assert_eq!(model.view(), json!([3, 1]));
     }
 
     // ── arr editing ─────────────────────────────────────────────────────────
