@@ -1,6 +1,6 @@
 # Parity Audit (json-joy@17.67.0)
 
-Last updated: 2026-02-19
+Last updated: 2026-02-20
 
 This document tracks known, explicit parity gaps between:
 
@@ -11,8 +11,8 @@ It is a review checkpoint artifact and should be updated as gaps are closed.
 
 ## Current gate status
 
-- `make test-gates`: pass (2026-02-19)
-- `make test`: pass (2026-02-19)
+- `make test-gates`: pass (2026-02-20)
+- `make test`: pass (2026-02-20)
 
 ## Package layout and source-family parity snapshot
 
@@ -95,8 +95,8 @@ Upstream reference:
 
 Current local status:
 
-- upstream source files: 82
-- local source files: 49
+- upstream source files: 81
+- local source files: 60
 
 Top-level families:
 
@@ -105,14 +105,22 @@ Top-level families:
 
 Implication:
 
-- `Tree`, `TreeNode`, `red-black`, `data-types`, `avl`, `llrb-tree`, `print`, `trie`, and `radix` families are now ported with upstream-mapped integration tests.
-- Several optimized data-structure families are still missing from the Rust port.
-- Given project direction, missing sonic-forest families should now be treated as planned port work, not permanent divergence.
+- Top-level family parity is in place across `SortedMap`, `Tree`, `TreeNode`, `red-black`, `data-types`, `avl`, `llrb-tree`, `print`, `trie`, `radix`, `splay`, `types`, `types2`, `util`, and `util2`.
+- Upstream test families are covered by Rust parity matrices:
+  - `upstream_port_sorted_map_matrix.rs`
+  - `upstream_port_tree_matrix.rs`
+  - `upstream_port_util_matrix.rs`
+  - `upstream_port_avl_matrix.rs`
+  - `upstream_port_llrb_tree_matrix.rs`
+  - `upstream_port_radix_matrix.rs`
+  - `upstream_port_radix_slice_matrix.rs`
+  - `upstream_port_red_black_map_matrix.rs`
+  - `upstream_port_red_black_util_matrix.rs`
+- Remaining differences are mostly Rust file/module decomposition and intentional upstream-stub parity (`Method not implemented`) surfaces in `SortedMap` and `LlrbTree`.
 
 ## Recommended next review slices
 
-1. `sonic-forest`: port `SortedMap` family next.
-2. `json-path`: complete module-family parity with upstream package layout.
-3. `json-random`: complete full `examples.ts` catalog parity (replace placeholder templates with full upstream mappings).
-4. `json-type`: close codegen stub modules first (`binary`, `json`, `discriminator`, `capacity`).
-5. Revisit xfail scenarios one family at a time and remove wildcard entries as cases are fixed.
+1. `json-path`: complete module-family parity with upstream package layout.
+2. `json-random`: complete full `examples.ts` catalog parity (replace placeholder templates with full upstream mappings).
+3. `json-type`: close codegen stub modules first (`binary`, `json`, `discriminator`, `capacity`).
+4. Revisit xfail scenarios one family at a time and remove wildcard entries as cases are fixed.
