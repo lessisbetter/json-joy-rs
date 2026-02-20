@@ -73,7 +73,9 @@ fn template_json_object_and_map() {
         None,
     );
     let map_obj = map.as_object().expect("map object");
-    assert!((2..=4).contains(&map_obj.len()));
+    // TemplateMap keys are random and may collide, so cardinality is bounded by [1, max].
+    assert!(!map_obj.is_empty());
+    assert!(map_obj.len() <= 4);
 }
 
 #[test]

@@ -390,6 +390,32 @@ fn test_ip4_validator() {
 }
 
 #[test]
+fn test_hostname_validator() {
+    check(
+        json!(["hostname?", "example.com"]),
+        json!(true),
+        json!(null),
+    );
+    check(json!(["hostname?", "localhost"]), json!(true), json!(null));
+    check(json!(["hostname?", ""]), json!(false), json!(null));
+    let too_long = "a".repeat(254);
+    check(json!(["hostname?", too_long]), json!(false), json!(null));
+}
+
+#[test]
+fn test_duration_validator() {
+    check(json!(["duration?", "PT1H"]), json!(true), json!(null));
+    check(
+        json!(["duration?", "P1Y2M3DT4H5M6S"]),
+        json!(true),
+        json!(null),
+    );
+    check(json!(["duration?", "P1W"]), json!(true), json!(null));
+    check(json!(["duration?", "P"]), json!(false), json!(null));
+    check(json!(["duration?", "PT"]), json!(false), json!(null));
+}
+
+#[test]
 fn test_date_validator() {
     check(json!(["date?", "2023-01-15"]), json!(true), json!(null));
     check(json!(["date?", "2023-13-01"]), json!(false), json!(null));

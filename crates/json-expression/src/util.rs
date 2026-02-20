@@ -348,7 +348,8 @@ fn hostname_regex() -> &'static regex::Regex {
     static RE: OnceLock<regex::Regex> = OnceLock::new();
     RE.get_or_init(|| {
         regex::Regex::new(
-            r"(?i)^(?=.{1,253}\.?$)[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[-0-9a-z]{0,61}[0-9a-z])?)*\.?$"
+            // Rust regex does not support look-around; length is validated in `is_hostname`.
+            r"(?i)^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[-0-9a-z]{0,61}[0-9a-z])?)*\.?$"
         ).unwrap()
     })
 }
@@ -403,8 +404,8 @@ fn duration_regex() -> &'static regex::Regex {
     use std::sync::OnceLock;
     static RE: OnceLock<regex::Regex> = OnceLock::new();
     RE.get_or_init(|| {
-        regex::Regex::new(r"^P(?!$)((\d+Y)?(\d+M)?(\d+D)?(T(?=\d)(\d+H)?(\d+M)?(\d+S)?)?|(\d+W)?)$")
-            .unwrap()
+        // Rust regex does not support look-around; additional guards are in `is_duration`.
+        regex::Regex::new(r"^P((\d+Y)?(\d+M)?(\d+D)?(T(\d+H)?(\d+M)?(\d+S)?)?|(\d+W)?)$").unwrap()
     })
 }
 
@@ -434,7 +435,10 @@ pub fn is_email(value: &JsValue) -> bool {
 
 pub fn is_hostname(value: &JsValue) -> bool {
     match value {
-        JsValue::Json(Value::String(s)) => hostname_regex().is_match(s),
+        JsValue::Json(Value::String(s)) => {
+            let len = s.len();
+            (1..=253).contains(&len) && hostname_regex().is_match(s)
+        }
         _ => false,
     }
 }
@@ -471,7 +475,21 @@ pub fn is_uri(value: &JsValue) -> bool {
 
 pub fn is_duration(value: &JsValue) -> bool {
     match value {
-        JsValue::Json(Value::String(s)) => duration_regex().is_match(s),
+        JsValue::Json(Value::String(s)) => {
+            // Mirror the upstream look-around constraints that are not supported by Rust regex:
+            // - reject bare "P"
+            // - if "T" exists, it must be followed by at least one digit
+            if s == "P" {
+                return false;
+            }
+            if let Some(t_pos) = s.find('T') {
+                let tail = &s[t_pos + 1..];
+                if tail.is_empty() || !tail.chars().next().is_some_and(|c| c.is_ascii_digit()) {
+                    return false;
+                }
+            }
+            duration_regex().is_match(s)
+        }
         _ => false,
     }
 }

@@ -29,7 +29,13 @@ Integration tests:
 Run:
 
 ```bash
-make parity-fixtures
+just parity-fixtures
+```
+
+Default repository gates also include fixture parity:
+
+```bash
+just test-gates
 ```
 
 The inventory test enforces the pinned fixture contract including:
@@ -67,5 +73,5 @@ Harness rules:
 Live TS<->WASM core differential checks are manual-only:
 
 ```bash
-make parity-live
+just parity-live
 ```

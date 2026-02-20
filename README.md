@@ -31,14 +31,16 @@ diff, and codec functionality, plus native bridges for WASM and Python.
 ## Quick start
 
 ```bash
-make check
-make test
+just check
 ```
+
+`just check` runs formatting, clippy lint, compatibility gates, and full workspace tests.
 
 If running cargo directly, use `mise` for pinned toolchains:
 
 ```bash
-mise x -- cargo check
+mise x -- cargo clippy --workspace --all-features --lib --bins --examples -- -D clippy::invalid_regex -D clippy::todo -D clippy::dbg_macro
+mise x -- cargo test --workspace
 ```
 
 ## Compatibility and parity
@@ -46,25 +48,25 @@ mise x -- cargo check
 Generate upstream compatibility fixtures:
 
 ```bash
-make compat-fixtures
+just compat-fixtures
 ```
 
 Run fixture parity tests:
 
 ```bash
-make parity-fixtures
+just parity-fixtures
 ```
 
 Run live manual TS<->WASM core differential check:
 
 ```bash
-make parity-live
+just parity-live
 ```
 
 Run both:
 
 ```bash
-make parity
+just parity
 ```
 
 ## Scope note

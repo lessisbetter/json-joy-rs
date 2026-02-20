@@ -14,21 +14,21 @@ This directory contains benchmark and interoperability harness scripts for the
 From repository root:
 
 ```bash
-make wasm-build
+just wasm-build
 ```
 
 Benchmarks:
 
 ```bash
-make wasm-bench
-make wasm-bench-engine-one
-make wasm-bench-realistic
+just wasm-bench
+just wasm-bench-engine-one
+just wasm-bench-realistic
 ```
 
 Core parity differential check:
 
 ```bash
-make parity-live
+just parity-live
 ```
 
 `parity-live` validates core mixed upstream/wasm compatibility:

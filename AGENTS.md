@@ -2,81 +2,92 @@
 
 ## Mission
 
-Achieve exact parity with upstream `json-joy@17.67.0` by porting all upstream packages and source files into this repository with matching package/module layout.
+Build and maintain a high-quality Rust implementation of `json-joy` that is:
+
+1. Excellent Rust code (safety, clarity, testability, performance).
+2. Behaviorally compatible with upstream where parity is expected.
+3. Easy to keep in sync with upstream through explicit traceability.
 
 Upstream source of truth:
 - `/Users/nchapman/Code/json-joy/packages`
 
+Pinned upstream baseline:
+- `json-joy@17.67.0`
+
+## Project stance
+
+- Prefixed crate names are intentional in this repo.
+- Layout does not need to match upstream folder names exactly as long as mapping is explicit and documented.
+- Upstream compatibility remains critical for core behavior and fixture-backed workflows.
+
+## Upstream-to-local package mapping
+
+- `base64` -> `crates/base64` (`json-joy-base64`)
+- `buffers` -> `crates/buffers` (`json-joy-buffers`)
+- `codegen` -> `crates/codegen` (`json-joy-codegen`)
+- `json-expression` -> `crates/json-expression` (`json-expression`)
+- `json-joy` -> `crates/json-joy` (`json-joy`)
+- `json-pack` -> `crates/json-joy-json-pack` (`json-joy-json-pack`)
+- `json-path` -> `crates/json-joy-json-path` (`json-joy-json-path`)
+- `json-pointer` -> `crates/json-joy-json-pointer` (`json-joy-json-pointer`)
+- `json-random` -> `crates/json-joy-json-random` (`json-joy-json-random`)
+- `json-type` -> `crates/json-joy-json-type` (`json-joy-json-type`)
+- `util` -> `crates/util` (`json-joy-util`)
+
 ## Non-negotiable rules
 
-1. Layout parity first: mirror upstream package and module layout.
-2. Compatibility-first TDD: add fixtures/tests first, then implementation.
-3. Whole-file porting: port complete file families in one shot.
-4. No behavior deltas without explicit written approval.
-5. Do not mark a file complete unless all gates pass.
+1. Rust quality first: readable APIs, explicit error handling, deterministic tests, and no avoidable panics in library paths.
+2. Upstream traceability always: for each ported module family, keep a clear note linking to upstream source file(s) or package path.
+3. Compatibility-first for behavior changes: add/update fixture tests before implementation when behavior is expected to match upstream.
+4. No behavior deltas without explicit written approval unless fixing a clear bug; document every approved divergence.
+5. Do not mark work complete unless lint, tests, and parity gates pass.
+6. Do not leave flaky tests in tree; fix determinism or adjust assertions to match stable invariants.
 
-## Required local layout
+## Default quality workflow (run by default)
 
-Mirror upstream package structure under `crates/`:
-- `crates/base64`
-- `crates/buffers`
-- `crates/codegen`
-- `crates/json-expression`
-- `crates/json-joy`
-- `crates/json-pack`
-- `crates/json-path`
-- `crates/json-pointer`
-- `crates/json-random`
-- `crates/json-type`
-- `crates/util`
+For normal development, run:
 
-For each package, mirror `src/**` folder structure exactly.
+1. `just fmt`
+2. `just lint`
+3. `just test-gates`
+4. `just test`
 
-## Fast execution loop
+If a change touches parity-sensitive paths, also run:
 
-For each file-family slice:
-1. Add/update fixture(s) and upstream-mapped test(s).
-2. Run one-command loop:
-   - `make port-slice PKG=<cargo_package_name> SUITE=<integration_test_name>`
-   - Optional: `FILTER=<test_name_substring> FIXTURES=0 GATES=1`
-3. Port whole files.
-4. Re-run focused suite if needed (`make test-suite SUITE=<suite>` and optional filtered case).
-5. At slice checkpoint, run all gates (`make test-gates`).
+1. `just parity-fixtures`
+2. `just parity-live` (when relevant to WASM/interop changes)
 
-## Standard Slice SOP (for AI agents)
+If a change touches a targeted hot path, run the relevant benchmark/perf check before merge.
 
-Use this exact procedure for every slice:
+## Porting workflow (when bringing in upstream changes)
 
-1. Pick the next package/file-family slice requiring parity work.
-2. Mirror missing file paths under `crates/<package>/src/**`.
-3. Add/update fixtures and tests for the same family before implementation.
-4. Run:
-   - `make port-slice PKG=<cargo_package_name> SUITE=<integration_test_name>`
-5. Port whole upstream files for that family.
-6. Re-run:
-   - `make port-slice PKG=<cargo_package_name> SUITE=<integration_test_name> FILTER=<optional_test_name_substring> FIXTURES=0`
-7. Run completion gates:
-   - `make test-gates`
-   - `make test`
-8. Update repository docs/tests as needed to reflect completed parity work.
-9. Move to the next unchecked family.
+Use this sequence for each package/file-family slice:
+
+1. Add/update fixture(s) and upstream-mapped tests first.
+2. Run: `just port-slice <cargo_package_name> <integration_test_name>`
+3. Port full file families (not partial snippets).
+4. Re-run focused suite:
+   - `just port-slice <cargo_package_name> <integration_test_name> <optional_test_name_substring> fixtures=0`
+5. Run completion gates:
+   - `just test-gates`
+   - `just test`
+6. Update docs/audit notes for any parity status change.
 
 Required inputs per run:
-- `PKG`: local cargo package name.
-- `SUITE`: integration test file name (without `.rs`).
-- `FILTER` (optional): single test/case focus.
+- `pkg`: local cargo package name.
+- `suite`: integration test file name (without `.rs`).
+- `filter` (optional): single test/case focus.
 
-## Gates required before marking complete
+## Documentation requirements
 
-- Upstream behavior mapped in tests.
-- Fixture coverage exists.
-- Differential parity passes.
-- Perf check passes on targeted hot paths.
+When behavior, parity status, or workflow changes, update docs in the same change:
 
-## Tracking documents
-
-Authoritative project documentation:
 - `README.md`
 - `tests/compat/README.md`
+- `tests/compat/PARITY_AUDIT.md`
 
-If workflow changes, update the relevant docs in the same change.
+For intentional divergences, record:
+- what differs,
+- why it differs,
+- whether it is temporary or permanent,
+- and how it is tested.

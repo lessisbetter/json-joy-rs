@@ -11,8 +11,8 @@ It is a review checkpoint artifact and should be updated as gaps are closed.
 
 ## Current gate status
 
-- `make test-gates`: pass (2026-02-20)
-- `make test`: pass (2026-02-20)
+- `just test-gates`: pass (2026-02-20)
+- `just test`: pass (2026-02-20)
 - `cargo test -p json-joy --test upstream_port_diff_workflows --offline`: pass (2026-02-20)
 - `cargo test -p json-joy --test upstream_port_model_api_workflow --offline`: pass (2026-02-20)
 - `cargo test -p json-joy --test upstream_port_model_api_proxy_fanout_workflow --offline`: pass (2026-02-20)
@@ -38,9 +38,7 @@ It is a review checkpoint artifact and should be updated as gaps are closed.
 Notes:
 
 - `json-pointer` local `src` count is +3 vs upstream because Rust requires crate/module scaffolding files (`lib.rs`, `codegen/mod.rs`, `findByPointer/mod.rs`) that have no direct TS counterparts.
-- Structural crate-name divergence from AGENTS target layout is still present:
-  - expected: `crates/json-pack`, `crates/json-path`, `crates/json-pointer`, `crates/json-random`, `crates/json-type`
-  - current: `crates/json-joy-json-pack`, `crates/json-joy-json-path`, `crates/json-joy-json-pointer`, `crates/json-joy-json-random`, `crates/json-joy-json-type`
+- Prefixed crate naming is intentional and documented in `AGENTS.md` package mapping.
 
 ## Explicit non-parity choices currently in tree
 
