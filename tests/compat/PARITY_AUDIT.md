@@ -51,31 +51,30 @@ These are intentionally documented non-parity areas and should remain tracked un
 Current xfail scenarios:
 
 - `model_canonical_encode`
-- `patch_clock_codec_parity`
 - `model_lifecycle_workflow`
-- `model_api_workflow`
-- `model_api_proxy_fanout_workflow`
 - `lessdb_model_manager`
-- `model_diff_parity`
-- `model_diff_dst_keys`
-- `model_apply_replay`
 - `codec_indexed_binary_parity`
 - `codec_sidecar_binary_parity`
-- `patch_schema_parity`
-- `model_roundtrip`
 - `model_decode_error`
-- `patch_alt_codecs`
-- `patch_compaction_parity`
 - `patch_decode_error`
-- `patch_canonical_encode`
-- `patch_diff_apply`
 
 Notes:
 
-- `model_api_workflow` is now implemented in the Rust fixture interpreter (`crates/json-joy/tests/common/scenarios.rs`) and matches upstream workflow behavior in focused checks.
-- `model_api_proxy_fanout_workflow` is now implemented in the Rust fixture interpreter (`crates/json-joy/tests/common/scenarios.rs`) and matches upstream workflow behavior in focused checks.
-- Broad `compat_fixtures` still keeps `model_api_workflow` and `model_api_proxy_fanout_workflow` on wildcard xfail due canonical `final_model_binary_hex` byte divergence.
-- `patch_diff_apply` is no longer wildcard-xfailed; only two fixture-level xfails remain (`diff_long_string_insert_v1`, `diff_long_string_delete_v1`) due canonical `model_binary_after_apply_hex` byte divergence.
+- `model_api_workflow` and `model_api_proxy_fanout_workflow` wildcard xfails were removed; scenarios pass unmasked.
+- `patch_diff_apply` fixture-level xfails were removed; scenario now passes unmasked.
+- `model_roundtrip` xfail was removed; scenario now passes unmasked.
+- `model_apply_replay` xfail was removed after aligning evaluator semantics with upstream fixture generation:
+  - effective apply count now increments only on binary state change (`before !== after`).
+  - `clock_observed.patch_ids` is now emitted from patch IDs.
+  - root `bin` view is normalized to JS `Uint8Array` JSON shape (`{"0":...}`).
+- `model_diff_parity` wildcard xfail was removed; scenario passes unmasked.
+- Slice A closures completed in this pass:
+  - `patch_schema_parity` xfail removed after aligning schema fixture replay root wiring plus binary string/header parity.
+  - `patch_canonical_encode` xfail removed after canonical patch encoder parity fixes.
+  - `patch_compaction_parity` xfail removed after UTF-16 span semantics in compaction.
+  - `patch_alt_codecs` xfail removed after compact codec wire-shape parity (`encode`/`decode`) was ported to upstream structure.
+- `model_decode_error` remains xfailed with 20 residual classification mismatches (`Offset is outside the bounds of the DataView` / `NO_ERROR` / `INVALID_CLOCK_TABLE`).
+- `patch_decode_error` remains xfailed with a reduced residual mismatch set (6 fixtures) in decode error classification (`NO_ERROR` vs `Index out of range`) for malformed binary payloads.
 
 ### In-code stubs and intentional behavior notes
 

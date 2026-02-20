@@ -341,8 +341,19 @@ fn parse_patch_ops(input_ops: &[Value]) -> Result<Vec<Op>, String> {
 
 fn view_and_binary_after_apply(model: &mut Model, patch: &Patch) -> Value {
     model.apply_patch(patch);
+    let mut view_json = model.view();
+    if let Some(CrdtNode::Bin(_)) = model.index.get(&TsKey::from(model.root.val)) {
+        if let Value::Array(items) = view_json {
+            // JS serializes Uint8Array via JSON.stringify to {"0":...} shape.
+            let mut obj = Map::new();
+            for (i, v) in items.into_iter().enumerate() {
+                obj.insert(i.to_string(), v);
+            }
+            view_json = Value::Object(obj);
+        }
+    }
     json!({
-        "view_after_apply_json": model.view(),
+        "view_after_apply_json": view_json,
         "model_binary_after_apply_hex": encode_hex(&structural_binary::encode(model)),
     })
 }
@@ -624,9 +635,11 @@ pub fn evaluate_fixture(scenario: &str, fixture: &Value) -> Result<Value, String
                 .ok_or_else(|| "input.value_json missing".to_string())?;
             let mut builder = PatchBuilder::new(sid, time);
             let root_id = build_json(&mut builder, value);
-            let val_id = builder.val();
-            builder.set_val(val_id, root_id);
-            builder.root(val_id);
+            // Mirrors upstream fixture generator:
+            //   const root = s.json(value).build(builder);
+            //   builder.setVal(ts(0, 0), root);
+            // No extra root-val wrapper node is created here.
+            builder.set_val(ORIGIN, root_id);
             let patch = builder.flush();
             Ok(json!({
                 "patch_binary_hex": encode_hex(&patch.to_binary()),
@@ -739,15 +752,43 @@ pub fn evaluate_fixture(scenario: &str, fixture: &Value) -> Result<Value, String
                 .get("sid")
                 .and_then(Value::as_u64)
                 .ok_or_else(|| "input.sid missing".to_string())?;
-            let data = input
-                .get("data")
-                .ok_or_else(|| "input.data missing".to_string())?;
-            let model = model_from_json(data, sid);
+            let model = if let Some(data) = input.get("data") {
+                model_from_json(data, sid)
+            } else if input
+                .get("recipe")
+                .and_then(Value::as_str)
+                .map(|r| r == "patch_apply")
+                .unwrap_or(false)
+            {
+                // Upstream has model_roundtrip fixtures built from patch-applied models
+                // that intentionally omit `input.data`; use the canonical model bytes.
+                let expected_hex = fixture
+                    .get("expected")
+                    .and_then(|e| e.get("model_binary_hex"))
+                    .and_then(Value::as_str)
+                    .ok_or_else(|| "expected.model_binary_hex missing".to_string())?;
+                let expected_bytes = decode_hex(expected_hex)?;
+                structural_binary::decode(&expected_bytes).map_err(|e| format!("{e:?}"))?
+            } else {
+                return Err("input.data missing".to_string());
+            };
             let bytes = structural_binary::encode(&model);
             let decoded = structural_binary::decode(&bytes).map_err(|e| format!("{e:?}"))?;
+            let mut view_json = decoded.view();
+            if let Some(CrdtNode::Bin(_)) = decoded.index.get(&TsKey::from(decoded.root.val)) {
+                if let Value::Array(items) = view_json {
+                    // JS fixture generator serializes Uint8Array via JSON.stringify,
+                    // which yields {"0":..., "1":...} object shape rather than array.
+                    let mut obj = Map::new();
+                    for (i, v) in items.into_iter().enumerate() {
+                        obj.insert(i.to_string(), v);
+                    }
+                    view_json = Value::Object(obj);
+                }
+            }
             Ok(json!({
                 "model_binary_hex": encode_hex(&bytes),
-                "view_json": decoded.view(),
+                "view_json": view_json,
             }))
         }
         "model_decode_error" => {
@@ -1319,19 +1360,40 @@ pub fn evaluate_fixture(scenario: &str, fixture: &Value) -> Result<Value, String
                 .collect::<Result<Vec<_>, String>>()?;
 
             let mut model = structural_binary::decode(&base).map_err(|e| format!("{e:?}"))?;
+            let patch_ids = patches
+                .iter()
+                .map(|p| p.get_id().map(|id| json!([id.sid, id.time])).unwrap_or(Value::Null))
+                .collect::<Vec<_>>();
             let mut applied = 0usize;
             for idx in replay_pattern {
                 let i = idx.as_u64().ok_or_else(|| "replay idx".to_string())? as usize;
                 let p = patches
                     .get(i)
                     .ok_or_else(|| format!("replay index out of range: {i}"))?;
+                let before = encode_hex(&structural_binary::encode(&model));
                 model.apply_patch(p);
-                applied += 1;
+                let after = encode_hex(&structural_binary::encode(&model));
+                if after != before {
+                    applied += 1;
+                }
+            }
+            let mut view_json = model.view();
+            if let Some(CrdtNode::Bin(_)) = model.index.get(&TsKey::from(model.root.val)) {
+                if let Value::Array(items) = view_json {
+                    let mut obj = Map::new();
+                    for (i, v) in items.into_iter().enumerate() {
+                        obj.insert(i.to_string(), v);
+                    }
+                    view_json = Value::Object(obj);
+                }
             }
             Ok(json!({
-                "view_json": model.view(),
+                "view_json": view_json,
                 "model_binary_hex": encode_hex(&structural_binary::encode(&model)),
                 "applied_patch_count_effective": applied,
+                "clock_observed": {
+                    "patch_ids": patch_ids,
+                },
             }))
         }
         "patch_clock_codec_parity" => {

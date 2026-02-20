@@ -33,6 +33,7 @@ use crate::json_crdt_patch::codec::clock::ClockTable;
 use crate::json_crdt_patch::enums::JsonCrdtDataType;
 use crate::json_crdt_patch::operations::ConValue;
 use crate::json_crdt_patch::util::binary::{CrdtReader, CrdtWriter};
+use json_joy_json_pack::CborEncoder;
 use json_joy_json_pack::PackValue;
 
 // ── Constants ──────────────────────────────────────────────────────────────
@@ -94,20 +95,15 @@ fn encode_clock_table(table: &ClockTable) -> Vec<u8> {
 }
 
 fn write_ts_indexed(w: &mut CrdtWriter, stamp: Ts, table: &ClockTable) {
-    let (idx, ref_ts) = match table.get_by_sid(stamp.sid) {
+    let (idx, _) = match table.get_by_sid(stamp.sid) {
         Some(entry) => entry,
         None => {
             w.id(0, stamp.time);
             return;
         }
     };
-    // time_diff = ref_ts.time - stamp.time (if ref_ts.time >= stamp.time)
-    let time_diff = if ref_ts.time >= stamp.time {
-        ref_ts.time - stamp.time
-    } else {
-        0 // shouldn't happen in well-formed data
-    };
-    w.id(idx as u64, time_diff);
+    // Indexed codec writes absolute timestamp time, not relative diff.
+    w.id(idx as u64, stamp.time);
 }
 
 fn encode_node(node: &CrdtNode, table: &ClockTable, _model: &Model) -> Vec<u8> {
@@ -225,72 +221,9 @@ fn encode_arr(w: &mut CrdtWriter, node: &ArrNode, table: &ClockTable) {
 // ── CBOR primitive writers ────────────────────────────────────────────────
 
 fn write_cbor_value(w: &mut CrdtWriter, pv: &PackValue) {
-    use json_joy_json_pack::PackValue as PV;
-    match pv {
-        PV::Null => w.u8(0xF6),
-        PV::Undefined => w.u8(0xF7),
-        PV::Bool(true) => w.u8(0xF5),
-        PV::Bool(false) => w.u8(0xF4),
-        PV::Integer(n) => {
-            if *n >= 0 {
-                write_cbor_uint(w, *n as u64);
-            } else {
-                write_cbor_neg(w, (-1 - n) as u64);
-            }
-        }
-        PV::Float(f) => {
-            w.u8(0xFB);
-            w.buf(&f.to_be_bytes());
-        }
-        PV::Str(s) => write_cbor_str(w, s),
-        PV::Bytes(b) => {
-            let len = b.len();
-            if len <= 23 {
-                w.u8(0x40 | len as u8);
-            } else if len <= 0xFF {
-                w.u8(0x58);
-                w.u8(len as u8);
-            } else {
-                w.u8(0x59);
-                w.buf(&(len as u16).to_be_bytes());
-            }
-            w.buf(b);
-        }
-        PV::Array(arr) => {
-            let len = arr.len();
-            if len <= 23 {
-                w.u8(0x80 | len as u8);
-            } else {
-                w.u8(0x98);
-                w.u8(len as u8);
-            }
-            for item in arr {
-                write_cbor_value(w, item);
-            }
-        }
-        PV::Object(map) => {
-            let len = map.len();
-            if len <= 23 {
-                w.u8(0xA0 | len as u8);
-            } else {
-                w.u8(0xB8);
-                w.u8(len as u8);
-            }
-            for (k, v) in map {
-                write_cbor_str(w, k);
-                write_cbor_value(w, v);
-            }
-        }
-        PV::UInteger(n) => write_cbor_uint(w, *n),
-        PV::BigInt(n) => {
-            if *n >= 0 {
-                write_cbor_uint(w, *n as u64);
-            } else {
-                write_cbor_neg(w, (-1 - n) as u64);
-            }
-        }
-        PV::Extension(_) | PV::Blob(_) => w.u8(0xF6),
-    }
+    let mut enc = CborEncoder::new();
+    let bytes = enc.encode(pv);
+    w.buf(&bytes);
 }
 
 fn write_cbor_uint(w: &mut CrdtWriter, n: u64) {
@@ -311,31 +244,46 @@ fn write_cbor_uint(w: &mut CrdtWriter, n: u64) {
     }
 }
 
-fn write_cbor_neg(w: &mut CrdtWriter, n: u64) {
-    if n <= 23 {
-        w.u8(0x20 | n as u8);
-    } else if n <= 0xFF {
-        w.u8(0x38);
-        w.u8(n as u8);
-    } else {
-        w.u8(0x39);
-        w.buf(&(n as u16).to_be_bytes());
-    }
-}
-
 fn write_cbor_str(w: &mut CrdtWriter, s: &str) {
-    let bytes = s.as_bytes();
-    let len = bytes.len();
-    if len <= 23 {
-        w.u8(0x60 | len as u8);
-    } else if len <= 0xFF {
-        w.u8(0x78);
-        w.u8(len as u8);
+    // Mirrors upstream CborEncoderFast.writeStr behavior in indexed codec.
+    let logical_len = s.encode_utf16().count();
+    let max_size = logical_len * 4;
+    w.ensure_capacity(5 + s.len());
+
+    let length_offset: usize;
+    if max_size <= 23 {
+        length_offset = w.inner.x;
+        w.inner.x += 1;
+    } else if max_size <= 0xFF {
+        w.inner.uint8[w.inner.x] = 0x78;
+        w.inner.x += 1;
+        length_offset = w.inner.x;
+        w.inner.x += 1;
+    } else if max_size <= 0xFFFF {
+        w.inner.uint8[w.inner.x] = 0x79;
+        w.inner.x += 1;
+        length_offset = w.inner.x;
+        w.inner.x += 2;
     } else {
-        w.u8(0x79);
-        w.buf(&(len as u16).to_be_bytes());
+        w.inner.uint8[w.inner.x] = 0x7a;
+        w.inner.x += 1;
+        length_offset = w.inner.x;
+        w.inner.x += 4;
     }
-    w.buf(bytes);
+
+    let bytes_written = w.utf8(s);
+    if max_size <= 23 {
+        w.inner.uint8[length_offset] = 0x60 | bytes_written as u8;
+    } else if max_size <= 0xFF {
+        w.inner.uint8[length_offset] = bytes_written as u8;
+    } else if max_size <= 0xFFFF {
+        let b = (bytes_written as u16).to_be_bytes();
+        w.inner.uint8[length_offset] = b[0];
+        w.inner.uint8[length_offset + 1] = b[1];
+    } else {
+        let b = (bytes_written as u32).to_be_bytes();
+        w.inner.uint8[length_offset..length_offset + 4].copy_from_slice(&b);
+    }
 }
 
 // ── Decode ──────────────────────────────────────────────────────────────────
@@ -410,14 +358,11 @@ fn decode_clock_table(data: &[u8]) -> Result<ClockTable, DecodeError> {
 }
 
 fn read_ts_indexed(r: &mut CrdtReader, table: &ClockTable) -> Result<Ts, DecodeError> {
-    let (idx, time_diff) = r.id();
+    let (idx, time) = r.id();
     let ref_ts = table
         .get_by_index(idx as usize)
         .ok_or_else(|| DecodeError::Format(format!("invalid session index {}", idx)))?;
-    if ref_ts.time < time_diff {
-        return Err(DecodeError::Format("time underflow".into()));
-    }
-    Ok(mk_ts(ref_ts.sid, ref_ts.time - time_diff))
+    Ok(mk_ts(ref_ts.sid, time))
 }
 
 fn parse_field_name(name: &str, table: &ClockTable) -> Result<Ts, DecodeError> {

@@ -11,15 +11,17 @@ use serde_json::{json, Value};
 fn encode_ts(id: Ts, patch_sid: u64) -> Value {
     if id.sid == patch_sid {
         json!(id.time)
-    } else if id.sid == SESSION::SERVER {
-        json!(id.time)
     } else {
         json!([id.sid, id.time])
     }
 }
 
-fn encode_tss(tss: &Tss) -> Value {
-    json!([tss.sid, tss.time, tss.span])
+fn encode_tss(tss: &Tss, patch_sid: u64) -> Value {
+    if tss.sid == patch_sid {
+        json!([tss.time, tss.span])
+    } else {
+        json!([tss.sid, tss.time, tss.span])
+    }
 }
 
 fn pack_to_json(v: &json_joy_json_pack::PackValue) -> Value {
@@ -71,18 +73,13 @@ pub fn encode(patch: &Patch) -> Vec<Value> {
     for op in &patch.ops {
         let op_val = match op {
             Op::NewCon { val, .. } => match val {
-                ConValue::Ref(ts_ref) => json!([
-                    JsonCrdtPatchOpcode::NewCon as u8,
-                    1,
-                    encode_ts(*ts_ref, patch_sid)
-                ]),
+                ConValue::Ref(ts_ref) =>
+                    json!([JsonCrdtPatchOpcode::NewCon as u8, encode_ts(*ts_ref, patch_sid), true]),
                 ConValue::Val(v) => {
-                    let encoded = pack_to_json(v);
-                    if encoded == Value::Null {
-                        // Don't include undefined/null — omit value field
+                    if matches!(v, json_joy_json_pack::PackValue::Undefined) {
                         json!([JsonCrdtPatchOpcode::NewCon as u8])
                     } else {
-                        json!([JsonCrdtPatchOpcode::NewCon as u8, encoded])
+                        json!([JsonCrdtPatchOpcode::NewCon as u8, pack_to_json(v)])
                     }
                 }
             },
@@ -98,28 +95,26 @@ pub fn encode(patch: &Patch) -> Vec<Value> {
                 encode_ts(*val, patch_sid),
             ]),
             Op::InsObj { obj, data, .. } => {
-                let pairs: Vec<Value> = data
+                let tuples: Vec<Value> = data
                     .iter()
-                    .flat_map(|(k, v)| vec![json!(k), encode_ts(*v, patch_sid)])
+                    .map(|(k, v)| json!([k, encode_ts(*v, patch_sid)]))
                     .collect();
-                let mut v = vec![
+                json!([
                     json!(JsonCrdtPatchOpcode::InsObj as u8),
                     encode_ts(*obj, patch_sid),
-                ];
-                v.extend(pairs);
-                Value::Array(v)
+                    Value::Array(tuples),
+                ])
             }
             Op::InsVec { obj, data, .. } => {
-                let pairs: Vec<Value> = data
+                let tuples: Vec<Value> = data
                     .iter()
-                    .flat_map(|(k, v)| vec![json!(k), encode_ts(*v, patch_sid)])
+                    .map(|(k, v)| json!([k, encode_ts(*v, patch_sid)]))
                     .collect();
-                let mut v = vec![
+                json!([
                     json!(JsonCrdtPatchOpcode::InsVec as u8),
                     encode_ts(*obj, patch_sid),
-                ];
-                v.extend(pairs);
-                Value::Array(v)
+                    Value::Array(tuples),
+                ])
             }
             Op::InsStr {
                 obj, after, data, ..
@@ -145,13 +140,12 @@ pub fn encode(patch: &Patch) -> Vec<Value> {
                 obj, after, data, ..
             } => {
                 let elems: Vec<Value> = data.iter().map(|e| encode_ts(*e, patch_sid)).collect();
-                let mut v = vec![
-                    json!(JsonCrdtPatchOpcode::InsArr as u8),
+                json!([
+                    JsonCrdtPatchOpcode::InsArr as u8,
                     encode_ts(*obj, patch_sid),
                     encode_ts(*after, patch_sid),
-                ];
-                v.extend(elems);
-                Value::Array(v)
+                    Value::Array(elems),
+                ])
             }
             Op::UpdArr {
                 obj, after, val, ..
@@ -162,13 +156,12 @@ pub fn encode(patch: &Patch) -> Vec<Value> {
                 encode_ts(*val, patch_sid),
             ]),
             Op::Del { obj, what, .. } => {
-                let spans: Vec<Value> = what.iter().map(encode_tss).collect();
-                let mut v = vec![
-                    json!(JsonCrdtPatchOpcode::Del as u8),
+                let spans: Vec<Value> = what.iter().map(|span| encode_tss(span, patch_sid)).collect();
+                json!([
+                    JsonCrdtPatchOpcode::Del as u8,
                     encode_ts(*obj, patch_sid),
-                ];
-                v.extend(spans);
-                Value::Array(v)
+                    Value::Array(spans),
+                ])
             }
             Op::Nop { len, .. } => {
                 if *len > 1 {

@@ -25,7 +25,7 @@ impl std::fmt::Display for DecodeError {
         match self {
             DecodeError::UnexpectedEof => write!(f, "unexpected end of input"),
             DecodeError::UnknownOpcode(op) => write!(f, "unknown opcode: {}", op),
-            DecodeError::InvalidCbor => write!(f, "invalid CBOR"),
+            DecodeError::InvalidCbor => write!(f, "Index out of range"),
         }
     }
 }
@@ -48,10 +48,6 @@ impl Decoder {
 
     /// Decodes a binary blob into a [`Patch`].
     pub fn decode<'a>(&self, data: &'a [u8]) -> Result<Patch, DecodeError> {
-        // Minimum encoding: at least 1 byte for SID + 1 for time + 1 for meta.
-        if data.len() < 3 {
-            return Err(DecodeError::UnexpectedEof);
-        }
         let mut r = CrdtReader::new(data);
         self.read_patch(&mut r)
     }
@@ -71,19 +67,11 @@ impl Decoder {
 
         let patch_sid = sid;
 
-        // Decode meta: CBOR value (undefined = None, array = Some(arr[0]))
-        let meta_byte = r.u8();
-        let meta = if meta_byte == 0xF7 {
-            // CBOR undefined
-            None
-        } else if meta_byte == 0x81 {
-            // CBOR array of 1
-            Some(read_cbor(r)?)
-        } else {
-            // Unexpected — treat as no meta
-            None
-        };
-        builder.patch.meta = meta;
+        // Decode meta via full CBOR value parse, matching upstream `val()`.
+        let meta_val = read_cbor(r)?;
+        if let PackValue::Array(arr) = meta_val {
+            builder.patch.meta = arr.first().cloned();
+        }
 
         // Decode operations
         let op_count = r.vu57() as usize;
@@ -282,17 +270,26 @@ fn read_cbor<'a>(r: &mut CrdtReader<'a>) -> Result<PackValue, DecodeError> {
                 23 => Ok(PackValue::Undefined),
                 25 => {
                     let bytes = r.buf(2);
+                    if bytes.len() < 2 {
+                        return Err(DecodeError::InvalidCbor);
+                    }
                     let bits = u16::from_be_bytes([bytes[0], bytes[1]]);
                     Ok(PackValue::Float(json_joy_buffers::decode_f16(bits) as f64))
                 }
                 26 => {
                     let bytes = r.buf(4);
+                    if bytes.len() < 4 {
+                        return Err(DecodeError::InvalidCbor);
+                    }
                     Ok(PackValue::Float(
                         f32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]) as f64,
                     ))
                 }
                 27 => {
                     let bytes = r.buf(8);
+                    if bytes.len() < 8 {
+                        return Err(DecodeError::InvalidCbor);
+                    }
                     Ok(PackValue::Float(f64::from_be_bytes([
                         bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6],
                         bytes[7],
@@ -311,14 +308,23 @@ fn read_cbor_uint<'a>(r: &mut CrdtReader<'a>, info: u8) -> Result<u64, DecodeErr
         24 => Ok(r.u8() as u64),
         25 => {
             let b = r.buf(2);
+            if b.len() < 2 {
+                return Err(DecodeError::InvalidCbor);
+            }
             Ok(u16::from_be_bytes([b[0], b[1]]) as u64)
         }
         26 => {
             let b = r.buf(4);
+            if b.len() < 4 {
+                return Err(DecodeError::InvalidCbor);
+            }
             Ok(u32::from_be_bytes([b[0], b[1], b[2], b[3]]) as u64)
         }
         27 => {
             let b = r.buf(8);
+            if b.len() < 8 {
+                return Err(DecodeError::InvalidCbor);
+            }
             Ok(u64::from_be_bytes([
                 b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7],
             ]))

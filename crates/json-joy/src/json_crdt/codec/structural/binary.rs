@@ -397,21 +397,47 @@ fn write_cbor_uint(w: &mut CrdtWriter, n: u64) {
 }
 
 fn write_cbor_str(w: &mut CrdtWriter, s: &str) {
-    let bytes = s.as_bytes();
-    let len = bytes.len();
-    if len <= 23 {
-        w.u8(0x60 | len as u8);
-    } else if len <= 0xFF {
-        w.u8(0x78);
-        w.u8(len as u8);
-    } else if len <= 0xFFFF {
-        w.u8(0x79);
-        w.buf(&(len as u16).to_be_bytes());
+    // Mirrors upstream CborEncoderFast.writeStr behavior used by structural codec:
+    // choose header width from `str.length * 4` (UTF-16 code units), then patch
+    // actual UTF-8 byte length into reserved header space.
+    let logical_len = s.encode_utf16().count();
+    let max_size = logical_len * 4;
+    w.ensure_capacity(5 + s.len());
+
+    let length_offset: usize;
+    if max_size <= 23 {
+        length_offset = w.inner.x;
+        w.inner.x += 1;
+    } else if max_size <= 0xFF {
+        w.inner.uint8[w.inner.x] = 0x78;
+        w.inner.x += 1;
+        length_offset = w.inner.x;
+        w.inner.x += 1;
+    } else if max_size <= 0xFFFF {
+        w.inner.uint8[w.inner.x] = 0x79;
+        w.inner.x += 1;
+        length_offset = w.inner.x;
+        w.inner.x += 2;
     } else {
-        w.u8(0x7A);
-        w.buf(&(len as u32).to_be_bytes());
+        w.inner.uint8[w.inner.x] = 0x7a;
+        w.inner.x += 1;
+        length_offset = w.inner.x;
+        w.inner.x += 4;
     }
-    w.buf(bytes);
+
+    let bytes_written = w.utf8(s);
+    if max_size <= 23 {
+        w.inner.uint8[length_offset] = 0x60 | bytes_written as u8;
+    } else if max_size <= 0xFF {
+        w.inner.uint8[length_offset] = bytes_written as u8;
+    } else if max_size <= 0xFFFF {
+        let b = (bytes_written as u16).to_be_bytes();
+        w.inner.uint8[length_offset] = b[0];
+        w.inner.uint8[length_offset + 1] = b[1];
+    } else {
+        let b = (bytes_written as u32).to_be_bytes();
+        w.inner.uint8[length_offset..length_offset + 4].copy_from_slice(&b);
+    }
 }
 
 // ── Decode ──────────────────────────────────────────────────────────────────
@@ -636,7 +662,7 @@ fn decode_vec_server(
     use crate::json_crdt::nodes::VecNode;
     let mut node = VecNode::new(id);
     for _ in 0..length {
-        let peek = r.data[r.x];
+        let peek = r.data.get(r.x).copied().unwrap_or(0);
         if peek == 0 {
             r.x += 1;
             node.elements.push(None);
@@ -666,7 +692,7 @@ fn decode_str_server(
                 node.rga.push_chunk(Chunk::new_deleted(chunk_id, n as u64));
             }
             PackValue::Str(s) => {
-                let span = s.chars().count() as u64;
+                let span = s.encode_utf16().count() as u64;
                 node.rga.push_chunk(Chunk::new(chunk_id, span, s));
             }
             _ => {}
@@ -915,6 +941,9 @@ fn decode_arr_logical(
 // ── Minimal CBOR reader ───────────────────────────────────────────────────
 
 fn read_cbor_value(r: &mut CrdtReader) -> Result<PackValue, DecodeError> {
+    if r.x > r.data.len() {
+        return Err(DecodeError::EndOfInput);
+    }
     let bytes = &r.data[r.x..];
     let (value, consumed) = decode_cbor_value_with_consumed(bytes)
         .map_err(|e| DecodeError::Format(format!("invalid CBOR value: {e}")))?;

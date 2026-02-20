@@ -72,6 +72,16 @@ fn compare_value(path: &str, expected: &Value, actual: &Value, diffs: &mut Vec<S
 
 fn compare_field(path: &str, key: &str, expected: &Value, actual: &Value, diffs: &mut Vec<String>) {
     if key.ends_with("_hex") {
+        if let (Value::Object(eobj), Value::Object(aobj)) = (expected, actual) {
+            for (child_key, ev) in eobj {
+                let child_path = format!("{path}.{child_key}");
+                match aobj.get(child_key) {
+                    Some(av) => compare_field(&child_path, child_key, ev, av, diffs),
+                    None => diffs.push(format!("missing field {child_path}")),
+                }
+            }
+            return;
+        }
         let ehex = expected.as_str();
         let ahex = actual.as_str();
         match (ehex, ahex) {

@@ -85,7 +85,8 @@ pub fn compact(patch: &mut Patch) {
                 },
             ) = (last, &op)
             {
-                let last_next_tick = lid.time + ldata.chars().count() as u64;
+                // Upstream `InsStrOp.span()` uses JS `string.length` (UTF-16 code units).
+                let last_next_tick = lid.time + ldata.encode_utf16().count() as u64;
                 let is_time_consecutive = last_next_tick == cid.time;
                 let is_same_string = equal(*lobj, *cobj);
                 // isAppend: the current op's `after` is the last character of the previous op

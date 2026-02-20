@@ -22,7 +22,7 @@ impl<'a> CrdtReader<'a> {
     /// Reads an unsigned 8-bit integer.
     #[inline]
     pub fn u8(&mut self) -> u8 {
-        let v = self.data[self.x];
+        let v = self.data.get(self.x).copied().unwrap_or(0);
         self.x += 1;
         v
     }
@@ -32,7 +32,12 @@ impl<'a> CrdtReader<'a> {
     pub fn buf(&mut self, len: usize) -> &'a [u8] {
         let start = self.x;
         self.x += len;
-        &self.data[start..self.x]
+        let end = self.x.min(self.data.len());
+        if start >= self.data.len() {
+            &self.data[self.data.len()..self.data.len()]
+        } else {
+            &self.data[start..end]
+        }
     }
 
     /// Reads `len` bytes as a UTF-8 string.
@@ -40,7 +45,12 @@ impl<'a> CrdtReader<'a> {
     pub fn utf8(&mut self, len: usize) -> &'a str {
         let start = self.x;
         self.x += len;
-        std::str::from_utf8(&self.data[start..self.x]).unwrap_or("")
+        let end = self.x.min(self.data.len());
+        if start >= self.data.len() {
+            ""
+        } else {
+            std::str::from_utf8(&self.data[start..end]).unwrap_or("")
+        }
     }
 
     /// Decodes a compact CRDT relative ID, returning `(x, y)`.

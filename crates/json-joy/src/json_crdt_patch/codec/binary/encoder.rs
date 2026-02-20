@@ -10,6 +10,7 @@ use crate::json_crdt_patch::enums::OpcodeOverlay;
 use crate::json_crdt_patch::operations::{ConValue, Op};
 use crate::json_crdt_patch::patch::Patch;
 use crate::json_crdt_patch::util::binary::CrdtWriter;
+use json_joy_buffers::is_float32;
 use json_joy_json_pack::PackValue;
 
 /// Binary codec encoder.
@@ -79,6 +80,22 @@ impl Encoder {
         self.writer.vu57(tss.span);
     }
 
+    /// Mirrors upstream `Encoder.writeInsStr`:
+    /// - writes opcode + logical string length hint
+    /// - writes object/ref IDs
+    /// - writes UTF-8 payload, returning actual bytes written
+    fn write_ins_str(&mut self, length: usize, obj: Ts, after: Ts, data: &str) -> usize {
+        if length <= 0b111 {
+            self.writer.u8(OpcodeOverlay::INS_STR + length as u8);
+        } else {
+            self.writer.u8(OpcodeOverlay::INS_STR);
+            self.writer.vu57(length as u64);
+        }
+        self.encode_id(obj);
+        self.encode_id(after);
+        self.writer.utf8(data)
+    }
+
     fn encode_operation(&mut self, op: &Op) {
         match op {
             Op::NewCon { val, .. } => match val {
@@ -142,44 +159,17 @@ impl Encoder {
             Op::InsStr {
                 obj, after, data, ..
             } => {
-                let char_len = data.chars().count();
                 let obj = *obj;
                 let after = *after;
-                let data = data.clone();
-                // First pass: write using char_len as the inline length hint
-                if char_len <= 0b111 {
-                    self.writer.u8(OpcodeOverlay::INS_STR + char_len as u8);
-                } else {
-                    self.writer.u8(OpcodeOverlay::INS_STR);
-                    self.writer.vu57(char_len as u64);
-                }
-                self.encode_id(obj);
-                self.encode_id(after);
-                // Write the actual UTF-8 bytes
-                // If char_len != byte_len we need to rewrite the header with byte_len
-                // (mimics the upstream two-pass approach for multi-byte chars)
-                let saved_x = self.writer.inner.x;
-                let actual_bytes = self.writer.utf8(&data);
-                if char_len != actual_bytes {
-                    // Rewind and rewrite from scratch with the correct byte length
-                    self.writer.inner.x = saved_x
-                        - 1
-                        - encode_id_byte_count(obj, self.patch_sid)
-                        - encode_id_byte_count(after, self.patch_sid)
-                        - if char_len <= 0b111 {
-                            1
-                        } else {
-                            1 + vu57_byte_count(char_len as u64)
-                        };
-                    if actual_bytes <= 0b111 {
-                        self.writer.u8(OpcodeOverlay::INS_STR + actual_bytes as u8);
-                    } else {
-                        self.writer.u8(OpcodeOverlay::INS_STR);
-                        self.writer.vu57(actual_bytes as u64);
-                    }
-                    self.encode_id(obj);
-                    self.encode_id(after);
-                    self.writer.utf8(&data);
+                let data = data.as_str();
+                // Upstream uses JS `string.length` (UTF-16 code units) for len1.
+                let len1 = data.encode_utf16().count();
+                self.writer.ensure_capacity(24 + len1 * 4);
+                let x = self.writer.inner.x;
+                let len2 = self.write_ins_str(len1, obj, after, data);
+                if len1 != len2 {
+                    self.writer.inner.x = x;
+                    self.write_ins_str(len2, obj, after, data);
                 }
             }
             Op::InsBin {
@@ -258,25 +248,45 @@ impl Encoder {
 
     // ── Inline CBOR encoding ───────────────────────────────────────────────
 
-    /// Writes a CBOR text string (major type 3).
+    /// Writes a CBOR text string exactly like upstream CborEncoderFast.writeStr.
     fn write_cbor_str(w: &mut CrdtWriter, s: &str) {
-        let len = s.len();
-        Self::write_cbor_str_hdr(w, len);
-        w.buf(s.as_bytes());
-    }
+        let logical_len = s.encode_utf16().count();
+        let max_size = logical_len * 4;
+        w.ensure_capacity(5 + s.len());
 
-    fn write_cbor_str_hdr(w: &mut CrdtWriter, len: usize) {
-        if len <= 23 {
-            w.u8(0x60 | len as u8);
-        } else if len <= 0xFF {
-            w.u8(0x78);
-            w.u8(len as u8);
-        } else if len <= 0xFFFF {
-            w.u8(0x79);
-            w.buf(&(len as u16).to_be_bytes());
+        let length_offset: usize;
+        if max_size <= 23 {
+            length_offset = w.inner.x;
+            w.inner.x += 1;
+        } else if max_size <= 0xFF {
+            w.inner.uint8[w.inner.x] = 0x78;
+            w.inner.x += 1;
+            length_offset = w.inner.x;
+            w.inner.x += 1;
+        } else if max_size <= 0xFFFF {
+            w.inner.uint8[w.inner.x] = 0x79;
+            w.inner.x += 1;
+            length_offset = w.inner.x;
+            w.inner.x += 2;
         } else {
-            w.u8(0x7A);
-            w.buf(&(len as u32).to_be_bytes());
+            w.inner.uint8[w.inner.x] = 0x7a;
+            w.inner.x += 1;
+            length_offset = w.inner.x;
+            w.inner.x += 4;
+        }
+
+        let bytes_written = w.utf8(s);
+        if max_size <= 23 {
+            w.inner.uint8[length_offset] = 0x60 | bytes_written as u8;
+        } else if max_size <= 0xFF {
+            w.inner.uint8[length_offset] = bytes_written as u8;
+        } else if max_size <= 0xFFFF {
+            let b = (bytes_written as u16).to_be_bytes();
+            w.inner.uint8[length_offset] = b[0];
+            w.inner.uint8[length_offset + 1] = b[1];
+        } else {
+            let b = (bytes_written as u32).to_be_bytes();
+            w.inner.uint8[length_offset..length_offset + 4].copy_from_slice(&b);
         }
     }
 
@@ -289,8 +299,13 @@ impl Encoder {
             PackValue::Integer(i) => Self::write_int(w, *i),
             PackValue::UInteger(u) => Self::write_uint(w, *u),
             PackValue::Float(f) => {
-                w.u8(0xFB);
-                w.buf(&f.to_be_bytes());
+                if is_float32(*f) {
+                    w.u8(0xFA);
+                    w.buf(&(*f as f32).to_be_bytes());
+                } else {
+                    w.u8(0xFB);
+                    w.buf(&f.to_be_bytes());
+                }
             }
             PackValue::BigInt(i) => {
                 if *i >= 0 && (*i as u128) <= u64::MAX as u128 {
@@ -407,55 +422,5 @@ impl Encoder {
                 w.buf(&u.to_be_bytes());
             }
         }
-    }
-}
-
-/// Returns the number of bytes that `b1vu56` would encode for the given `Ts`
-/// relative to `patch_sid`. Used for the InsStr rewind logic.
-fn encode_id_byte_count(id: Ts, patch_sid: u64) -> usize {
-    if id.sid == patch_sid {
-        b1vu56_byte_count(id.time)
-    } else {
-        b1vu56_byte_count(id.time) + vu57_byte_count(id.sid)
-    }
-}
-
-fn b1vu56_byte_count(n: u64) -> usize {
-    if n <= 0x3F {
-        1
-    } else if n <= 0x1FFF {
-        2
-    } else if n <= 0xFF_FFFF {
-        3
-    } else if n <= 0x7FFF_FFFF {
-        4
-    } else if n <= 0x3F_FFFF_FFFF {
-        5
-    } else if n <= 0x1FFF_FFFF_FFFF {
-        6
-    } else if n <= 0xFF_FFFF_FFFF_FFFF {
-        7
-    } else {
-        8
-    }
-}
-
-fn vu57_byte_count(n: u64) -> usize {
-    if n <= 0x7F {
-        1
-    } else if n <= 0x3FFF {
-        2
-    } else if n <= 0x1F_FFFF {
-        3
-    } else if n <= 0xFFF_FFFF {
-        4
-    } else if n <= 0x7_FFFF_FFFF {
-        5
-    } else if n <= 0x3FF_FFFF_FFFF {
-        6
-    } else if n <= 0x1_FFFF_FFFF_FFFF {
-        7
-    } else {
-        8
     }
 }

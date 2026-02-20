@@ -30,7 +30,8 @@ pub enum ConValue {
 ///
 /// Span (the number of clock ticks consumed):
 /// - Most operations consume 1 tick.
-/// - `InsStr`, `InsBin`, `InsArr` consume `data.len()` ticks.
+/// - `InsStr` consumes UTF-16 code-unit length (upstream `string.length`).
+/// - `InsBin`, `InsArr` consume `data.len()` ticks.
 /// - `Nop` consumes `len` ticks.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Op {
@@ -120,7 +121,7 @@ impl Op {
     /// Number of logical clock cycles consumed by this operation.
     pub fn span(&self) -> u64 {
         match self {
-            Op::InsStr { data, .. } => data.chars().count() as u64,
+            Op::InsStr { data, .. } => data.encode_utf16().count() as u64,
             Op::InsBin { data, .. } => data.len() as u64,
             Op::InsArr { data, .. } => data.len() as u64,
             Op::Nop { len, .. } => *len,

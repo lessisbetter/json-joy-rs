@@ -20,6 +20,24 @@ fn decode_id(v: &Value, patch_sid: u64) -> Ts {
     }
 }
 
+fn decode_tss(v: &Value, patch_sid: u64) -> Option<crate::json_crdt_patch::clock::Tss> {
+    let a = v.as_array()?;
+    match a.len() {
+        3 => {
+            let sid = a.first()?.as_u64()?;
+            let time = a.get(1)?.as_u64()?;
+            let span = a.get(2)?.as_u64()?;
+            Some(tss(sid, time, span))
+        }
+        2 => {
+            let time = a.first()?.as_u64()?;
+            let span = a.get(1)?.as_u64()?;
+            Some(tss(patch_sid, time, span))
+        }
+        _ => None,
+    }
+}
+
 fn json_to_pack(v: &Value) -> json_joy_json_pack::PackValue {
     use json_joy_json_pack::PackValue;
     match v {
@@ -85,10 +103,10 @@ pub fn decode(data: &[Value]) -> Patch {
 
         match JsonCrdtPatchOpcode::from_u8(opcode_num) {
             Some(JsonCrdtPatchOpcode::NewCon) => {
-                // [0] or [0, value] or [0, 1, ts_ref]
-                let is_ts_ref = arr.get(1).and_then(|v| v.as_u64()) == Some(1);
+                // [0] or [0, value] or [0, ts_ref, true]
+                let is_ts_ref = arr.get(2).and_then(Value::as_bool).unwrap_or(false);
                 if is_ts_ref {
-                    let ref_id = decode_id(arr.get(2).unwrap_or(&Value::Null), patch_sid);
+                    let ref_id = decode_id(arr.get(1).unwrap_or(&Value::Null), patch_sid);
                     builder.con_ref(ref_id);
                 } else {
                     let val = arr
@@ -124,13 +142,17 @@ pub fn decode(data: &[Value]) -> Patch {
             Some(JsonCrdtPatchOpcode::InsObj) => {
                 let obj = decode_id(arr.get(1).unwrap_or(&Value::Null), patch_sid);
                 let mut tuples = Vec::new();
-                let mut i = 2;
-                while i + 1 < arr.len() {
-                    if let Some(key) = arr[i].as_str() {
-                        let val_id = decode_id(&arr[i + 1], patch_sid);
-                        tuples.push((key.to_owned(), val_id));
+                if let Some(items) = arr.get(2).and_then(Value::as_array) {
+                    for item in items {
+                        if let Some(pair) = item.as_array() {
+                            if pair.len() >= 2 {
+                                if let Some(key) = pair[0].as_str() {
+                                    let val_id = decode_id(&pair[1], patch_sid);
+                                    tuples.push((key.to_owned(), val_id));
+                                }
+                            }
+                        }
                     }
-                    i += 2;
                 }
                 if !tuples.is_empty() {
                     builder.ins_obj(obj, tuples);
@@ -139,13 +161,17 @@ pub fn decode(data: &[Value]) -> Patch {
             Some(JsonCrdtPatchOpcode::InsVec) => {
                 let obj = decode_id(arr.get(1).unwrap_or(&Value::Null), patch_sid);
                 let mut tuples = Vec::new();
-                let mut i = 2;
-                while i + 1 < arr.len() {
-                    if let Some(idx) = arr[i].as_u64() {
-                        let val_id = decode_id(&arr[i + 1], patch_sid);
-                        tuples.push((idx as u8, val_id));
+                if let Some(items) = arr.get(2).and_then(Value::as_array) {
+                    for item in items {
+                        if let Some(pair) = item.as_array() {
+                            if pair.len() >= 2 {
+                                if let Some(idx) = pair[0].as_u64() {
+                                    let val_id = decode_id(&pair[1], patch_sid);
+                                    tuples.push((idx as u8, val_id));
+                                }
+                            }
+                        }
                     }
-                    i += 2;
                 }
                 if !tuples.is_empty() {
                     builder.ins_vec(obj, tuples);
@@ -174,7 +200,11 @@ pub fn decode(data: &[Value]) -> Patch {
             Some(JsonCrdtPatchOpcode::InsArr) => {
                 let obj = decode_id(arr.get(1).unwrap_or(&Value::Null), patch_sid);
                 let after = decode_id(arr.get(2).unwrap_or(&Value::Null), patch_sid);
-                let elems: Vec<Ts> = arr[3..].iter().map(|e| decode_id(e, patch_sid)).collect();
+                let elems: Vec<Ts> = arr
+                    .get(3)
+                    .and_then(Value::as_array)
+                    .map(|items| items.iter().map(|e| decode_id(e, patch_sid)).collect())
+                    .unwrap_or_default();
                 builder.ins_arr(obj, after, elems);
             }
             Some(JsonCrdtPatchOpcode::UpdArr) => {
@@ -185,16 +215,16 @@ pub fn decode(data: &[Value]) -> Patch {
             }
             Some(JsonCrdtPatchOpcode::Del) => {
                 let obj = decode_id(arr.get(1).unwrap_or(&Value::Null), patch_sid);
-                let what: Vec<crate::json_crdt_patch::clock::Tss> = arr[2..]
-                    .iter()
-                    .filter_map(|s| {
-                        let a = s.as_array()?;
-                        let sid = a.get(0)?.as_u64()?;
-                        let time = a.get(1)?.as_u64()?;
-                        let span = a.get(2)?.as_u64()?;
-                        Some(tss(sid, time, span))
+                let what: Vec<crate::json_crdt_patch::clock::Tss> = arr
+                    .get(2)
+                    .and_then(Value::as_array)
+                    .map(|spans| {
+                        spans
+                            .iter()
+                            .filter_map(|span| decode_tss(span, patch_sid))
+                            .collect()
                     })
-                    .collect();
+                    .unwrap_or_default();
                 builder.del(obj, what);
             }
             Some(JsonCrdtPatchOpcode::Nop) => {
