@@ -1,6 +1,6 @@
 # Parity Audit (json-joy@17.67.0)
 
-Last updated: 2026-02-20
+Last updated: 2026-02-21
 
 This document tracks known, explicit parity gaps between:
 
@@ -11,11 +11,11 @@ It is a review checkpoint artifact and should be updated as gaps are closed.
 
 ## Current gate status
 
-- `just test-gates`: pass (2026-02-20)
-- `just test`: pass (2026-02-20)
-- `cargo test -p json-joy --test upstream_port_diff_workflows --offline`: pass (2026-02-20)
-- `cargo test -p json-joy --test upstream_port_model_api_workflow --offline`: pass (2026-02-20)
-- `cargo test -p json-joy --test upstream_port_model_api_proxy_fanout_workflow --offline`: pass (2026-02-20)
+- `just test-gates`: pass (2026-02-21)
+- `just test`: pass (2026-02-21)
+- `cargo test -p json-joy --test upstream_port_diff_workflows --offline`: pass (2026-02-21)
+- `cargo test -p json-joy --test upstream_port_model_api_workflow --offline`: pass (2026-02-21)
+- `cargo test -p json-joy --test upstream_port_model_api_proxy_fanout_workflow --offline`: pass (2026-02-21)
 
 ## Package layout and source-family parity snapshot
 
@@ -67,6 +67,7 @@ Notes:
 - `json-pack` now has an upstream-mapped integration matrix at `crates/json-joy-json-pack/tests/upstream_port_bson_matrix.rs` covering BSON encoder/decoder behavior from upstream `bson` suites, including primitive/special-value roundtrips (ObjectId, DBPointer, JS code/scope, Decimal128, Min/Max key, typed binary subtypes), document wire-shape invariants, and strict decode error paths for unsupported types and invalid UTF-8.
 - `json-pack` now has an upstream-mapped integration matrix at `crates/json-joy-json-pack/tests/upstream_port_ion_matrix.rs` covering Ion binary encoder/decoder behavior from upstream `ion` suites, including scalar/container roundtrips, symbol-table annotation flows for object fields, and strict error paths (invalid BVM, negative-zero nint, unknown symbol IDs).
 - `json-pack` now has an upstream-mapped integration matrix at `crates/json-joy-json-pack/tests/upstream_port_json_matrix.rs` covering JSON encoder/decoder behavior from upstream `json` suites, including undefined sentinel and binary data-URI handling, stable encoder compatibility, DAG JSON bytes/CID wrappers (including nested decode), and fault-tolerant partial-decoder scenarios.
+- `json-pack` now has an upstream-mapped integration matrix at `crates/json-joy-json-pack/tests/upstream_port_json_pack_util_matrix.rs` covering utility behavior from upstream `util` suites, including compression table literal collection and integer run-length encoding, object-key index compression semantics, decompression table import/rebuild flow, and `toDataUri` buffer URI formatting with optional metadata params.
 - `json-type` codegen families (`capacity`, `json`, `discriminator`, `binary`) are now implemented as runtime Rust codegen adapters with upstream-mapped parity coverage at `crates/json-joy-json-type/tests/upstream_port_json_type_codegen_matrix.rs` (including tuple head/tail sizing, unknown-key object encoding through refs, optional-only object unknown-key mode permutations, nested-object unknown-key handling, recursive ref/alias chains, custom `or` discriminator-expression handling, native binary preservation for MsgPack/CBOR `bin` fields, and binary codec roundtrips for recursive ref structures).
 - `json-crdt` log codec now mirrors upstream component encoding flow:
   - `LogEncoder.serialize/encode` supports `ndjson` and `seq.cbor`.

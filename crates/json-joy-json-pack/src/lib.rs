@@ -23,6 +23,7 @@ pub mod rm;
 pub mod rpc;
 pub mod ssh;
 pub mod ubjson;
+pub mod util;
 pub mod ws;
 pub mod xdr;
 
