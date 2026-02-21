@@ -160,16 +160,27 @@ impl IonEncoder {
                 if *n >= 0 {
                     self.write_uint(*n as u64);
                 } else {
-                    self.write_nint(-(*n) as u64);
+                    self.write_nint(n.unsigned_abs());
                 }
             }
             PackValue::UInteger(n) => self.write_uint(*n),
             PackValue::Float(f) => self.write_float(*f),
             PackValue::BigInt(n) => {
                 if *n >= 0 {
-                    self.write_uint(*n as u64);
+                    if *n <= u64::MAX as i128 {
+                        self.write_uint(*n as u64);
+                    } else {
+                        // Upstream only supports JS safe integers; preserve non-lossy behavior
+                        // by avoiding truncation for out-of-range Rust big integers.
+                        self.write_null();
+                    }
                 } else {
-                    self.write_nint(-(*n) as u64);
+                    let magnitude = n.unsigned_abs();
+                    if magnitude <= u64::MAX as u128 {
+                        self.write_nint(magnitude as u64);
+                    } else {
+                        self.write_null();
+                    }
                 }
             }
             PackValue::Str(s) => self.write_str(s),
@@ -204,6 +215,10 @@ impl IonEncoder {
 
     pub fn write_nint(&mut self, n: u64) {
         // n is the magnitude (positive). Encode as negative integer.
+        if n == 0 {
+            self.write_uint(0);
+            return;
+        }
         let len = uint_byte_len(n);
         self.writer.u8(TypeOverlay::NINT | len as u8);
         for i in (0..len).rev() {
@@ -297,7 +312,9 @@ impl IonEncoder {
 }
 
 fn uint_byte_len(n: u64) -> usize {
-    if n <= 0xff {
+    if n == 0 {
+        0
+    } else if n <= 0xff {
         1
     } else if n <= 0xffff {
         2
@@ -309,8 +326,10 @@ fn uint_byte_len(n: u64) -> usize {
         5
     } else if n <= 0xffffffffffff {
         6
-    } else {
+    } else if n <= 0xffffffffffffff {
         7
+    } else {
+        8
     }
 }
 

@@ -139,11 +139,15 @@ impl IonDecoderBase {
         }
 
         let bytes = self.read_bytes(length as usize)?;
-        let mut value: u64 = 0;
+        let mut value: u128 = 0;
         for b in bytes {
-            value = (value << 8) | b as u64;
+            value = (value << 8) | b as u128;
         }
-        Ok(PackValue::UInteger(value))
+        if value <= u64::MAX as u128 {
+            Ok(PackValue::UInteger(value as u64))
+        } else {
+            Ok(PackValue::BigInt(value as i128))
+        }
     }
 
     fn read_nint(&mut self, length: u8) -> Result<PackValue, IonDecodeError> {
@@ -155,11 +159,17 @@ impl IonDecoderBase {
         }
 
         let bytes = self.read_bytes(length as usize)?;
-        let mut value: i64 = 0;
+        let mut magnitude: u128 = 0;
         for b in bytes {
-            value = (value << 8) | b as i64;
+            magnitude = (magnitude << 8) | b as u128;
         }
-        Ok(PackValue::Integer(-value))
+        if magnitude == (i64::MAX as u128) + 1 {
+            Ok(PackValue::Integer(i64::MIN))
+        } else if magnitude <= i64::MAX as u128 {
+            Ok(PackValue::Integer(-(magnitude as i64)))
+        } else {
+            Ok(PackValue::BigInt(-(magnitude as i128)))
+        }
     }
 
     fn read_float(&mut self, length: u8) -> Result<PackValue, IonDecodeError> {
