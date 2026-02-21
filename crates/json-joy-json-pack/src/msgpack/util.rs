@@ -4,10 +4,7 @@
 
 use crate::PackValue;
 
-use super::{MsgPackDecoderFast, MsgPackEncoder, MsgPackEncoderFast, MsgPackError};
-
-/// Binary MessagePack payload alias.
-pub type MsgPack = Vec<u8>;
+use super::{types::MsgPack, MsgPackDecoderFast, MsgPackEncoder, MsgPackEncoderFast, MsgPackError};
 
 /// Encode using the fast MessagePack encoder.
 pub fn encode(value: &PackValue) -> MsgPack {
