@@ -4,6 +4,7 @@
 
 pub mod constants;
 pub mod decoder;
+pub mod decoder_base;
 pub mod encoder;
 pub mod import;
 pub mod symbols;

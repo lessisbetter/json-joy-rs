@@ -74,3 +74,7 @@ just parity
 JS editor ecosystem adapter APIs (Slate/ProseMirror/Quill-specific helpers)
 are intentionally out of scope in this Rust/WASM port. For those integrations,
 use upstream JS `json-joy`.
+
+`json-pack` NFS protocol families are not a current parity target in this repo.
+In particular, upstream `json-pack/src/nfs/v3/**` is intentionally unsupported
+for now while core codec and CRDT parity work is prioritized.

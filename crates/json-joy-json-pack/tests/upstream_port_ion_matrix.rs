@@ -140,3 +140,56 @@ fn ion_decoder_error_matrix() {
         Err(IonDecodeError::UnknownSymbol(10))
     ));
 }
+
+#[test]
+fn ion_decoder_base_edge_matrix() {
+    let mut decoder = IonDecoder::new();
+
+    // NULL NOP padding should consume/discard the next value and still decode as null.
+    assert_eq!(
+        decoder
+            .decode(&[0xe0, 0x01, 0x00, 0xea, 0x00, 0x11])
+            .unwrap(),
+        PackValue::Null
+    );
+
+    // Invalid bool length is rejected (only 0, 1, and 15 are valid).
+    assert!(matches!(
+        decoder.decode(&[0xe0, 0x01, 0x00, 0xea, 0x12]),
+        Err(IonDecodeError::InvalidBoolLen(2))
+    ));
+
+    // Unknown type nibble should surface explicit unknown-type error.
+    assert!(matches!(
+        decoder.decode(&[0xe0, 0x01, 0x00, 0xea, 0x50]),
+        Err(IonDecodeError::UnknownType(5))
+    ));
+
+    // Annotation wrappers shorter than 3 bytes are invalid.
+    assert!(matches!(
+        decoder.decode(&[0xe0, 0x01, 0x00, 0xea, 0xe2, 0x80, 0x0f]),
+        Err(IonDecodeError::AnnotationTooShort(2))
+    ));
+
+    // Container length mismatch should be detected for both lists and structs.
+    assert!(matches!(
+        decoder.decode(&[0xe0, 0x01, 0x00, 0xea, 0xb1, 0x21, 0x01]),
+        Err(IonDecodeError::ListLengthMismatch)
+    ));
+    assert!(matches!(
+        decoder.decode(&[0xe0, 0x01, 0x00, 0xea, 0xd1, 0x81, 0x21, 0x01]),
+        Err(IonDecodeError::StructLengthMismatch)
+    ));
+}
+
+#[test]
+fn ion_decoder_read_matrix() {
+    let mut decoder = IonDecoder::new();
+    assert_eq!(
+        decoder
+            .decode(&[0xe0, 0x01, 0x00, 0xea, 0x11, 0x10])
+            .unwrap(),
+        PackValue::Bool(true)
+    );
+    assert_eq!(decoder.read().unwrap(), PackValue::Bool(false));
+}
