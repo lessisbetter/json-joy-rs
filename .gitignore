@@ -6,3 +6,4 @@
 /bindings/python/*.egg-info
 /tools/oracle-node/node_modules
 /crates/json-joy-wasm/pkg
+*.swp

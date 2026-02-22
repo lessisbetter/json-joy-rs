@@ -1,5 +1,3 @@
-set shell := ["bash", "-eu", "-o", "pipefail", "-c"]
-
 # List available recipes
 default:
     @just --list
@@ -9,47 +7,47 @@ check: fmt lint test-gates test
 
 # Format code
 fmt:
-    mise x -- cargo fmt --all
+    cargo fmt --all
 
 # Strict Clippy gate across all targets/features
 lint:
-    mise x -- cargo clippy --workspace --all-features --all-targets --offline -- -D warnings
+    cargo clippy --workspace --all-features --all-targets -- -D warnings
 
 # Run full workspace tests
 test *args:
-    mise x -- cargo test --workspace {{args}}
+    cargo test --workspace {{args}}
 
 # Run tests with verbose output
 test-v *args:
-    mise x -- cargo test --workspace {{args}} -- --nocapture
+    cargo test --workspace {{args}} -- --nocapture
 
 # Run benchmarks
 bench *args:
-    mise x -- cargo bench --workspace {{args}}
+    cargo bench --workspace {{args}}
 
 # Build all targets
 build:
-    mise x -- cargo build --workspace
+    cargo build --workspace
 
 # Build release
 build-release:
-    mise x -- cargo build --workspace --release
+    cargo build --workspace --release
 
 # Clean build artifacts
 clean:
-    mise x -- cargo clean
+    cargo clean
 
 test-smoke:
-    mise x -- cargo test -p json-joy --lib --offline
+    cargo test -p json-joy --lib
 
 test-suite suite pkg='json-joy':
-    mise x -- cargo test -p {{pkg}} --test {{suite}} --offline
+    cargo test -p {{pkg}} --test {{suite}}
 
 test-suite-filter suite filter pkg='json-joy':
-    mise x -- cargo test -p {{pkg}} --test {{suite}} --offline -- {{filter}}
+    cargo test -p {{pkg}} --test {{suite}} -- {{filter}}
 
 test-crate pkg:
-    mise x -- cargo test -p {{pkg}} --offline
+    cargo test -p {{pkg}}
 
 test-gates: test-smoke
     just test-crate json-joy-ffi
@@ -76,7 +74,7 @@ compat-fixtures:
     bin/generate-compat-fixtures.sh
 
 parity-fixtures:
-    mise x -- cargo test -p json-joy --test compat_inventory --test compat_fixtures --offline
+    cargo test -p json-joy --test compat_inventory --test compat_fixtures
 
 parity-live-core: wasm-build
     node bench/interop.cjs

@@ -19,24 +19,6 @@ members = [
   "tools/embedded-uniffi-bindgen",
 ]
 
-default-members = [
-  "crates/sonic-forest",
-  "crates/base64",
-  "crates/buffers",
-  "crates/codegen",
-  "crates/json-expression",
-  "crates/json-joy",
-  "crates/json-joy-ffi",
-  "crates/json-joy-json-pack",
-  "crates/json-joy-json-path",
-  "crates/json-joy-json-pointer",
-  "crates/json-joy-json-random",
-  "crates/json-joy-json-type",
-  "crates/json-joy-wasm",
-  "crates/util",
-  "tools/embedded-uniffi-bindgen",
-]
-
 [workspace.package]
 edition = "2021"
 license = "MIT"
